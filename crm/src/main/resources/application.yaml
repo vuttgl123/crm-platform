@@ -1,0 +1,44 @@
+spring:
+  application:
+    name: crm
+
+  # PostgreSQL / Supabase connection (temporarily disabled)
+  # datasource:
+  #   url: jdbc:postgresql://aws-1-ap-south-1.pooler.supabase.com:5432/postgres?sslmode=require
+  #   username: postgres.jvparwkdhvftpyxawfdx
+  #   password: Yd7VCb5ThBGRj47M
+  #   driver-class-name: org.postgresql.Driver
+  # jpa:
+  #   database-platform: org.hibernate.dialect.PostgreSQLDialect
+  #   hibernate:
+  #     ddl-auto: none
+  #   open-in-view: false
+  #   properties:
+  #     hibernate:
+  #       boot:
+  #         allow_jdbc_metadata_access: false
+
+  datasource:
+    url: jdbc:mysql://10.210.40.40:3306/crm_platform
+    username: kyc_uat
+    password: ILoveKYC
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    database-platform: org.hibernate.dialect.MySQLDialect
+    hibernate:
+      ddl-auto: none
+    open-in-view: false
+    properties:
+      hibernate:
+        boot:
+          allow_jdbc_metadata_access: false
+
+logging:
+  config: classpath:logback-spring.xml
+  file:
+    path: ${LOG_PATH:logs}
+  level:
+    root: ${ROOT_LOG_LEVEL:INFO}
+    com.crm: ${APP_LOG_LEVEL:INFO}
+    org.hibernate.SQL: OFF
+    org.hibernate.orm.jdbc.bind: OFF

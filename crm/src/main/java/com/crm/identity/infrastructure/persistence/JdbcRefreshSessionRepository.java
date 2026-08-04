@@ -11,7 +11,7 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public final class JdbcRefreshSessionRepository
+public class JdbcRefreshSessionRepository
 		implements RefreshSessionRepository {
 
 	private final JdbcClient jdbcClient;

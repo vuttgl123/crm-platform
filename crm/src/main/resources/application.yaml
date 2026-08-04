@@ -46,8 +46,8 @@ crm:
       - ${CRM_WEB_ORIGIN:http://localhost:3000}
     jwt:
       # Local defaults only. Point these variables to external secrets in production.
-      private-key-location: ${CRM_JWT_PRIVATE_KEY_LOCATION:file:keys/private_key.pem}
-      public-key-location: ${CRM_JWT_PUBLIC_KEY_LOCATION:file:keys/public_key.pem}
+      private-key-location: ${CRM_JWT_PRIVATE_KEY_LOCATION:classpath:keys/private_key.pem}
+      public-key-location: ${CRM_JWT_PUBLIC_KEY_LOCATION:classpath:keys/public_key.pem}
     refresh-cookie:
       name: ${CRM_REFRESH_COOKIE_NAME:CRM_REFRESH_TOKEN}
       secure: ${CRM_REFRESH_COOKIE_SECURE:false}

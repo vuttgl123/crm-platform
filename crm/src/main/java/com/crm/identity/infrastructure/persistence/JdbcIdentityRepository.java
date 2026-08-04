@@ -19,7 +19,7 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public final class JdbcIdentityRepository implements IdentityRepository {
+public class JdbcIdentityRepository implements IdentityRepository {
 
 	private static final RowMapper<UserAccount> USER_ACCOUNT_ROW_MAPPER =
 			JdbcIdentityRepository::mapUserAccount;

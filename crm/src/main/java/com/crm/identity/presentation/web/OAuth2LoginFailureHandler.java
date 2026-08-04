@@ -1,4 +1,4 @@
-package com.crm.identity.infrastructure.security;
+package com.crm.identity.presentation.web;
 
 import java.io.IOException;
 
@@ -26,7 +26,8 @@ public final class OAuth2LoginFailureHandler
 	public void onAuthenticationFailure(HttpServletRequest request,
 			HttpServletResponse response, AuthenticationException exception)
 			throws IOException, ServletException {
-		redirect(response, AuthenticationErrorCode.OAUTH2_LOGIN_FAILED.value());
+		redirect(response,
+				AuthenticationErrorCode.OAUTH2_LOGIN_FAILED.value());
 	}
 
 	public void redirect(HttpServletResponse response, String errorCode)

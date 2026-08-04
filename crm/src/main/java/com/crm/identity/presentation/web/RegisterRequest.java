@@ -1,4 +1,4 @@
-package com.crm.identity.infrastructure.web;
+package com.crm.identity.presentation.web;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;

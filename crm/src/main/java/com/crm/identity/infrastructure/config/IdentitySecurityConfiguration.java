@@ -1,14 +1,14 @@
-package com.crm.foundation.config;
+package com.crm.identity.infrastructure.config;
 
 import java.util.List;
 
 import com.crm.foundation.logging.RequestTracingFilter;
-import com.crm.foundation.security.CurrentRequestContextFilter;
+import com.crm.identity.application.AuthenticationPolicy;
 import com.crm.identity.application.port.IdentityRepository;
-import com.crm.identity.infrastructure.config.CrmSecurityProperties;
 import com.crm.identity.infrastructure.security.AuthCookieOriginFilter;
-import com.crm.identity.infrastructure.security.OAuth2LoginFailureHandler;
-import com.crm.identity.infrastructure.security.OAuth2LoginSuccessHandler;
+import com.crm.identity.infrastructure.security.CurrentIdentityContextFilter;
+import com.crm.identity.presentation.web.OAuth2LoginFailureHandler;
+import com.crm.identity.presentation.web.OAuth2LoginSuccessHandler;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -35,7 +35,7 @@ import org.springframework.web.servlet.HandlerExceptionResolver;
 
 @Configuration
 @EnableMethodSecurity
-public class SecurityConfig {
+public class IdentitySecurityConfiguration {
 
 	@Bean
 	SecurityFilterChain securityFilterChain(HttpSecurity http,
@@ -45,12 +45,18 @@ public class SecurityConfig {
 			CrmSecurityProperties securityProperties,
 			OAuth2LoginSuccessHandler oauth2SuccessHandler,
 			OAuth2LoginFailureHandler oauth2FailureHandler) throws Exception {
-		var authenticationEntryPoint = (AuthenticationEntryPoint) (request, response, exception) ->
-								exceptionResolver.resolveException(request, response, null, exception);
-		var accessDeniedHandler = (AccessDeniedHandler) (request, response, exception) ->
-								exceptionResolver.resolveException(request, response, null, exception);
-		CurrentRequestContextFilter requestContextFilter = new CurrentRequestContextFilter(identityRepository, exceptionResolver);
-		AuthCookieOriginFilter authCookieOriginFilter = new AuthCookieOriginFilter(securityProperties, exceptionResolver);
+		AuthenticationEntryPoint authenticationEntryPoint =
+				(request, response, exception) -> exceptionResolver
+						.resolveException(request, response, null, exception);
+		AccessDeniedHandler accessDeniedHandler =
+				(request, response, exception) -> exceptionResolver
+						.resolveException(request, response, null, exception);
+		CurrentIdentityContextFilter identityContextFilter =
+				new CurrentIdentityContextFilter(
+						identityRepository, exceptionResolver);
+		AuthCookieOriginFilter authCookieOriginFilter =
+				new AuthCookieOriginFilter(
+						securityProperties, exceptionResolver);
 
 		return http
 				.cors(Customizer.withDefaults())
@@ -75,17 +81,34 @@ public class SecurityConfig {
 						.authenticationEntryPoint(authenticationEntryPoint)
 						.accessDeniedHandler(accessDeniedHandler))
 				.sessionManagement(session -> session
-						.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
+						.sessionCreationPolicy(
+								SessionCreationPolicy.IF_REQUIRED))
 				.securityContext(context -> context
-						.securityContextRepository(new NullSecurityContextRepository()))
-				.requestCache(cache -> cache.requestCache(new NullRequestCache()))
+						.securityContextRepository(
+								new NullSecurityContextRepository()))
+				.requestCache(cache -> cache
+						.requestCache(new NullRequestCache()))
 				.exceptionHandling(exceptions -> exceptions
 						.authenticationEntryPoint(authenticationEntryPoint)
 						.accessDeniedHandler(accessDeniedHandler))
-				.addFilterBefore(authCookieOriginFilter, AuthorizationFilter.class)
-				.addFilterAfter(new RequestTracingFilter(), BearerTokenAuthenticationFilter.class)
-				.addFilterAfter(requestContextFilter, RequestTracingFilter.class)
+				.addFilterBefore(
+						authCookieOriginFilter, AuthorizationFilter.class)
+				.addFilterAfter(new RequestTracingFilter(),
+						BearerTokenAuthenticationFilter.class)
+				.addFilterAfter(identityContextFilter,
+						RequestTracingFilter.class)
 				.build();
+	}
+
+	@Bean
+	AuthenticationPolicy authenticationPolicy(
+			CrmSecurityProperties properties) {
+		return new AuthenticationPolicy(
+				properties.accessTokenTtl(),
+				properties.refreshTokenTtl(),
+				properties.selfRegistrationEnabled(),
+				properties.maxFailedAttempts(),
+				properties.lockDuration());
 	}
 
 	@Bean
@@ -94,20 +117,25 @@ public class SecurityConfig {
 	}
 
 	@Bean
-	CorsConfigurationSource corsConfigurationSource(CrmSecurityProperties properties) {
+	CorsConfigurationSource corsConfigurationSource(
+			CrmSecurityProperties properties) {
 		CorsConfiguration configuration = new CorsConfiguration();
 		configuration.setAllowedOrigins(properties.allowedOrigins());
-		configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+		configuration.setAllowedMethods(List.of(
+				"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
 		configuration.setAllowedHeaders(List.of(
 				HttpHeaders.AUTHORIZATION,
-				HttpHeaders.CONTENT_TYPE, HttpHeaders.ACCEPT,
+				HttpHeaders.CONTENT_TYPE,
+				HttpHeaders.ACCEPT,
 				HttpHeaders.ACCEPT_LANGUAGE,
-				CurrentRequestContextFilter.TENANT_ID_HEADER,
+				CurrentIdentityContextFilter.TENANT_ID_HEADER,
 				RequestTracingFilter.REQUEST_ID_HEADER));
-		configuration.setExposedHeaders(List.of(RequestTracingFilter.REQUEST_ID_HEADER));
+		configuration.setExposedHeaders(
+				List.of(RequestTracingFilter.REQUEST_ID_HEADER));
 		configuration.setAllowCredentials(true);
 		configuration.setMaxAge(3600L);
-		UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+		UrlBasedCorsConfigurationSource source =
+				new UrlBasedCorsConfigurationSource();
 		source.registerCorsConfiguration("/**", configuration);
 		return source;
 	}

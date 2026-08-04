@@ -1,4 +1,4 @@
-package com.crm.identity.infrastructure.security;
+package com.crm.identity.presentation.web;
 
 import java.io.IOException;
 import java.util.Locale;
@@ -7,15 +7,14 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-import com.crm.identity.application.AuthenticationService;
-import com.crm.identity.application.ExternalLoginCommand;
-import com.crm.identity.application.IssuedTokens;
+import com.crm.foundation.security.CodedAccessDeniedException;
+import com.crm.foundation.security.CodedAuthenticationException;
+import com.crm.identity.application.command.ExternalLoginCommand;
+import com.crm.identity.application.dto.IssuedTokens;
+import com.crm.identity.application.usecase.AuthenticationFacade;
 import com.crm.identity.domain.AuthenticationErrorCode;
-import com.crm.identity.domain.CrmAccessDeniedException;
-import com.crm.identity.domain.CrmAuthenticationException;
 import com.crm.identity.domain.ExternalProvider;
 import com.crm.identity.infrastructure.config.CrmSecurityProperties;
-import com.crm.identity.infrastructure.web.RefreshTokenCookie;
 import com.crm.sharedkernel.domain.exception.DomainException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
@@ -27,16 +26,16 @@ import org.springframework.stereotype.Component;
 public final class OAuth2LoginSuccessHandler
 		implements AuthenticationSuccessHandler {
 
-	private final AuthenticationService authenticationService;
+	private final AuthenticationFacade authenticationFacade;
 	private final RefreshTokenCookie refreshTokenCookie;
 	private final OAuth2LoginFailureHandler failureHandler;
 	private final CrmSecurityProperties properties;
 
-	public OAuth2LoginSuccessHandler(AuthenticationService authenticationService,
+	public OAuth2LoginSuccessHandler(AuthenticationFacade authenticationFacade,
 			RefreshTokenCookie refreshTokenCookie,
 			OAuth2LoginFailureHandler failureHandler,
 			CrmSecurityProperties properties) {
-		this.authenticationService = authenticationService;
+		this.authenticationFacade = authenticationFacade;
 		this.refreshTokenCookie = refreshTokenCookie;
 		this.failureHandler = failureHandler;
 		this.properties = properties;
@@ -62,9 +61,8 @@ public final class OAuth2LoginSuccessHandler
 					requireText(oidcUser.getClaimAsString("iss")),
 					requireText(oidcUser.getSubject()), requireText(email),
 					emailVerified, requireText(displayName));
-			IssuedTokens tokens = authenticationService.loginExternal(command,
-					new com.crm.identity.application.AuthenticationRequestMetadata(
-							request.getRemoteAddr(), request.getHeader("User-Agent")));
+			IssuedTokens tokens = authenticationFacade.loginExternal(command,
+					RequestMetadataFactory.from(request));
 			refreshTokenCookie.write(response, tokens.refreshToken());
 			invalidateSession(request);
 			response.sendRedirect(properties.oauth2().successRedirectUri()
@@ -86,11 +84,11 @@ public final class OAuth2LoginSuccessHandler
 	}
 
 	private static String errorCode(RuntimeException exception) {
-		if (exception instanceof CrmAuthenticationException crmException) {
-			return crmException.errorCode().value();
+		if (exception instanceof CodedAuthenticationException codedException) {
+			return codedException.errorCode().value();
 		}
-		if (exception instanceof CrmAccessDeniedException crmException) {
-			return crmException.errorCode().value();
+		if (exception instanceof CodedAccessDeniedException codedException) {
+			return codedException.errorCode().value();
 		}
 		if (exception instanceof DomainException domainException) {
 			return domainException.errorCode().value();
@@ -104,7 +102,8 @@ public final class OAuth2LoginSuccessHandler
 
 	private static String requireText(String value) {
 		if (value == null || value.isBlank()) {
-			throw new IllegalArgumentException("Required OIDC claim is missing");
+			throw new IllegalArgumentException(
+					"Required OIDC claim is missing");
 		}
 		return value;
 	}

@@ -1,4 +1,4 @@
-package com.crm.identity.application;
+package com.crm.identity.application.dto;
 
 import java.time.Duration;
 

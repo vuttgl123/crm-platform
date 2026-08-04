@@ -1,7 +1,7 @@
-package com.crm.identity.infrastructure.web;
+package com.crm.identity.presentation.web;
 
 import jakarta.servlet.http.HttpServletRequest;
-import com.crm.identity.application.AuthenticationRequestMetadata;
+import com.crm.identity.application.command.AuthenticationRequestMetadata;
 
 final class RequestMetadataFactory {
 

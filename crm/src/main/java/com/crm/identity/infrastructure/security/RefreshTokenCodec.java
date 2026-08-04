@@ -8,15 +8,17 @@ import java.util.Base64;
 import java.util.Optional;
 import java.util.UUID;
 
+import com.crm.identity.application.port.RefreshTokenManager;
 import org.springframework.stereotype.Component;
 
 @Component
-public final class RefreshTokenCodec {
+public final class RefreshTokenCodec implements RefreshTokenManager {
 
 	private static final int SECRET_BYTES = 32;
 
 	private final SecureRandom secureRandom = new SecureRandom();
 
+	@Override
 	public GeneratedRefreshToken generate(UUID sessionId) {
 		byte[] secretBytes = new byte[SECRET_BYTES];
 		secureRandom.nextBytes(secretBytes);
@@ -27,6 +29,7 @@ public final class RefreshTokenCodec {
 		return new GeneratedRefreshToken(rawToken, hash(rawToken));
 	}
 
+	@Override
 	public Optional<ParsedRefreshToken> parse(String rawToken) {
 		if (rawToken == null || rawToken.isBlank()) {
 			return Optional.empty();
@@ -48,6 +51,7 @@ public final class RefreshTokenCodec {
 		}
 	}
 
+	@Override
 	public boolean matches(String expectedHash, String actualHash) {
 		if (expectedHash == null || actualHash == null) {
 			return false;
@@ -66,12 +70,6 @@ public final class RefreshTokenCodec {
 		catch (NoSuchAlgorithmException exception) {
 			throw new IllegalStateException("SHA-256 is not available", exception);
 		}
-	}
-
-	public record GeneratedRefreshToken(String rawToken, String hash) {
-	}
-
-	public record ParsedRefreshToken(UUID sessionId, String hash) {
 	}
 
 }

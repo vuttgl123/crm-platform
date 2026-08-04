@@ -7,8 +7,8 @@ import java.util.Locale;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
-import com.crm.identity.domain.CrmAccessDeniedException;
-import com.crm.identity.domain.CrmAuthenticationException;
+import com.crm.foundation.security.CodedAccessDeniedException;
+import com.crm.foundation.security.CodedAuthenticationException;
 import com.crm.sharedkernel.domain.exception.BusinessRuleViolation;
 import com.crm.sharedkernel.domain.exception.DomainException;
 import com.crm.sharedkernel.domain.exception.DomainResourceNotFound;
@@ -94,9 +94,9 @@ public final class GlobalExceptionHandler {
 						CommonErrorCode.ACCESS_DENIED, request, currentLocale()));
 	}
 
-	@ExceptionHandler(CrmAccessDeniedException.class)
-	public ResponseEntity<ProblemDetail> handleCrmAccessDenied(
-			CrmAccessDeniedException exception, HttpServletRequest request) {
+	@ExceptionHandler(CodedAccessDeniedException.class)
+	public ResponseEntity<ProblemDetail> handleCodedAccessDenied(
+			CodedAccessDeniedException exception, HttpServletRequest request) {
 		return ResponseEntity.status(HttpStatus.FORBIDDEN)
 				.body(problemFactory.create(HttpStatus.FORBIDDEN,
 						exception.errorCode(), request, currentLocale()));
@@ -111,9 +111,9 @@ public final class GlobalExceptionHandler {
 						currentLocale()));
 	}
 
-	@ExceptionHandler(CrmAuthenticationException.class)
-	public ResponseEntity<ProblemDetail> handleCrmAuthentication(
-			CrmAuthenticationException exception, HttpServletRequest request) {
+	@ExceptionHandler(CodedAuthenticationException.class)
+	public ResponseEntity<ProblemDetail> handleCodedAuthentication(
+			CodedAuthenticationException exception, HttpServletRequest request) {
 		return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
 				.body(problemFactory.create(HttpStatus.UNAUTHORIZED,
 						exception.errorCode(), request, currentLocale()));

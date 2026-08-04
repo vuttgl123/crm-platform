@@ -33,6 +33,36 @@ spring:
         boot:
           allow_jdbc_metadata_access: false
 
+crm:
+  security:
+    issuer: ${CRM_JWT_ISSUER:crm-platform}
+    audience: ${CRM_JWT_AUDIENCE:crm-api}
+    access-token-ttl: ${CRM_ACCESS_TOKEN_TTL:PT15M}
+    refresh-token-ttl: ${CRM_REFRESH_TOKEN_TTL:P30D}
+    self-registration-enabled: ${CRM_SELF_REGISTRATION_ENABLED:false}
+    max-failed-attempts: ${CRM_MAX_FAILED_ATTEMPTS:5}
+    lock-duration: ${CRM_ACCOUNT_LOCK_DURATION:PT15M}
+    allowed-origins:
+      - ${CRM_WEB_ORIGIN:http://localhost:3000}
+    jwt:
+      # Local defaults only. Point these variables to external secrets in production.
+      private-key-location: ${CRM_JWT_PRIVATE_KEY_LOCATION:file:keys/private_key.pem}
+      public-key-location: ${CRM_JWT_PUBLIC_KEY_LOCATION:file:keys/public_key.pem}
+    refresh-cookie:
+      name: ${CRM_REFRESH_COOKIE_NAME:CRM_REFRESH_TOKEN}
+      secure: ${CRM_REFRESH_COOKIE_SECURE:false}
+      same-site: ${CRM_REFRESH_COOKIE_SAME_SITE:Lax}
+    oauth2:
+      success-redirect-uri: ${CRM_OAUTH2_SUCCESS_REDIRECT_URI:http://localhost:3000/auth/callback}
+      failure-redirect-uri: ${CRM_OAUTH2_FAILURE_REDIRECT_URI:http://localhost:3000/login}
+      google:
+        client-id: ${GOOGLE_CLIENT_ID:}
+        client-secret: ${GOOGLE_CLIENT_SECRET:}
+      microsoft:
+        client-id: ${MICROSOFT_CLIENT_ID:}
+        client-secret: ${MICROSOFT_CLIENT_SECRET:}
+        tenant: ${MICROSOFT_TENANT:common}
+
 logging:
   config: classpath:logback-spring.xml
   file:

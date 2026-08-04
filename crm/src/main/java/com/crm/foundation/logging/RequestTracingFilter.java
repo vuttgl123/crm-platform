@@ -1,4 +1,4 @@
-package com.crm.logging;
+package com.crm.foundation.logging;
 
 import java.io.IOException;
 import java.util.UUID;

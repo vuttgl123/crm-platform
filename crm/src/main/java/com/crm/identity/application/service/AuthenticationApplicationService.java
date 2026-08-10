@@ -106,13 +106,13 @@ public class AuthenticationApplicationService
 		}
 
 		UserAccount user = candidate.get();
-		if (!user.isActive() || user.passwordHash() == null) {
+		if (!user.permitsAuthentication() || user.passwordHash() == null) {
 			passwordHasher.matches(command.password(), dummyPasswordHash);
 			auditRecorder.recordLoginFailure(
 					user.id(), normalizedEmail, metadata, now);
 			throw invalidCredentials();
 		}
-		if (user.isTemporarilyLocked(now)) {
+		if (!user.permitsPasswordAuthenticationAt(now)) {
 			passwordHasher.matches(command.password(), user.passwordHash());
 			auditRecorder.recordLoginFailure(
 					user.id(), normalizedEmail, metadata, now);
@@ -158,7 +158,7 @@ public class AuthenticationApplicationService
 				.findByExternalIdentity(command.issuer(), command.subject())
 				.orElseGet(() -> createExternalUser(
 						command, normalizedEmail, now));
-		if (!user.isActive()) {
+		if (!user.permitsAuthentication()) {
 			throw invalidCredentials();
 		}
 
@@ -174,7 +174,7 @@ public class AuthenticationApplicationService
 	@Transactional(readOnly = true)
 	public CurrentIdentity currentIdentity(UUID userId) {
 		UserAccount user = identityRepository.findById(userId)
-				.filter(UserAccount::isActive)
+				.filter(UserAccount::permitsAuthentication)
 				.orElseThrow(AuthenticationApplicationService::invalidCredentials);
 		return new CurrentIdentity(user,
 				identityRepository.findActiveTenantMemberships(userId));

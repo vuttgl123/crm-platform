@@ -52,6 +52,19 @@ If a skill workflow conflicts with the no-test or no-commit rules below, the rep
 - If a skill requires tests, adapt the workflow to static inspection or state that the test step was intentionally skipped because of this repository rule.
 - Run tests only when the user gives a new, explicit instruction to do so.
 
+### 5. Keep the API Reference Synchronized
+
+- Every API addition, modification, or removal must update
+  `docs/api-reference.md` in the same task.
+- Document only implemented behavior. Keep examples, authentication,
+  permissions, error codes, headers, cookies, validation constraints, request
+  and response fields, and status codes synchronized with the source.
+- Derive the contract from controllers, DTOs, validation annotations, security
+  configuration, permission checks, cookie configuration, and error-code
+  definitions.
+- Never place real credentials, access tokens, refresh tokens, OAuth secrets,
+  signing keys, database connection values, or personal data in API examples.
+
 ## Available Skill Catalog
 
 The following 37 skills are currently available. Re-check the runtime catalog because availability can change between sessions.

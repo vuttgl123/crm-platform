@@ -21,12 +21,18 @@ public record UserAccount(
 		Objects.requireNonNull(status, "status must not be null");
 	}
 
-	public boolean isActive() {
+	public boolean permitsAuthentication() {
 		return status == UserStatus.ACTIVE;
 	}
 
-	public boolean isTemporarilyLocked(Instant now) {
+	public boolean isTemporaryCredentialLockActiveAt(Instant now) {
+		Objects.requireNonNull(now, "now must not be null");
 		return lockedUntil != null && lockedUntil.isAfter(now);
+	}
+
+	public boolean permitsPasswordAuthenticationAt(Instant now) {
+		return permitsAuthentication()
+				&& !isTemporaryCredentialLockActiveAt(now);
 	}
 
 }

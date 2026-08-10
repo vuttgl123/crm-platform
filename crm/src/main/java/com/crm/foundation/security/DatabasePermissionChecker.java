@@ -21,20 +21,28 @@ public final class DatabasePermissionChecker implements PermissionChecker {
 
 	@Override
 	public boolean hasPermission(String permission) {
-		String actorId = currentActor.requireActorId().toString();
-		String tenantId = currentTenant.requireTenantId().toString();
+		if (permission == null || permission.isBlank()) {
+			return false;
+		}
+		var actorId = currentActor.actorId();
+		var tenantId = currentTenant.tenantId();
+		if (actorId.isEmpty() || tenantId.isEmpty()) {
+			return false;
+		}
 		return jdbcClient.sql("""
 				SELECT COUNT(*)
-				FROM platform_tenant_memberships m
+				FROM platform_permissions p
+				JOIN platform_tenant_memberships m
+				  ON m.tenant_id = :tenantId
+				 AND m.user_id = :userId
 				JOIN platform_users u ON u.id = m.user_id
 				JOIN platform_tenants t ON t.id = m.tenant_id
-				WHERE m.tenant_id = :tenantId
-				  AND m.user_id = :userId
+				WHERE p.permission_code = :permission
 				  AND m.membership_status = 'ACTIVE'
 				  AND u.status = 'ACTIVE'
 				  AND t.status IN ('TRIAL', 'ACTIVE')
 				  AND (
-				      m.is_tenant_admin = true
+				      (m.is_tenant_admin = true AND p.risk_level = 'NORMAL')
 				      OR EXISTS (
 				          SELECT 1
 				          FROM platform_user_roles ur
@@ -49,12 +57,12 @@ public final class DatabasePermissionChecker implements PermissionChecker {
 				            AND ur.valid_from <= CURRENT_TIMESTAMP(6)
 				            AND (ur.valid_to IS NULL
 				                 OR ur.valid_to > CURRENT_TIMESTAMP(6))
-				            AND rp.permission_code = :permission
+				            AND rp.permission_code = p.permission_code
 				      )
 				  )
 				""")
-				.param("tenantId", tenantId)
-				.param("userId", actorId)
+				.param("tenantId", tenantId.get().toString())
+				.param("userId", actorId.get().toString())
 				.param("permission", permission)
 				.query(Long.class)
 				.single() > 0L;

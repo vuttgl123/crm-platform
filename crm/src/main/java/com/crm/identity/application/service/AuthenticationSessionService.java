@@ -96,7 +96,7 @@ public class AuthenticationSessionService {
 		}
 
 		UserAccount user = identityRepository.findById(session.userId())
-				.filter(UserAccount::isActive)
+				.filter(UserAccount::permitsAuthentication)
 				.orElseThrow(AuthenticationSessionService::invalidRefreshToken);
 		GeneratedRefreshToken rotated = refreshTokenManager
 				.generate(session.id());

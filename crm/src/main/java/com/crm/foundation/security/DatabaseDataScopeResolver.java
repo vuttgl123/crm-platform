@@ -23,27 +23,42 @@ public final class DatabaseDataScopeResolver implements DataScopeResolver {
 
 	@Override
 	public Set<ResolvedDataScope> resolve(String entityType) {
-		String userId = currentActor.requireActorId().toString();
-		String tenantId = currentTenant.requireTenantId().toString();
-		if (isTenantAdmin(tenantId, userId)) {
+		if (entityType == null || entityType.isBlank()) {
+			return Set.of();
+		}
+		var actorId = currentActor.actorId();
+		var tenantId = currentTenant.tenantId();
+		if (actorId.isEmpty() || tenantId.isEmpty()) {
+			return Set.of();
+		}
+		String userId = actorId.get().toString();
+		String currentTenantId = tenantId.get().toString();
+		if (isTenantAdmin(currentTenantId, userId)) {
 			return Set.of(new ResolvedDataScope(DataScopeType.TENANT, null));
 		}
 		return jdbcClient.sql("""
 				SELECT DISTINCT ds.scope_type, ds.team_id
-				FROM platform_user_roles ur
+				FROM platform_tenant_memberships m
+				JOIN platform_users u ON u.id = m.user_id
+				JOIN platform_tenants t ON t.id = m.tenant_id
+				JOIN platform_user_roles ur
+				  ON ur.tenant_id = m.tenant_id AND ur.user_id = m.user_id
 				JOIN platform_roles r
 				  ON r.tenant_id = ur.tenant_id AND r.id = ur.role_id
 				JOIN platform_role_data_scopes ds
 				  ON ds.tenant_id = r.tenant_id AND ds.role_id = r.id
-				WHERE ur.tenant_id = :tenantId
-				  AND ur.user_id = :userId
+				WHERE m.tenant_id = :tenantId
+				  AND m.user_id = :userId
+				  AND m.membership_status = 'ACTIVE'
+				  AND u.status = 'ACTIVE'
+				  AND t.status IN ('TRIAL', 'ACTIVE')
 				  AND r.status = 'ACTIVE'
 				  AND r.deleted_at IS NULL
 				  AND ur.valid_from <= CURRENT_TIMESTAMP(6)
 				  AND (ur.valid_to IS NULL OR ur.valid_to > CURRENT_TIMESTAMP(6))
 				  AND ds.entity_type = :entityType
 				""")
-				.param("tenantId", tenantId)
+				.param("tenantId", currentTenantId)
 				.param("userId", userId)
 				.param("entityType", entityType)
 				.query((resultSet, rowNumber) -> new ResolvedDataScope(
@@ -55,10 +70,14 @@ public final class DatabaseDataScopeResolver implements DataScopeResolver {
 	private boolean isTenantAdmin(String tenantId, String userId) {
 		return jdbcClient.sql("""
 				SELECT COUNT(*)
-				FROM platform_tenant_memberships
-				WHERE tenant_id = :tenantId AND user_id = :userId
-				  AND membership_status = 'ACTIVE'
-				  AND is_tenant_admin = true
+				FROM platform_tenant_memberships m
+				JOIN platform_users u ON u.id = m.user_id
+				JOIN platform_tenants t ON t.id = m.tenant_id
+				WHERE m.tenant_id = :tenantId AND m.user_id = :userId
+				  AND m.membership_status = 'ACTIVE'
+				  AND m.is_tenant_admin = true
+				  AND u.status = 'ACTIVE'
+				  AND t.status IN ('TRIAL', 'ACTIVE')
 				""")
 				.param("tenantId", tenantId)
 				.param("userId", userId)

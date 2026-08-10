@@ -147,8 +147,9 @@ value as `traceId` when request tracing has been established.
 
 ### Cross-origin browser calls
 
-The default allowed browser origins include `http://localhost:3000`,
-`http://localhost:3001`, and `http://localhost:3002`. CORS allows credentials
+The default allowed browser origins include ports `3000`, `3001`, and `3002`
+for both `http://localhost` and `http://127.0.0.1`. CORS preflight requests
+from an allowed origin do not require authentication. CORS allows credentials
 (`credentials: 'include'`) and the configured request headers, including
 `Authorization`, `Content-Type`, `Accept`, `Accept-Language`, `X-Tenant-ID`,
 and `X-Request-ID`. Refresh and logout also apply explicit origin validation
@@ -201,6 +202,7 @@ HttpOnly cookie and never appears in this JSON object.
 | `POST` | `/api/auth/refresh` | Refresh cookie | `200 OK` |
 | `POST` | `/api/auth/logout` | Refresh cookie optional | `204 No Content` |
 | `GET` | `/api/auth/me` | Bearer access token | `200 OK` |
+| `POST` | `/api/tenants` | Bearer access token; no tenant header | `201 Created` |
 | `POST` | `/api/accounts` | Bearer token, tenant, `crm_account.write` | `201 Created` |
 | `GET` | `/api/accounts/{id}` | Bearer token, tenant, `crm_account.read` | `200 OK` |
 | `GET` | `/api/accounts` | Bearer token, tenant, `crm_account.read` | `200 OK` |
@@ -215,9 +217,8 @@ HttpOnly cookie and never appears in this JSON object.
 POST /api/auth/register
 ```
 
-This is a public endpoint. Self-registration is disabled in the default local
-configuration and must be explicitly enabled before this call can create a
-user.
+This is a public endpoint. Self-registration is enabled in the default local
+configuration. Set `CRM_SELF_REGISTRATION_ENABLED=false` to disable it.
 
 #### Request body
 
@@ -440,6 +441,101 @@ The `tenants` array can be empty.
 | `401` | `AUTHENTICATION_REQUIRED` | The Bearer token is missing, invalid, expired, or otherwise rejected by resource-server authentication |
 | `401` | `INVALID_CREDENTIALS` | The token subject no longer resolves to an active user |
 | `403` | `ACCESS_DENIED` | `X-Tenant-ID` is malformed or does not identify an active membership for the authenticated user |
+
+## Tenant Bootstrap
+
+### Create the first tenant
+
+```http
+POST /api/tenants
+Authorization: Bearer <access-token>
+Content-Type: application/json
+```
+
+This authenticated endpoint is available only to an active user without an
+`INVITED`, `ACTIVE`, or `SUSPENDED` tenant membership. Do not send
+`X-Tenant-ID`; the tenant context does not exist until this operation succeeds.
+
+The operation creates the tenant, an active Tenant Admin membership, the
+tenant-scoped `TENANT_ADMIN` system role, an explicit `platform_user.manage`
+grant, and a non-expiring role assignment in one transaction.
+
+#### Request body
+
+| Field | Required | Validation and behavior |
+|---|---|---|
+| `tenantCode` | Yes | Trimmed, non-blank, maximum 320 characters, globally unique |
+| `legalName` | Yes | Trimmed, non-blank, maximum 255 characters |
+| `displayName` | Yes | Trimmed, non-blank, maximum 255 characters |
+| `defaultCurrencyCode` | Yes | Exactly three uppercase letters |
+| `defaultCountryCode` | Yes | Exactly two uppercase letters |
+| `defaultLanguageCode` | No | Defaults to `en`; maximum 10 characters and must match a language tag |
+| `defaultTimezone` | No | Defaults to `UTC`; maximum 255 characters and must be a Java `ZoneId` |
+
+```json
+{
+  "tenantCode": "example-company",
+  "legalName": "Example Company Limited",
+  "displayName": "Example Company",
+  "defaultCurrencyCode": "USD",
+  "defaultCountryCode": "VN",
+  "defaultLanguageCode": "vi",
+  "defaultTimezone": "Asia/Ho_Chi_Minh"
+}
+```
+
+#### Example call
+
+```bash
+curl --request POST \
+  --header "Authorization: Bearer ${ACCESS_TOKEN}" \
+  --header "Content-Type: application/json" \
+  --data '{"tenantCode":"example-company","legalName":"Example Company Limited","displayName":"Example Company","defaultCurrencyCode":"USD","defaultCountryCode":"VN","defaultLanguageCode":"vi","defaultTimezone":"Asia/Ho_Chi_Minh"}' \
+  http://localhost:8080/api/tenants
+```
+
+#### Success
+
+- Status: `201 Created`
+- Tenant status: `ACTIVE`
+- Membership status: `ACTIVE`
+- Initial tenant and role version: `1`
+
+```json
+{
+  "id": "22222222-2222-2222-2222-222222222222",
+  "tenantCode": "example-company",
+  "legalName": "Example Company Limited",
+  "displayName": "Example Company",
+  "status": "ACTIVE",
+  "defaultCurrencyCode": "USD",
+  "defaultCountryCode": "VN",
+  "defaultLanguageCode": "vi",
+  "defaultTimezone": "Asia/Ho_Chi_Minh",
+  "tenantAdmin": true,
+  "createdAt": "2026-08-10T10:00:00Z",
+  "version": 1
+}
+```
+
+Internal membership, role, grant, and assignment identifiers are not exposed.
+Call `GET /api/auth/me` after success to obtain the new active membership and
+use its tenant ID as `X-Tenant-ID` on tenant-owned APIs.
+
+#### Errors
+
+| Status | `errorCode` | When |
+|---|---|---|
+| `400` | `REQUEST_VALIDATION_FAILED` | One or more request fields are invalid |
+| `401` | `AUTHENTICATION_REQUIRED` | The Bearer token is missing or invalid |
+| `403` | `ACCESS_DENIED` | The authenticated user is no longer active |
+| `409` | `TENANT_CODE_ALREADY_EXISTS` | The tenant code already exists |
+| `409` | `TENANT_BOOTSTRAP_NOT_ALLOWED` | The user already has a non-removed membership |
+| `500` | `INTERNAL_ERROR` | Required bootstrap infrastructure is inconsistent, including a missing `platform_user.manage` catalogue entry |
+
+This endpoint is not idempotent. A repeated call after success returns
+`TENANT_BOOTSTRAP_NOT_ALLOWED`; use `GET /api/auth/me` to recover the committed
+membership if the original success response was lost.
 
 ## Account Management
 
@@ -928,6 +1024,13 @@ Common cross-endpoint codes include:
 | `401` | `AUTHENTICATION_REQUIRED` | Authentication is missing or invalid |
 | `403` | `ACCESS_DENIED` | The authenticated or cookie-based request is not allowed |
 | `500` | `INTERNAL_ERROR` | An unexpected server error occurred |
+
+Tenant-specific stable codes include:
+
+| `errorCode` | Meaning |
+|---|---|
+| `TENANT_CODE_ALREADY_EXISTS` | A tenant already uses the requested tenant code |
+| `TENANT_BOOTSTRAP_NOT_ALLOWED` | The current user already has a non-removed tenant membership |
 
 ## Maintenance Rules
 

@@ -266,7 +266,8 @@ public class JdbcIdentityRepository implements IdentityRepository {
 				       c.locked_until
 				FROM platform_users u
 				LEFT JOIN platform_user_credentials c ON c.user_id = u.id
-				WHERE """ + predicate)
+				WHERE %s
+				""".formatted(predicate))
 				.param("value", value)
 				.query(USER_ACCOUNT_ROW_MAPPER)
 				.optional();

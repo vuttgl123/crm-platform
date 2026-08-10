@@ -30,6 +30,7 @@ import org.springframework.security.web.context.NullSecurityContextRepository;
 import org.springframework.security.web.savedrequest.NullRequestCache;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.CorsUtils;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.servlet.HandlerExceptionResolver;
 
@@ -62,6 +63,8 @@ public class IdentitySecurityConfiguration {
 				.cors(Customizer.withDefaults())
 				.csrf(AbstractHttpConfigurer::disable)
 				.authorizeHttpRequests(authorize -> authorize
+						.requestMatchers(CorsUtils::isPreFlightRequest)
+						.permitAll()
 						.requestMatchers(HttpMethod.POST,
 								"/api/auth/register", "/api/auth/login",
 								"/api/auth/refresh", "/api/auth/logout")

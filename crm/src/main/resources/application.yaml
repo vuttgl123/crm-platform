@@ -39,11 +39,16 @@ crm:
     audience: ${CRM_JWT_AUDIENCE:crm-api}
     access-token-ttl: ${CRM_ACCESS_TOKEN_TTL:PT15M}
     refresh-token-ttl: ${CRM_REFRESH_TOKEN_TTL:P30D}
-    self-registration-enabled: ${CRM_SELF_REGISTRATION_ENABLED:false}
+    self-registration-enabled: ${CRM_SELF_REGISTRATION_ENABLED:true}
     max-failed-attempts: ${CRM_MAX_FAILED_ATTEMPTS:5}
     lock-duration: ${CRM_ACCOUNT_LOCK_DURATION:PT15M}
     allowed-origins:
       - ${CRM_WEB_ORIGIN:http://localhost:3000}
+      - http://localhost:3001
+      - http://localhost:3002
+      - http://127.0.0.1:3000
+      - http://127.0.0.1:3001
+      - http://127.0.0.1:3002
     jwt:
       # Local defaults only. Point these variables to external secrets in production.
       private-key-location: ${CRM_JWT_PRIVATE_KEY_LOCATION:classpath:keys/private_key.pem}

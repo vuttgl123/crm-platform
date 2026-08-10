@@ -4,6 +4,7 @@ import { LoginPage } from '@/features/auth/LoginPage';
 import { SessionExpired } from '@/components/common/SessionExpired';
 import { AppLayout } from '@/layouts/AppLayout';
 import { OverviewPage } from '@/features/overview/OverviewPage';
+import { UserProfilePage } from '@/features/profile/UserProfilePage';
 import { ForbiddenPage } from '@/features/system/ForbiddenPage';
 import { NotFoundPage } from '@/features/system/NotFoundPage';
 import { ProtectedRoute } from '@/components/common/ProtectedRoute';
@@ -47,8 +48,9 @@ export const AppRoutes: React.FC = () => {
           </ProtectedRoute>
         }
       >
-        {/* Overview */}
+        {/* Overview & Profile */}
         <Route path="overview" element={<OverviewPage />} />
+        <Route path="profile" element={<UserProfilePage />} />
 
         {/* Dynamic Coming Soon Routes for all Schema Groups */}
         {NAVIGATION_GROUPS.flatMap((group) =>

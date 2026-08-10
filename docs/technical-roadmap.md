@@ -37,11 +37,21 @@ environments.
 
 ## Recommended Delivery Sequence
 
-### 1. Tenant Administration vertical slice
+### 1. Tenant Administration vertical slices
 
-Implement tenant details, memberships, roles, permission assignments, and role
-validity first. These capabilities provide the administrative source of truth
-required by every tenant-owned business module.
+Tenant Administration is delivered incrementally instead of as one large
+change. Tenant Bootstrap provides the authenticated first-tenant creation path,
+the initial active Tenant Admin membership, and its privileged system-role
+grant. Keep the remaining order:
+
+1. Access Management for role, permission, data-scope, assignment, and
+   effective-access administration.
+2. Membership Management for invitation and membership lifecycle operations.
+3. Team Management for team hierarchy and `TEAM` or `TEAM_TREE` scopes.
+4. Broader Tenant Administration for details, status, plan, region, retention,
+   and settings.
+
+These roadmap items are planning references, not implemented API contracts.
 
 ### 2. Current tenant access context
 
@@ -85,4 +95,3 @@ deprecating columns.
   foundation authorization boundary.
 - Repository queries must still filter records by tenant and the authorized
   scopes returned by that boundary.
-

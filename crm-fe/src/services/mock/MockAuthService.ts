@@ -1,6 +1,7 @@
 import { IAuthService } from '../contracts/IAuthService';
 import {
   LoginCredentials,
+  RegisterPayload,
   SSOLoginPayload,
   UserSessionContext,
   DemoRoleCode,
@@ -66,34 +67,31 @@ export class MockAuthService implements IAuthService {
     };
   }
 
-  async login(credentials: LoginCredentials): Promise<UserSessionContext> {
+  public async login(credentials: LoginCredentials): Promise<UserSessionContext> {
     await delay(env.mockDelayMs);
 
-    const email = credentials.email.trim().toLowerCase();
-    const password = credentials.password || '';
-
-    // Locked / disabled test account check
-    if (email === 'locked@vum.vn') {
-      throw new Error('Tài khoản đã bị khóa. Vui lòng liên hệ quản trị viên.');
-    }
-    if (email === 'disabled@vum.vn') {
-      throw new Error('Tài khoản đã bị vô hiệu hóa.');
-    }
-
-    // Match demo user email
-    const matchedRole = (Object.keys(DEMO_ROLES) as DemoRoleCode[]).find(
-      (code) => DEMO_ROLES[code].userEmail.toLowerCase() === email
+    const matchingRoleCode = (Object.keys(DEMO_ROLES) as DemoRoleCode[]).find(
+      (code) => DEMO_ROLES[code].userEmail.toLowerCase() === credentials.email.toLowerCase()
     );
 
-    if (!matchedRole) {
-      throw new Error('Email hoặc mật khẩu không chính xác.');
+    if (!matchingRoleCode) {
+      throw new Error('Tài khoản hoặc mật khẩu không chính xác');
     }
 
-    if (password !== DEMO_PASSWORD && password !== 'demo') {
-      throw new Error('Email hoặc mật khẩu không chính xác.');
+    if (credentials.password && credentials.password !== DEMO_PASSWORD) {
+      throw new Error('Tài khoản hoặc mật khẩu không chính xác');
     }
 
-    const session = this.createSessionForRole(matchedRole);
+    const session = this.createSessionForRole(matchingRoleCode);
+    storageAdapter.setSession(session);
+    return session;
+  }
+
+  public async register(payload: RegisterPayload): Promise<UserSessionContext> {
+    await delay(env.mockDelayMs);
+    const session = this.createSessionForRole('ADMIN');
+    session.user.email = payload.email;
+    session.user.display_name = payload.displayName;
     storageAdapter.setSession(session);
     return session;
   }

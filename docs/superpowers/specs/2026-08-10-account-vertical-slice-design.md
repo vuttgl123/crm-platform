@@ -1,9 +1,13 @@
 # Account Vertical Slice Design
 
-**Date:** 2026-08-10  
-**Status:** Approved  
-**Application:** `crm`  
-**Bounded context:** `customer`  
+**Date:** 2026-08-10
+
+**Status:** Approved
+
+**Application:** `crm`
+
+**Bounded context:** `customer`
+
 **Business slice:** Account management
 
 ## Context
@@ -472,6 +476,9 @@ The following items are intentionally recorded for later slices:
 - Owner display projections if clients later require more than owner type and
   identifier.
 - Configurable sorting or cursor pagination when a measured requirement exists.
+- Add `If-Match` to the CORS allowed-header configuration before a
+  cross-origin browser client consumes Account deletion; same-origin and
+  non-browser clients are not blocked by the current allowlist.
 - Automated domain, application, repository, security-scope, and web tests if
   the repository test restriction is explicitly overridden.
 - Synchronizing Account-related BA wording with the approved optional typed

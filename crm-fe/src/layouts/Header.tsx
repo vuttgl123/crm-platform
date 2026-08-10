@@ -105,7 +105,15 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
 
       {/* Right: Tenant, Demo Role Switcher, Notifications, Profile */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1.5 sm:gap-2">
+        {/* Mobile Search Button Trigger */}
+        <button
+          onClick={onOpenCommandPalette}
+          className="md:hidden p-2 rounded-md text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-colors"
+          aria-label="Open search"
+        >
+          <Search className="w-4 h-4" />
+        </button>
         {/* Tenant Display Badge */}
         {session?.tenant && (
           <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-xs font-medium text-slate-700">

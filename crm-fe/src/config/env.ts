@@ -11,8 +11,8 @@ export interface AppConfig {
 }
 
 export const env: AppConfig = {
-  apiBaseUrl: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/v1',
-  useMocks: import.meta.env.VITE_USE_MOCKS !== 'false',
+  apiBaseUrl: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api',
+  useMocks: import.meta.env.VITE_USE_MOCKS === 'true',
   mockDelayMs: Number(import.meta.env.VITE_MOCK_DELAY_MS) || 300,
   enableRoleSwitcher: import.meta.env.VITE_ENABLE_ROLE_SWITCHER !== 'false',
 };

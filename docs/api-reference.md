@@ -147,10 +147,18 @@ value as `traceId` when request tracing has been established.
 
 ### Cross-origin browser calls
 
-The default allowed browser origin is `http://localhost:3000`. CORS allows
-credentials and the request headers documented above. Refresh and logout also
-apply explicit origin validation because they authenticate with a cookie. See
-their endpoint sections for details.
+The default allowed browser origins include `http://localhost:3000`,
+`http://localhost:3001`, and `http://localhost:3002`. CORS allows credentials
+(`credentials: 'include'`) and the configured request headers, including
+`Authorization`, `Content-Type`, `Accept`, `Accept-Language`, `X-Tenant-ID`,
+and `X-Request-ID`. Refresh and logout also apply explicit origin validation
+because they authenticate with a cookie. See their endpoint sections for
+details.
+
+The current CORS header allowlist does not include `If-Match`. Consequently,
+the Account delete endpoint can be called by same-origin or non-browser
+clients, but a cross-origin browser client cannot send its required `If-Match`
+header until that allowlist is extended.
 
 ## Authentication Flow
 
@@ -193,6 +201,11 @@ HttpOnly cookie and never appears in this JSON object.
 | `POST` | `/api/auth/refresh` | Refresh cookie | `200 OK` |
 | `POST` | `/api/auth/logout` | Refresh cookie optional | `204 No Content` |
 | `GET` | `/api/auth/me` | Bearer access token | `200 OK` |
+| `POST` | `/api/accounts` | Bearer token, tenant, `crm_account.write` | `201 Created` |
+| `GET` | `/api/accounts/{id}` | Bearer token, tenant, `crm_account.read` | `200 OK` |
+| `GET` | `/api/accounts` | Bearer token, tenant, `crm_account.read` | `200 OK` |
+| `PUT` | `/api/accounts/{id}` | Bearer token, tenant, `crm_account.write` | `200 OK` |
+| `DELETE` | `/api/accounts/{id}` | Bearer token, tenant, `crm_account.write` | `204 No Content` |
 
 ## Authentication Endpoints
 
@@ -427,6 +440,378 @@ The `tenants` array can be empty.
 | `401` | `AUTHENTICATION_REQUIRED` | The Bearer token is missing, invalid, expired, or otherwise rejected by resource-server authentication |
 | `401` | `INVALID_CREDENTIALS` | The token subject no longer resolves to an active user |
 | `403` | `ACCESS_DENIED` | `X-Tenant-ID` is malformed or does not identify an active membership for the authenticated user |
+
+## Account Management
+
+The Account API is the first business API in the `customer` bounded context.
+Every endpoint requires both of these headers:
+
+```http
+Authorization: Bearer ${ACCESS_TOKEN}
+X-Tenant-ID: 22222222-2222-2222-2222-222222222222
+```
+
+The authenticated user must have an active membership in the selected tenant.
+The server then checks the operation-specific permission and resolves data
+scopes for entity type `ACCOUNT` from the database. Roles, permissions, and
+data scopes are not read from JWT claims.
+
+| Data scope | Visible or assignable Account owner |
+|---|---|
+| `TENANT` | Any valid user owner, team owner, or unassigned Account in the tenant |
+| `OWN` | A `USER` owner matching the current user |
+| `TEAM` | A `TEAM` owner matching a directly granted team |
+| `TEAM_TREE` | A `TEAM` owner matching a granted root team or one of its active descendants |
+
+Multiple scopes combine with OR. Read scope is applied to detail and search;
+write scope is applied to create, update, parent selection, and delete.
+Unavailable, deleted, cross-tenant, and outside-scope Accounts all produce the
+same `404 ACCOUNT_NOT_FOUND` response for detail and mutation lookup.
+
+### Account field shapes
+
+The public contract is mostly flat. Only `owner` and `annualRevenue` are nested.
+
+An owner is nullable or has this shape:
+
+```json
+{
+  "type": "TEAM",
+  "id": "33333333-3333-3333-3333-333333333333"
+}
+```
+
+`type` is `USER` or `TEAM`. Both nested fields are required when `owner` is
+present. An unassigned Account (`owner: null` or omitted) can be created or
+updated only with `TENANT` data scope.
+
+Annual revenue is nullable or has this shape:
+
+```json
+{
+  "amount": 1250000.500000,
+  "currencyCode": "USD"
+}
+```
+
+`amount` is required, nonnegative, and limited to 14 integer digits and 6
+fractional digits. `currencyCode` must contain exactly three uppercase letters.
+If revenue is supplied without a currency, the API returns
+`422 ACCOUNT_REVENUE_CURRENCY_REQUIRED`.
+
+The detail response contains:
+
+| Field | Type | Nullable | Notes |
+|---|---|---|---|
+| `id` | UUID | No | Account identifier |
+| `accountNumber` | string | No | Client-supplied, immutable, maximum 191 characters |
+| `accountType` | enum | No | `ORGANIZATION`, `PERSON`, `PARTNER`, `RESELLER`, or `SUPPLIER` |
+| `legalName` | string | Yes | Maximum 255 characters |
+| `displayName` | string | No | Non-blank, maximum 255 characters |
+| `parentAccountId` | UUID | Yes | Must identify an active, accessible Account and cannot equal `id` |
+| `owner` | object | Yes | Nested owner shape described above |
+| `lifecycleStage` | enum | No | `PROSPECT`, `QUALIFIED`, `CUSTOMER`, `CHURNED`, or `INACTIVE` |
+| `industryCode` | string | Yes | Maximum 191 characters |
+| `taxIdentifier` | string | Yes | Maximum 255 characters |
+| `registrationNumber` | string | Yes | Maximum 191 characters |
+| `website` | string | Yes | Blank input is normalized to `null` |
+| `annualRevenue` | object | Yes | Nested revenue shape described above |
+| `employeeCount` | integer | Yes | Zero or greater |
+| `description` | string | Yes | Blank input is normalized to `null` |
+| `preferredLanguageCode` | string | Yes | Maximum 10 characters; language tag such as `en` or `vi-VN` |
+| `doNotContact` | boolean | No | Contact-suppression flag |
+| `createdAt` | timestamp | No | ISO-8601 timestamp |
+| `createdBy` | UUID | Yes | Creating actor when recorded |
+| `updatedAt` | timestamp | No | ISO-8601 timestamp |
+| `updatedBy` | UUID | Yes | Last updating actor when recorded |
+| `version` | positive integer | No | Optimistic-concurrency version |
+
+Tenant ID, deletion audit fields, lead source, custom summary, permission data,
+and data-scope data are not exposed.
+
+### Create an Account
+
+```http
+POST /api/accounts
+```
+
+Required permission: `crm_account.write`.
+
+#### Request body
+
+| Field | Required | Validation and behavior |
+|---|---|---|
+| `accountNumber` | Yes | Non-blank; maximum 191 characters; unique among active Accounts in the tenant |
+| `accountType` | No | Defaults to `ORGANIZATION` |
+| `legalName` | No | Maximum 255 characters |
+| `displayName` | Yes | Non-blank; maximum 255 characters |
+| `parentAccountId` | No | Active accessible Account UUID; cannot self-reference |
+| `owner` | No | Complete nested owner; unassigned requires `TENANT` scope |
+| `lifecycleStage` | No | Defaults to `PROSPECT` |
+| `industryCode` | No | Maximum 191 characters |
+| `taxIdentifier` | No | Maximum 255 characters |
+| `registrationNumber` | No | Maximum 191 characters |
+| `website` | No | String |
+| `annualRevenue` | No | Complete nested revenue object |
+| `employeeCount` | No | Integer zero or greater |
+| `description` | No | String |
+| `preferredLanguageCode` | No | Valid language tag, maximum 10 characters |
+| `doNotContact` | No | Defaults to `false` |
+
+```json
+{
+  "accountNumber": "ACC-EXAMPLE-001",
+  "accountType": "ORGANIZATION",
+  "legalName": "Example Trading Company",
+  "displayName": "Example Trading",
+  "owner": {
+    "type": "TEAM",
+    "id": "33333333-3333-3333-3333-333333333333"
+  },
+  "lifecycleStage": "PROSPECT",
+  "annualRevenue": {
+    "amount": 1250000.500000,
+    "currencyCode": "USD"
+  },
+  "employeeCount": 25,
+  "preferredLanguageCode": "en",
+  "doNotContact": false
+}
+```
+
+#### Example call
+
+```bash
+curl --request POST \
+  --header "Authorization: Bearer ${ACCESS_TOKEN}" \
+  --header "X-Tenant-ID: 22222222-2222-2222-2222-222222222222" \
+  --header "Content-Type: application/json" \
+  --data '{"accountNumber":"ACC-EXAMPLE-001","displayName":"Example Trading","owner":{"type":"TEAM","id":"33333333-3333-3333-3333-333333333333"}}' \
+  http://localhost:8080/api/accounts
+```
+
+#### Success
+
+- Status: `201 Created`
+- Body: Account detail response
+- Initial version: `1`
+
+### Get Account details
+
+```http
+GET /api/accounts/{id}
+```
+
+Required permission: `crm_account.read`.
+
+```bash
+curl --request GET \
+  --header "Authorization: Bearer ${ACCESS_TOKEN}" \
+  --header "X-Tenant-ID: 22222222-2222-2222-2222-222222222222" \
+  http://localhost:8080/api/accounts/44444444-4444-4444-4444-444444444444
+```
+
+#### Success
+
+- Status: `200 OK`
+- Body: Account detail response
+
+```json
+{
+  "id": "44444444-4444-4444-4444-444444444444",
+  "accountNumber": "ACC-EXAMPLE-001",
+  "accountType": "ORGANIZATION",
+  "legalName": "Example Trading Company",
+  "displayName": "Example Trading",
+  "parentAccountId": null,
+  "owner": {
+    "type": "TEAM",
+    "id": "33333333-3333-3333-3333-333333333333"
+  },
+  "lifecycleStage": "PROSPECT",
+  "industryCode": null,
+  "taxIdentifier": null,
+  "registrationNumber": null,
+  "website": null,
+  "annualRevenue": {
+    "amount": 1250000.500000,
+    "currencyCode": "USD"
+  },
+  "employeeCount": 25,
+  "description": null,
+  "preferredLanguageCode": "en",
+  "doNotContact": false,
+  "createdAt": "2026-08-10T10:00:00Z",
+  "createdBy": "11111111-1111-1111-1111-111111111111",
+  "updatedAt": "2026-08-10T10:00:00Z",
+  "updatedBy": "11111111-1111-1111-1111-111111111111",
+  "version": 1
+}
+```
+
+### Search Accounts
+
+```http
+GET /api/accounts
+```
+
+Required permission: `crm_account.read`.
+
+| Query parameter | Required | Validation and behavior |
+|---|---|---|
+| `q` | No | Maximum 255 characters; Account-number prefix or natural-language full-text search |
+| `accountType` | No | Account type enum |
+| `lifecycleStage` | No | Lifecycle-stage enum |
+| `ownerType` | No | `USER` or `TEAM`; must be supplied together with `ownerId` |
+| `ownerId` | No | UUID; must be supplied together with `ownerType` |
+| `page` | No | Zero-based page number; defaults to `0` |
+| `size` | No | `1` to `100`; defaults to `20` |
+
+Results are always ordered by `updatedAt` descending, then `id` descending.
+Filters and data-scope predicates are combined with AND.
+
+```bash
+curl --request GET \
+  --header "Authorization: Bearer ${ACCESS_TOKEN}" \
+  --header "X-Tenant-ID: 22222222-2222-2222-2222-222222222222" \
+  "http://localhost:8080/api/accounts?q=ACC-EXAMPLE&lifecycleStage=PROSPECT&page=0&size=20"
+```
+
+#### Success
+
+- Status: `200 OK`
+- Body: page of Account summaries
+
+```json
+{
+  "items": [
+    {
+      "id": "44444444-4444-4444-4444-444444444444",
+      "accountNumber": "ACC-EXAMPLE-001",
+      "displayName": "Example Trading",
+      "legalName": "Example Trading Company",
+      "accountType": "ORGANIZATION",
+      "lifecycleStage": "PROSPECT",
+      "owner": {
+        "type": "TEAM",
+        "id": "33333333-3333-3333-3333-333333333333"
+      },
+      "doNotContact": false,
+      "updatedAt": "2026-08-10T10:00:00Z",
+      "version": 1
+    }
+  ],
+  "page": 0,
+  "size": 20,
+  "totalElements": 1,
+  "totalPages": 1
+}
+```
+
+An empty result uses `items: []`, `totalElements: 0`, and `totalPages: 0`.
+
+### Replace an Account
+
+```http
+PUT /api/accounts/{id}
+```
+
+Required permission: `crm_account.write`.
+
+This endpoint replaces all mutable Account fields. It does not accept
+`accountNumber`; that field is immutable. `version`, `accountType`,
+`displayName`, `lifecycleStage`, and `doNotContact` are required. All other
+fields follow the same validation and nested shapes as create; omitted nullable
+fields are cleared.
+
+```json
+{
+  "version": 1,
+  "accountType": "ORGANIZATION",
+  "legalName": "Example Trading Company Limited",
+  "displayName": "Example Trading",
+  "parentAccountId": null,
+  "owner": {
+    "type": "TEAM",
+    "id": "33333333-3333-3333-3333-333333333333"
+  },
+  "lifecycleStage": "QUALIFIED",
+  "industryCode": null,
+  "taxIdentifier": null,
+  "registrationNumber": null,
+  "website": null,
+  "annualRevenue": null,
+  "employeeCount": 30,
+  "description": null,
+  "preferredLanguageCode": "en",
+  "doNotContact": false
+}
+```
+
+```bash
+curl --request PUT \
+  --header "Authorization: Bearer ${ACCESS_TOKEN}" \
+  --header "X-Tenant-ID: 22222222-2222-2222-2222-222222222222" \
+  --header "Content-Type: application/json" \
+  --data '{"version":1,"accountType":"ORGANIZATION","displayName":"Example Trading","lifecycleStage":"QUALIFIED","doNotContact":false}' \
+  http://localhost:8080/api/accounts/44444444-4444-4444-4444-444444444444
+```
+
+#### Success
+
+- Status: `200 OK`
+- Body: updated Account detail response
+- Version: incremented exactly once
+
+### Soft-delete an Account
+
+```http
+DELETE /api/accounts/{id}
+If-Match: "<version>"
+```
+
+Required permission: `crm_account.write`.
+
+`If-Match` must contain exactly one strong quoted positive signed-long version,
+for example `"2"`. Missing, wildcard (`*`), weak (`W/"2"`), unquoted,
+nonnumeric, zero, negative, or overflow values return request validation errors.
+
+```bash
+curl --request DELETE \
+  --header "Authorization: Bearer ${ACCESS_TOKEN}" \
+  --header "X-Tenant-ID: 22222222-2222-2222-2222-222222222222" \
+  --header 'If-Match: "2"' \
+  http://localhost:8080/api/accounts/44444444-4444-4444-4444-444444444444
+```
+
+#### Success
+
+- Status: `204 No Content`
+- Body: empty
+- Behavior: sets deletion audit data and increments the version once
+
+Soft-deleted Accounts are absent from detail and search. Their Account number
+can be reused by a new active Account in the same tenant.
+
+### Account errors
+
+| Status | `errorCode` | When |
+|---|---|---|
+| `400` | `REQUEST_VALIDATION_FAILED` | Body, query, header, UUID, enum, or field validation fails |
+| `401` | `AUTHENTICATION_REQUIRED` | Bearer authentication is missing or invalid |
+| `403` | `ACCESS_DENIED` | Tenant membership, permission, data scope, or requested ownership is not allowed |
+| `404` | `ACCOUNT_NOT_FOUND` | Account is absent, deleted, cross-tenant, or outside the applicable scope |
+| `409` | `ACCOUNT_NUMBER_ALREADY_EXISTS` | An active Account already uses the number in the tenant |
+| `409` | `ACCOUNT_VERSION_CONFLICT` | Update body or delete header contains a stale version |
+| `422` | `ACCOUNT_OWNER_INVALID` | Owner reference is inactive, deleted, absent, or outside the tenant |
+| `422` | `ACCOUNT_PARENT_INVALID` | Parent is absent, deleted, self-referencing, or inaccessible |
+| `422` | `ACCOUNT_REVENUE_CURRENCY_REQUIRED` | Annual revenue is present without a currency code |
+| `500` | `INTERNAL_ERROR` | An unexpected persistence or server failure occurs |
+
+For validation failures, individual `errors` entries use the common stable
+codes `VALIDATION_REQUIRED`, `VALIDATION_SIZE_INVALID`,
+`VALIDATION_EMAIL_INVALID`, or `VALIDATION_INVALID` as applicable. Error text
+is localized by `Accept-Language`; the codes remain unchanged.
 
 ## OAuth2 Login
 

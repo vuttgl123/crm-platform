@@ -43,6 +43,12 @@ export interface SSOLoginPayload {
   provider: IdentityProvider; // 'GOOGLE' | 'MICROSOFT'
 }
 
+export interface RegisterPayload {
+  email: string;
+  password: string;
+  displayName: string;
+}
+
 export interface AuthState {
   session: UserSessionContext | null;
   isAuthenticated: boolean;

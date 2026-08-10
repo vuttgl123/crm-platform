@@ -56,8 +56,8 @@ crm:
       success-redirect-uri: ${CRM_OAUTH2_SUCCESS_REDIRECT_URI:http://localhost:3000/auth/callback}
       failure-redirect-uri: ${CRM_OAUTH2_FAILURE_REDIRECT_URI:http://localhost:3000/login}
       google:
-        client-id: ${GOOGLE_CLIENT_ID:}
-        client-secret: ${GOOGLE_CLIENT_SECRET:}
+        client-id: ${GOOGLE_CLIENT_ID:465446465665-1dnu63mjc1jtoirre6pnodhl7rlur5fk.apps.googleusercontent.com}
+        client-secret: ${GOOGLE_CLIENT_SECRET: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}
       microsoft:
         client-id: ${MICROSOFT_CLIENT_ID:}
         client-secret: ${MICROSOFT_CLIENT_SECRET:}

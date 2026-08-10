@@ -139,7 +139,7 @@ Spring JDBC `JdbcClient`, Jakarta Validation, MapStruct 1.6.3, MySQL 8.0.
 - Produces stable Account error codes consumed by the application service and
   global error translator.
 
-- [ ] **Step 1: Add the schema-backed enums and typed identifier**
+- [x] **Step 1: Add the schema-backed enums and typed identifier**
 
   Create the exact enum values and identifier contract:
 
@@ -171,7 +171,7 @@ Spring JDBC `JdbcClient`, Jakarta Validation, MapStruct 1.6.3, MySQL 8.0.
   }
   ```
 
-- [ ] **Step 2: Add the two justified value objects**
+- [x] **Step 2: Add the two justified value objects**
 
   `AccountOwner` requires both parts. `AnnualRevenue` requires a nonnegative
   amount fitting `DECIMAL(20,6)` and an uppercase three-letter currency:
@@ -205,7 +205,7 @@ Spring JDBC `JdbcClient`, Jakarta Validation, MapStruct 1.6.3, MySQL 8.0.
   }
   ```
 
-- [ ] **Step 3: Add the stable Account error catalogue**
+- [x] **Step 3: Add the stable Account error catalogue**
 
   Implement `ErrorCode` exactly with these values and keys:
 
@@ -238,7 +238,7 @@ Spring JDBC `JdbcClient`, Jakarta Validation, MapStruct 1.6.3, MySQL 8.0.
   }
   ```
 
-- [ ] **Step 4: Implement the aggregate state and construction paths**
+- [x] **Step 4: Implement the aggregate state and construction paths**
 
   `Account` is a normal Java class, not a Spring bean or persistence entity.
   Give it a private constructor plus these exact public entry points:
@@ -345,7 +345,7 @@ Spring JDBC `JdbcClient`, Jakarta Validation, MapStruct 1.6.3, MySQL 8.0.
   as optional unbounded strings for this API design. Reject a self-parent in
   `replace`; creation performs the same check after its generated ID is known.
 
-- [ ] **Step 5: Expose focused getters required by mapping and persistence**
+- [x] **Step 5: Expose focused getters required by mapping and persistence**
 
   Add getters for every aggregate field using the exact domain types above.
   Do not expose setters, persistence column names, `sourceId`, or
@@ -380,7 +380,7 @@ Spring JDBC `JdbcClient`, Jakarta Validation, MapStruct 1.6.3, MySQL 8.0.
   public boolean deleted()
   ```
 
-- [ ] **Step 6: Add localized Account messages**
+- [x] **Step 6: Add localized Account messages**
 
   Append these English entries to `messages_en.properties`:
 
@@ -405,7 +405,7 @@ Spring JDBC `JdbcClient`, Jakarta Validation, MapStruct 1.6.3, MySQL 8.0.
   account.revenue_currency_required=Phải cung cấp loại tiền tệ khi có doanh thu hằng năm
   ```
 
-- [ ] **Step 7: Perform static domain verification**
+- [x] **Step 7: Perform static domain verification**
 
   Use `rtk grep` and `rtk read` to confirm no file under
   `customer/account/domain` imports `org.springframework`, `jakarta.persistence`,
@@ -440,7 +440,7 @@ Spring JDBC `JdbcClient`, Jakarta Validation, MapStruct 1.6.3, MySQL 8.0.
   `TenantId`, `ActorId`, and `AuthorizedDataAccess`.
 - Produces every signature consumed by JDBC, service, and web tasks.
 
-- [ ] **Step 1: Add command records with the approved hybrid shape**
+- [x] **Step 1: Add command records with the approved hybrid shape**
 
   Create records with these exact components:
 
@@ -494,7 +494,7 @@ Spring JDBC `JdbcClient`, Jakarta Validation, MapStruct 1.6.3, MySQL 8.0.
   update/delete. Leave create defaults nullable so `Account.create` remains the
   authoritative defaulting boundary.
 
-- [ ] **Step 2: Add the normalized search query**
+- [x] **Step 2: Add the normalized search query**
 
   Implement:
 
@@ -518,7 +518,7 @@ Spring JDBC `JdbcClient`, Jakarta Validation, MapStruct 1.6.3, MySQL 8.0.
   than 255 characters. The web layer guarantees owner type and ID pairing;
   this record additionally receives only a complete `AccountOwner` or null.
 
-- [ ] **Step 3: Add immutable detail and summary application outputs**
+- [x] **Step 3: Add immutable detail and summary application outputs**
 
   `AccountDetails` contains every public field from the approved response and
   no tenant/delete internals:
@@ -601,7 +601,7 @@ Spring JDBC `JdbcClient`, Jakarta Validation, MapStruct 1.6.3, MySQL 8.0.
   }
   ```
 
-- [ ] **Step 4: Define the authorization-aware repository port**
+- [x] **Step 4: Define the authorization-aware repository port**
 
   Add these exact methods:
 
@@ -657,7 +657,7 @@ Spring JDBC `JdbcClient`, Jakarta Validation, MapStruct 1.6.3, MySQL 8.0.
   Keeping this port in `application` is intentional because it consumes
   `AuthorizedDataAccess`; do not move it into the domain.
 
-- [ ] **Step 5: Define the public Account application facade**
+- [x] **Step 5: Define the public Account application facade**
 
   Implement:
 
@@ -676,7 +676,7 @@ Spring JDBC `JdbcClient`, Jakarta Validation, MapStruct 1.6.3, MySQL 8.0.
   }
   ```
 
-- [ ] **Step 6: Perform static contract verification**
+- [x] **Step 6: Perform static contract verification**
 
   Inspect every signature for exact type consistency. Confirm commands and
   outputs contain no Spring MVC or JDBC imports, tenant ID is absent from all
@@ -699,7 +699,7 @@ Spring JDBC `JdbcClient`, Jakarta Validation, MapStruct 1.6.3, MySQL 8.0.
   `ResolvedDataScope`, and `DataScopeType`.
 - Produces scoped `Account`, `AccountSummary`, and `PageResult` values.
 
-- [ ] **Step 1: Add result-set mapping without Spring bean state**
+- [x] **Step 1: Add result-set mapping without Spring bean state**
 
   Implement `AccountJdbcMapper` as a package-private final utility with these
   static mappings:
@@ -723,12 +723,15 @@ Spring JDBC `JdbcClient`, Jakarta Validation, MapStruct 1.6.3, MySQL 8.0.
   static String uuid(UUID value)
   ```
 
-  Map owner user first, then owner team, and return null when both columns are
-  null. Map annual revenue only when `annual_revenue` is nonnull. Map every
-  aggregate/audit column needed by `Account.rehydrate`; do not select
-  `source_id` or `custom_summary`.
+  Return null when both owner columns are null. Return the matching `USER` or
+  `TEAM` owner when exactly one column is nonnull. If both columns are nonnull,
+  throw `IllegalStateException` because the stored row violates the Account
+  ownership invariant; do not silently prefer one owner. Map annual revenue
+  only when `annual_revenue` is nonnull. Map every aggregate/audit column
+  needed by `Account.rehydrate`; do not select `source_id` or
+  `custom_summary`.
 
-- [ ] **Step 2: Add a fixed, parameterized scope-clause builder inside the repository**
+- [x] **Step 2: Add a fixed, parameterized scope-clause builder inside the repository**
 
   Keep `JdbcAccountRepository` non-final so Spring's repository exception
   translation can proxy it under the current class-proxy configuration. Use a
@@ -779,7 +782,7 @@ Spring JDBC `JdbcClient`, Jakarta Validation, MapStruct 1.6.3, MySQL 8.0.
   effective predicate with `AccessDeniedException`; an `AuthorizedDataAccess`
   value must never widen to tenant access accidentally.
 
-- [ ] **Step 3: Implement scoped detail and parent visibility queries**
+- [x] **Step 3: Implement scoped detail and parent visibility queries**
 
   Use the full Account select with all Task 1 columns and these mandatory
   predicates:
@@ -795,7 +798,7 @@ Spring JDBC `JdbcClient`, Jakarta Validation, MapStruct 1.6.3, MySQL 8.0.
   active-row, and scope conditions with `COUNT(*)`; it does not disclose why a
   parent is unavailable.
 
-- [ ] **Step 4: Implement Account search and count with identical criteria**
+- [x] **Step 4: Implement Account search and count with identical criteria**
 
   Build one criteria fragment reused by the page select and count. It always
   contains tenant, active row, and scope predicates and conditionally adds:
@@ -819,8 +822,19 @@ Spring JDBC `JdbcClient`, Jakarta Validation, MapStruct 1.6.3, MySQL 8.0.
 
   Add only the relevant owner predicate based on `AccountOwnerType`; never add
   both. Escape `%`, `_`, and the chosen escape character before the Account
-  number `LIKE` prefix and declare `ESCAPE '\\'` in SQL. Bind a normalized
-  full-text keyword separately. Page query:
+  number `LIKE` prefix and declare `ESCAPE '\\'` in SQL. Use this exact helper
+  before appending `%`:
+
+  ```java
+  private static String escapeLikePrefix(String value) {
+      return value
+              .replace("\\", "\\\\")
+              .replace("%", "\\%")
+              .replace("_", "\\_");
+  }
+  ```
+
+  Bind a normalized full-text keyword separately. Page query:
 
   ```sql
   ORDER BY a.updated_at DESC, a.id DESC
@@ -829,7 +843,7 @@ Spring JDBC `JdbcClient`, Jakarta Validation, MapStruct 1.6.3, MySQL 8.0.
 
   Return `PageResult.of(items, query.pageQuery(), totalElements)`.
 
-- [ ] **Step 5: Implement tenant-wide uniqueness and owner validation**
+- [x] **Step 5: Implement tenant-wide uniqueness and owner validation**
 
   Active-number existence query:
 
@@ -858,7 +872,7 @@ Spring JDBC `JdbcClient`, Jakarta Validation, MapStruct 1.6.3, MySQL 8.0.
   Multiple scopes combine with OR. Do not infer that a user is writable merely
   because they are a member of a writable team; TEAM scopes assign team owners.
 
-- [ ] **Step 6: Implement insert without touching deferred columns**
+- [x] **Step 6: Implement insert without touching deferred columns**
 
   Insert only these columns and bind UUIDs as strings and instants as
   timestamps:
@@ -888,7 +902,7 @@ Spring JDBC `JdbcClient`, Jakarta Validation, MapStruct 1.6.3, MySQL 8.0.
   Omitting `source_id` leaves it null; omitting `custom_summary` preserves its
   database default object.
 
-- [ ] **Step 7: Implement scoped optimistic update and soft delete**
+- [x] **Step 7: Implement scoped optimistic update and soft delete**
 
   Update every mutable slice field and audit/version column, but never update
   `account_number`, `source_id`, or `custom_summary`. Require:
@@ -918,7 +932,7 @@ Spring JDBC `JdbcClient`, Jakarta Validation, MapStruct 1.6.3, MySQL 8.0.
   and uses the same tenant, ID, expected-version, active-row, and write-scope
   constraints.
 
-- [ ] **Step 8: Perform static persistence verification**
+- [x] **Step 8: Perform static persistence verification**
 
   Inspect every SQL path for bound parameters, tenant predicate, active-row
   predicate, applicable scope predicate, and stable update ordering. Confirm
@@ -940,7 +954,7 @@ Spring JDBC `JdbcClient`, Jakarta Validation, MapStruct 1.6.3, MySQL 8.0.
   `TenantAccessAuthorizer`, `IdentifierGenerator`, and `TimeProvider`.
 - Produces transactional command behavior and read-only queries.
 
-- [ ] **Step 1: Add service dependencies and authorization constants**
+- [x] **Step 1: Add service dependencies and authorization constants**
 
   Implement a non-final Spring service with constructor injection:
 
@@ -964,7 +978,7 @@ Spring JDBC `JdbcClient`, Jakarta Validation, MapStruct 1.6.3, MySQL 8.0.
   Keep the class non-final because transactional Spring AOP uses class proxies
   in the current configuration.
 
-- [ ] **Step 2: Implement create orchestration**
+- [x] **Step 2: Implement create orchestration**
 
   Use one `@Transactional` method with this exact order:
 
@@ -1021,7 +1035,7 @@ Spring JDBC `JdbcClient`, Jakarta Validation, MapStruct 1.6.3, MySQL 8.0.
   Catch only `DuplicateKeyException`; do not translate every data integrity
   failure into an Account-number conflict.
 
-- [ ] **Step 3: Implement read and search orchestration**
+- [x] **Step 3: Implement read and search orchestration**
 
   Both methods use `@Transactional(readOnly = true)`. Detail authorizes read,
   loads by tenant/actor/scope, and hides every unavailable condition behind one
@@ -1042,7 +1056,7 @@ Spring JDBC `JdbcClient`, Jakarta Validation, MapStruct 1.6.3, MySQL 8.0.
   return accountRepository.search(tenantId, actorId, query, access);
   ```
 
-- [ ] **Step 4: Implement replace orchestration and optimistic concurrency**
+- [x] **Step 4: Implement replace orchestration and optimistic concurrency**
 
   In one `@Transactional` method:
 
@@ -1089,7 +1103,7 @@ Spring JDBC `JdbcClient`, Jakarta Validation, MapStruct 1.6.3, MySQL 8.0.
   return AccountDetails.from(account);
   ```
 
-- [ ] **Step 5: Implement versioned soft delete**
+- [x] **Step 5: Implement versioned soft delete**
 
   Follow the same scoped load and version comparison as update. Keep the
   expected version, call `account.softDelete(actorId, now)`, and require one
@@ -1097,7 +1111,7 @@ Spring JDBC `JdbcClient`, Jakarta Validation, MapStruct 1.6.3, MySQL 8.0.
   `ACCOUNT_VERSION_CONFLICT`; an unavailable initial load is
   `ACCOUNT_NOT_FOUND`.
 
-- [ ] **Step 6: Implement owner and parent validation helpers**
+- [x] **Step 6: Implement owner and parent validation helpers**
 
   Owner rules:
 
@@ -1131,7 +1145,7 @@ Spring JDBC `JdbcClient`, Jakarta Validation, MapStruct 1.6.3, MySQL 8.0.
   calls `parentAllowed`; every false result throws
   `BusinessRuleViolation(AccountErrorCode.ACCOUNT_PARENT_INVALID)`.
 
-- [ ] **Step 7: Perform static orchestration verification**
+- [x] **Step 7: Perform static orchestration verification**
 
   Inspect annotations and method flow. Confirm permission is checked before
   protected loading, all contexts come from foundation, all command methods are
@@ -1154,7 +1168,7 @@ Spring JDBC `JdbcClient`, Jakarta Validation, MapStruct 1.6.3, MySQL 8.0.
 - Supplies the Account controller with controlled handling for invalid UUID,
   enum, query, and `If-Match` values.
 
-- [ ] **Step 1: Handle unreadable JSON as request validation**
+- [x] **Step 1: Handle unreadable JSON as request validation**
 
   Add an `HttpMessageNotReadableException` handler that returns one localized
   `VALIDATION_INVALID` violation named `request` through
@@ -1162,7 +1176,7 @@ Spring JDBC `JdbcClient`, Jakarta Validation, MapStruct 1.6.3, MySQL 8.0.
   malformed JSON, wrong JSON token types, and invalid body enum text remain safe
   `400 REQUEST_VALIDATION_FAILED` responses.
 
-- [ ] **Step 2: Handle query/model binding errors using existing field mapping**
+- [x] **Step 2: Handle query/model binding errors using existing field mapping**
 
   Add a `BindException` handler that maps and sorts its field errors with the
   same `toFieldViolation(FieldError, Locale)` method already used for request
@@ -1186,7 +1200,7 @@ Spring JDBC `JdbcClient`, Jakarta Validation, MapStruct 1.6.3, MySQL 8.0.
 
   Keep the existing more-specific `MethodArgumentNotValidException` handler.
 
-- [ ] **Step 3: Handle missing headers and path/query type conversion errors**
+- [x] **Step 3: Handle missing headers and path/query type conversion errors**
 
   Add a `MissingRequestHeaderException` handler using
   `exception.getHeaderName()` as the field and `VALIDATION_REQUIRED` as the
@@ -1206,7 +1220,7 @@ Spring JDBC `JdbcClient`, Jakarta Validation, MapStruct 1.6.3, MySQL 8.0.
   Return it through `createValidationProblem`. This covers malformed UUID and
   enum values without exposing conversion exception details.
 
-- [ ] **Step 4: Handle direct controller parameter validation**
+- [x] **Step 4: Handle direct controller parameter validation**
 
   Add a handler for
   `org.springframework.web.method.annotation.HandlerMethodValidationException`.
@@ -1230,7 +1244,7 @@ Spring JDBC `JdbcClient`, Jakarta Validation, MapStruct 1.6.3, MySQL 8.0.
   with class-level `@Validated`; Spring MVC native method validation avoids the
   CGLIB-final-class problem previously encountered in this project.
 
-- [ ] **Step 5: Perform static error-boundary verification**
+- [x] **Step 5: Perform static error-boundary verification**
 
   Confirm the three new handlers are more specific than the catch-all handler,
   reuse localized stable error codes, never return exception messages, and do
@@ -1265,7 +1279,7 @@ Spring JDBC `JdbcClient`, Jakarta Validation, MapStruct 1.6.3, MySQL 8.0.
 - Produces the five approved `/api/accounts` endpoints and documented JSON
   contract.
 
-- [ ] **Step 1: Add create and update requests with nested typed values**
+- [x] **Step 1: Add create and update requests with nested typed values**
 
   Use these field validations in both records:
 
@@ -1317,7 +1331,7 @@ Spring JDBC `JdbcClient`, Jakarta Validation, MapStruct 1.6.3, MySQL 8.0.
   contain `accountNumber` and requires all four replacement fields noted
   above.
 
-- [ ] **Step 2: Add the query-binding request**
+- [x] **Step 2: Add the query-binding request**
 
   Implement nullable wrapper fields so absent query parameters can receive
   defaults during mapping:
@@ -1342,7 +1356,7 @@ Spring JDBC `JdbcClient`, Jakarta Validation, MapStruct 1.6.3, MySQL 8.0.
   Do not add JSON annotations to this query-only model; it is never serialized
   as an API response.
 
-- [ ] **Step 3: Add detail and summary response records**
+- [x] **Step 3: Add detail and summary response records**
 
   `AccountResponse` mirrors `AccountDetails` exactly and defines nested
   `Owner` and `Revenue` response records. `AccountSummaryResponse` mirrors
@@ -1377,7 +1391,7 @@ Spring JDBC `JdbcClient`, Jakarta Validation, MapStruct 1.6.3, MySQL 8.0.
   long version
   ```
 
-- [ ] **Step 4: Add the MapStruct web mapper**
+- [x] **Step 4: Add the MapStruct web mapper**
 
   Use `@Mapper(config = CrmMapperConfig.class)` and declare exact boundary
   methods:
@@ -1470,7 +1484,7 @@ Spring JDBC `JdbcClient`, Jakarta Validation, MapStruct 1.6.3, MySQL 8.0.
 
   Do not edit generated mapper output under `target`.
 
-- [ ] **Step 5: Add strict reusable-in-file `If-Match` validation**
+- [x] **Step 5: Add strict reusable-in-file `If-Match` validation**
 
   Inside `AccountController`, define a public nested Bean Validation annotation
   and validator dedicated to the header. The validator accepts exactly one
@@ -1510,7 +1524,7 @@ Spring JDBC `JdbcClient`, Jakarta Validation, MapStruct 1.6.3, MySQL 8.0.
   put `@Validated` on the final controller class; rely on Spring MVC native
   method validation and Task 5's handler.
 
-- [ ] **Step 6: Add the five Account endpoints**
+- [x] **Step 6: Add the five Account endpoints**
 
   Implement a final controller with constructor injection and base mapping:
 
@@ -1554,14 +1568,14 @@ Spring JDBC `JdbcClient`, Jakarta Validation, MapStruct 1.6.3, MySQL 8.0.
   returns `204`. Convert path UUIDs to `new AccountId(id)`; never accept tenant
   data in these methods.
 
-- [ ] **Step 7: Inspect security coverage without changing configuration**
+- [x] **Step 7: Inspect security coverage without changing configuration**
 
   Confirm `IdentitySecurityConfiguration` leaves only the existing public auth
   and OAuth2 paths permitted and applies `.anyRequest().authenticated()` to
   `/api/accounts`. Do not add route-specific permission rules there; Account
   permission and data-scope checks belong in the application service.
 
-- [ ] **Step 8: Synchronize `docs/api-reference.md` with implemented source**
+- [x] **Step 8: Synchronize `docs/api-reference.md` with implemented source**
 
   In the same task as the controller, add Account endpoints to the endpoint
   index and an Account section documenting:
@@ -1583,7 +1597,7 @@ Spring JDBC `JdbcClient`, Jakarta Validation, MapStruct 1.6.3, MySQL 8.0.
   custom fields, merge, numbering, events, or lifecycle state machines as
   implemented.
 
-- [ ] **Step 9: Perform static REST/documentation verification**
+- [x] **Step 9: Perform static REST/documentation verification**
 
   Inspect DTO annotations, MapStruct source/target names, controller statuses,
   validation handler coverage, and API-reference examples. Confirm Account
@@ -1607,7 +1621,7 @@ Spring JDBC `JdbcClient`, Jakarta Validation, MapStruct 1.6.3, MySQL 8.0.
   database, or API success.
 - Produces the exact user-run verification checklist from the approved design.
 
-- [ ] **Step 1: Inspect the scoped diff and whitespace**
+- [x] **Step 1: Inspect the scoped diff and whitespace**
 
   Use `rtk git status --short`, `rtk diff`, and read-only
   `git diff --check -- <owned paths>` for only the Account, global handler,
@@ -1615,7 +1629,7 @@ Spring JDBC `JdbcClient`, Jakarta Validation, MapStruct 1.6.3, MySQL 8.0.
   and generated-source changes from Account-owned changes. Do not repair or
   revert unrelated files.
 
-- [ ] **Step 2: Verify dependency direction and type consistency**
+- [x] **Step 2: Verify dependency direction and type consistency**
 
   Use `rtk grep` to verify:
 
@@ -1630,7 +1644,7 @@ Spring JDBC `JdbcClient`, Jakarta Validation, MapStruct 1.6.3, MySQL 8.0.
   consumer. Confirm no source imports another business context repository or
   persistence type.
 
-- [ ] **Step 3: Verify every security and persistence invariant**
+- [x] **Step 3: Verify every security and persistence invariant**
 
   Inspect source to confirm:
 
@@ -1647,21 +1661,21 @@ Spring JDBC `JdbcClient`, Jakarta Validation, MapStruct 1.6.3, MySQL 8.0.
   - insert/update omit `source_id` and `custom_summary`;
   - inaccessible resources return `ACCOUNT_NOT_FOUND` without disclosure.
 
-- [ ] **Step 4: Verify API and error synchronization**
+- [x] **Step 4: Verify API and error synchronization**
 
   Compare controller, requests, responses, validation annotations,
   `AccountErrorCode`, all three message bundles, `GlobalExceptionHandler`, and
   `docs/api-reference.md`. Confirm every documented status/error/field exists
   in source and no planned-only behavior is documented as available.
 
-- [ ] **Step 5: Verify protected scope remained untouched**
+- [x] **Step 5: Verify protected scope remained untouched**
 
   Confirm no change was made to application configuration, key material, key
   loading, SQL schema, identity behavior, generated sources, IDE state, or
   frontend files. Confirm no tests, builds, app startup, API requests, database
   calls, staging, or commits were performed.
 
-- [ ] **Step 6: Hand runtime verification to the user**
+- [x] **Step 6: Hand runtime verification to the user**
 
   State explicitly that only static inspection was performed. Ask the user to
   verify these scenarios with their environment:

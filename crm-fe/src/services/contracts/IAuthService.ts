@@ -1,5 +1,6 @@
 import {
   LoginCredentials,
+  RegisterPayload,
   SSOLoginPayload,
   UserSessionContext,
   DemoRoleCode,
@@ -7,6 +8,7 @@ import {
 
 export interface IAuthService {
   login(credentials: LoginCredentials): Promise<UserSessionContext>;
+  register(payload: RegisterPayload): Promise<UserSessionContext>;
   loginWithSSO(payload: SSOLoginPayload): Promise<UserSessionContext>;
   logout(): Promise<void>;
   restoreSession(): Promise<UserSessionContext | null>;

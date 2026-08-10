@@ -20,12 +20,18 @@ import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.validation.BindException;
 import org.springframework.validation.FieldError;
+import org.springframework.validation.method.ParameterValidationResult;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 @RestControllerAdvice
 public final class GlobalExceptionHandler {
@@ -69,6 +75,77 @@ public final class GlobalExceptionHandler {
 		return ResponseEntity.badRequest()
 				.body(problemFactory.createValidationProblem(violations, request,
 						locale));
+	}
+
+	@ExceptionHandler(HttpMessageNotReadableException.class)
+	public ResponseEntity<ProblemDetail> handleHttpMessageNotReadable(
+			HttpMessageNotReadableException exception,
+			HttpServletRequest request) {
+		Locale locale = currentLocale();
+		return ResponseEntity.badRequest()
+				.body(problemFactory.createValidationProblem(
+						List.of(validationViolation(
+								"request", CommonErrorCode.VALIDATION_INVALID,
+								locale)),
+						request, locale));
+	}
+
+	@ExceptionHandler(BindException.class)
+	public ResponseEntity<ProblemDetail> handleBindException(
+			BindException exception, HttpServletRequest request) {
+		Locale locale = currentLocale();
+		List<FieldViolation> violations = exception.getFieldErrors()
+				.stream()
+				.map(error -> toFieldViolation(error, locale))
+				.sorted(VIOLATION_ORDER)
+				.toList();
+		return ResponseEntity.badRequest()
+				.body(problemFactory.createValidationProblem(
+						violations, request, locale));
+	}
+
+	@ExceptionHandler(MissingRequestHeaderException.class)
+	public ResponseEntity<ProblemDetail> handleMissingRequestHeader(
+			MissingRequestHeaderException exception,
+			HttpServletRequest request) {
+		Locale locale = currentLocale();
+		return ResponseEntity.badRequest()
+				.body(problemFactory.createValidationProblem(
+						List.of(validationViolation(
+								exception.getHeaderName(),
+								CommonErrorCode.VALIDATION_REQUIRED, locale)),
+						request, locale));
+	}
+
+	@ExceptionHandler(MethodArgumentTypeMismatchException.class)
+	public ResponseEntity<ProblemDetail> handleMethodArgumentTypeMismatch(
+			MethodArgumentTypeMismatchException exception,
+			HttpServletRequest request) {
+		Locale locale = currentLocale();
+		return ResponseEntity.badRequest()
+				.body(problemFactory.createValidationProblem(
+						List.of(validationViolation(
+								exception.getName(),
+								CommonErrorCode.VALIDATION_INVALID, locale)),
+						request, locale));
+	}
+
+	@ExceptionHandler(HandlerMethodValidationException.class)
+	public ResponseEntity<ProblemDetail> handleMethodValidation(
+			HandlerMethodValidationException exception,
+			HttpServletRequest request) {
+		Locale locale = currentLocale();
+		List<FieldViolation> violations = exception
+				.getParameterValidationResults()
+				.stream()
+				.flatMap(result -> result.getResolvableErrors()
+						.stream()
+						.map(error -> toFieldViolation(result, locale)))
+				.sorted(VIOLATION_ORDER)
+				.toList();
+		return ResponseEntity.badRequest()
+				.body(problemFactory.createValidationProblem(
+						violations, request, locale));
 	}
 
 	@ExceptionHandler(ConstraintViolationException.class)
@@ -143,6 +220,22 @@ public final class GlobalExceptionHandler {
 		CommonErrorCode errorCode = validationCode(constraintName);
 		return new FieldViolation(violation.getPropertyPath().toString(),
 				errorCode.value(),
+				translator.translate(errorCode, NO_ARGUMENTS, locale));
+	}
+
+	private FieldViolation toFieldViolation(ParameterValidationResult result,
+			Locale locale) {
+		String field = result.getMethodParameter().getParameterName();
+		if (field == null || field.isBlank()) {
+			field = "request";
+		}
+		return validationViolation(
+				field, CommonErrorCode.VALIDATION_INVALID, locale);
+	}
+
+	private FieldViolation validationViolation(String field,
+			CommonErrorCode errorCode, Locale locale) {
+		return new FieldViolation(field, errorCode.value(),
 				translator.translate(errorCode, NO_ARGUMENTS, locale));
 	}
 

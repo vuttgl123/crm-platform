@@ -1,13 +1,24 @@
 import React, { useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { LogIn, Sparkles, AlertCircle } from 'lucide-react';
+import { LogIn, UserPlus, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/core/session/useAuth';
-import { DemoRoleCode } from '@/types/auth';
-import { DEMO_ROLES } from '@/mocks/fixtures/demoData';
 import { useTranslation } from 'react-i18next';
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  CardFooter,
+} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Separator } from '@/components/ui/separator';
 
 const loginSchema = z.object({
   email: z.string().email('Email không đúng định dạng'),
@@ -30,13 +41,12 @@ export const LoginPage: React.FC = () => {
   const {
     register,
     handleSubmit,
-    setValue,
     formState: { errors },
   } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: 'admin@vum.vn',
-      password: 'Demo@123456',
+      email: '',
+      password: '',
     },
   });
 
@@ -47,7 +57,15 @@ export const LoginPage: React.FC = () => {
       navigate(returnUrl, { replace: true });
     } catch (err: unknown) {
       if (err instanceof Error) {
-        setLocalError(err.message);
+        if (
+          err.message.includes('Failed to fetch') ||
+          err.message.includes('NetworkError') ||
+          err.message.includes('Network Error')
+        ) {
+          setLocalError('Không thể kết nối tới dịch vụ Backend (http://localhost:8080). Vui lòng kiểm tra máy chủ backend.');
+        } else {
+          setLocalError(err.message);
+        }
       } else {
         setLocalError('Đăng nhập thất bại. Vui lòng thử lại.');
       }
@@ -66,113 +84,94 @@ export const LoginPage: React.FC = () => {
     }
   };
 
-  const handleQuickSelectRole = (code: DemoRoleCode) => {
-    const roleDef = DEMO_ROLES[code];
-    setValue('email', roleDef.userEmail);
-    setValue('password', 'Demo@123456');
-    setLocalError(null);
-  };
-
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8 font-sans">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         {/* VUM Brand Header */}
         <div className="flex items-center justify-center gap-3 mb-2">
-          <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white text-xl font-black tracking-widest shadow-md">
+          <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-primary-foreground text-xl font-black tracking-widest shadow-md">
             VUM
           </div>
           <span className="text-2xl font-black tracking-tight text-slate-900">VUM CRM</span>
         </div>
-        <h1 className="text-center text-2xl font-bold tracking-tight text-slate-900">
-          {t('auth.loginHeading', 'Đăng nhập vào VUM')}
-        </h1>
-        <p className="mt-1 text-center text-sm text-slate-500">
-          {t('auth.loginSubtitle', 'Hệ thống Quản trị Quan hệ Khách hàng Doanh nghiệp')}
-        </p>
       </div>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow-sm border border-slate-200 sm:rounded-xl sm:px-10">
-          {/* Error Alert */}
-          {(error || localError) && (
-            <div className="mb-4 p-3 rounded-md bg-red-50 border border-red-200 flex items-start gap-2 text-xs text-red-700">
-              <AlertCircle className="w-4 h-4 shrink-0 text-red-500 mt-0.5" />
-              <span>{localError || error}</span>
-            </div>
-          )}
+      <div className="mt-6 sm:mx-auto sm:w-full sm:max-w-md">
+        <Card className="shadow-sm border-slate-200">
+          <CardHeader className="space-y-1 text-center pb-4">
+            <CardTitle className="text-xl font-bold tracking-tight">
+              {t('auth.loginHeading', 'Đăng nhập vào VUM')}
+            </CardTitle>
+            <CardDescription className="text-xs text-slate-500">
+              {t('auth.loginSubtitle', 'Hệ thống Quản trị Quan hệ Khách hàng Doanh nghiệp')}
+            </CardDescription>
+          </CardHeader>
 
-          {/* Email / Password Form */}
-          <form className="space-y-4" onSubmit={handleSubmit(onSubmit)} noValidate>
-            <div>
-              <label htmlFor="email" className="block text-xs font-semibold text-slate-700">
-                {t('auth.emailLabel', 'Địa chỉ Email')}
-              </label>
-              <div className="mt-1">
-                <input
+          <CardContent className="space-y-4">
+            {/* Error Alert */}
+            {(error || localError) && (
+              <Alert variant="destructive" className="py-2.5">
+                <AlertCircle className="w-4 h-4" />
+                <AlertDescription className="text-xs">{localError || error}</AlertDescription>
+              </Alert>
+            )}
+
+            {/* Email / Password Form */}
+            <form className="space-y-4" onSubmit={handleSubmit(onSubmit)} noValidate>
+              <div className="space-y-1.5">
+                <Label htmlFor="email">{t('auth.emailLabel', 'Địa chỉ Email')}</Label>
+                <Input
                   id="email"
                   type="email"
                   autoComplete="email"
-                  {...register('email')}
-                  className={`block w-full rounded-md border ${
-                    errors.email ? 'border-red-500' : 'border-slate-300'
-                  } px-3 py-2 text-sm shadow-xs focus:border-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-600`}
                   placeholder={t('auth.emailPlaceholder', 'nhap.email@vum.vn')}
+                  className={errors.email ? 'border-destructive focus-visible:ring-destructive' : ''}
+                  {...register('email')}
                 />
                 {errors.email && (
-                  <p className="mt-1 text-xs text-red-600">{errors.email.message}</p>
+                  <p className="text-xs text-destructive">{errors.email.message}</p>
                 )}
               </div>
-            </div>
 
-            <div>
-              <label htmlFor="password" className="block text-xs font-semibold text-slate-700">
-                {t('auth.passwordLabel', 'Mật khẩu')}
-              </label>
-              <div className="mt-1">
-                <input
+              <div className="space-y-1.5">
+                <Label htmlFor="password">{t('auth.passwordLabel', 'Mật khẩu')}</Label>
+                <Input
                   id="password"
                   type="password"
                   autoComplete="current-password"
-                  {...register('password')}
-                  className={`block w-full rounded-md border ${
-                    errors.password ? 'border-red-500' : 'border-slate-300'
-                  } px-3 py-2 text-sm shadow-xs focus:border-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-600`}
                   placeholder={t('auth.passwordPlaceholder', '••••••••')}
+                  className={errors.password ? 'border-destructive focus-visible:ring-destructive' : ''}
+                  {...register('password')}
                 />
                 {errors.password && (
-                  <p className="mt-1 text-xs text-red-600">{errors.password.message}</p>
+                  <p className="text-xs text-destructive">{errors.password.message}</p>
                 )}
               </div>
-            </div>
 
-            <div>
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full flex justify-center items-center gap-2 py-2.5 px-4 border border-transparent rounded-md shadow-xs text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-600 disabled:opacity-50 transition-colors"
-              >
+              <Button type="submit" className="w-full font-semibold gap-2" disabled={isLoading}>
                 <LogIn className="w-4 h-4" />
                 {t('auth.loginButton', 'Đăng nhập')}
-              </button>
-            </div>
-          </form>
+              </Button>
+            </form>
 
-          {/* SSO Buttons */}
-          <div className="mt-6">
-            <div className="relative">
+            {/* SSO Section */}
+            <div className="relative pt-2">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-slate-200" />
+                <Separator />
               </div>
               <div className="relative flex justify-center text-xs">
-                <span className="bg-white px-2 text-slate-400">Đăng nhập mô phỏng SSO</span>
+                <span className="bg-background px-2 text-muted-foreground">
+                  Hoặc đăng nhập qua SSO
+                </span>
               </div>
             </div>
 
-            <div className="mt-4 grid grid-cols-2 gap-3">
-              <button
+            <div className="grid grid-cols-2 gap-3 pt-1">
+              <Button
                 type="button"
+                variant="outline"
+                className="w-full text-xs gap-2 font-medium"
                 onClick={() => handleSSO('GOOGLE')}
-                className="w-full inline-flex justify-center items-center gap-2 py-2 px-3 border border-slate-300 rounded-md shadow-xs bg-white text-xs font-medium text-slate-700 hover:bg-slate-50 transition-colors"
               >
                 <svg className="w-4 h-4" viewBox="0 0 24 24">
                   <path
@@ -193,56 +192,35 @@ export const LoginPage: React.FC = () => {
                   />
                 </svg>
                 Google SSO
-              </button>
+              </Button>
 
-              <button
+              <Button
                 type="button"
+                variant="outline"
+                className="w-full text-xs gap-2 font-medium"
                 onClick={() => handleSSO('MICROSOFT')}
-                className="w-full inline-flex justify-center items-center gap-2 py-2 px-3 border border-slate-300 rounded-md shadow-xs bg-white text-xs font-medium text-slate-700 hover:bg-slate-50 transition-colors"
               >
                 <svg className="w-4 h-4" viewBox="0 0 23 23">
                   <path fill="#f35325" d="M1 1h10v10H1z" />
-                  <path fill="#81bc06" d="M12 1h10v10H12z" />
+                  <path fill="#81bc06" d="M12 1h10v10H1z" />
                   <path fill="#05a6f0" d="M1 12h10v10H1z" />
                   <path fill="#ffba08" d="M12 12h10v10H12z" />
                 </svg>
                 Microsoft SSO
-              </button>
+              </Button>
             </div>
-          </div>
+          </CardContent>
 
-          {/* Quick Login Roles */}
-          <div className="mt-6 pt-6 border-t border-slate-200">
-            <div className="text-xs font-semibold text-slate-500 mb-2 flex items-center justify-between">
-              <span>{t('auth.orContinueWith', 'Hoặc chọn tài khoản thử nghiệm:')}</span>
-              <Sparkles className="w-3.5 h-3.5 text-blue-600" />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              {(Object.keys(DEMO_ROLES) as DemoRoleCode[]).map((code) => {
-                const r = DEMO_ROLES[code];
-                return (
-                  <button
-                    key={code}
-                    type="button"
-                    onClick={() => handleQuickSelectRole(code)}
-                    className="w-full text-left px-2.5 py-1.5 rounded border border-slate-200 hover:border-blue-300 hover:bg-blue-50/50 text-xs flex items-center justify-between transition-colors"
-                  >
-                    <div>
-                      <span className="font-semibold text-slate-800">{r.nameVi}</span>
-                      <span className="text-[11px] text-slate-500 ml-1">({r.userEmail})</span>
-                    </div>
-                    <span className="font-mono text-[10px] bg-slate-100 px-1.5 py-0.5 rounded text-slate-600">
-                      {r.scopeType}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-            <p className="mt-3 text-[11px] text-slate-400 text-center">
-              {t('auth.demoCredentialsNotice', 'Tất cả tài khoản dùng chung mật khẩu thử nghiệm: Demo@123456')}
-            </p>
-          </div>
-        </div>
+          <CardFooter className="flex justify-center border-t pt-4">
+            <Link
+              to="/register"
+              className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline font-semibold"
+            >
+              <UserPlus className="w-3.5 h-3.5" />
+              {t('auth.noAccountYet', 'Chưa có tài khoản? Đăng ký ngay')}
+            </Link>
+          </CardFooter>
+        </Card>
       </div>
     </div>
   );

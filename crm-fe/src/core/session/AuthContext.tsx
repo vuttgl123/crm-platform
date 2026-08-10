@@ -3,9 +3,10 @@ import {
   AuthState,
   DemoRoleCode,
   LoginCredentials,
+  RegisterPayload,
   SSOLoginPayload,
 } from '@/types/auth';
-import { mockAuthService } from '@/services/mock/MockAuthService';
+import { authService } from '@/services';
 import { AuthContext } from './context';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -19,7 +20,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     let mounted = true;
-    mockAuthService
+    authService
       .restoreSession()
       .then((session) => {
         if (!mounted) return;
@@ -60,7 +61,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (credentials: LoginCredentials) => {
     setState((prev) => ({ ...prev, isLoading: true, error: null }));
     try {
-      const session = await mockAuthService.login(credentials);
+      const session = await authService.login(credentials);
       setState({
         session,
         isAuthenticated: true,
@@ -80,10 +81,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const register = async (payload: RegisterPayload) => {
+    setState((prev) => ({ ...prev, isLoading: true, error: null }));
+    try {
+      const session = await authService.register(payload);
+      setState({
+        session,
+        isAuthenticated: true,
+        isLoading: false,
+        isExpired: false,
+        error: null,
+      });
+      return session;
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Đăng ký tài khoản thất bại';
+      setState((prev) => ({
+        ...prev,
+        isLoading: false,
+        error: msg,
+      }));
+      throw err;
+    }
+  };
+
   const loginWithSSO = async (payload: SSOLoginPayload) => {
     setState((prev) => ({ ...prev, isLoading: true, error: null }));
     try {
-      const session = await mockAuthService.loginWithSSO(payload);
+      const session = await authService.loginWithSSO(payload);
       setState({
         session,
         isAuthenticated: true,
@@ -105,7 +129,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = async () => {
     setState((prev) => ({ ...prev, isLoading: true }));
-    await mockAuthService.logout();
+    await authService.logout();
     setState({
       session: null,
       isAuthenticated: false,
@@ -117,7 +141,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const switchDemoRole = async (roleCode: DemoRoleCode) => {
     setState((prev) => ({ ...prev, isLoading: true }));
-    const session = await mockAuthService.switchDemoRole(roleCode);
+    const session = await authService.switchDemoRole(roleCode);
     setState({
       session,
       isAuthenticated: true,
@@ -129,7 +153,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const expireSession = () => {
-    mockAuthService.expireSession();
+    authService.expireSession();
     setState((prev) => ({
       ...prev,
       isExpired: true,
@@ -147,6 +171,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       value={{
         ...state,
         login,
+        register,
         loginWithSSO,
         logout,
         switchDemoRole,

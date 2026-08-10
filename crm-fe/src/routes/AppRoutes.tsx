@@ -11,6 +11,9 @@ import { ComingSoon } from '@/components/common/ComingSoon';
 import { NAVIGATION_GROUPS } from '@/config/navigationConfig';
 import { useAuth } from '@/core/session/useAuth';
 
+import { RegisterPage } from '@/features/auth/RegisterPage';
+import { AuthCallbackPage } from '@/features/auth/AuthCallbackPage';
+
 export const AppRoutes: React.FC = () => {
   const { isAuthenticated } = useAuth();
 
@@ -30,6 +33,8 @@ export const AppRoutes: React.FC = () => {
 
       {/* Public / Auth routes */}
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
+      <Route path="/auth/callback" element={<AuthCallbackPage />} />
       <Route path="/auth/session-expired" element={<SessionExpired />} />
       <Route path="/403" element={<ForbiddenPage />} />
 

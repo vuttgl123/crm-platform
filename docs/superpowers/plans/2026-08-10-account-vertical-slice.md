@@ -134,8 +134,8 @@ Spring JDBC `JdbcClient`, Jakarta Validation, MapStruct 1.6.3, MySQL 8.0.
 - Produces `AccountId(UUID value)` with `from(String)` and stable `toString()`.
 - Produces `AccountOwner(AccountOwnerType type, UUID id)`.
 - Produces `AnnualRevenue(BigDecimal amount, String currencyCode)`.
-- Produces `Account.create(...)`, `Account.rehydrate(...)`, `replace(...)`, and
-  `softDelete(...)` used by later tasks.
+- Produces the exact `Account.create`, `Account.rehydrate`, `Account.replace`,
+  and `Account.softDelete` signatures declared in Task 1 Step 4.
 - Produces stable Account error codes consumed by the application service and
   global error translator.
 
@@ -355,13 +355,30 @@ Spring JDBC `JdbcClient`, Jakarta Validation, MapStruct 1.6.3, MySQL 8.0.
   public TenantId tenantId()
   public AccountId id()
   public String accountNumber()
+  public AccountType accountType()
+  public String legalName()
+  public String displayName()
+  public AccountId parentAccountId()
   public AccountOwner owner()
+  public AccountLifecycleStage lifecycleStage()
+  public String industryCode()
+  public String taxIdentifier()
+  public String registrationNumber()
+  public String website()
   public AnnualRevenue annualRevenue()
+  public Integer employeeCount()
+  public String description()
+  public String preferredLanguageCode()
+  public boolean doNotContact()
+  public Instant createdAt()
+  public ActorId createdBy()
+  public Instant updatedAt()
+  public ActorId updatedBy()
+  public Instant deletedAt()
+  public ActorId deletedBy()
   public long version()
   public boolean deleted()
   ```
-
-  Add the corresponding getters for all other fields listed by `rehydrate`.
 
 - [ ] **Step 6: Add localized Account messages**
 
@@ -1019,7 +1036,11 @@ Spring JDBC `JdbcClient`, Jakarta Validation, MapStruct 1.6.3, MySQL 8.0.
   ```
 
   Search authorizes `crm_account.read` and delegates the normalized query and
-  resolved access unchanged to `accountRepository.search(...)`.
+  resolved access unchanged:
+
+  ```java
+  return accountRepository.search(tenantId, actorId, query, access);
+  ```
 
 - [ ] **Step 4: Implement replace orchestration and optimistic concurrency**
 
@@ -1031,8 +1052,30 @@ Spring JDBC `JdbcClient`, Jakarta Validation, MapStruct 1.6.3, MySQL 8.0.
      `ACCOUNT_VERSION_CONFLICT` on mismatch;
   4. validate requested owner and parent;
   5. keep `long expectedVersion = account.version()`;
-  6. call `account.replace(...)` with every mutable command field, actor, and
-     one `timeProvider.now()` value;
+  6. call `account.replace` with every mutable command field, actor, and one
+     `timeProvider.now()` value:
+
+  ```java
+  account.replace(
+          command.accountType(),
+          command.legalName(),
+          command.displayName(),
+          command.parentAccountId(),
+          command.owner(),
+          command.lifecycleStage(),
+          command.industryCode(),
+          command.taxIdentifier(),
+          command.registrationNumber(),
+          command.website(),
+          command.annualRevenue(),
+          command.employeeCount(),
+          command.description(),
+          command.preferredLanguageCode(),
+          command.doNotContact(),
+          actorId,
+          now);
+  ```
+
   7. call repository update and require exactly one affected row.
 
   Use this zero-row translation:

@@ -219,7 +219,7 @@ export class RealAuthService implements IAuthService {
       updated_at: new Date().toISOString(),
     };
 
-    const firstTenant = meResponse.tenants[0];
+    const firstTenant = meResponse.tenants && meResponse.tenants.length > 0 ? meResponse.tenants[0] : null;
     const tenant: PlatformTenant = firstTenant
       ? {
           id: firstTenant.tenantId,
@@ -234,7 +234,19 @@ export class RealAuthService implements IAuthService {
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         }
-      : DEMO_TENANT;
+      : {
+          id: '',
+          tenant_code: '',
+          legal_name: '',
+          display_name: 'Chưa có Tổ chức',
+          default_currency_code: 'VND',
+          default_country_code: 'VN',
+          default_language_code: 'vi',
+          default_timezone: 'Asia/Ho_Chi_Minh',
+          status: 'CLOSED',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
 
     const isTenantAdmin = firstTenant ? firstTenant.tenantAdmin : true;
     const defaultRoleConfig = DEMO_ROLES.ADMIN;

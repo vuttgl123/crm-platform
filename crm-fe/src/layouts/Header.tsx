@@ -10,6 +10,7 @@ import {
   User,
   Sliders,
   ChevronRight,
+  Building2,
 } from 'lucide-react';
 import { useAuth } from '@/core/session/useAuth';
 import { useTranslation } from 'react-i18next';
@@ -122,6 +123,14 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Right: Language Switcher, Notifications & User Avatar */}
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          {/* Active Tenant / Organization Badge */}
+          {session?.tenant?.display_name && (
+            <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 bg-slate-100/90 border border-slate-200 rounded-md text-xs font-semibold text-slate-800">
+              <Building2 className="w-3.5 h-3.5 text-blue-600" />
+              <span className="max-w-44 truncate">{session.tenant.display_name}</span>
+            </div>
+          )}
+
           {/* Mobile Search Button */}
           <Button
             variant="ghost"

@@ -42,23 +42,30 @@ environments.
 Tenant Administration is delivered incrementally instead of as one large
 change. Tenant Bootstrap provides the authenticated first-tenant creation path,
 the initial active Tenant Admin membership, and its privileged system-role
-grant. Keep the remaining order:
+grant. Role Management and the read-only permission catalogue are also
+delivered. They provide custom-role lifecycle, atomic permission grants, and
+role data scopes. Effective Access reads these database-backed grants without
+JWT access lists.
 
-1. Access Management for role, permission, data-scope, assignment, and
-   effective-access administration.
-2. Membership Management for invitation and membership lifecycle operations.
-3. Team Management for team hierarchy and `TEAM` or `TEAM_TREE` scopes.
-4. Broader Tenant Administration for details, status, plan, region, retention,
+Keep the remaining order:
+
+1. Membership Management for invitation, role assignment, and membership
+   lifecycle operations.
+2. Team Management for team hierarchy and `TEAM` or `TEAM_TREE` scopes.
+3. Broader Tenant Administration for details, status, plan, region, retention,
    and settings.
 
 These roadmap items are planning references, not implemented API contracts.
 
 ### 2. Current tenant access context
 
-Expose the authenticated user's effective tenant membership, capabilities, and
-data scopes for frontend rendering. Resolve this information from current
-authorization data instead of embedding permission lists in JWTs, so role
-changes take effect without waiting for token expiry.
+Current Tenant Access Context is delivered through `GET /api/access/me`. It
+returns the selected active membership, effective permission codes, and global
+or entity-specific data scopes directly from current database authorization
+state. JWTs remain identity and session tokens and do not carry access lists.
+
+Role assignment, invitation, membership-lifecycle, and team APIs remain future
+Tenant Administration slices.
 
 ### 3. Account vertical slice
 

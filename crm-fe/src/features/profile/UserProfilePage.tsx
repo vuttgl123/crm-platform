@@ -26,6 +26,7 @@ import {
   ChevronRight,
   Maximize2,
   Minimize2,
+  Settings,
 } from 'lucide-react';
 import {
   Card,
@@ -57,57 +58,50 @@ interface PermissionMeta {
 
 const PERMISSION_GROUPS: { module: string; titleVi: string; icon: React.ElementType; items: PermissionMeta[] }[] = [
   {
-    module: 'crm_customer',
-    titleVi: 'Quản lý Khách hàng & Đối tác',
+    module: 'crm',
+    titleVi: 'Quản lý Khách hàng, Lead & Cơ hội (CRM)',
     icon: Users,
     items: [
-      { id: 'acc_read', nameVi: 'Xem danh sách & Chi tiết Khách hàng', descVi: 'Truy cập hồ sơ thông tin khách hàng doanh nghiệp và cá nhân' },
-      { id: 'acc_write', nameVi: 'Thêm mới & Cập nhật Khách hàng', descVi: 'Tạo mới, sửa đổi thông tin doanh nghiệp, mã định danh và địa chỉ' },
-      { id: 'contact_read', nameVi: 'Xem thông tin Người liên hệ', descVi: 'Tra cứu danh sách đại diện kinh doanh và đầu mối liên hệ của đối tác' },
-      { id: 'contact_write', nameVi: 'Tạo mới & Chỉnh sửa Người liên hệ', descVi: 'Cập nhật số điện thoại, email và chức danh người liên hệ' },
+      { id: 'crm_account.read', nameVi: 'Xem danh sách & Chi tiết Khách hàng', descVi: 'Truy cập hồ sơ thông tin khách hàng doanh nghiệp và cá nhân' },
+      { id: 'crm_account.write', nameVi: 'Thêm mới & Cập nhật Khách hàng', descVi: 'Tạo mới, sửa đổi thông tin doanh nghiệp, mã định danh và địa chỉ' },
+      { id: 'crm_contact.read', nameVi: 'Xem thông tin Người liên hệ', descVi: 'Tra cứu danh sách đại diện kinh doanh và đầu mối liên hệ của đối tác' },
+      { id: 'crm_contact.write', nameVi: 'Tạo mới & Chỉnh sửa Người liên hệ', descVi: 'Cập nhật số điện thoại, email và chức danh người liên hệ' },
+      { id: 'crm_lead.read', nameVi: 'Xem dữ liệu Lead tiềm năng', descVi: 'Theo dõi nguồn lead thu thập từ website và các chiến dịch Marketing' },
+      { id: 'crm_lead.write', nameVi: 'Phân bổ & Xử lý Lead', descVi: 'Gán lead cho nhân viên tư vấn và cập nhật trạng thái liên hệ' },
+      { id: 'crm_opportunity.read', nameVi: 'Xem Pipeline Cơ hội bán hàng', descVi: 'Theo dõi các đợt đàm phán, quy mô hợp đồng và xác suất thành công' },
+      { id: 'crm_opportunity.write', nameVi: 'Cập nhật Giai đoạn Deal & Giá trị', descVi: 'Chuyển đổi giai đoạn đàm phán và giá trị doanh thu dự kiến' },
     ],
   },
   {
-    module: 'crm_opportunity',
-    titleVi: 'Cơ hội Kinh doanh & Lead tiềm năng',
-    icon: Briefcase,
-    items: [
-      { id: 'lead_read', nameVi: 'Xem dữ liệu Lead tiềm năng', descVi: 'Theo dõi nguồn lead thu thập từ website và các chiến dịch Marketing' },
-      { id: 'lead_write', nameVi: 'Phân bổ & Xử lý Lead', descVi: 'Gán lead cho nhân viên tư vấn và cập nhật trạng thái liên hệ' },
-      { id: 'opp_read', nameVi: 'Xem Pipeline Cơ hội bán hàng', descVi: 'Theo dõi các đợt đàm phán, quy mô hợp đồng và xác suất thành công' },
-      { id: 'opp_write', nameVi: 'Cập nhật Giai đoạn Deal & Giá trị', descVi: 'Chuyển đổi giai đoạn đàm phán và giá trị doanh thu dự kiến' },
-    ],
-  },
-  {
-    module: 'sales_quote',
+    module: 'sales',
     titleVi: 'Bán hàng, Báo giá & Đơn hàng',
     icon: FileText,
     items: [
-      { id: 'quote_read', nameVi: 'Xem Báo giá & Điều khoản', descVi: 'Tra cứu chi tiết báo giá, chiết khấu và danh mục hàng hóa cung cấp' },
-      { id: 'quote_write', nameVi: 'Lập & Soạn thảo Báo giá mới', descVi: 'Tạo mới bản thảo báo giá và gửi yêu cầu phê duyệt cho cấp quản lý' },
-      { id: 'quote_approve', nameVi: 'Phê duyệt Báo giá & Chiết khấu', descVi: 'Quyền duyệt chính sách giá đặc biệt và tỷ lệ chiết khấu cho khách hàng' },
-      { id: 'order_read', nameVi: 'Xem Đơn hàng & Hợp đồng', descVi: 'Tra cứu hợp đồng thương mại và tiến độ giao hàng' },
-      { id: 'order_write', nameVi: 'Tạo Đơn hàng & Xác nhận', descVi: 'Lập đơn đặt hàng chính thức và gửi thông báo kinh doanh' },
+      { id: 'sales_quote.read', nameVi: 'Xem Báo giá & Điều khoản', descVi: 'Tra cứu chi tiết báo giá, chiết khấu và danh mục hàng hóa cung cấp' },
+      { id: 'sales_quote.write', nameVi: 'Lập & Soạn thảo Báo giá mới', descVi: 'Tạo mới bản thảo báo giá và gửi yêu cầu phê duyệt cho cấp quản lý' },
+      { id: 'sales_quote.approve', nameVi: 'Phê duyệt Báo giá & Chiết khấu', descVi: 'Quyền duyệt chính sách giá đặc biệt và tỷ lệ chiết khấu cho khách hàng' },
+      { id: 'sales_order.read', nameVi: 'Xem Đơn hàng & Hợp đồng', descVi: 'Tra cứu hợp đồng thương mại và tiến độ giao hàng' },
+      { id: 'sales_order.write', nameVi: 'Tạo Đơn hàng & Xác nhận', descVi: 'Lập đơn đặt hàng chính thức và gửi thông báo kinh doanh' },
     ],
   },
   {
-    module: 'service_ticket',
+    module: 'service',
     titleVi: 'Hỗ trợ & Chăm sóc Khách hàng',
     icon: LifeBuoy,
     items: [
-      { id: 'ticket_read', nameVi: 'Xem Yêu cầu Hỗ trợ (Tickets)', descVi: 'Theo dõi sự cố, phàn nàn và thắc mắc kỹ thuật từ phía khách hàng' },
-      { id: 'ticket_write', nameVi: 'Tiếp nhận & Xử lý Yêu cầu', descVi: 'Cập nhật trạng thái xử lý ticket và gửi câu trả lời phản hồi' },
+      { id: 'service_ticket.read', nameVi: 'Xem Yêu cầu Hỗ trợ (Tickets)', descVi: 'Theo dõi sự cố, phàn nàn và thắc mắc kỹ thuật từ phía khách hàng' },
+      { id: 'service_ticket.write', nameVi: 'Tiếp nhận & Xử lý Yêu cầu', descVi: 'Cập nhật trạng thái xử lý ticket và gửi câu trả lời phản hồi' },
     ],
   },
   {
-    module: 'system_admin',
+    module: 'platform',
     titleVi: 'Bảo mật & Quản trị Hệ thống',
     icon: ShieldCheck,
     items: [
-      { id: 'consent_read', nameVi: 'Xem Điều khoản Quyền riêng tư', descVi: 'Kiểm tra trạng thái đồng ý thu thập dữ liệu cá nhân (GDPR/NĐ13)' },
-      { id: 'consent_write', nameVi: 'Cập nhật Chính sách Bảo mật', descVi: 'Cập nhật các biểu mẫu cam kết bảo mật và quyền riêng tư' },
+      { id: 'platform_user.manage', nameVi: 'Quản trị Tài khoản, Thành viên & Phân quyền', descVi: 'Thêm bớt người dùng, cấp vai trò và quản lý quyền hạn chi tiết' },
       { id: 'audit_read', nameVi: 'Xem Nhật ký Kiểm toán (Audit Logs)', descVi: 'Truy xuất lịch sử thao tác dữ liệu của toàn bộ nhân sự trong tổ chức' },
-      { id: 'user_manage', nameVi: 'Quản trị Tài khoản & Phân quyền', descVi: 'Thêm bớt người dùng, cấp vai trò và quản lý quyền hạn chi tiết' },
+      { id: 'privacy_consent.read', nameVi: 'Xem Điều khoản Quyền riêng tư', descVi: 'Kiểm tra trạng thái đồng ý thu thập dữ liệu cá nhân (GDPR/NĐ13)' },
+      { id: 'privacy_consent.write', nameVi: 'Cập nhật Chính sách Bảo mật', descVi: 'Cập nhật các biểu mẫu cam kết bảo mật và quyền riêng tư' },
     ],
   },
 ];
@@ -241,6 +235,12 @@ export const UserProfilePage: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-2 flex-wrap mb-2">
+              {session.tenant.display_name && (
+                <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 font-semibold gap-1.5 text-xs py-1 px-3">
+                  <Building className="w-3.5 h-3.5" />
+                  {session.tenant.display_name} {session.tenant.tenant_code ? `(${session.tenant.tenant_code})` : ''}
+                </Badge>
+              )}
               <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 font-semibold gap-1.5 text-xs py-1 px-3">
                 <Shield className="w-3.5 h-3.5" />
                 {session.activeRole.name}
@@ -364,6 +364,43 @@ export const UserProfilePage: React.FC = () => {
                       value={timezone}
                       onChange={(e) => setTimezone(e.target.value)}
                     />
+                  </div>
+                </div>
+
+                <Separator className="my-6" />
+
+                {/* Organization / Tenant Info Section */}
+                <div className="space-y-4 pt-2">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                      <Building className="w-4 h-4 text-blue-600" />
+                      <span>Thông tin Tổ chức / Doanh nghiệp đang hoạt động</span>
+                    </h3>
+                    <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px] font-bold gap-1">
+                      <Check className="w-3 h-3 text-emerald-600" />
+                      <span>Đã kích hoạt (ACTIVE)</span>
+                    </Badge>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/50 space-y-1">
+                      <div className="text-[11px] text-slate-400 font-semibold">Tên Doanh nghiệp / Tổ chức</div>
+                      <div className="font-bold text-slate-900 text-sm">{session.tenant.display_name}</div>
+                      {session.tenant.legal_name && <div className="text-[11px] text-slate-500">{session.tenant.legal_name}</div>}
+                    </div>
+
+                    <div className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/50 space-y-1">
+                      <div className="text-[11px] text-slate-400 font-semibold">Mã Định danh Tổ chức (Slug Code)</div>
+                      <div className="font-mono font-bold text-blue-600 text-sm">{session.tenant.tenant_code || session.tenant.id}</div>
+                    </div>
+
+                    <div className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/50 space-y-1">
+                      <div className="text-[11px] text-slate-400 font-semibold">Quyền hạn trong Tổ chức</div>
+                      <div className="font-bold text-slate-900 text-xs flex items-center gap-1.5 mt-0.5">
+                        <ShieldCheck className="w-4 h-4 text-blue-600" />
+                        <span>{session.membership.is_tenant_admin ? 'Quản trị viên Cao nhất (Tenant Admin)' : 'Thành viên'}</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </CardContent>
@@ -644,8 +681,8 @@ export const UserProfilePage: React.FC = () => {
             <CardContent className="pt-6">
               <div className="relative border-l border-slate-200 ml-3 space-y-6">
                 <div className="relative pl-6">
-                  <div className="absolute -left-2.5 top-0.5 w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center text-xs font-bold">
-                    ✓
+                  <div className="absolute -left-2.5 top-0.5 w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center text-xs font-bold shadow-xs">
+                    <Check className="w-3 h-3 text-white" />
                   </div>
                   <div>
                     <h4 className="text-xs font-bold text-slate-900">Đăng nhập hệ thống thành công</h4>
@@ -655,8 +692,8 @@ export const UserProfilePage: React.FC = () => {
                 </div>
 
                 <div className="relative pl-6">
-                  <div className="absolute -left-2.5 top-0.5 w-5 h-5 rounded-full bg-blue-500 text-white flex items-center justify-center text-xs font-bold">
-                    ⚙
+                  <div className="absolute -left-2.5 top-0.5 w-5 h-5 rounded-full bg-blue-500 text-white flex items-center justify-center text-xs font-bold shadow-xs">
+                    <Settings className="w-3 h-3 text-white" />
                   </div>
                   <div>
                     <h4 className="text-xs font-bold text-slate-900">Chuyển đổi Demo Role sang SYSTEM_ADMIN</h4>
@@ -666,8 +703,8 @@ export const UserProfilePage: React.FC = () => {
                 </div>
 
                 <div className="relative pl-6">
-                  <div className="absolute -left-2.5 top-0.5 w-5 h-5 rounded-full bg-purple-500 text-white flex items-center justify-center text-xs font-bold">
-                    🔑
+                  <div className="absolute -left-2.5 top-0.5 w-5 h-5 rounded-full bg-purple-500 text-white flex items-center justify-center text-xs font-bold shadow-xs">
+                    <Key className="w-3 h-3 text-white" />
                   </div>
                   <div>
                     <h4 className="text-xs font-bold text-slate-900">Đăng ký tài khoản người dùng thành công</h4>

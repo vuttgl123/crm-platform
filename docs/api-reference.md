@@ -152,14 +152,9 @@ for both `http://localhost` and `http://127.0.0.1`. CORS preflight requests
 from an allowed origin do not require authentication. CORS allows credentials
 (`credentials: 'include'`) and the configured request headers, including
 `Authorization`, `Content-Type`, `Accept`, `Accept-Language`, `X-Tenant-ID`,
-and `X-Request-ID`. Refresh and logout also apply explicit origin validation
-because they authenticate with a cookie. See their endpoint sections for
-details.
-
-The current CORS header allowlist does not include `If-Match`. Consequently,
-the Account delete endpoint can be called by same-origin or non-browser
-clients, but a cross-origin browser client cannot send its required `If-Match`
-header until that allowlist is extended.
+`X-Request-ID`, and `If-Match`. Refresh and logout also apply explicit origin
+validation because they authenticate with a cookie. See their endpoint
+sections for details.
 
 ## Authentication Flow
 
@@ -203,6 +198,13 @@ HttpOnly cookie and never appears in this JSON object.
 | `POST` | `/api/auth/logout` | Refresh cookie optional | `204 No Content` |
 | `GET` | `/api/auth/me` | Bearer access token | `200 OK` |
 | `POST` | `/api/tenants` | Bearer access token; no tenant header | `201 Created` |
+| `GET` | `/api/access/me` | Bearer token and active tenant | `200 OK` |
+| `GET` | `/api/permissions` | Bearer token, tenant, `platform_user.manage` | `200 OK` |
+| `GET` | `/api/roles` | Bearer token, tenant, `platform_user.manage` | `200 OK` |
+| `GET` | `/api/roles/{id}` | Bearer token, tenant, `platform_user.manage` | `200 OK` |
+| `POST` | `/api/roles` | Bearer token, tenant, `platform_user.manage` | `201 Created` |
+| `PUT` | `/api/roles/{id}` | Bearer token, tenant, `platform_user.manage` | `200 OK` |
+| `DELETE` | `/api/roles/{id}` | Bearer token, tenant, `platform_user.manage` | `204 No Content` |
 | `POST` | `/api/accounts` | Bearer token, tenant, `crm_account.write` | `201 Created` |
 | `GET` | `/api/accounts/{id}` | Bearer token, tenant, `crm_account.read` | `200 OK` |
 | `GET` | `/api/accounts` | Bearer token, tenant, `crm_account.read` | `200 OK` |
@@ -536,6 +538,403 @@ use its tenant ID as `X-Tenant-ID` on tenant-owned APIs.
 This endpoint is not idempotent. A repeated call after success returns
 `TENANT_BOOTSTRAP_NOT_ALLOWED`; use `GET /api/auth/me` to recover the committed
 membership if the original success response was lost.
+
+## Effective Access
+
+### Get current tenant access
+
+```http
+GET /api/access/me
+Authorization: Bearer <access-token>
+X-Tenant-ID: 22222222-2222-2222-2222-222222222222
+```
+
+This endpoint returns the authenticated user's current effective access for
+one selected active tenant. It reads authorization from the database and does
+not read roles, permissions, or data scopes from JWT claims.
+
+No named business permission is required because the user can inspect only
+their own access. Both the Bearer token and `X-Tenant-ID` are required.
+
+The response is intended for frontend rendering. Clients can hide or disable
+controls using the returned permission codes, but every business endpoint
+still enforces permission and data scope independently on the server.
+
+#### Example call
+
+```bash
+curl --request GET \
+  --header "Authorization: Bearer ${ACCESS_TOKEN}" \
+  --header "X-Tenant-ID: 22222222-2222-2222-2222-222222222222" \
+  http://localhost:8080/api/access/me
+```
+
+#### Tenant Admin success
+
+- Status: `200 OK`
+- Cache header: `Cache-Control: no-store`
+
+```json
+{
+  "tenant": {
+    "id": "22222222-2222-2222-2222-222222222222",
+    "tenantCode": "example-company",
+    "displayName": "Example Company"
+  },
+  "membership": {
+    "status": "ACTIVE",
+    "tenantAdmin": true
+  },
+  "permissions": [
+    "crm_account.read",
+    "crm_account.write",
+    "platform_user.manage"
+  ],
+  "dataAccess": {
+    "defaultScope": "TENANT",
+    "entities": {}
+  }
+}
+```
+
+An active Tenant Admin receives every `NORMAL` catalogue permission plus
+permissions granted through currently effective roles. The bootstrap
+`platform_user.manage` permission is `PRIVILEGED`, so it appears through the
+explicit `TENANT_ADMIN` role grant. Global `defaultScope: TENANT` applies to
+every entity type; no entity keys are fabricated.
+
+#### Non-admin data access
+
+A non-admin response has `defaultScope: null`. Its `entities` object groups
+distinct effective role data scopes by entity type:
+
+```json
+{
+  "defaultScope": null,
+  "entities": {
+    "ACCOUNT": [
+      {
+        "type": "TEAM",
+        "teamId": "33333333-3333-3333-3333-333333333333"
+      }
+    ]
+  }
+}
+```
+
+Scope types are `OWN`, `TEAM`, `TEAM_TREE`, and `TENANT`. `teamId` is present
+for `TEAM` and `TEAM_TREE` and is `null` for `OWN` and `TENANT`. An explicitly
+granted entity-level `TENANT` scope remains under that entity instead of
+becoming the global default.
+
+Permission codes, entity keys, and scope arrays have deterministic ordering.
+Assigned role information and permission catalogue metadata are not returned.
+
+#### Errors
+
+| Status | `errorCode` | When |
+|---|---|---|
+| `401` | `AUTHENTICATION_REQUIRED` | The Bearer token is missing or invalid |
+| `403` | `ACCESS_DENIED` | `X-Tenant-ID` is missing, malformed, inactive, cross-tenant, or not an active membership for the caller |
+| `500` | `INTERNAL_ERROR` | An unexpected database or server failure occurs |
+
+The endpoint does not return `404` for an inaccessible tenant and does not
+reveal whether another tenant exists. The response is not server-cached or
+versioned; committed authorization changes are read again on the next call.
+
+## Role Management
+
+Role Management exposes the system permission catalogue and tenant-owned role
+aggregates. Every endpoint requires all of the following:
+
+```http
+Authorization: Bearer <access-token>
+X-Tenant-ID: 22222222-2222-2222-2222-222222222222
+```
+
+The authenticated user must have an active membership in the selected tenant
+and the effective `platform_user.manage` permission. Permissions are
+system-owned and read-only. System roles are visible, but only custom roles can
+be created, replaced, or soft-deleted.
+
+### List the permission catalogue
+
+```http
+GET /api/permissions
+Authorization: Bearer <access-token>
+X-Tenant-ID: 22222222-2222-2222-2222-222222222222
+```
+
+Success:
+
+- Status: `200 OK`
+- Body: JSON array
+- Ordering: `moduleCode`, then `permissionCode`, both ascending
+- Pagination: none
+
+```json
+[
+  {
+    "permissionCode": "crm_account.read",
+    "description": "Read customer accounts",
+    "moduleCode": "crm",
+    "riskLevel": "NORMAL"
+  },
+  {
+    "permissionCode": "platform_user.manage",
+    "description": "Manage tenant memberships and roles",
+    "moduleCode": "platform",
+    "riskLevel": "PRIVILEGED"
+  }
+]
+```
+
+`riskLevel` is `NORMAL`, `SENSITIVE`, or `PRIVILEGED`. No endpoint creates,
+replaces, or deletes permission definitions.
+
+### List roles
+
+```http
+GET /api/roles
+Authorization: Bearer <access-token>
+X-Tenant-ID: 22222222-2222-2222-2222-222222222222
+```
+
+Success:
+
+- Status: `200 OK`
+- Body: JSON array
+- Includes: non-deleted custom and system roles, both active and inactive
+- Ordering: `roleCode`, then role ID, both ascending
+- Pagination: none
+
+```json
+[
+  {
+    "id": "55555555-5555-5555-5555-555555555555",
+    "roleCode": "SALES_MANAGER",
+    "name": "Sales Manager",
+    "description": "Manages sales accounts",
+    "system": false,
+    "status": "ACTIVE",
+    "permissionCount": 2,
+    "dataScopeCount": 1,
+    "updatedAt": "2026-08-10T10:00:00Z",
+    "version": 1
+  }
+]
+```
+
+An empty result is `[]`.
+
+### Get a role
+
+```http
+GET /api/roles/55555555-5555-5555-5555-555555555555
+Authorization: Bearer <access-token>
+X-Tenant-ID: 22222222-2222-2222-2222-222222222222
+```
+
+Success:
+
+- Status: `200 OK`
+- Body: complete role aggregate
+
+```json
+{
+  "id": "55555555-5555-5555-5555-555555555555",
+  "roleCode": "SALES_MANAGER",
+  "name": "Sales Manager",
+  "description": "Manages sales accounts",
+  "system": false,
+  "status": "ACTIVE",
+  "permissionCodes": [
+    "crm_account.read",
+    "crm_account.write"
+  ],
+  "dataScopes": [
+    {
+      "entityType": "ACCOUNT",
+      "type": "TEAM",
+      "teamId": "33333333-3333-3333-3333-333333333333"
+    }
+  ],
+  "createdAt": "2026-08-10T10:00:00Z",
+  "updatedAt": "2026-08-10T10:00:00Z",
+  "version": 1
+}
+```
+
+Permission codes are distinct and sorted lexicographically. Data scopes are
+distinct and sorted by `entityType`, `type`, and `teamId`. Soft-deleted and
+cross-tenant role IDs return `404 ROLE_NOT_FOUND`.
+
+The bootstrap `TENANT_ADMIN` system role uses the same response shape. It may
+have an empty `dataScopes` array because the active Tenant Admin membership
+flag provides its global tenant scope.
+
+### Create a role
+
+```http
+POST /api/roles
+Authorization: Bearer <access-token>
+X-Tenant-ID: 22222222-2222-2222-2222-222222222222
+Content-Type: application/json
+```
+
+```json
+{
+  "roleCode": "SALES_MANAGER",
+  "name": "Sales Manager",
+  "description": "Manages sales accounts",
+  "permissionCodes": [
+    "crm_account.read",
+    "crm_account.write"
+  ],
+  "dataScopes": [
+    {
+      "entityType": "ACCOUNT",
+      "type": "TEAM",
+      "teamId": "33333333-3333-3333-3333-333333333333"
+    }
+  ]
+}
+```
+
+Create behavior:
+
+- `roleCode` is trimmed, normalized to uppercase, and immutable after create;
+- the new role is always custom (`system: false`) and `ACTIVE`;
+- omitted or blank `description` is stored as `null`;
+- omitted `permissionCodes` or `dataScopes` becomes an empty array;
+- role metadata and both grant collections commit in one transaction; and
+- role ID, tenant ID, system state, status, audit fields, timestamps, and
+  version are controlled by the server.
+
+Success:
+
+- Status: `201 Created`
+- Header: `Location: /api/roles/{id}`
+- Body: complete role aggregate
+- Initial version: `1`
+
+### Replace a role
+
+```http
+PUT /api/roles/55555555-5555-5555-5555-555555555555
+Authorization: Bearer <access-token>
+X-Tenant-ID: 22222222-2222-2222-2222-222222222222
+Content-Type: application/json
+```
+
+```json
+{
+  "version": 1,
+  "name": "Regional Sales Manager",
+  "description": "Manages regional sales accounts",
+  "status": "ACTIVE",
+  "permissionCodes": [
+    "crm_account.read",
+    "crm_account.write"
+  ],
+  "dataScopes": [
+    {
+      "entityType": "ACCOUNT",
+      "type": "TEAM_TREE",
+      "teamId": "33333333-3333-3333-3333-333333333333"
+    }
+  ]
+}
+```
+
+Replace behavior:
+
+- `roleCode` is immutable and is not part of the request;
+- `version`, `name`, and `status` are required;
+- `status` is `ACTIVE` or `INACTIVE`;
+- omitted or blank `description` becomes `null`;
+- omitted grant arrays become empty arrays;
+- existing permission and data-scope grants are replaced by the submitted
+  sets in the same transaction as the metadata update; and
+- a successful replacement increments the version exactly once.
+
+Success:
+
+- Status: `200 OK`
+- Body: complete updated role aggregate
+
+An inactive role is immediately ignored by effective permission and data-scope
+resolution. Existing user-role assignment rows are retained, so a later
+reactivation makes still-valid assignments effective again.
+
+### Soft-delete a role
+
+```http
+DELETE /api/roles/55555555-5555-5555-5555-555555555555
+Authorization: Bearer <access-token>
+X-Tenant-ID: 22222222-2222-2222-2222-222222222222
+If-Match: "2"
+```
+
+`If-Match` must contain exactly one strong, quoted, positive signed-long
+version. Missing, wildcard, weak, unquoted, nonnumeric, zero, negative, or
+overflow values are request validation failures.
+
+Delete behavior:
+
+- only custom roles can be deleted;
+- deletion records the actor and timestamp and increments the version once;
+- permission grants, data scopes, and user-role assignments are retained for
+  history;
+- effective access ignores the deleted role immediately; and
+- the deleted role code can be reused by a new role.
+
+Success:
+
+- Status: `204 No Content`
+- Body: empty
+
+### Role validation
+
+| Field | Rule |
+|---|---|
+| Path `id` | Valid UUID |
+| `roleCode` | Required on create; trimmed and uppercased; maximum 191 characters; pattern `^[A-Z][A-Z0-9_]*$`; unique among non-deleted roles in the selected tenant |
+| `name` | Required; maximum 255 characters |
+| `description` | Optional; maximum 4,000 characters; blank becomes `null` |
+| `status` | Required on replace; `ACTIVE` or `INACTIVE` |
+| `version` | Required positive signed-long on replace |
+| `permissionCodes[]` | Each value is required, trimmed, and at most 191 characters; duplicates after trimming are invalid; every code must exist in the system catalogue |
+| `dataScopes[]` | Duplicate normalized `(entityType, type, teamId)` values are invalid |
+
+Each data scope follows these rules:
+
+| Field | Rule |
+|---|---|
+| `entityType` | Required; trimmed and uppercased; maximum 191 characters; pattern `^[A-Z][A-Z0-9_]*$` |
+| `type` | Required; `OWN`, `TEAM`, `TEAM_TREE`, or `TENANT` |
+| `teamId` | Required for `TEAM` and `TEAM_TREE`; forbidden for `OWN` and `TENANT` |
+
+A referenced team must be active, non-deleted, and belong to the selected
+tenant. Malformed JSON, UUIDs, enum values, field constraints, duplicate
+grants, and invalid `If-Match` syntax return `400`. A syntactically valid scope
+whose `teamId` presence does not match its type, or whose team reference is not
+eligible, returns `422 ROLE_DATA_SCOPE_INVALID`.
+
+### Role Management errors
+
+| Status | `errorCode` | When |
+|---|---|---|
+| `400` | `REQUEST_VALIDATION_FAILED` | JSON, UUID, enum, field constraint, duplicate grant, or `If-Match` is invalid |
+| `401` | `AUTHENTICATION_REQUIRED` | The Bearer token is missing or invalid |
+| `403` | `ACCESS_DENIED` | Tenant context is invalid or `platform_user.manage` is missing |
+| `404` | `ROLE_NOT_FOUND` | The role is absent, deleted, or belongs to another tenant |
+| `409` | `ROLE_CODE_ALREADY_EXISTS` | A non-deleted role already uses the normalized code |
+| `409` | `SYSTEM_ROLE_IMMUTABLE` | Replace or delete targets a system role |
+| `409` | `ROLE_VERSION_CONFLICT` | Replace or delete uses a stale version |
+| `422` | `ROLE_PERMISSION_UNKNOWN` | A submitted permission is absent from the catalogue |
+| `422` | `ROLE_DATA_SCOPE_INVALID` | Scope/team presence or the referenced team is invalid |
+| `500` | `INTERNAL_ERROR` | An unexpected database or server failure occurs |
 
 ## Account Management
 
@@ -908,6 +1307,109 @@ For validation failures, individual `errors` entries use the common stable
 codes `VALIDATION_REQUIRED`, `VALIDATION_SIZE_INVALID`,
 `VALIDATION_EMAIL_INVALID`, or `VALIDATION_INVALID` as applicable. Error text
 is localized by `Accept-Language`; the codes remain unchanged.
+
+## Roles and Permissions API
+
+### List System Permissions
+
+```http
+GET /api/permissions
+```
+
+Required permission: `platform_user.manage`.
+
+#### Success
+
+- Status: `200 OK`
+- Body: Array of system permission definitions.
+
+```json
+[
+  {
+    "id": "p1",
+    "code": "crm_account.read",
+    "moduleGroup": "crm",
+    "displayNameVi": "Xem Khách hàng",
+    "displayNameEn": "Read Accounts",
+    "riskLevel": "NORMAL"
+  }
+]
+```
+
+### Search and List Roles
+
+```http
+GET /api/roles
+```
+
+Required permission: `platform_user.manage`.
+
+#### Success
+
+- Status: `200 OK`
+- Body: Array of role summary objects.
+
+### Get Role Detail
+
+```http
+GET /api/roles/{id}
+```
+
+Required permission: `platform_user.manage`.
+
+#### Success
+
+- Status: `200 OK`
+- Body: Role detail object including granted permissions list.
+
+### Create Role
+
+```http
+POST /api/roles
+```
+
+Required permission: `platform_user.manage`.
+
+```json
+{
+  "roleCode": "SALES_LEAD",
+  "name": "Trưởng nhóm Bán hàng",
+  "description": "Quản lý dữ liệu bán hàng cấp nhóm",
+  "scopeType": "TEAM",
+  "permissionCodes": ["crm_account.read", "crm_account.write"]
+}
+```
+
+#### Success
+
+- Status: `201 Created`
+- Body: Created Role detail object.
+
+### Update Role
+
+```http
+PUT /api/roles/{id}
+```
+
+Required permission: `platform_user.manage`.
+
+#### Success
+
+- Status: `200 OK`
+- Body: Updated Role detail object.
+
+### Delete Role
+
+```http
+DELETE /api/roles/{id}
+```
+
+Required permission: `platform_user.manage`.
+
+#### Success
+
+- Status: `204 No Content`
+- Body: empty. System roles cannot be deleted.
 
 ## OAuth2 Login
 

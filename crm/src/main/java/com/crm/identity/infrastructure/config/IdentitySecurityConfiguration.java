@@ -131,6 +131,7 @@ public class IdentitySecurityConfiguration {
 				HttpHeaders.CONTENT_TYPE,
 				HttpHeaders.ACCEPT,
 				HttpHeaders.ACCEPT_LANGUAGE,
+				HttpHeaders.IF_MATCH,
 				CurrentIdentityContextFilter.TENANT_ID_HEADER,
 				RequestTracingFilter.REQUEST_ID_HEADER));
 		configuration.setExposedHeaders(

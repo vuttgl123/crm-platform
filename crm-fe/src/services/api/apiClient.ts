@@ -65,9 +65,15 @@ export async function apiFetch<T = unknown>(
     headers.set('X-Tenant-ID', session.tenant.id);
   }
 
+  const baseUrl = env.apiBaseUrl.replace(/\/$/, '');
+  let cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  if (baseUrl.endsWith('/api') && cleanEndpoint.startsWith('/api/')) {
+    cleanEndpoint = cleanEndpoint.substring(4);
+  }
+
   const url = endpoint.startsWith('http')
     ? endpoint
-    : `${env.apiBaseUrl.replace(/\/$/, '')}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`;
+    : `${baseUrl}${cleanEndpoint}`;
 
   const requestOptions: RequestInit = {
     ...options,
@@ -81,7 +87,8 @@ export async function apiFetch<T = unknown>(
     if (!isRefreshing) {
       isRefreshing = true;
       try {
-        const refreshResponse = await fetch(`${env.apiBaseUrl.replace(/\/$/, '')}/auth/refresh`, {
+        const refreshUrl = baseUrl.endsWith('/api') ? `${baseUrl}/auth/refresh` : `${baseUrl}/api/auth/refresh`;
+        const refreshResponse = await fetch(refreshUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',

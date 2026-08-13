@@ -72,5 +72,8 @@
   }
   body {
     @apply bg-background text-foreground antialiased font-sans selection:bg-blue-100 selection:text-blue-700;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 }

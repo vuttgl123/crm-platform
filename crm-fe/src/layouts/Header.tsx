@@ -1,7 +1,6 @@
 import React from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import {
-  Menu,
   Search,
   Bell,
   LogOut,
@@ -28,12 +27,10 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface HeaderProps {
-  onMobileMenuOpen: () => void;
   onOpenCommandPalette: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
-  onMobileMenuOpen,
   onOpenCommandPalette,
 }) => {
   const { session, logout } = useAuth();
@@ -66,17 +63,9 @@ export const Header: React.FC<HeaderProps> = ({
   return (
     <TooltipProvider>
       <header className="h-14 bg-white border-b border-slate-200 sticky top-0 z-30 flex items-center justify-between px-4 sm:px-6">
-        {/* Left: Mobile Toggle + Breadcrumbs Navigation */}
-        <div className="flex items-center gap-3 shrink-0">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onMobileMenuOpen}
-            className="md:hidden h-8 w-8 text-slate-500"
-            aria-label="Open navigation menu"
-          >
-            <Menu className="w-5 h-5" />
-          </Button>
+        {/* Left: Breadcrumbs Navigation */}
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          {/* Breadcrumb */}
 
           {/* Breadcrumb */}
           <nav aria-label="Breadcrumb" className="hidden sm:flex items-center gap-1.5 text-xs text-slate-500">
@@ -232,9 +221,13 @@ export const Header: React.FC<HeaderProps> = ({
               <DropdownMenuLabel className="font-normal p-3 bg-slate-50/70 border-b border-slate-100">
                 <div className="font-bold text-slate-900 truncate">{session?.user.display_name}</div>
                 <div className="text-[11px] text-slate-500 truncate mt-0.5">{session?.user.email}</div>
-                <div className="mt-2 flex items-center gap-1 text-[10px] text-blue-700 font-semibold bg-blue-50 px-2 py-0.5 rounded border border-blue-200 w-fit">
-                  <Shield className="w-3 h-3" />
-                  <span>{session?.activeRole.name}</span>
+                <div className="mt-2 flex items-center gap-1.5 text-[11px] text-blue-700 font-bold bg-blue-50 px-2.5 py-1 rounded-md border border-blue-200 w-fit">
+                  <Shield className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                  <span>
+                    {session?.membership.is_tenant_admin
+                      ? 'Quản trị viên Tập đoàn (Tenant Admin)'
+                      : (session?.activeRole?.name || 'Nhân viên Kinh doanh (Sales)')}
+                  </span>
                 </div>
               </DropdownMenuLabel>
 

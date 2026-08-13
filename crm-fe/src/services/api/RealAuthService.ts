@@ -55,7 +55,7 @@ export class RealAuthService implements IAuthService {
       },
     });
 
-    const session = this.mapToSessionContext(tokenResponse, meResponse);
+    const session = this.mapToSessionContext(tokenResponse, meResponse, false);
     storageAdapter.setSession(session);
     return session;
   }
@@ -70,6 +70,22 @@ export class RealAuthService implements IAuthService {
       }),
     });
 
+    // Automatically submit membership request to Backend POST /api/membership-requests
+    try {
+      await apiFetch('/membership-requests', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${tokenResponse.accessToken}`,
+        },
+        body: JSON.stringify({
+          tenantCode: (payload.tenantCode || 'tap-doan-ipa').trim().toLowerCase(),
+          message: `Đăng ký tài khoản thành viên mới từ ${payload.displayName}`,
+        }),
+      });
+    } catch (err) {
+      console.error('Không thể tạo đơn xin gia nhập với Backend PostgreSQL:', err);
+    }
+
     const meResponse = await apiFetch<BackendMeResponse>('/auth/me', {
       method: 'GET',
       headers: {
@@ -77,7 +93,7 @@ export class RealAuthService implements IAuthService {
       },
     });
 
-    const session = this.mapToSessionContext(tokenResponse, meResponse);
+    const session = this.mapToSessionContext(tokenResponse, meResponse, true);
     storageAdapter.setSession(session);
     return session;
   }
@@ -100,7 +116,7 @@ export class RealAuthService implements IAuthService {
       },
     });
 
-    const session = this.mapToSessionContext(tokenResponse, meResponse);
+    const session = this.mapToSessionContext(tokenResponse, meResponse, false);
     storageAdapter.setSession(session);
     return session;
   }
@@ -139,44 +155,28 @@ export class RealAuthService implements IAuthService {
       storageAdapter.setSession(updatedSession);
       return updatedSession;
     } catch {
-      try {
-        const tokenResponse = await apiFetch<BackendAccessTokenResponse>('/auth/refresh', {
-          method: 'POST',
-        });
-        const meResponse = await apiFetch<BackendMeResponse>('/auth/me', {
-          method: 'GET',
-          headers: { Authorization: `Bearer ${tokenResponse.accessToken}` },
-        });
-
-        const refreshedSession = this.mapToSessionContext(tokenResponse, meResponse);
-        storageAdapter.setSession(refreshedSession);
-        return refreshedSession;
-      } catch {
-        storageAdapter.clearSession();
-        return null;
-      }
+      storageAdapter.clearSession();
+      return null;
     }
   }
 
   public async switchDemoRole(roleCode: DemoRoleCode): Promise<UserSessionContext> {
     const current = storageAdapter.getSession();
-    const roleConfig = DEMO_ROLES[roleCode];
+    const roleConfig = DEMO_ROLES[roleCode] || DEMO_ROLES.ADMIN;
 
     const session: UserSessionContext = {
       user: current ? current.user : DEMO_USERS.ADMIN,
       tenant: current ? current.tenant : DEMO_TENANT,
-      membership: current
-        ? current.membership
-        : {
-            tenant_id: DEMO_TENANT.id,
-            user_id: DEMO_USERS.ADMIN.id,
-            membership_status: 'ACTIVE',
-            is_tenant_admin: roleConfig.isTenantAdmin,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          },
+      membership: {
+        tenant_id: current ? current.tenant.id : DEMO_TENANT.id,
+        user_id: current ? current.user.id : DEMO_USERS.ADMIN.id,
+        membership_status: 'ACTIVE',
+        is_tenant_admin: roleConfig.isTenantAdmin,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
       activeRole: {
-        tenant_id: DEMO_TENANT.id,
+        tenant_id: current ? current.tenant.id : DEMO_TENANT.id,
         id: `role-${roleCode.toLowerCase()}`,
         role_code: roleCode,
         name: roleConfig.nameVi,
@@ -208,7 +208,8 @@ export class RealAuthService implements IAuthService {
 
   private mapToSessionContext(
     tokenResponse: BackendAccessTokenResponse,
-    meResponse: BackendMeResponse
+    meResponse: BackendMeResponse,
+    isRegisterFlow = false
   ): UserSessionContext {
     const user: PlatformUser = {
       id: meResponse.user.id || tokenResponse.user.id,
@@ -220,6 +221,10 @@ export class RealAuthService implements IAuthService {
     };
 
     const firstTenant = meResponse.tenants && meResponse.tenants.length > 0 ? meResponse.tenants[0] : null;
+    
+    // Determine admin status based on database created_by / tenantAdmin field from Backend
+    const isTenantAdmin = Boolean(firstTenant?.tenantAdmin);
+
     const tenant: PlatformTenant = firstTenant
       ? {
           id: firstTenant.tenantId,
@@ -235,26 +240,25 @@ export class RealAuthService implements IAuthService {
           updated_at: new Date().toISOString(),
         }
       : {
-          id: '',
-          tenant_code: '',
-          legal_name: '',
-          display_name: 'Chưa có Tổ chức',
+          id: 'tenant-ipa',
+          tenant_code: 'TAP-DOAN-IPA',
+          legal_name: 'Tập đoàn Đầu tư IPA',
+          display_name: 'Tập đoàn IPA',
           default_currency_code: 'VND',
           default_country_code: 'VN',
           default_language_code: 'vi',
           default_timezone: 'Asia/Ho_Chi_Minh',
-          status: 'CLOSED',
+          status: 'ACTIVE',
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         };
 
-    const isTenantAdmin = firstTenant ? firstTenant.tenantAdmin : true;
-    const defaultRoleConfig = DEMO_ROLES.ADMIN;
+    const defaultRoleConfig = isTenantAdmin ? DEMO_ROLES.ADMIN : DEMO_ROLES.SALES_STAFF;
 
     const membership: PlatformTenantMembership = {
       tenant_id: tenant.id,
       user_id: user.id,
-      membership_status: 'ACTIVE',
+      membership_status: isTenantAdmin ? 'ACTIVE' : (isRegisterFlow ? 'INVITED' : (firstTenant ? 'ACTIVE' : 'INVITED')),
       is_tenant_admin: isTenantAdmin,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
@@ -266,9 +270,9 @@ export class RealAuthService implements IAuthService {
       membership,
       activeRole: {
         tenant_id: tenant.id,
-        id: 'role-admin',
-        role_code: 'ADMIN',
-        name: defaultRoleConfig.nameVi,
+        id: isTenantAdmin ? 'role-tenant-admin' : 'role-sales-staff',
+        role_code: isTenantAdmin ? 'TENANT_ADMIN' : 'SALES_STAFF',
+        name: isTenantAdmin ? 'Quản trị viên Tập đoàn (Tenant Admin)' : 'Nhân viên Kinh doanh (Sales)',
         is_system: true,
         status: 'ACTIVE',
         created_at: new Date().toISOString(),

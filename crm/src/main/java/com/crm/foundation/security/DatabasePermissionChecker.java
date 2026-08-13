@@ -20,8 +20,8 @@ public final class DatabasePermissionChecker implements PermissionChecker {
 	}
 
 	@Override
-	public boolean hasPermission(String permission) {
-		if (permission == null || permission.isBlank()) {
+	public boolean hasPermission(SystemPermission permission) {
+		if (permission == null) {
 			return false;
 		}
 		var actorId = currentActor.actorId();
@@ -63,13 +63,13 @@ public final class DatabasePermissionChecker implements PermissionChecker {
 				""")
 				.param("tenantId", tenantId.get().toString())
 				.param("userId", actorId.get().toString())
-				.param("permission", permission)
+				.param("permission", permission.code())
 				.query(Long.class)
 				.single() > 0L;
 	}
 
 	@Override
-	public void requirePermission(String permission) {
+	public void requirePermission(SystemPermission permission) {
 		if (!hasPermission(permission)) {
 			throw new AccessDeniedException("Required permission is missing");
 		}

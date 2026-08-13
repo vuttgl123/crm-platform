@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 import com.crm.foundation.identifier.IdentifierGenerator;
 import com.crm.foundation.security.CurrentActor;
 import com.crm.foundation.security.PermissionChecker;
+import com.crm.foundation.security.SystemPermission;
 import com.crm.foundation.tenancy.CurrentTenant;
 import com.crm.foundation.time.TimeProvider;
 import com.crm.platform.access.application.command.CreateRoleCommand;
@@ -38,8 +39,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class RoleManagementApplicationService
 		implements RoleManagementFacade {
 
-	private static final String MANAGE_PERMISSION = "platform_user.manage";
-
 	private final RoleManagementRepository repository;
 	private final CurrentTenant currentTenant;
 	private final CurrentActor currentActor;
@@ -65,14 +64,15 @@ public class RoleManagementApplicationService
 	@Override
 	@Transactional(readOnly = true)
 	public List<PermissionCatalogueItem> permissions() {
-		authorize();
+		authorize(SystemPermission.PLATFORM_ROLE_READ);
 		return repository.findPermissions();
 	}
 
 	@Override
 	@Transactional(readOnly = true)
 	public List<RoleSummary> roles() {
-		AccessContext context = authorize();
+		AccessContext context = authorize(
+				SystemPermission.PLATFORM_ROLE_READ);
 		return repository.findRoleSummaries(context.tenantId());
 	}
 
@@ -80,7 +80,8 @@ public class RoleManagementApplicationService
 	@Transactional(readOnly = true)
 	public RoleDetails get(RoleId roleId) {
 		Objects.requireNonNull(roleId, "roleId must not be null");
-		AccessContext context = authorize();
+		AccessContext context = authorize(
+				SystemPermission.PLATFORM_ROLE_READ);
 		return repository.findById(context.tenantId(), roleId)
 				.map(RoleDetails::from)
 				.orElseThrow(RoleManagementApplicationService::roleNotFound);
@@ -90,7 +91,8 @@ public class RoleManagementApplicationService
 	@Transactional
 	public RoleDetails create(CreateRoleCommand command) {
 		Objects.requireNonNull(command, "command must not be null");
-		AccessContext context = authorize();
+		AccessContext context = authorize(
+				SystemPermission.PLATFORM_ROLE_MANAGE);
 		String roleCode = Role.normalizeRoleCode(command.roleCode());
 		if (repository.existsNonDeletedRoleCode(
 				context.tenantId(), roleCode)) {
@@ -125,7 +127,8 @@ public class RoleManagementApplicationService
 	@Transactional
 	public RoleDetails update(UpdateRoleCommand command) {
 		Objects.requireNonNull(command, "command must not be null");
-		AccessContext context = authorize();
+		AccessContext context = authorize(
+				SystemPermission.PLATFORM_ROLE_MANAGE);
 		Role role = findForUpdate(context.tenantId(), command.roleId());
 		requireMutable(role);
 		requireVersion(role, command.version());
@@ -150,7 +153,8 @@ public class RoleManagementApplicationService
 	@Transactional
 	public void delete(DeleteRoleCommand command) {
 		Objects.requireNonNull(command, "command must not be null");
-		AccessContext context = authorize();
+		AccessContext context = authorize(
+				SystemPermission.PLATFORM_ROLE_MANAGE);
 		Role role = findForUpdate(context.tenantId(), command.roleId());
 		requireMutable(role);
 		requireVersion(role, command.version());
@@ -161,10 +165,10 @@ public class RoleManagementApplicationService
 		}
 	}
 
-	private AccessContext authorize() {
+	private AccessContext authorize(SystemPermission permission) {
 		TenantId tenantId = currentTenant.requireTenantId();
 		ActorId actorId = currentActor.requireActorId();
-		permissionChecker.requirePermission(MANAGE_PERMISSION);
+		permissionChecker.requirePermission(permission);
 		return new AccessContext(tenantId, actorId);
 	}
 

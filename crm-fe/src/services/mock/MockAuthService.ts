@@ -89,9 +89,11 @@ export class MockAuthService implements IAuthService {
 
   public async register(payload: RegisterPayload): Promise<UserSessionContext> {
     await delay(env.mockDelayMs);
-    const session = this.createSessionForRole('ADMIN');
+    const session = this.createSessionForRole('SALES_STAFF');
     session.user.email = payload.email;
     session.user.display_name = payload.displayName;
+    session.membership.is_tenant_admin = false;
+    session.membership.membership_status = 'INVITED';
     storageAdapter.setSession(session);
     return session;
   }

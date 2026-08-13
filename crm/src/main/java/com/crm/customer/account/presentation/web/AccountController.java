@@ -1,20 +1,14 @@
 package com.crm.customer.account.presentation.web;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
 import java.util.UUID;
 
-import jakarta.validation.Constraint;
-import jakarta.validation.ConstraintValidator;
-import jakarta.validation.ConstraintValidatorContext;
-import jakarta.validation.Payload;
 import jakarta.validation.Valid;
 import com.crm.customer.account.application.command.DeleteAccountCommand;
 import com.crm.customer.account.application.dto.AccountDetails;
 import com.crm.customer.account.application.usecase.AccountFacade;
 import com.crm.customer.account.domain.AccountId;
+import com.crm.foundation.web.http.IfMatchVersion;
+import com.crm.foundation.web.validation.ValidIfMatchVersion;
 import com.crm.sharedkernel.application.PageResult;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -72,43 +66,9 @@ public final class AccountController {
 	public ResponseEntity<Void> delete(@PathVariable UUID id,
 			@RequestHeader("If-Match")
 			@ValidIfMatchVersion String ifMatch) {
-		long version = Long.parseLong(
-				ifMatch.substring(1, ifMatch.length() - 1));
-		accounts.delete(new DeleteAccountCommand(new AccountId(id), version));
+		accounts.delete(new DeleteAccountCommand(
+				new AccountId(id), IfMatchVersion.parse(ifMatch)));
 		return ResponseEntity.noContent().build();
-	}
-
-	@Target(ElementType.PARAMETER)
-	@Retention(RetentionPolicy.RUNTIME)
-	@Constraint(validatedBy = IfMatchVersionValidator.class)
-	public @interface ValidIfMatchVersion {
-
-		String message() default "{validation.invalid}";
-
-		Class<?>[] groups() default {};
-
-		Class<? extends Payload>[] payload() default {};
-
-	}
-
-	public static final class IfMatchVersionValidator
-			implements ConstraintValidator<ValidIfMatchVersion, String> {
-
-		@Override
-		public boolean isValid(String value,
-				ConstraintValidatorContext context) {
-			if (value == null || !value.matches("^\"[1-9][0-9]*\"$")) {
-				return false;
-			}
-			try {
-				Long.parseLong(value.substring(1, value.length() - 1));
-				return true;
-			}
-			catch (NumberFormatException exception) {
-				return false;
-			}
-		}
-
 	}
 
 }

@@ -19,11 +19,9 @@ public record RoleDataScope(
 	public RoleDataScope {
 		entityType = normalizeEntityType(entityType);
 		type = Objects.requireNonNull(type, "type must not be null");
-		boolean teamScope = type == DataScopeType.TEAM
-				|| type == DataScopeType.TEAM_TREE;
-		if (teamScope != (teamId != null)) {
+		if ((type == DataScopeType.OWN || type == DataScopeType.TENANT) && teamId != null) {
 			throw new IllegalArgumentException(
-					"teamId presence does not match scope type");
+					"teamId must be null for OWN or TENANT scope");
 		}
 	}
 

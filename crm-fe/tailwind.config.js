@@ -60,13 +60,17 @@ export default {
       },
       fontFamily: {
         sans: [
+          '"Be Vietnam Pro"',
           'Inter',
+          '"Plus Jakarta Sans"',
           '-apple-system',
           'BlinkMacSystemFont',
           '"Segoe UI"',
           'Roboto',
           'sans-serif',
         ],
+        display: ['"Plus Jakarta Sans"', '"Be Vietnam Pro"', 'sans-serif'],
+        mono: ['"JetBrains Mono"', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'monospace'],
       },
       keyframes: {
         'accordion-down': {

@@ -16,7 +16,13 @@ export interface EntityRecordContext {
  */
 export function can(permissionCode: SeededPermissionCode | string, session: UserSessionContext | null): boolean {
   if (!session) return false;
-  if (session.membership.is_tenant_admin) return true;
+  if (
+    session.membership?.is_tenant_admin ||
+    session.activeRole?.role_code === 'TENANT_ADMIN' ||
+    session.activeRole?.role_code === 'ADMIN'
+  ) {
+    return true;
+  }
   return session.grantedPermissions.includes(permissionCode);
 }
 
@@ -26,14 +32,19 @@ export function can(permissionCode: SeededPermissionCode | string, session: User
 export function canAccessRoute(navItem: NavigationItem, session: UserSessionContext | null): boolean {
   if (!session) return false;
 
+  const isTenantAdmin =
+    session.membership?.is_tenant_admin ||
+    session.activeRole?.role_code === 'TENANT_ADMIN' ||
+    session.activeRole?.role_code === 'ADMIN';
+
   // Unseeded modules (catalog, marketing, integration) require tenant admin
   if (navItem.requiresTenantAdmin) {
-    return session.membership.is_tenant_admin;
+    return isTenantAdmin;
   }
 
   // Activity requires at least one CRM read permission
   if (navItem.requiresAnyCrmReadPermission) {
-    if (session.membership.is_tenant_admin) return true;
+    if (isTenantAdmin) return true;
     return CRM_READ_PERMISSIONS.some((code) => session.grantedPermissions.includes(code));
   }
 

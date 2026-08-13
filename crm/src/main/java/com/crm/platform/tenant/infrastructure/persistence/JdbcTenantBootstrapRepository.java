@@ -4,6 +4,7 @@ import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.UUID;
 
+import com.crm.foundation.security.SystemPermission;
 import com.crm.platform.tenant.application.port.TenantBootstrapRepository;
 import com.crm.platform.tenant.domain.Tenant;
 import com.crm.sharedkernel.domain.ActorId;
@@ -55,13 +56,13 @@ public class JdbcTenantBootstrapRepository
 	}
 
 	@Override
-	public boolean permissionExists(String permissionCode) {
+	public boolean permissionExists(SystemPermission permission) {
 		return jdbcClient.sql("""
 				SELECT COUNT(*)
 				FROM platform_permissions
 				WHERE permission_code = :permissionCode
 				""")
-				.param("permissionCode", permissionCode)
+				.param("permissionCode", permission.code())
 				.query(Long.class)
 				.single() > 0L;
 	}
@@ -152,7 +153,7 @@ public class JdbcTenantBootstrapRepository
 
 	@Override
 	public void grantPermission(TenantId tenantId, UUID roleId,
-			String permissionCode, ActorId actorId, Instant now) {
+			SystemPermission permission, ActorId actorId, Instant now) {
 		int affectedRows = jdbcClient.sql("""
 				INSERT INTO platform_role_permissions (
 				    tenant_id, role_id, permission_code,
@@ -164,7 +165,7 @@ public class JdbcTenantBootstrapRepository
 				""")
 				.param("tenantId", tenantId.toString())
 				.param("roleId", roleId.toString())
-				.param("permissionCode", permissionCode)
+				.param("permissionCode", permission.code())
 				.param("grantedAt", timestamp(now))
 				.param("grantedBy", actorId.toString())
 				.update();

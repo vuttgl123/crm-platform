@@ -48,7 +48,7 @@ export const DEMO_TEAMS: PlatformTeam[] = [
 export const DEMO_ROLES: Record<DemoRoleCode, DemoRoleDefinition> = {
   ADMIN: {
     code: 'ADMIN',
-    nameVi: 'Quản trị viên Hệ thống',
+    nameVi: 'Quản trị viên Tập đoàn (Tenant Admin)',
     nameEn: 'System Administrator',
     descriptionVi: 'Quyền cao nhất hệ thống, phạm vi TENANT, toàn bộ permissions và quản trị tổ chức',
     scopeType: 'TENANT',

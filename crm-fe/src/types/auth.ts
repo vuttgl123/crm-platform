@@ -47,6 +47,7 @@ export interface RegisterPayload {
   email: string;
   password: string;
   displayName: string;
+  tenantCode?: string;
 }
 
 export interface AuthState {

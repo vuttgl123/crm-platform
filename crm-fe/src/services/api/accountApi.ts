@@ -44,6 +44,7 @@ export interface AccountSummaryResponse {
   accountNumber: string;
   displayName: string;
   legalName?: string | null;
+  parentAccountId?: string | null;
   accountType: AccountType;
   lifecycleStage: AccountLifecycleStage;
   owner?: AccountOwner | null;
@@ -80,11 +81,14 @@ export interface CreateAccountRequest {
 }
 
 export interface UpdateAccountRequest {
+  version: number;
+  accountType: AccountType;
+  displayName: string;
+  lifecycleStage: AccountLifecycleStage;
+  doNotContact: boolean;
   legalName?: string;
-  displayName?: string;
   parentAccountId?: string;
   owner?: AccountOwner;
-  lifecycleStage?: AccountLifecycleStage;
   industryCode?: string;
   taxIdentifier?: string;
   registrationNumber?: string;
@@ -93,7 +97,6 @@ export interface UpdateAccountRequest {
   employeeCount?: number;
   description?: string;
   preferredLanguageCode?: string;
-  doNotContact?: boolean;
 }
 
 export interface AccountSearchParams {

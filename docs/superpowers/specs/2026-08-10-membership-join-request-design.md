@@ -197,9 +197,10 @@ Add indexes for deterministic review queries:
 (requester_user_id, request_status)
 ```
 
-Add a touch trigger consistent with other versioned tables so direct database
-updates preserve `updated_at`. Application resolution updates increment
-`version` explicitly once.
+Add a touch trigger consistent with other versioned tables so request updates
+preserve `updated_at` and increment `version` from `OLD.version` exactly once.
+Application resolution updates use the submitted version in the guarded
+`WHERE` clause and rely on that trigger for the increment.
 
 ## Permission Model
 

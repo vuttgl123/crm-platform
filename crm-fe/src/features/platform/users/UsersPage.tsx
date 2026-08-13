@@ -1,20 +1,29 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 import {
   Users,
-  UserCheck,
-  Clock,
+  Search,
   CheckCircle2,
   XCircle,
+  Clock,
   Shield,
-  Search,
-  BadgeAlert,
+  Plus,
+  RefreshCw,
+  Loader2,
+  UserCheck,
 } from 'lucide-react';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@/components/ui/select';
 import {
   Table,
   TableHeader,
@@ -24,100 +33,228 @@ import {
   TableCell,
 } from '@/components/ui/table';
 import { useAuth } from '@/core/session/useAuth';
+import { CreateUserWizardModal } from './components/CreateUserWizardModal';
+import {
+  membershipApi,
+  MembershipRequestItem,
+} from '@/services/api/membershipApi';
+import { roleApi, RoleSummaryResponse } from '@/services/api/roleApi';
 
-interface PendingUserRequest {
+export interface ActiveUser {
   id: string;
-  email: string;
   displayName: string;
-  requestedAt: string;
-  tenantCode: string;
-  status: 'PENDING' | 'APPROVED' | 'REJECTED';
-}
-
-interface ActiveUser {
-  id: string;
   email: string;
-  displayName: string;
+  roleId: string;
   roleName: string;
-  status: 'ACTIVE' | 'SUSPENDED';
+  status: 'ACTIVE' | 'INACTIVE';
   joinedAt: string;
-  isTenantAdmin: boolean;
+  isTenantAdmin?: boolean;
+  requestId?: string;
+  requestVersion?: number;
 }
-
-const INITIAL_PENDING_REQUESTS: PendingUserRequest[] = [
-  {
-    id: 'req-001',
-    displayName: 'Nguyễn Văn Tiến (Tư vấn viên)',
-    email: 'tien.nguyen@ipa-group.vn',
-    requestedAt: '2026-08-10T14:30:00Z',
-    tenantCode: 'TAP-DOAN-IPA',
-    status: 'PENDING',
-  },
-  {
-    id: 'req-002',
-    displayName: 'Trần Thị Mai (Chuyên viên Bán hàng)',
-    email: 'mai.tran@ipa-group.vn',
-    requestedAt: '2026-08-10T11:15:00Z',
-    tenantCode: 'TAP-DOAN-IPA',
-    status: 'PENDING',
-  },
-];
-
-const INITIAL_ACTIVE_USERS: ActiveUser[] = [
-  {
-    id: 'usr-admin-01',
-    displayName: 'Quản trị viên Hệ thống (IPA Admin)',
-    email: 'admin@vum.vn',
-    roleName: 'Quản trị viên Hệ thống (ADMIN)',
-    status: 'ACTIVE',
-    joinedAt: '2026-01-01T08:00:00Z',
-    isTenantAdmin: true,
-  },
-  {
-    id: 'usr-mgr-01',
-    displayName: 'Lê Văn Hoàng (Quản lý Vùng)',
-    email: 'manager@vum.vn',
-    roleName: 'Quản lý Vùng (Miền Bắc)',
-    status: 'ACTIVE',
-    joinedAt: '2026-01-15T09:30:00Z',
-    isTenantAdmin: false,
-  },
-];
 
 export const UsersPage: React.FC = () => {
   const { session } = useAuth();
-  const [pendingRequests, setPendingRequests] = useState<PendingUserRequest[]>(INITIAL_PENDING_REQUESTS);
-  const [activeUsers, setActiveUsers] = useState<ActiveUser[]>(INITIAL_ACTIVE_USERS);
+  const hasManagePermission =
+    Boolean(session?.membership?.is_tenant_admin) ||
+    Boolean(session?.grantedPermissions?.includes('platform_user.manage'));
+
+  const [pendingRequests, setPendingRequests] = useState<MembershipRequestItem[]>([]);
+  const [selectedRoleIds, setSelectedRoleIds] = useState<Record<string, string>>({});
+  const [roles, setRoles] = useState<RoleSummaryResponse[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
+
+  const [activeUsers, setActiveUsers] = useState<ActiveUser[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isCreateWizardOpen, setIsCreateWizardOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState('pending');
+
+  // Fetch Real Roles Catalog from Backend API (No Fallback Mock)
+  const fetchRoles = useCallback(async () => {
+    try {
+      const availableRoles = await roleApi.getRoles();
+      setRoles(availableRoles || []);
+    } catch {
+      setRoles([]);
+    }
+  }, []);
+
+  // Fetch Both Pending Requests and Approved Active Members from Backend API
+  const fetchMembershipRequests = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [pendingRes, approvedRes] = await Promise.all([
+        membershipApi.searchRequests('PENDING').catch(() => ({ items: [], page: 0, size: 10, totalElements: 0, totalPages: 0 })),
+        membershipApi.searchRequests('APPROVED').catch(() => ({ items: [], page: 0, size: 10, totalElements: 0, totalPages: 0 })),
+      ]);
+
+      const pendingItems = pendingRes.items || [];
+      setPendingRequests(pendingItems);
+
+      const approvedItems = approvedRes.items || [];
+      const membersMap = new Map<string, ActiveUser>();
+
+      // 1. Logged-in Tenant Admin / User from Auth Session
+      if (session?.user) {
+        membersMap.set(session.user.id, {
+          id: session.user.id,
+          displayName: session.user.display_name || session.user.email,
+          email: session.user.email,
+          roleId: session.activeRole?.id || '',
+          roleName: session.membership?.is_tenant_admin
+            ? 'Quản trị viên Tập đoàn (Tenant Admin)'
+            : (session.activeRole?.name || 'Thành viên Tập đoàn'),
+          status: 'ACTIVE',
+          joinedAt: session.user.created_at || new Date().toISOString(),
+          isTenantAdmin: Boolean(session.membership?.is_tenant_admin),
+        });
+      }
+
+      // 2. Approved Membership Requests strictly from PostgreSQL DB
+      approvedItems.forEach((req) => {
+        if (!membersMap.has(req.requester.id)) {
+          const savedRoleId = localStorage.getItem(`user_role_${req.requester.id}`) || '';
+          const matchedRole = roles.find((r) => r.id === savedRoleId || r.roleCode === savedRoleId);
+
+          membersMap.set(req.requester.id, {
+            id: req.requester.id,
+            displayName: req.requester.displayName || req.requester.email,
+            email: req.requester.email,
+            roleId: savedRoleId,
+            roleName: matchedRole ? matchedRole.name : 'Thành viên Tập đoàn',
+            status: 'ACTIVE',
+            joinedAt: req.reviewedAt || req.requestedAt || new Date().toISOString(),
+            isTenantAdmin: false,
+            requestId: req.id,
+            requestVersion: req.version,
+          });
+        }
+      });
+
+      const activeList = Array.from(membersMap.values());
+      setActiveUsers(activeList);
+
+      if (pendingItems.length === 0 && activeList.length > 0) {
+        setActiveTab('active');
+      }
+    } catch {
+      setPendingRequests([]);
+      setActiveUsers([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [session]);
+
+  useEffect(() => {
+    fetchRoles();
+    fetchMembershipRequests();
+  }, [fetchRoles, fetchMembershipRequests]);
 
   const activePendingCount = pendingRequests.filter((r) => r.status === 'PENDING').length;
 
-  const handleApprove = (req: PendingUserRequest) => {
-    setPendingRequests((prev) =>
-      prev.map((r) => (r.id === req.id ? { ...r, status: 'APPROVED' } : r))
-    );
-
-    const newUser: ActiveUser = {
-      id: `usr-${Date.now()}`,
-      displayName: req.displayName,
-      email: req.email,
-      roleName: 'Chuyên viên Kinh doanh (SALES_STAFF)',
-      status: 'ACTIVE',
-      joinedAt: new Date().toISOString(),
-      isTenantAdmin: false,
-    };
-
-    setActiveUsers((prev) => [newUser, ...prev]);
-
-    toast.success(`Đã phê duyệt người dùng ${req.displayName} vào Tập đoàn thành công!`);
+  const getEffectiveRoleId = (user: ActiveUser) => {
+    if (!roles || roles.length === 0) return '';
+    const exactMatch = roles.find((r) => r.id === user.roleId || r.roleCode === user.roleId);
+    if (exactMatch) return exactMatch.id;
+    return roles[0]?.id || '';
   };
 
-  const handleReject = (req: PendingUserRequest) => {
-    setPendingRequests((prev) =>
-      prev.map((r) => (r.id === req.id ? { ...r, status: 'REJECTED' } : r))
+  const handleApprove = async (req: MembershipRequestItem) => {
+    if (!hasManagePermission) {
+      toast.error('Bạn không có quyền platform_user.manage để phê duyệt tài khoản.');
+      return;
+    }
+
+    const selectedRoleId = selectedRoleIds[req.id] || (roles[0] ? roles[0].id : '');
+    if (!selectedRoleId) {
+      toast.error('Vui lòng chọn vai trò để gán cho thành viên.');
+      return;
+    }
+
+    const assignedRole = roles.find((r) => r.id === selectedRoleId);
+
+    setActionLoadingId(req.id);
+    try {
+      await membershipApi.approveRequest(req.id, {
+        version: req.version,
+        roleIds: [selectedRoleId],
+        reviewNote: `Đã phê duyệt gia nhập Tập đoàn ${session?.tenant.display_name || ''}`,
+      });
+
+      toast.success(`Đã phê duyệt tài khoản "${req.requester.displayName || req.requester.email}" gia nhập Tập đoàn thành công!`);
+
+      const approvedUser: ActiveUser = {
+        id: req.requester.id,
+        displayName: req.requester.displayName || req.requester.email,
+        email: req.requester.email,
+        roleId: selectedRoleId,
+        roleName: assignedRole?.name || 'Thành viên Tập đoàn',
+        status: 'ACTIVE',
+        joinedAt: new Date().toISOString(),
+        isTenantAdmin: false,
+        requestId: req.id,
+        requestVersion: req.version + 1,
+      };
+
+      setActiveUsers((prev) => [approvedUser, ...prev.filter((u) => u.id !== approvedUser.id)]);
+      fetchMembershipRequests();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Không thể phê duyệt yêu cầu gia nhập.';
+      toast.error(msg);
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  const handleChangeMemberRole = async (userId: string, newRoleId: string) => {
+    const selectedRole = roles.find((r) => r.id === newRoleId);
+    if (!selectedRole) return;
+
+    const user = activeUsers.find((u) => u.id === userId);
+    if (!user) return;
+
+    // Save selected role ID for persistence across reloads
+    localStorage.setItem(`user_role_${userId}`, newRoleId);
+
+    // Update UI state immediately
+    setActiveUsers((prev) =>
+      prev.map((u) => (u.id === userId ? { ...u, roleId: newRoleId, roleName: selectedRole.name } : u))
     );
 
-    toast.error(`Đã từ chối yêu cầu gia nhập của ${req.displayName}`);
+    try {
+      await membershipApi.updateMemberRoles(userId, [newRoleId]);
+      toast.success(`Đã lưu vai trò mới [${selectedRole.name}] cho [${user.displayName}] vào CSDL PostgreSQL!`);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Không thể lưu vai trò mới vào CSDL.';
+      toast.error(msg);
+    }
+  };
+
+  const handleReject = async (req: MembershipRequestItem) => {
+    if (!hasManagePermission) {
+      toast.error('Bạn không có quyền platform_user.manage để từ chối tài khoản.');
+      return;
+    }
+
+    const reason = window.prompt(`Nhập lý do từ chối yêu cầu của "${req.requester.displayName || req.requester.email}":`);
+    if (reason === null) return;
+
+    setActionLoadingId(req.id);
+    try {
+      await membershipApi.rejectRequest(req.id, {
+        version: req.version,
+        reason: reason.trim() || 'Không phù hợp với yêu cầu nhân sự Tập đoàn.',
+      });
+
+      toast.info(`Đã từ chối yêu cầu gia nhập của "${req.requester.displayName || req.requester.email}".`);
+      fetchMembershipRequests();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Không thể từ chối yêu cầu.';
+      toast.error(msg);
+    } finally {
+      setActionLoadingId(null);
+    }
   };
 
   const filteredActiveUsers = activeUsers.filter(
@@ -128,217 +265,268 @@ export const UsersPage: React.FC = () => {
 
   return (
     <div className="space-y-6 pb-12 font-sans w-full">
-      {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
-            <Users className="w-6 h-6 text-blue-600" />
-            <span>Quản lý Người dùng & Phê duyệt Thành viên</span>
-          </h1>
-          <p className="text-xs text-slate-500 mt-1">
-            Duyệt yêu cầu gia nhập Tập đoàn từ nhân viên mới và phân quyền thành viên trong tổ chức
-          </p>
-        </div>
+      {/* Top Header Card */}
+      <Card className="shadow-xs border-slate-200">
+        <CardHeader className="pb-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <CardTitle className="text-xl font-bold text-slate-900 flex items-center gap-2">
+              <Users className="w-6 h-6 text-blue-600" />
+              <span>Quản lý Người dùng & Phê duyệt Thành viên</span>
+            </CardTitle>
+            <CardDescription className="text-xs text-slate-500 mt-1">
+              Duyệt yêu cầu gia nhập Tập đoàn từ nhân viên mới và phân quyền thành viên trong tổ chức
+            </CardDescription>
+          </div>
 
-        <div className="flex items-center gap-2">
-          {activePendingCount > 0 && (
-            <Badge className="bg-amber-500 text-white font-bold px-3 py-1 text-xs animate-bounce gap-1">
-              <BadgeAlert className="w-3.5 h-3.5" />
-              {activePendingCount} Yêu cầu Chờ Quản trị viên duyệt
-            </Badge>
-          )}
-        </div>
-      </div>
-
-      {/* Main Content Tabs */}
-      <Tabs defaultValue="pending" className="w-full">
-        <TabsList className="bg-white border border-slate-200 p-1 shadow-2xs w-full justify-start h-auto">
-          <TabsTrigger value="pending" className="gap-2 text-xs font-semibold py-2 px-4 relative">
-            <Clock className="w-4 h-4 text-amber-600" />
-            <span>Yêu cầu Gia nhập Chờ duyệt</span>
-            {activePendingCount > 0 && (
-              <span className="ml-1 px-1.5 py-0.5 rounded-full bg-amber-500 text-white text-[10px] font-bold">
-                {activePendingCount}
-              </span>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={fetchMembershipRequests}
+              disabled={loading}
+              className="gap-1.5 text-xs font-semibold"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+              Làm mới
+            </Button>
+            {hasManagePermission && (
+              <Button
+                size="sm"
+                onClick={() => setIsCreateWizardOpen(true)}
+                className="gap-1.5 text-xs font-semibold bg-blue-600 hover:bg-blue-700"
+              >
+                <Plus className="w-4 h-4" />
+                Thêm Thành viên Mới
+              </Button>
             )}
-          </TabsTrigger>
-          <TabsTrigger value="active" className="gap-2 text-xs font-semibold py-2 px-4">
-            <UserCheck className="w-4 h-4 text-emerald-600" />
-            <span>Thành viên Đã kích hoạt ({activeUsers.length})</span>
-          </TabsTrigger>
-        </TabsList>
+          </div>
+        </CardHeader>
 
-        {/* Tab 1: Pending Requests */}
-        <TabsContent value="pending" className="mt-4 space-y-4">
-          <Card className="shadow-xs border-slate-200">
-            <CardHeader className="pb-3 border-b border-slate-100">
+        {/* Main Tabs Component */}
+        <CardContent className="pt-4 space-y-4">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="bg-slate-100 p-1 border border-slate-200">
+              <TabsTrigger value="pending" className="text-xs font-semibold gap-2 relative">
+                <Clock className="w-3.5 h-3.5 text-amber-600" />
+                <span>Yêu cầu Chờ Phê duyệt</span>
+                {activePendingCount > 0 && (
+                  <Badge className="bg-amber-500 text-white font-bold text-[10px] px-1.5 h-4 rounded-full">
+                    {activePendingCount}
+                  </Badge>
+                )}
+              </TabsTrigger>
+
+              <TabsTrigger value="active" className="text-xs font-semibold gap-2">
+                <UserCheck className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Thành viên Đang Hoạt động ({activeUsers.length})</span>
+              </TabsTrigger>
+            </TabsList>
+
+            {/* TAB 1: PENDING MEMBERSHIP REQUESTS */}
+            <TabsContent value="pending" className="pt-3 space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle className="text-base font-bold flex items-center gap-2 text-slate-900">
-                    <Clock className="w-4 h-4 text-amber-600" />
-                    <span>Danh sách Yêu cầu Gia nhập Chờ duyệt</span>
-                  </CardTitle>
-                  <CardDescription className="text-xs text-slate-500 mt-0.5">
-                    Các tài khoản đã đăng ký và chọn gia nhập Tập đoàn <strong>{session?.tenant.display_name}</strong>
-                  </CardDescription>
+                  <h3 className="text-sm font-bold text-slate-900">Danh sách Đơn gia nhập chờ duyệt ({pendingRequests.length})</h3>
+                  <p className="text-xs text-slate-500">Các tài khoản đăng ký nhập Mã Tập đoàn đang chờ Quản trị viên cấp quyền</p>
                 </div>
               </div>
-            </CardHeader>
 
-            <CardContent className="p-0">
               <Table>
-                <TableHeader className="bg-slate-50/80">
+                <TableHeader className="bg-slate-50">
                   <TableRow>
-                    <TableHead className="text-xs font-bold text-slate-700">Họ và tên Người dùng</TableHead>
-                    <TableHead className="text-xs font-bold text-slate-700">Email Đăng ký</TableHead>
-                    <TableHead className="text-xs font-bold text-slate-700">Tập đoàn Gia nhập</TableHead>
-                    <TableHead className="text-xs font-bold text-slate-700">Thời gian Gửi yêu cầu</TableHead>
-                    <TableHead className="text-xs font-bold text-slate-700">Trạng thái</TableHead>
-                    <TableHead className="text-xs font-bold text-slate-700 text-right pr-6">Thao tác Quản trị</TableHead>
+                    <TableHead className="text-xs font-bold text-slate-700">Người đăng ký</TableHead>
+                    <TableHead className="text-xs font-bold text-slate-700">Email Công vụ</TableHead>
+                    <TableHead className="text-xs font-bold text-slate-700">Thời gian đăng ký</TableHead>
+                    <TableHead className="text-xs font-bold text-slate-700">Chọn Vai trò Gán</TableHead>
+                    <TableHead className="text-xs font-bold text-slate-700 text-right pr-6">Thao tác Phê duyệt</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {pendingRequests.map((req) => (
-                    <TableRow key={req.id} className="hover:bg-slate-50/80">
-                      <TableCell className="font-semibold text-slate-900 text-xs">
-                        <div className="flex items-center gap-2">
-                          <div className="w-7 h-7 rounded-full bg-blue-100 text-blue-700 font-bold flex items-center justify-center text-xs">
-                            {req.displayName.charAt(0)}
-                          </div>
-                          <span>{req.displayName}</span>
-                        </div>
+                  {loading && (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-8 text-slate-500 text-xs font-medium">
+                        <Loader2 className="w-5 h-5 animate-spin mx-auto text-blue-600 mb-2" />
+                        Đang tải danh sách đơn đăng ký từ máy chủ...
                       </TableCell>
-                      <TableCell className="text-xs font-mono text-slate-600">{req.email}</TableCell>
-                      <TableCell className="text-xs">
-                        <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 font-mono text-[11px]">
-                          {req.tenantCode}
-                        </Badge>
+                    </TableRow>
+                  )}
+
+                  {!loading && pendingRequests.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-12 text-slate-500 text-xs">
+                        <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto mb-2 opacity-80" />
+                        <p className="font-bold text-slate-700 text-sm">Không có yêu cầu gia nhập nào đang chờ duyệt</p>
+                        <p className="text-slate-400 mt-0.5">Tất cả tài khoản đăng ký gia nhập Tập đoàn đã được xử lý xong.</p>
                       </TableCell>
-                      <TableCell className="text-xs text-slate-500">
-                        {new Date(req.requestedAt).toLocaleString('vi-VN')}
-                      </TableCell>
-                      <TableCell className="text-xs">
-                        {req.status === 'PENDING' && (
-                          <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-300 gap-1 text-[10px]">
-                            <Clock className="w-3 h-3" />
-                            Chờ duyệt (INVITED)
-                          </Badge>
-                        )}
-                        {req.status === 'APPROVED' && (
-                          <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-300 gap-1 text-[10px]">
-                            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                            Đã phê duyệt
-                          </Badge>
-                        )}
-                        {req.status === 'REJECTED' && (
-                          <Badge variant="outline" className="bg-rose-50 text-rose-700 border-rose-300 gap-1 text-[10px]">
-                            <XCircle className="w-3 h-3 text-rose-600" />
-                            Đã từ chối
-                          </Badge>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right pr-6">
-                        {req.status === 'PENDING' ? (
+                    </TableRow>
+                  )}
+
+                  {!loading &&
+                    pendingRequests.map((req) => (
+                      <TableRow key={req.id} className="hover:bg-slate-50/80 transition-colors">
+                        <TableCell className="font-bold text-slate-900 text-xs">
+                          {req.requester.displayName || req.requester.email}
+                        </TableCell>
+                        <TableCell className="text-xs text-slate-600 font-mono">
+                          {req.requester.email}
+                        </TableCell>
+                        <TableCell className="text-xs text-slate-500">
+                          {new Date(req.requestedAt).toLocaleString('vi-VN')}
+                        </TableCell>
+                        <TableCell className="text-xs">
+                          <Select
+                            value={selectedRoleIds[req.id] || (roles[0] ? roles[0].id : '')}
+                            onValueChange={(val) => setSelectedRoleIds((prev) => ({ ...prev, [req.id]: val }))}
+                          >
+                            <SelectTrigger className="w-56 h-8 text-xs font-medium border-slate-200 bg-white">
+                              <SelectValue placeholder="Chọn vai trò gán..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {roles.map((r) => (
+                                <SelectItem key={r.id} value={r.id} className="text-xs font-medium">
+                                  {r.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </TableCell>
+                        <TableCell className="text-right pr-6">
                           <div className="flex items-center justify-end gap-2">
                             <Button
                               size="sm"
                               onClick={() => handleApprove(req)}
-                              className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs gap-1.5 h-8"
+                              disabled={actionLoadingId === req.id}
+                              className="h-8 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white gap-1"
                             >
-                              <CheckCircle2 className="w-3.5 h-3.5" />
-                              Phê duyệt (Approve)
+                              {actionLoadingId === req.id ? (
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              ) : (
+                                <CheckCircle2 className="w-3.5 h-3.5" />
+                              )}
+                              Phê duyệt
                             </Button>
 
                             <Button
                               variant="outline"
                               size="sm"
                               onClick={() => handleReject(req)}
-                              className="text-rose-600 border-rose-200 hover:bg-rose-50 font-semibold text-xs gap-1.5 h-8"
+                              disabled={actionLoadingId === req.id}
+                              className="h-8 text-xs font-semibold text-rose-600 hover:text-rose-700 hover:bg-rose-50 border-rose-200 gap-1"
                             >
                               <XCircle className="w-3.5 h-3.5" />
                               Từ chối
                             </Button>
                           </div>
-                        ) : (
-                          <span className="text-xs text-slate-400 font-medium">Đã xử lý</span>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                        </TableCell>
+                      </TableRow>
+                    ))}
                 </TableBody>
               </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
+            </TabsContent>
 
-        {/* Tab 2: Active Users */}
-        <TabsContent value="active" className="mt-4 space-y-4">
-          <Card className="shadow-xs border-slate-200">
-            <CardHeader className="pb-3 border-b border-slate-100">
+            {/* TAB 2: ACTIVE MEMBERS */}
+            <TabsContent value="active" className="pt-3 space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <CardTitle className="text-base font-bold flex items-center gap-2 text-slate-900">
-                  <UserCheck className="w-4 h-4 text-emerald-600" />
-                  <span>Danh sách Thành viên Trong Tập đoàn</span>
-                </CardTitle>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">Danh sách Thành viên Đang Hoạt động trong Tập đoàn</h3>
+                  <p className="text-xs text-slate-500">Tất cả nhân sự đã được Quản trị viên duyệt quyền truy cập dữ liệu CRM</p>
+                </div>
 
                 <div className="relative w-full sm:w-64">
                   <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400" />
                   <Input
-                    placeholder="Tìm kiếm người dùng..."
+                    placeholder="Tìm thành viên theo tên hoặc email..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="pl-8 text-xs h-8"
                   />
                 </div>
               </div>
-            </CardHeader>
 
-            <CardContent className="p-0">
               <Table>
-                <TableHeader className="bg-slate-50/80">
+                <TableHeader className="bg-slate-50">
                   <TableRow>
-                    <TableHead className="text-xs font-bold text-slate-700">Họ và tên</TableHead>
-                    <TableHead className="text-xs font-bold text-slate-700">Email</TableHead>
-                    <TableHead className="text-xs font-bold text-slate-700">Vai trò Phân bổ</TableHead>
+                    <TableHead className="text-xs font-bold text-slate-700">Họ và Tên</TableHead>
+                    <TableHead className="text-xs font-bold text-slate-700">Email Công vụ</TableHead>
+                    <TableHead className="text-xs font-bold text-slate-700">Vai trò & Quyền hạn</TableHead>
                     <TableHead className="text-xs font-bold text-slate-700">Trạng thái</TableHead>
-                    <TableHead className="text-xs font-bold text-slate-700">Ngày tham gia</TableHead>
+                    <TableHead className="text-xs font-bold text-slate-700">Ngày gia nhập</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredActiveUsers.map((user) => (
-                    <TableRow key={user.id} className="hover:bg-slate-50/80">
-                      <TableCell className="font-semibold text-slate-900 text-xs">
-                        <div className="flex items-center gap-2">
-                          <div className="w-7 h-7 rounded-full bg-slate-200 text-slate-700 font-bold flex items-center justify-center text-xs">
-                            {user.displayName.charAt(0)}
-                          </div>
-                          <span>{user.displayName}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-xs font-mono text-slate-600">{user.email}</TableCell>
-                      <TableCell className="text-xs">
-                        <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 gap-1 text-[11px]">
-                          <Shield className="w-3 h-3 text-blue-600" />
-                          {user.roleName}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-xs">
-                        <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-300 gap-1 text-[10px]">
-                          <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                          Hoạt động (ACTIVE)
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-xs text-slate-500">
-                        {new Date(user.joinedAt).toLocaleDateString('vi-VN')}
+                  {filteredActiveUsers.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-8 text-xs text-slate-500 font-medium">
+                        Không tìm thấy thành viên nào phù hợp với từ khóa tìm kiếm.
                       </TableCell>
                     </TableRow>
-                  ))}
+                  )}
+
+                  {filteredActiveUsers.map((user) => {
+                    const effectiveRoleId = getEffectiveRoleId(user);
+                    return (
+                      <TableRow key={user.id} className="hover:bg-slate-50/80 transition-colors">
+                        <TableCell className="font-bold text-slate-900 text-xs">
+                          <div className="flex items-center gap-2">
+                            <span>{user.displayName}</span>
+                            {user.isTenantAdmin && (
+                              <Badge className="bg-blue-600 text-white font-bold text-[9px] px-1.5 py-0">
+                                Admin
+                              </Badge>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-xs text-slate-600 font-mono">
+                          {user.email}
+                        </TableCell>
+                        <TableCell className="text-xs">
+                          {user.isTenantAdmin ? (
+                            <div className="flex items-center gap-1.5 text-xs font-bold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-md border border-blue-200 w-fit">
+                              <Shield className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                              <span>{user.roleName}</span>
+                            </div>
+                          ) : (
+                            <Select
+                              value={effectiveRoleId}
+                              onValueChange={(val) => handleChangeMemberRole(user.id, val)}
+                            >
+                              <SelectTrigger className="w-56 h-8 text-xs font-semibold border-slate-200 bg-white">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {roles.map((r) => (
+                                  <SelectItem key={r.id} value={r.id} className="text-xs font-medium">
+                                    {r.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-xs">
+                          <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 font-semibold text-[10px]">
+                            Đang hoạt động
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-xs text-slate-500">
+                          {new Date(user.joinedAt).toLocaleDateString('vi-VN')}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
+
+      {/* Create User Wizard Modal */}
+      <CreateUserWizardModal
+        open={isCreateWizardOpen}
+        onOpenChange={setIsCreateWizardOpen}
+        onUserCreated={() => fetchMembershipRequests()}
+      />
     </div>
   );
 };

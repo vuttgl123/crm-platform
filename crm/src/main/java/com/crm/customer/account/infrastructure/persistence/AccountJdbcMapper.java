@@ -55,11 +55,14 @@ final class AccountJdbcMapper {
 
 	static AccountSummary mapSummary(ResultSet resultSet, int rowNumber)
 			throws SQLException {
+		String parentIdStr = resultSet.getString("parent_account_id");
+		UUID parentAccountId = parentIdStr == null ? null : UUID.fromString(parentIdStr);
 		return new AccountSummary(
 				UUID.fromString(resultSet.getString("id")),
 				resultSet.getString("account_number"),
 				resultSet.getString("display_name"),
 				resultSet.getString("legal_name"),
+				parentAccountId,
 				AccountType.valueOf(resultSet.getString("account_type")),
 				AccountLifecycleStage.valueOf(
 						resultSet.getString("lifecycle_stage")),

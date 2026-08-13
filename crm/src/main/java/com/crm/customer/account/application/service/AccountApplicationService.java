@@ -19,6 +19,7 @@ import com.crm.foundation.identifier.IdentifierGenerator;
 import com.crm.foundation.security.AuthorizedDataAccess;
 import com.crm.foundation.security.CurrentActor;
 import com.crm.foundation.security.DataScopeType;
+import com.crm.foundation.security.SystemPermission;
 import com.crm.foundation.security.TenantAccessAuthorizer;
 import com.crm.foundation.tenancy.CurrentTenant;
 import com.crm.foundation.time.TimeProvider;
@@ -36,8 +37,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class AccountApplicationService implements AccountFacade {
 
-	private static final String READ_PERMISSION = "crm_account.read";
-	private static final String WRITE_PERMISSION = "crm_account.write";
 	private static final String ENTITY_TYPE = "ACCOUNT";
 
 	private final AccountRepository accountRepository;
@@ -67,9 +66,14 @@ public class AccountApplicationService implements AccountFacade {
 		TenantId tenantId = currentTenant.requireTenantId();
 		ActorId actorId = currentActor.requireActorId();
 		AuthorizedDataAccess access = authorizer.authorize(
-				WRITE_PERMISSION, ENTITY_TYPE);
+				SystemPermission.CRM_ACCOUNT_WRITE, ENTITY_TYPE);
 		AccountId accountId = new AccountId(identifierGenerator.nextId());
 		Instant now = timeProvider.now();
+
+		AccountOwner owner = command.owner();
+		if (owner == null && !hasTenantScope(access)) {
+			owner = resolveDefaultOwner(actorId, access);
+		}
 
 		Account account = Account.create(
 				tenantId,
@@ -79,7 +83,7 @@ public class AccountApplicationService implements AccountFacade {
 				command.legalName(),
 				command.displayName(),
 				command.parentAccountId(),
-				command.owner(),
+				owner,
 				command.lifecycleStage(),
 				command.industryCode(),
 				command.taxIdentifier(),
@@ -120,7 +124,7 @@ public class AccountApplicationService implements AccountFacade {
 		TenantId tenantId = currentTenant.requireTenantId();
 		ActorId actorId = currentActor.requireActorId();
 		AuthorizedDataAccess access = authorizer.authorize(
-				READ_PERMISSION, ENTITY_TYPE);
+				SystemPermission.CRM_ACCOUNT_READ, ENTITY_TYPE);
 		return accountRepository.findById(
 					tenantId, accountId, actorId, access)
 				.map(AccountDetails::from)
@@ -134,7 +138,7 @@ public class AccountApplicationService implements AccountFacade {
 		TenantId tenantId = currentTenant.requireTenantId();
 		ActorId actorId = currentActor.requireActorId();
 		AuthorizedDataAccess access = authorizer.authorize(
-				READ_PERMISSION, ENTITY_TYPE);
+				SystemPermission.CRM_ACCOUNT_READ, ENTITY_TYPE);
 		return accountRepository.search(tenantId, actorId, query, access);
 	}
 
@@ -145,14 +149,19 @@ public class AccountApplicationService implements AccountFacade {
 		TenantId tenantId = currentTenant.requireTenantId();
 		ActorId actorId = currentActor.requireActorId();
 		AuthorizedDataAccess access = authorizer.authorize(
-				WRITE_PERMISSION, ENTITY_TYPE);
+				SystemPermission.CRM_ACCOUNT_WRITE, ENTITY_TYPE);
 		Account account = findForWrite(
 				tenantId, command.accountId(), actorId, access);
 		if (command.version() != account.version()) {
 			throw versionConflict();
 		}
 
-		validateOwner(tenantId, actorId, command.owner(), access);
+		AccountOwner owner = command.owner() != null ? command.owner() : account.owner();
+		if (owner == null && !hasTenantScope(access)) {
+			owner = resolveDefaultOwner(actorId, access);
+		}
+
+		validateOwner(tenantId, actorId, owner, access);
 		validateParent(tenantId, actorId, account.id(),
 				command.parentAccountId(), access);
 
@@ -163,7 +172,7 @@ public class AccountApplicationService implements AccountFacade {
 				command.legalName(),
 				command.displayName(),
 				command.parentAccountId(),
-				command.owner(),
+				owner,
 				command.lifecycleStage(),
 				command.industryCode(),
 				command.taxIdentifier(),
@@ -191,7 +200,7 @@ public class AccountApplicationService implements AccountFacade {
 		TenantId tenantId = currentTenant.requireTenantId();
 		ActorId actorId = currentActor.requireActorId();
 		AuthorizedDataAccess access = authorizer.authorize(
-				WRITE_PERMISSION, ENTITY_TYPE);
+				SystemPermission.CRM_ACCOUNT_WRITE, ENTITY_TYPE);
 		Account account = findForWrite(
 				tenantId, command.accountId(), actorId, access);
 		if (command.version() != account.version()) {
@@ -249,6 +258,16 @@ public class AccountApplicationService implements AccountFacade {
 	private static boolean hasTenantScope(AuthorizedDataAccess access) {
 		return access.scopes().stream()
 				.anyMatch(scope -> scope.type() == DataScopeType.TENANT);
+	}
+
+	private static AccountOwner resolveDefaultOwner(ActorId actorId, AuthorizedDataAccess access) {
+		for (var scope : access.scopes()) {
+			if ((scope.type() == DataScopeType.TEAM || scope.type() == DataScopeType.TEAM_TREE)
+					&& scope.teamId() != null) {
+				return AccountOwner.team(scope.teamId());
+			}
+		}
+		return AccountOwner.user(actorId.value());
 	}
 
 	private static DomainResourceNotFound accountNotFound() {

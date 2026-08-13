@@ -3,40 +3,23 @@ import { Outlet } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { CommandPalette } from './CommandPalette';
-import { storageAdapter } from '@/services/mock/storageAdapter';
 import { Info } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { env } from '@/config/env';
 
 export const AppLayout: React.FC = () => {
-  const [collapsed, setCollapsed] = useState<boolean>(() => storageAdapter.getSidebarCollapsed());
-  const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const { t } = useTranslation();
 
-  const handleToggleCollapse = () => {
-    const next = !collapsed;
-    setCollapsed(next);
-    storageAdapter.setSidebarCollapsed(next);
-  };
-
   return (
-    <div className="min-h-screen flex bg-slate-50 text-slate-900 font-sans">
-      {/* Sidebar */}
-      <Sidebar
-        collapsed={collapsed}
-        onToggleCollapse={handleToggleCollapse}
-        isMobileOpen={isMobileOpen}
-        onMobileClose={() => setIsMobileOpen(false)}
-      />
+    <div className="min-h-screen flex w-full bg-slate-50 text-slate-900 font-sans">
+      {/* Clean Fixed Sidebar */}
+      <Sidebar />
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 min-h-screen">
         {/* Header */}
-        <Header
-          onMobileMenuOpen={() => setIsMobileOpen(true)}
-          onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
-        />
+        <Header onOpenCommandPalette={() => setIsCommandPaletteOpen(true)} />
 
         {/* Mock Mode Banner */}
         {env.useMocks && (

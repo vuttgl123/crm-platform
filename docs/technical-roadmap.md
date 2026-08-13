@@ -47,13 +47,27 @@ delivered. They provide custom-role lifecycle, atomic permission grants, and
 role data scopes. Effective Access reads these database-backed grants without
 JWT access lists.
 
-Keep the remaining order:
+The Membership Join Request slice is delivered. It includes authenticated
+user-initiated submission to an available tenant, tenant-scoped request review,
+approval and rejection, and atomic initial custom-role assignment. Approval
+creates an active membership or reactivates a previously removed membership,
+replaces any retained role assignments, and resolves the request in the same
+transaction.
 
-1. Membership Management for invitation, role assignment, and membership
-   lifecycle operations.
-2. Team Management for team hierarchy and `TEAM` or `TEAM_TREE` scopes.
-3. Broader Tenant Administration for details, status, plan, region, retention,
-   and settings.
+The following Tenant Administration capabilities remain explicitly deferred:
+
+1. Tenant-originated invitations.
+2. Direct role-assignment management after onboarding, including adding,
+   replacing, expiring, or removing assignments independently of approval.
+3. General membership lifecycle operations such as suspension, explicit
+   reactivation, and removal.
+4. Tenant Admin promotion or demotion through a dedicated privileged policy.
+5. Team Management, including team hierarchy, team membership, and `TEAM` or
+   `TEAM_TREE` scope administration.
+6. Platform-operator tenant provisioning under a platform-level authorization
+   boundary.
+7. Broader tenant details, status, plan, region, retention, and settings
+   administration.
 
 These roadmap items are planning references, not implemented API contracts.
 
@@ -64,16 +78,31 @@ returns the selected active membership, effective permission codes, and global
 or entity-specific data scopes directly from current database authorization
 state. JWTs remain identity and session tokens and do not carry access lists.
 
-Role assignment, invitation, membership-lifecycle, and team APIs remain future
-Tenant Administration slices.
+Invitation, direct post-onboarding role-assignment, membership-lifecycle, and
+team APIs remain future Tenant Administration slices. Atomic initial
+custom-role assignment is delivered only as part of user-initiated membership
+approval; it is not a general role-assignment API.
 
 ### 3. Account vertical slice
 
-Build the first tenant-owned CRM module using the complete access pattern:
-mandatory tenant context, functional permission, data scope, tenant-filtered
-queries, optimistic concurrency, and soft-delete filtering. Use this slice to
-establish the reusable application and repository conventions for later CRM
-modules.
+The core Account vertical slice is delivered. It establishes the tenant-owned
+CRM access pattern: mandatory tenant context, functional permission, data
+scope, tenant-filtered queries, optimistic concurrency, and soft-delete
+filtering.
+
+Account Relationship is delivered after core Account. It manages directed,
+history-preserving relationships between scoped active Accounts and reuses the
+same Account read/write permission and data-scope model.
+
+Account Communication Channel is delivered after Account Relationship. It
+manages scoped Account-owned email, phone, social, and other communication
+values with normalization, optimistic concurrency, and soft-delete filtering.
+
+The following Account-adjacent capabilities remain deferred, in this order:
+
+1. Account Address.
+2. Contact management, then Contact Communication Channel and Address.
+3. Duplicate detection/merge and lifecycle history after concrete rules exist.
 
 ### 4. Generic audit execution context
 

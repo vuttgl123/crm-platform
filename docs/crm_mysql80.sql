@@ -102,6 +102,46 @@ CREATE TABLE platform_tenant_memberships (
                                              CHECK (removed_at IS NULL OR membership_status = 'REMOVED')
 ) ENGINE=InnoDB;
 
+CREATE TABLE platform_membership_requests (
+    tenant_id CHAR(36) NOT NULL,
+    id CHAR(36) NOT NULL DEFAULT (UUID()),
+    requester_user_id CHAR(36) NOT NULL,
+    request_status VARCHAR(191) NOT NULL DEFAULT 'PENDING'
+        CHECK (request_status IN ('PENDING', 'APPROVED', 'REJECTED')),
+    message VARCHAR(2000),
+    reviewed_by CHAR(36),
+    review_note VARCHAR(2000),
+    requested_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    reviewed_at DATETIME(6),
+    created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    version BIGINT NOT NULL DEFAULT 1 CHECK (version > 0),
+    pending_requester_user_id CHAR(36)
+        GENERATED ALWAYS AS (
+            CASE WHEN request_status = 'PENDING'
+                 THEN requester_user_id ELSE NULL END
+        ) STORED,
+    PRIMARY KEY (tenant_id, id),
+    FOREIGN KEY (tenant_id)
+        REFERENCES platform_tenants(id) ON DELETE CASCADE,
+    FOREIGN KEY (requester_user_id)
+        REFERENCES platform_users(id) ON DELETE RESTRICT,
+    FOREIGN KEY (tenant_id, reviewed_by)
+        REFERENCES platform_tenant_memberships(tenant_id, user_id)
+        ON DELETE RESTRICT,
+    CONSTRAINT uq_membership_requests_pending
+        UNIQUE (tenant_id, pending_requester_user_id),
+    CHECK (
+        (request_status = 'PENDING'
+            AND reviewed_by IS NULL
+            AND reviewed_at IS NULL)
+        OR
+        (request_status IN ('APPROVED', 'REJECTED')
+            AND reviewed_by IS NOT NULL
+            AND reviewed_at IS NOT NULL)
+    )
+) ENGINE=InnoDB;
+
 CREATE TABLE platform_teams (
                                 tenant_id CHAR(36) NOT NULL,
                                 id CHAR(36) NOT NULL DEFAULT (UUID()),
@@ -217,8 +257,8 @@ CREATE TABLE platform_role_data_scopes (
                                                REFERENCES platform_roles(tenant_id, id) ON DELETE CASCADE,
                                            FOREIGN KEY (tenant_id, team_id)
                                                REFERENCES platform_teams(tenant_id, id) ON DELETE CASCADE,
-                                           CHECK ((scope_type IN ('TEAM', 'TEAM_TREE') AND team_id IS NOT NULL)
-                                               OR (scope_type IN ('OWN', 'TENANT') AND team_id IS NULL))
+                                           CHECK ((scope_type IN ('OWN', 'TENANT') AND team_id IS NULL)
+                                               OR (scope_type IN ('TEAM', 'TEAM_TREE')))
 ) ENGINE=InnoDB;
 
 CREATE TABLE platform_tenant_settings (
@@ -1869,6 +1909,14 @@ ALTER TABLE crm_entity_tags
 CREATE INDEX idx_tenant_memberships_user
     ON platform_tenant_memberships (user_id, membership_status);
 
+CREATE INDEX idx_membership_requests_review
+    ON platform_membership_requests
+        (tenant_id, request_status, requested_at DESC, id DESC);
+
+CREATE INDEX idx_membership_requests_requester
+    ON platform_membership_requests
+        (requester_user_id, request_status);
+
 CREATE INDEX idx_team_members_user
     ON platform_team_members (tenant_id, user_id);
 
@@ -2225,7 +2273,36 @@ VALUES
     ('privacy_consent.read', 'Read consent records', 'privacy', 'SENSITIVE'),
     ('privacy_consent.write', 'Create and update consent records', 'privacy', 'SENSITIVE'),
     ('audit_read', 'Read audit trails', 'audit', 'PRIVILEGED'),
-    ('platform_user.manage', 'Manage tenant memberships and roles', 'platform', 'PRIVILEGED');
+    ('platform_user.manage', 'Manage tenant memberships and roles', 'platform', 'PRIVILEGED'),
+    ('platform_membership.read',
+     'Read tenant membership requests', 'platform', 'SENSITIVE'),
+    ('platform_membership.approve',
+     'Approve or reject tenant membership requests', 'platform', 'PRIVILEGED'),
+    ('platform_role.read',
+     'Read permission catalogue and tenant roles', 'platform', 'NORMAL'),
+    ('platform_role.assign',
+     'Assign tenant roles to members', 'platform', 'PRIVILEGED'),
+    ('platform_role.manage',
+     'Create and manage tenant roles', 'platform', 'PRIVILEGED');
+
+INSERT IGNORE INTO platform_role_permissions (
+    tenant_id, role_id, permission_code, granted_at, granted_by
+)
+SELECT legacy.tenant_id,
+       legacy.role_id,
+       fine.permission_code,
+       CURRENT_TIMESTAMP(6),
+       legacy.granted_by
+FROM platform_role_permissions legacy
+JOIN platform_permissions fine
+  ON fine.permission_code IN (
+      'platform_membership.read',
+      'platform_membership.approve',
+      'platform_role.read',
+      'platform_role.assign',
+      'platform_role.manage'
+  )
+WHERE legacy.permission_code = 'platform_user.manage';
 
 CREATE VIEW privacy_current_consents AS
 SELECT
@@ -2415,6 +2492,14 @@ BEGIN
   SET NEW.updated_at = CURRENT_TIMESTAMP(6);
   SET NEW.version = OLD.version + 1;
   SET NEW.updated_by = COALESCE(@app_user_id, NEW.updated_by, OLD.updated_by);
+END$$
+
+CREATE TRIGGER trg_touch_platform_membership_requests
+BEFORE UPDATE ON platform_membership_requests
+FOR EACH ROW
+BEGIN
+  SET NEW.updated_at = CURRENT_TIMESTAMP(6);
+  SET NEW.version = OLD.version + 1;
 END$$
 
 CREATE TRIGGER trg_touch_platform_teams

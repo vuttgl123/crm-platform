@@ -13,15 +13,23 @@ export interface PermissionResponse {
   riskLevel?: 'NORMAL' | 'SENSITIVE' | 'PRIVILEGED';
 }
 
+export interface RoleDataScopeRequest {
+  entityType: string;
+  type: 'OWN' | 'TEAM' | 'TEAM_TREE' | 'TENANT';
+  teamId?: string;
+}
+
 export interface RoleSummaryResponse {
   id: string;
   roleCode: string;
   name: string;
   description?: string;
   isSystem: boolean;
+  system?: boolean;
   permissionCount: number;
   status: 'ACTIVE' | 'INACTIVE';
   createdAt: string;
+  version?: number;
 }
 
 export interface RoleDetailResponse {
@@ -30,9 +38,13 @@ export interface RoleDetailResponse {
   name: string;
   description?: string;
   isSystem: boolean;
-  scopeType: 'OWN' | 'TEAM' | 'TEAM_TREE' | 'TENANT';
+  system?: boolean;
+  scopeType?: 'OWN' | 'TEAM' | 'TEAM_TREE' | 'TENANT';
   status: 'ACTIVE' | 'INACTIVE';
-  permissions: PermissionResponse[];
+  permissions?: PermissionResponse[];
+  permissionCodes?: string[];
+  dataScopes?: RoleDataScopeRequest[];
+  version?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -43,13 +55,16 @@ export interface CreateRoleRequest {
   description?: string;
   scopeType?: 'OWN' | 'TEAM' | 'TEAM_TREE' | 'TENANT';
   permissionCodes: string[];
+  dataScopes?: RoleDataScopeRequest[];
 }
 
 export interface UpdateRoleRequest {
+  version: number;
   name: string;
   description?: string;
-  scopeType?: 'OWN' | 'TEAM' | 'TEAM_TREE' | 'TENANT';
+  status: 'ACTIVE' | 'INACTIVE';
   permissionCodes: string[];
+  dataScopes?: RoleDataScopeRequest[];
 }
 
 export const roleApi = {
@@ -97,9 +112,12 @@ export const roleApi = {
   /**
    * DELETE /api/roles/{id} - Delete custom role
    */
-  async deleteRole(id: string): Promise<void> {
+  async deleteRole(id: string, version = 1): Promise<void> {
     return apiFetch<void>(`/roles/${id}`, {
       method: 'DELETE',
+      headers: {
+        'If-Match': `"${version}"`,
+      },
     });
   },
 };

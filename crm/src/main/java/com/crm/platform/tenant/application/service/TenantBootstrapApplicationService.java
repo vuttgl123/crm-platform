@@ -1,11 +1,13 @@
 package com.crm.platform.tenant.application.service;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
 import com.crm.foundation.identifier.IdentifierGenerator;
 import com.crm.foundation.security.CurrentActor;
+import com.crm.foundation.security.SystemPermission;
 import com.crm.foundation.time.TimeProvider;
 import com.crm.platform.tenant.application.command.BootstrapTenantCommand;
 import com.crm.platform.tenant.application.dto.TenantDetails;
@@ -25,8 +27,14 @@ import org.springframework.transaction.annotation.Transactional;
 public class TenantBootstrapApplicationService
 		implements TenantBootstrapFacade {
 
-	private static final String PLATFORM_USER_MANAGE =
-			"platform_user.manage";
+	private static final List<SystemPermission> TENANT_ADMIN_PERMISSIONS =
+			List.of(
+					SystemPermission.PLATFORM_USER_MANAGE,
+					SystemPermission.PLATFORM_MEMBERSHIP_READ,
+					SystemPermission.PLATFORM_MEMBERSHIP_APPROVE,
+					SystemPermission.PLATFORM_ROLE_READ,
+					SystemPermission.PLATFORM_ROLE_ASSIGN,
+					SystemPermission.PLATFORM_ROLE_MANAGE);
 
 	private final TenantBootstrapRepository repository;
 	private final CurrentActor currentActor;
@@ -58,9 +66,11 @@ public class TenantBootstrapApplicationService
 			throw new ResourceConflict(
 					TenantErrorCode.TENANT_BOOTSTRAP_NOT_ALLOWED);
 		}
-		if (!repository.permissionExists(PLATFORM_USER_MANAGE)) {
-			throw new IllegalStateException(
-					"Required permission platform_user.manage is missing");
+		for (SystemPermission permission : TENANT_ADMIN_PERMISSIONS) {
+			if (!repository.permissionExists(permission)) {
+				throw new IllegalStateException(
+						"Required permission " + permission + " is missing");
+			}
 		}
 
 		Instant now = timeProvider.now();
@@ -87,8 +97,10 @@ public class TenantBootstrapApplicationService
 
 		repository.insertTenantAdminMembership(tenant, actorId);
 		repository.insertSystemRole(tenant.id(), roleId, actorId, now);
-		repository.grantPermission(
-				tenant.id(), roleId, PLATFORM_USER_MANAGE, actorId, now);
+		for (SystemPermission permission : TENANT_ADMIN_PERMISSIONS) {
+			repository.grantPermission(
+					tenant.id(), roleId, permission, actorId, now);
+		}
 		repository.assignRole(tenant.id(), roleId, actorId, now);
 
 		return TenantDetails.from(tenant);

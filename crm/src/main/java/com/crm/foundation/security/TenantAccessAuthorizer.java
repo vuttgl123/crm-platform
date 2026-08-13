@@ -17,7 +17,7 @@ public final class TenantAccessAuthorizer {
 		this.dataScopeResolver = dataScopeResolver;
 	}
 
-	public AuthorizedDataAccess authorize(String permission,
+	public AuthorizedDataAccess authorize(SystemPermission permission,
 			String entityType) {
 		permissionChecker.requirePermission(permission);
 		Set<ResolvedDataScope> scopes = dataScopeResolver.resolve(entityType);

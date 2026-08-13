@@ -9,6 +9,7 @@ import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import com.crm.foundation.security.CodedAccessDeniedException;
 import com.crm.foundation.security.CodedAuthenticationException;
+import com.crm.foundation.tenancy.MissingTenantContextException;
 import com.crm.sharedkernel.domain.exception.BusinessRuleViolation;
 import com.crm.sharedkernel.domain.exception.DomainException;
 import com.crm.sharedkernel.domain.exception.DomainResourceNotFound;
@@ -194,6 +195,15 @@ public final class GlobalExceptionHandler {
 		return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
 				.body(problemFactory.create(HttpStatus.UNAUTHORIZED,
 						exception.errorCode(), request, currentLocale()));
+	}
+
+	@ExceptionHandler(MissingTenantContextException.class)
+	public ResponseEntity<ProblemDetail> handleMissingTenantContext(
+			MissingTenantContextException exception,
+			HttpServletRequest request) {
+		return ResponseEntity.status(HttpStatus.FORBIDDEN)
+				.body(problemFactory.create(HttpStatus.FORBIDDEN,
+						CommonErrorCode.ACCESS_DENIED, request, currentLocale()));
 	}
 
 	@ExceptionHandler(Exception.class)

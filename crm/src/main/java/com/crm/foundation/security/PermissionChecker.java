@@ -2,8 +2,8 @@ package com.crm.foundation.security;
 
 public interface PermissionChecker {
 
-	boolean hasPermission(String permission);
+	boolean hasPermission(SystemPermission permission);
 
-	void requirePermission(String permission);
+	void requirePermission(SystemPermission permission);
 
 }

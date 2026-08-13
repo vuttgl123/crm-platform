@@ -1,14 +1,11 @@
 package com.crm.customer.account.infrastructure.persistence;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
-import java.util.TreeSet;
 
 import com.crm.customer.account.application.dto.AccountSummary;
 import com.crm.customer.account.application.port.AccountRepository;
@@ -18,14 +15,13 @@ import com.crm.customer.account.domain.AccountId;
 import com.crm.customer.account.domain.AccountOwner;
 import com.crm.customer.account.domain.AccountOwnerType;
 import com.crm.customer.account.domain.AnnualRevenue;
+import com.crm.customer.infrastructure.persistence.AccountScopeSql;
 import com.crm.foundation.security.AuthorizedDataAccess;
 import com.crm.foundation.security.DataScopeType;
-import com.crm.foundation.security.ResolvedDataScope;
 import com.crm.sharedkernel.application.PageResult;
 import com.crm.sharedkernel.domain.ActorId;
 import com.crm.sharedkernel.domain.TenantId;
 import org.springframework.jdbc.core.simple.JdbcClient;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -46,29 +42,10 @@ public class JdbcAccountRepository implements AccountRepository {
 
 	private static final String SUMMARY_SELECT = """
 			SELECT a.id, a.account_number, a.display_name, a.legal_name,
-			       a.account_type, a.lifecycle_stage,
+			       a.parent_account_id, a.account_type, a.lifecycle_stage,
 			       a.owner_user_id, a.owner_team_id, a.do_not_contact,
 			       a.updated_at, a.version
 			FROM crm_accounts a
-			""";
-
-	private static final String TEAM_TREE_CTE = """
-			WITH RECURSIVE authorized_team_tree AS (
-			    SELECT t.id
-			    FROM platform_teams t
-			    WHERE t.tenant_id = :tenantId
-			      AND t.id IN (:scopeTreeRootIds)
-			      AND t.status = 'ACTIVE'
-			      AND t.deleted_at IS NULL
-			    UNION ALL
-			    SELECT child.id
-			    FROM platform_teams child
-			    JOIN authorized_team_tree parent
-			      ON child.parent_team_id = parent.id
-			    WHERE child.tenant_id = :tenantId
-			      AND child.status = 'ACTIVE'
-			      AND child.deleted_at IS NULL
-			)
 			""";
 
 	private final JdbcClient jdbcClient;
@@ -80,8 +57,8 @@ public class JdbcAccountRepository implements AccountRepository {
 	@Override
 	public Optional<Account> findById(TenantId tenantId, AccountId accountId,
 			ActorId actorId, AuthorizedDataAccess access) {
-		ScopeSql scope = scopeSql(actorId, access, "a.");
-		Map<String, Object> parameters = parameters(scope);
+		AccountScopeSql scope = AccountScopeSql.resolve(actorId, access);
+		Map<String, Object> parameters = new HashMap<>(scope.parameters());
 		parameters.put("tenantId", tenantId.toString());
 		parameters.put("accountId", accountId.toString());
 		String sql = scope.cte() + ACCOUNT_SELECT + """
@@ -89,7 +66,7 @@ public class JdbcAccountRepository implements AccountRepository {
 				  AND a.id = :accountId
 				  AND a.deleted_at IS NULL
 				  AND (%s)
-				""".formatted(scope.predicate());
+				""".formatted(scope.predicate("a"));
 		return jdbcClient.sql(sql)
 				.params(parameters)
 				.query(AccountJdbcMapper::mapAccount)
@@ -100,15 +77,15 @@ public class JdbcAccountRepository implements AccountRepository {
 	public PageResult<AccountSummary> search(TenantId tenantId,
 			ActorId actorId, AccountSearchQuery query,
 			AuthorizedDataAccess access) {
-		ScopeSql scope = scopeSql(actorId, access, "a.");
-		Map<String, Object> parameters = parameters(scope);
+		AccountScopeSql scope = AccountScopeSql.resolve(actorId, access);
+		Map<String, Object> parameters = new HashMap<>(scope.parameters());
 		parameters.put("tenantId", tenantId.toString());
 
 		StringBuilder criteria = new StringBuilder("""
 				WHERE a.tenant_id = :tenantId
 				  AND a.deleted_at IS NULL
 				  AND (%s)
-				""".formatted(scope.predicate()));
+				""".formatted(scope.predicate("a")));
 		appendSearchCriteria(criteria, parameters, query);
 
 		long totalElements = jdbcClient.sql(scope.cte() + """
@@ -187,31 +164,26 @@ public class JdbcAccountRepository implements AccountRepository {
 	public boolean ownerAllowed(TenantId tenantId, ActorId actorId,
 			AccountOwner owner, AuthorizedDataAccess access) {
 		Objects.requireNonNull(owner, "owner must not be null");
-		if (hasScope(access.scopes(), DataScopeType.TENANT)) {
+		AccountScopeSql scope = AccountScopeSql.resolve(actorId, access);
+		if (scope.includes(DataScopeType.TENANT)) {
 			return true;
 		}
 		if (owner.type() == AccountOwnerType.USER) {
 			return owner.id().equals(actorId.value())
-					&& hasScope(access.scopes(), DataScopeType.OWN);
+					&& scope.includes(DataScopeType.OWN);
 		}
-		boolean directTeamAllowed = access.scopes().stream()
-				.filter(scope -> scope.type() == DataScopeType.TEAM)
-				.map(ResolvedDataScope::teamId)
-				.anyMatch(owner.id()::equals);
-		if (directTeamAllowed) {
+		if (scope.directlyIncludesTeam(owner.id())) {
 			return true;
 		}
-		Set<String> treeRoots = teamIds(
-				access.scopes(), DataScopeType.TEAM_TREE);
-		return !treeRoots.isEmpty()
-				&& treeContainsTeam(tenantId, owner, treeRoots);
+		return scope.hasTeamTree()
+				&& treeContainsTeam(tenantId, owner, scope);
 	}
 
 	@Override
 	public boolean parentAllowed(TenantId tenantId, ActorId actorId,
 			AccountId parentAccountId, AuthorizedDataAccess access) {
-		ScopeSql scope = scopeSql(actorId, access, "a.");
-		Map<String, Object> parameters = parameters(scope);
+		AccountScopeSql scope = AccountScopeSql.resolve(actorId, access);
+		Map<String, Object> parameters = new HashMap<>(scope.parameters());
 		parameters.put("tenantId", tenantId.toString());
 		parameters.put("parentAccountId", parentAccountId.toString());
 		return jdbcClient.sql(scope.cte() + """
@@ -221,7 +193,7 @@ public class JdbcAccountRepository implements AccountRepository {
 				  AND a.id = :parentAccountId
 				  AND a.deleted_at IS NULL
 				  AND (%s)
-				""".formatted(scope.predicate()))
+				""".formatted(scope.predicate("a")))
 				.params(parameters)
 				.query(Long.class)
 				.single() > 0L;
@@ -261,9 +233,9 @@ public class JdbcAccountRepository implements AccountRepository {
 	@Override
 	public int update(Account account, long expectedVersion, ActorId actorId,
 			AuthorizedDataAccess access) {
-		ScopeSql scope = scopeSql(actorId, access, "");
-		Map<String, Object> parameters = mutationParameters(account);
-		parameters.putAll(scope.parameters());
+		AccountScopeSql scope = AccountScopeSql.resolve(actorId, access);
+		Map<String, Object> parameters = new HashMap<>(scope.parameters());
+		parameters.putAll(mutationParameters(account));
 		parameters.put("expectedVersion", expectedVersion);
 		return jdbcClient.sql(scope.cte() + """
 				UPDATE crm_accounts
@@ -292,7 +264,7 @@ public class JdbcAccountRepository implements AccountRepository {
 				  AND version = :expectedVersion
 				  AND deleted_at IS NULL
 				  AND (%s)
-				""".formatted(scope.predicate()))
+				""".formatted(scope.predicate("")))
 				.params(parameters)
 				.update();
 	}
@@ -300,7 +272,7 @@ public class JdbcAccountRepository implements AccountRepository {
 	@Override
 	public int softDelete(Account account, long expectedVersion,
 			ActorId actorId, AuthorizedDataAccess access) {
-		ScopeSql scope = scopeSql(actorId, access, "");
+		AccountScopeSql scope = AccountScopeSql.resolve(actorId, access);
 		Map<String, Object> parameters = new HashMap<>(scope.parameters());
 		parameters.put("tenantId", account.tenantId().toString());
 		parameters.put("id", account.id().toString());
@@ -324,21 +296,22 @@ public class JdbcAccountRepository implements AccountRepository {
 				  AND version = :expectedVersion
 				  AND deleted_at IS NULL
 				  AND (%s)
-				""".formatted(scope.predicate()))
+				""".formatted(scope.predicate("")))
 				.params(parameters)
 				.update();
 	}
 
 	private boolean treeContainsTeam(TenantId tenantId, AccountOwner owner,
-			Set<String> treeRoots) {
-		return jdbcClient.sql(TEAM_TREE_CTE + """
-				SELECT COUNT(*)
-				FROM authorized_team_tree
-				WHERE id = :ownerTeamId
-				""")
-				.param("tenantId", tenantId.toString())
-				.param("scopeTreeRootIds", treeRoots)
-				.param("ownerTeamId", owner.id().toString())
+			AccountScopeSql scope) {
+		Map<String, Object> parameters = new HashMap<>(scope.parameters());
+		parameters.put("tenantId", tenantId.toString());
+		parameters.put("ownerTeamId", owner.id().toString());
+		return jdbcClient.sql(scope.cte() + """
+			SELECT COUNT(*)
+			FROM authorized_account_team_tree
+			WHERE id = :ownerTeamId
+			""")
+				.params(parameters)
 				.query(Long.class)
 				.single() > 0L;
 	}
@@ -385,67 +358,6 @@ public class JdbcAccountRepository implements AccountRepository {
 				.replace("\\", "\\\\")
 				.replace("%", "\\%")
 				.replace("_", "\\_");
-	}
-
-	private static ScopeSql scopeSql(ActorId actorId,
-			AuthorizedDataAccess access, String columnPrefix) {
-		Objects.requireNonNull(actorId, "actorId must not be null");
-		Objects.requireNonNull(access, "access must not be null");
-		if (!columnPrefix.isEmpty() && !"a.".equals(columnPrefix)) {
-			throw new IllegalArgumentException("Unsupported scope column prefix");
-		}
-		if (hasScope(access.scopes(), DataScopeType.TENANT)) {
-			return new ScopeSql("", "1 = 1", Map.of());
-		}
-
-		List<String> predicates = new ArrayList<>();
-		Map<String, Object> parameters = new HashMap<>();
-		if (hasScope(access.scopes(), DataScopeType.OWN)) {
-			predicates.add(columnPrefix + "owner_user_id = :scopeActorId");
-			parameters.put("scopeActorId", actorId.toString());
-		}
-
-		Set<String> directTeamIds = teamIds(access.scopes(), DataScopeType.TEAM);
-		if (!directTeamIds.isEmpty()) {
-			predicates.add(columnPrefix + "owner_team_id IN (:scopeTeamIds)");
-			parameters.put("scopeTeamIds", directTeamIds);
-		}
-
-		Set<String> treeRootIds = teamIds(
-				access.scopes(), DataScopeType.TEAM_TREE);
-		String cte = "";
-		if (!treeRootIds.isEmpty()) {
-			cte = TEAM_TREE_CTE;
-			predicates.add(columnPrefix
-					+ "owner_team_id IN (SELECT id FROM authorized_team_tree)");
-			parameters.put("scopeTreeRootIds", treeRootIds);
-		}
-
-		if (predicates.isEmpty()) {
-			throw new AccessDeniedException(
-					"Authorized Account data scope is unusable");
-		}
-		return new ScopeSql(cte, String.join(" OR ", predicates), parameters);
-	}
-
-	private static Set<String> teamIds(Set<ResolvedDataScope> scopes,
-			DataScopeType type) {
-		Set<String> teamIds = new TreeSet<>();
-		for (ResolvedDataScope scope : scopes) {
-			if (scope.type() == type && scope.teamId() != null) {
-				teamIds.add(scope.teamId().toString());
-			}
-		}
-		return teamIds;
-	}
-
-	private static boolean hasScope(Set<ResolvedDataScope> scopes,
-			DataScopeType type) {
-		return scopes.stream().anyMatch(scope -> scope.type() == type);
-	}
-
-	private static Map<String, Object> parameters(ScopeSql scope) {
-		return new HashMap<>(scope.parameters());
 	}
 
 	private static Map<String, Object> insertParameters(Account account) {
@@ -509,16 +421,6 @@ public class JdbcAccountRepository implements AccountRepository {
 
 	private static String revenueCurrency(AnnualRevenue revenue) {
 		return revenue == null ? null : revenue.currencyCode();
-	}
-
-	private record ScopeSql(
-			String cte,
-			String predicate,
-			Map<String, Object> parameters) {
-
-		private ScopeSql {
-			parameters = Map.copyOf(parameters);
-		}
 	}
 
 }

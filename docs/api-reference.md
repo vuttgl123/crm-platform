@@ -199,17 +199,28 @@ HttpOnly cookie and never appears in this JSON object.
 | `GET` | `/api/auth/me` | Bearer access token | `200 OK` |
 | `POST` | `/api/tenants` | Bearer access token; no tenant header | `201 Created` |
 | `GET` | `/api/access/me` | Bearer token and active tenant | `200 OK` |
-| `GET` | `/api/permissions` | Bearer token, tenant, `platform_user.manage` | `200 OK` |
-| `GET` | `/api/roles` | Bearer token, tenant, `platform_user.manage` | `200 OK` |
-| `GET` | `/api/roles/{id}` | Bearer token, tenant, `platform_user.manage` | `200 OK` |
-| `POST` | `/api/roles` | Bearer token, tenant, `platform_user.manage` | `201 Created` |
-| `PUT` | `/api/roles/{id}` | Bearer token, tenant, `platform_user.manage` | `200 OK` |
-| `DELETE` | `/api/roles/{id}` | Bearer token, tenant, `platform_user.manage` | `204 No Content` |
+| `POST` | `/api/membership-requests` | Bearer token; no tenant header | `201 Created` |
+| `GET` | `/api/membership-requests` | Bearer token, tenant, `platform_membership.read` | `200 OK` |
+| `POST` | `/api/membership-requests/{id}/approve` | Bearer token, tenant, `platform_membership.approve` and `platform_role.assign` | `200 OK` |
+| `POST` | `/api/membership-requests/{id}/reject` | Bearer token, tenant, `platform_membership.approve` | `200 OK` |
+| `GET` | `/api/permissions` | Bearer token, tenant, `platform_role.read` | `200 OK` |
+| `GET` | `/api/roles` | Bearer token, tenant, `platform_role.read` | `200 OK` |
+| `GET` | `/api/roles/{id}` | Bearer token, tenant, `platform_role.read` | `200 OK` |
+| `POST` | `/api/roles` | Bearer token, tenant, `platform_role.manage` | `201 Created` |
+| `PUT` | `/api/roles/{id}` | Bearer token, tenant, `platform_role.manage` | `200 OK` |
+| `DELETE` | `/api/roles/{id}` | Bearer token, tenant, `platform_role.manage` | `204 No Content` |
 | `POST` | `/api/accounts` | Bearer token, tenant, `crm_account.write` | `201 Created` |
 | `GET` | `/api/accounts/{id}` | Bearer token, tenant, `crm_account.read` | `200 OK` |
 | `GET` | `/api/accounts` | Bearer token, tenant, `crm_account.read` | `200 OK` |
 | `PUT` | `/api/accounts/{id}` | Bearer token, tenant, `crm_account.write` | `200 OK` |
 | `DELETE` | `/api/accounts/{id}` | Bearer token, tenant, `crm_account.write` | `204 No Content` |
+| `POST` | `/api/accounts/{accountId}/relationships` | Bearer token, tenant, `crm_account.write` | `201 Created` |
+| `GET` | `/api/accounts/{accountId}/relationships` | Bearer token, tenant, `crm_account.read` | `200 OK` |
+| `POST` | `/api/accounts/{accountId}/relationships/{relationshipId}/end` | Bearer token, tenant, `crm_account.write` | `200 OK` |
+| `POST` | `/api/accounts/{accountId}/communication-channels` | Bearer token, tenant, `crm_account.write` | `201 Created` |
+| `GET` | `/api/accounts/{accountId}/communication-channels` | Bearer token, tenant, `crm_account.read` | `200 OK` |
+| `PUT` | `/api/accounts/{accountId}/communication-channels/{channelId}` | Bearer token, tenant, `crm_account.write` | `200 OK` |
+| `DELETE` | `/api/accounts/{accountId}/communication-channels/{channelId}` | Bearer token, tenant, `crm_account.write` | `204 No Content` |
 
 ## Authentication Endpoints
 
@@ -642,6 +653,347 @@ The endpoint does not return `404` for an inaccessible tenant and does not
 reveal whether another tenant exists. The response is not server-cached or
 versioned; committed authorization changes are read again on the next call.
 
+## Membership Join Requests
+
+Membership requests let an authenticated platform user ask to join an existing
+tenant. Submission is platform-scoped; review is tenant-scoped. JWTs contain
+identity and session data only, so review permissions and assigned roles are
+read from current database state.
+
+### Submit a membership request
+
+```http
+POST /api/membership-requests
+Authorization: Bearer <access-token>
+Content-Type: application/json
+```
+
+Do not send `X-Tenant-ID`. The applicant is selecting a tenant that they do not
+yet belong to. No named business permission is required, but the Bearer token
+must identify an `ACTIVE` platform user.
+
+Request:
+
+```json
+{
+  "tenantCode": "example-corporation",
+  "message": "Requesting access as a corporate employee"
+}
+```
+
+| Field | Required | Normalization and validation |
+|---|---|---|
+| `tenantCode` | Yes | Trimmed; must remain non-blank; maximum 320 characters |
+| `message` | No | Trimmed; blank becomes `null`; maximum 2,000 characters |
+
+The tenant code is matched against a tenant whose status is `TRIAL` or
+`ACTIVE`. An unknown code and a tenant in any other status are deliberately
+indistinguishable and return `404 TENANT_NOT_AVAILABLE`.
+
+The applicant cannot submit when they already have an `INVITED`, `ACTIVE`, or
+`SUSPENDED` membership in the target tenant. A `REMOVED` membership does not
+block submission. At most one `PENDING` request may exist for the same tenant
+and applicant; resolved request history does not prevent a later submission.
+The application check and the database's generated unique pending-request key
+both enforce this rule.
+
+Success:
+
+- Status: `201 Created`
+- Initial request status: `PENDING`
+- Initial request version: `1`
+
+```json
+{
+  "id": "66666666-6666-6666-6666-666666666666",
+  "tenant": {
+    "id": "22222222-2222-2222-2222-222222222222",
+    "tenantCode": "example-corporation",
+    "displayName": "Example Corporation"
+  },
+  "status": "PENDING",
+  "message": "Requesting access as a corporate employee",
+  "requestedAt": "2026-08-12T08:00:00Z",
+  "reviewedAt": null,
+  "reviewNote": null,
+  "version": 1
+}
+```
+
+`id`, every `tenant` field, `status`, `requestedAt`, and `version` are
+non-null. `message` is nullable. A newly submitted request always has null
+`reviewedAt` and `reviewNote`. The response intentionally does not expose
+tenant plan, region, metadata, administrators, or member counts.
+
+Submission is one transaction. It locks and verifies the active platform user,
+resolves an available tenant, checks membership and pending-request
+eligibility, inserts the request, and reloads the persisted response. A known
+duplicate-key race is translated to
+`409 MEMBERSHIP_REQUEST_ALREADY_PENDING`.
+
+### List tenant membership requests
+
+```http
+GET /api/membership-requests?status=PENDING&page=0&size=20
+Authorization: Bearer <access-token>
+X-Tenant-ID: 22222222-2222-2222-2222-222222222222
+```
+
+The caller must have an active membership in the selected tenant and the
+effective `platform_membership.read` permission. Results are always restricted
+to that tenant.
+
+| Query parameter | Default | Validation |
+|---|---|---|
+| `status` | `PENDING` | Exact enum value `PENDING`, `APPROVED`, or `REJECTED` |
+| `page` | `0` | Integer greater than or equal to `0` |
+| `size` | `20` | Integer from `1` through `100` inclusive |
+
+Success: `200 OK`
+
+```json
+{
+  "items": [
+    {
+      "id": "66666666-6666-6666-6666-666666666666",
+      "requester": {
+        "id": "77777777-7777-7777-7777-777777777777",
+        "email": "applicant@example.test",
+        "displayName": "Example Applicant"
+      },
+      "status": "PENDING",
+      "message": "Requesting access as a corporate employee",
+      "requestedAt": "2026-08-12T08:00:00Z",
+      "reviewedAt": null,
+      "reviewedBy": null,
+      "reviewNote": null,
+      "version": 1
+    }
+  ],
+  "page": 0,
+  "size": 20,
+  "totalElements": 1,
+  "totalPages": 1
+}
+```
+
+Items are ordered by `requestedAt` descending and then request `id`
+descending. `items` is never null and may be empty. `id`, every `requester`
+field, `status`, `requestedAt`, and `version` are non-null. `message` and
+`reviewNote` are nullable. For `PENDING`, `reviewedAt`, `reviewedBy`, and
+`reviewNote` are null. For `APPROVED` or `REJECTED`, `reviewedAt` and
+`reviewedBy` are non-null; `reviewedBy` contains non-null `id` and
+`displayName`, while the optional `reviewNote` may still be null.
+
+The page envelope contains the requested `page` and `size`, the non-negative
+`totalElements`, and `totalPages` (`0` when no rows match).
+
+### Approve a membership request
+
+```http
+POST /api/membership-requests/66666666-6666-6666-6666-666666666666/approve
+Authorization: Bearer <access-token>
+X-Tenant-ID: 22222222-2222-2222-2222-222222222222
+Content-Type: application/json
+```
+
+The caller must have an active membership in the selected tenant and both
+effective permissions:
+
+- `platform_membership.approve`
+- `platform_role.assign`
+
+Request:
+
+```json
+{
+  "version": 1,
+  "roleIds": [
+    "55555555-5555-5555-5555-555555555555"
+  ],
+  "reviewNote": "Employment verified"
+}
+```
+
+| Field | Required | Normalization and validation |
+|---|---|---|
+| Path `id` | Yes | UUID of a request in the selected tenant |
+| `version` | Yes | Positive signed-long request version |
+| `roleIds` | Yes | Array of 1 to 20 distinct, non-null UUIDs |
+| `reviewNote` | No | Trimmed; blank becomes `null`; maximum 2,000 characters |
+
+Every selected role must belong to the selected tenant, be `ACTIVE`, not be
+soft-deleted, and be custom (`system: false`). A system role such as
+`TENANT_ADMIN` is prohibited even when its ID is known. At least one eligible
+custom role is mandatory.
+
+Success: `200 OK`
+
+```json
+{
+  "tenantId": "22222222-2222-2222-2222-222222222222",
+  "user": {
+    "id": "77777777-7777-7777-7777-777777777777",
+    "email": "applicant@example.test",
+    "displayName": "Example Applicant"
+  },
+  "status": "ACTIVE",
+  "tenantAdmin": false,
+  "joinedAt": "2026-08-12T08:05:00Z",
+  "roles": [
+    {
+      "id": "55555555-5555-5555-5555-555555555555",
+      "roleCode": "EMPLOYEE",
+      "name": "Employee"
+    }
+  ],
+  "version": 1
+}
+```
+
+All response fields are non-null. `roles` contains the selected roles ordered
+by `roleCode` and then role `id`. `version` is the tenant membership version,
+not the membership-request version. A new membership starts at version `1`;
+reactivating a removed membership increments that membership row's existing
+version through the membership update trigger.
+
+Approval is one transaction and performs these effects atomically:
+
+1. Lock the tenant-scoped request and compare the submitted version before
+   checking whether its status is still `PENDING`.
+2. Lock and require the applicant platform user to remain `ACTIVE`.
+3. Lock the existing tenant membership when present. An `INVITED`, `ACTIVE`,
+   or `SUSPENDED` membership causes `MEMBERSHIP_ALREADY_EXISTS`.
+4. Sort and lock all selected roles, then require the exact eligible custom
+   role set.
+5. Insert a new `ACTIVE` membership, or reactivate a `REMOVED` membership by
+   setting it to `ACTIVE`, clearing `removedAt`, resetting
+   `tenantAdmin` to `false`, and replacing `joinedAt` with the approval time.
+6. Delete all existing role assignments for this tenant and applicant, then
+   insert only the selected non-expiring assignments with the reviewer as
+   assigner. This replacement prevents dormant grants from returning during
+   reactivation.
+7. Resolve the request as `APPROVED`, record reviewer, note, and review time,
+   and update it only when the persisted request version still equals the
+   submitted version.
+
+The request table's update trigger increments the request version exactly once.
+If any step fails, the membership insert or reactivation, role-assignment
+replacement, and request resolution all roll back.
+
+### Reject a membership request
+
+```http
+POST /api/membership-requests/66666666-6666-6666-6666-666666666666/reject
+Authorization: Bearer <access-token>
+X-Tenant-ID: 22222222-2222-2222-2222-222222222222
+Content-Type: application/json
+```
+
+The caller must have an active membership in the selected tenant and the
+effective `platform_membership.approve` permission. Rejection does not require
+`platform_role.assign`.
+
+Request:
+
+```json
+{
+  "version": 1,
+  "reason": "Unable to verify employment"
+}
+```
+
+| Field | Required | Normalization and validation |
+|---|---|---|
+| Path `id` | Yes | UUID of a request in the selected tenant |
+| `version` | Yes | Positive signed-long request version |
+| `reason` | No | Trimmed; blank becomes `null`; maximum 2,000 characters |
+
+Success: `200 OK`
+
+```json
+{
+  "id": "66666666-6666-6666-6666-666666666666",
+  "requester": {
+    "id": "77777777-7777-7777-7777-777777777777",
+    "email": "applicant@example.test",
+    "displayName": "Example Applicant"
+  },
+  "status": "REJECTED",
+  "message": "Requesting access as a corporate employee",
+  "requestedAt": "2026-08-12T08:00:00Z",
+  "reviewedAt": "2026-08-12T08:05:00Z",
+  "reviewedBy": {
+    "id": "88888888-8888-8888-8888-888888888888",
+    "displayName": "Example Reviewer"
+  },
+  "reviewNote": "Unable to verify employment",
+  "version": 2
+}
+```
+
+The normalized `reason` is returned as `reviewNote`. Rejection locks the
+tenant-scoped request, checks version before status, records the reviewer and
+review time, resolves it to `REJECTED`, and increments the request version once
+through the request update trigger. It creates no membership or role
+assignment. All changes occur in one transaction.
+
+### Membership request concurrency and isolation
+
+Approval and rejection query request IDs together with the current tenant ID,
+so a cross-tenant request ID is indistinguishable from an absent request. Both
+operations lock the request row and first compare the submitted version:
+
+- a stale submitted version returns
+  `409 MEMBERSHIP_REQUEST_VERSION_CONFLICT`, even when the request is already
+  resolved; and
+- the current version of an already resolved request returns
+  `409 MEMBERSHIP_REQUEST_ALREADY_RESOLVED`.
+
+Approval additionally locks the applicant, any existing membership, and every
+selected role. Role IDs are sorted before locking, and invalid roles are
+reported only as `MEMBERSHIP_ROLE_INVALID`; the response does not reveal
+whether a role is absent, cross-tenant, inactive, deleted, or system-owned.
+
+### Membership request errors
+
+| Status | `errorCode` | Applies to | When |
+|---|---|---|---|
+| `400` | `REQUEST_VALIDATION_FAILED` | Any route | JSON, body/query/path UUID, enum, page, size, duplicate role ID, empty role list, or another field constraint is invalid |
+| `401` | `AUTHENTICATION_REQUIRED` | Any route | The Bearer token is missing or invalid |
+| `403` | `ACCESS_DENIED` | Submit | The authenticated actor does not reference an active platform user |
+| `403` | `ACCESS_DENIED` | List, approve, reject | The tenant header is malformed, the caller lacks an active membership, or a required permission is missing |
+| `403` | `ACCESS_DENIED` | Approve | The applicant platform user is no longer active |
+| `404` | `TENANT_NOT_AVAILABLE` | Submit | The tenant code is unknown or the tenant is not `TRIAL` or `ACTIVE` |
+| `404` | `MEMBERSHIP_REQUEST_NOT_FOUND` | Approve, reject | The request is absent or belongs to another tenant |
+| `409` | `MEMBERSHIP_REQUEST_ALREADY_PENDING` | Submit | A pending request already exists for this tenant and applicant |
+| `409` | `MEMBERSHIP_ALREADY_EXISTS` | Submit, approve | The applicant has an `INVITED`, `ACTIVE`, or `SUSPENDED` membership |
+| `409` | `MEMBERSHIP_REQUEST_ALREADY_RESOLVED` | Approve, reject | The submitted version is current but the request is no longer `PENDING` |
+| `409` | `MEMBERSHIP_REQUEST_VERSION_CONFLICT` | Approve, reject | The submitted version differs from the locked request version, or the guarded resolution update affects no row |
+| `422` | `MEMBERSHIP_ROLE_INVALID` | Approve | A selected role is absent, cross-tenant, inactive, deleted, or system-owned |
+| `500` | `INTERNAL_ERROR` | Any route | An unexpected persistence or server failure occurs |
+
+`X-Tenant-ID` is mandatory for list, approve, and reject. A malformed value or
+an inactive/missing caller membership is translated to `403 ACCESS_DENIED` by
+the identity-context filter. When the header is omitted, the shared exception
+handler also returns `403 ACCESS_DENIED`; clients must not omit the required
+header.
+
+### Post-approval client flow
+
+Approval changes database authorization immediately; the applicant does not
+need to log in again. After approval:
+
+1. Call `GET /api/auth/me` with the existing Bearer token to discover the new
+   active membership.
+2. Select its tenant and send that tenant ID as `X-Tenant-ID`.
+3. Call `GET /api/access/me` to obtain effective permission codes and data
+   scopes.
+
+The newly assigned roles apply on the next request because permission and data
+scope evaluation reads the current database state instead of role claims in
+the JWT.
+
 ## Role Management
 
 Role Management exposes the system permission catalogue and tenant-owned role
@@ -652,10 +1004,19 @@ Authorization: Bearer <access-token>
 X-Tenant-ID: 22222222-2222-2222-2222-222222222222
 ```
 
-The authenticated user must have an active membership in the selected tenant
-and the effective `platform_user.manage` permission. Permissions are
-system-owned and read-only. System roles are visible, but only custom roles can
-be created, replaced, or soft-deleted.
+The authenticated user must have an active membership in the selected tenant.
+`GET /api/permissions`, `GET /api/roles`, and `GET /api/roles/{id}` require the
+effective `platform_role.read` permission. `POST /api/roles`,
+`PUT /api/roles/{id}`, and `DELETE /api/roles/{id}` require the effective
+`platform_role.manage` permission. Permissions are system-owned and read-only.
+System roles are visible, but only custom roles can be created, replaced, or
+soft-deleted.
+
+`platform_user.manage` remains in the permission catalogue and is still
+granted to bootstrap Tenant Admin roles for legacy compatibility. It is not
+the permission checked by any Role Management route. The base SQL backfills
+the fine-grained role and membership permissions to roles that already have
+the legacy grant.
 
 ### List the permission catalogue
 
@@ -681,10 +1042,10 @@ Success:
     "riskLevel": "NORMAL"
   },
   {
-    "permissionCode": "platform_user.manage",
-    "description": "Manage tenant memberships and roles",
+    "permissionCode": "platform_role.read",
+    "description": "Read permission catalogue and tenant roles",
     "moduleCode": "platform",
-    "riskLevel": "PRIVILEGED"
+    "riskLevel": "NORMAL"
   }
 ]
 ```
@@ -927,7 +1288,7 @@ eligible, returns `422 ROLE_DATA_SCOPE_INVALID`.
 |---|---|---|
 | `400` | `REQUEST_VALIDATION_FAILED` | JSON, UUID, enum, field constraint, duplicate grant, or `If-Match` is invalid |
 | `401` | `AUTHENTICATION_REQUIRED` | The Bearer token is missing or invalid |
-| `403` | `ACCESS_DENIED` | Tenant context is invalid or `platform_user.manage` is missing |
+| `403` | `ACCESS_DENIED` | Tenant context is invalid or the route's `platform_role.read` or `platform_role.manage` permission is missing |
 | `404` | `ROLE_NOT_FOUND` | The role is absent, deleted, or belongs to another tenant |
 | `409` | `ROLE_CODE_ALREADY_EXISTS` | A non-deleted role already uses the normalized code |
 | `409` | `SYSTEM_ROLE_IMMUTABLE` | Replace or delete targets a system role |
@@ -1308,108 +1669,460 @@ codes `VALIDATION_REQUIRED`, `VALIDATION_SIZE_INVALID`,
 `VALIDATION_EMAIL_INVALID`, or `VALIDATION_INVALID` as applicable. Error text
 is localized by `Accept-Language`; the codes remain unchanged.
 
-## Roles and Permissions API
+## Account Relationships
 
-### List System Permissions
-
-```http
-GET /api/permissions
-```
-
-Required permission: `platform_user.manage`.
-
-#### Success
-
-- Status: `200 OK`
-- Body: Array of system permission definitions.
-
-```json
-[
-  {
-    "id": "p1",
-    "code": "crm_account.read",
-    "moduleGroup": "crm",
-    "displayNameVi": "Xem Khách hàng",
-    "displayNameEn": "Read Accounts",
-    "riskLevel": "NORMAL"
-  }
-]
-```
-
-### Search and List Roles
+Account Relationships are directed links between two active Accounts in the
+same selected tenant. Every endpoint requires these headers:
 
 ```http
-GET /api/roles
+Authorization: Bearer ${ACCESS_TOKEN}
+X-Tenant-ID: 22222222-2222-2222-2222-222222222222
 ```
 
-Required permission: `platform_user.manage`.
+The server resolves the user's active tenant membership, functional permission,
+and `ACCOUNT` data scopes from the database; JWT claims do not provide roles,
+permissions, or data scopes. Create and end require `crm_account.write`; list
+requires `crm_account.read`.
 
-#### Success
+The stored orientation is always source-to-target:
 
-- Status: `200 OK`
-- Body: Array of role summary objects.
-
-### Get Role Detail
-
-```http
-GET /api/roles/{id}
+```text
+account_id --relationship_type--> related_account_id
 ```
 
-Required permission: `platform_user.manage`.
+Creating through the path stores `{accountId}` as `account_id` and
+`relatedAccountId` as `related_account_id`. The response's `account` and
+`relatedAccount` fields always preserve that stored orientation. `direction` is
+calculated relative to the path Account: `OUTBOUND` when it is the source and
+`INBOUND` when it is the target. The server never creates an inverse row.
 
-#### Success
+The only supported relationship types are `PARTNER`, `DISTRIBUTOR`,
+`RESELLER`, `SUPPLIER`, `AFFILIATE`, and `OTHER`. Account hierarchy remains
+represented only by `Account.parentAccountId`; `PARENT`, `CHILD`, and
+`SUBSIDIARY` are not relationship types in this API.
 
-- Status: `200 OK`
-- Body: Role detail object including granted permissions list.
+### Relationship response shape
 
-### Create Role
-
-```http
-POST /api/roles
-```
-
-Required permission: `platform_user.manage`.
+`account` and `relatedAccount` are stable Account display references with only
+`id`, `accountNumber`, and `displayName`.
 
 ```json
 {
-  "roleCode": "SALES_LEAD",
-  "name": "Trưởng nhóm Bán hàng",
-  "description": "Quản lý dữ liệu bán hàng cấp nhóm",
-  "scopeType": "TEAM",
-  "permissionCodes": ["crm_account.read", "crm_account.write"]
+  "id": "66666666-6666-6666-6666-666666666666",
+  "account": {
+    "id": "44444444-4444-4444-4444-444444444444",
+    "accountNumber": "ACC-EXAMPLE-001",
+    "displayName": "Example Trading"
+  },
+  "relatedAccount": {
+    "id": "55555555-5555-5555-5555-555555555555",
+    "accountNumber": "ACC-EXAMPLE-002",
+    "displayName": "Example Distribution"
+  },
+  "direction": "OUTBOUND",
+  "relationshipType": "PARTNER",
+  "validFrom": "2026-08-12",
+  "validTo": null,
+  "description": "Strategic distribution partner",
+  "createdAt": "2026-08-12T10:00:00Z",
+  "createdBy": "11111111-1111-1111-1111-111111111111"
+}
+```
+
+`createdBy` is the creator UUID when recorded and otherwise `null`.
+
+### Create an Account Relationship
+
+```http
+POST /api/accounts/{accountId}/relationships
+```
+
+Required permission: `crm_account.write`. Both Accounts must be active, in the
+selected tenant, and inside the caller's resolved write scope.
+
+#### Request body
+
+| Field | Required | Validation and behavior |
+|---|---|---|
+| `relatedAccountId` | Yes | UUID of the target Account |
+| `relationshipType` | Yes | One of the six supported relationship types |
+| `validFrom` | No | ISO-8601 `yyyy-MM-dd` date |
+| `validTo` | No | ISO-8601 `yyyy-MM-dd` date; cannot precede `validFrom` when both dates are present |
+| `description` | No | Maximum 4,000 characters |
+
+```json
+{
+  "relatedAccountId": "55555555-5555-5555-5555-555555555555",
+  "relationshipType": "PARTNER",
+  "validFrom": "2026-08-12",
+  "validTo": null,
+  "description": "Strategic distribution partner"
+}
+```
+
+#### Example call
+
+```bash
+curl --request POST \
+  --header "Authorization: Bearer ${ACCESS_TOKEN}" \
+  --header "X-Tenant-ID: 22222222-2222-2222-2222-222222222222" \
+  --header "Content-Type: application/json" \
+  --data '{"relatedAccountId":"55555555-5555-5555-5555-555555555555","relationshipType":"PARTNER","validFrom":"2026-08-12","validTo":null,"description":"Strategic distribution partner"}' \
+  http://localhost:8080/api/accounts/44444444-4444-4444-4444-444444444444/relationships
+```
+
+#### Success
+
+- Status: `201 Created`
+- Body: Relationship response shape above
+
+The ordered tuple `(accountId, relatedAccountId, relationshipType)` has one
+lifetime identity. A second create for the same ordered tuple returns a
+conflict, even if the existing relationship has ended.
+
+### List Account Relationships
+
+```http
+GET /api/accounts/{accountId}/relationships?page=0&size=20
+```
+
+Required permission: `crm_account.read`. The endpoint returns incoming and
+outgoing relationships, provided both the path Account and counterpart Account
+are active and inside the caller's resolved read scope. A counterpart outside
+the scope is not disclosed.
+
+| Query parameter | Required | Validation and behavior |
+|---|---|---|
+| `page` | No | Zero-based page number; defaults to `0` |
+| `size` | No | `1` to `100`; defaults to `20` |
+
+Results have stable ordering by `createdAt` descending, then `id` descending.
+The initial list returns all validity periods and has no date or status filter.
+
+```bash
+curl --request GET \
+  --header "Authorization: Bearer ${ACCESS_TOKEN}" \
+  --header "X-Tenant-ID: 22222222-2222-2222-2222-222222222222" \
+  "http://localhost:8080/api/accounts/44444444-4444-4444-4444-444444444444/relationships?page=0&size=20"
+```
+
+#### Success
+
+- Status: `200 OK`
+- Body: `PageResult` of Relationship response objects
+
+```json
+{
+  "items": [
+    {
+      "id": "66666666-6666-6666-6666-666666666666",
+      "account": {
+        "id": "44444444-4444-4444-4444-444444444444",
+        "accountNumber": "ACC-EXAMPLE-001",
+        "displayName": "Example Trading"
+      },
+      "relatedAccount": {
+        "id": "55555555-5555-5555-5555-555555555555",
+        "accountNumber": "ACC-EXAMPLE-002",
+        "displayName": "Example Distribution"
+      },
+      "direction": "OUTBOUND",
+      "relationshipType": "PARTNER",
+      "validFrom": "2026-08-12",
+      "validTo": null,
+      "description": "Strategic distribution partner",
+      "createdAt": "2026-08-12T10:00:00Z",
+      "createdBy": "11111111-1111-1111-1111-111111111111"
+    }
+  ],
+  "page": 0,
+  "size": 20,
+  "totalElements": 1,
+  "totalPages": 1
+}
+```
+
+An empty result uses `items: []`, `totalElements: 0`, and `totalPages: 0`.
+
+### End an Account Relationship
+
+```http
+POST /api/accounts/{accountId}/relationships/{relationshipId}/end
+```
+
+Required permission: `crm_account.write`. The relationship must involve the
+path Account, and both participating Accounts must remain active and inside
+the caller's resolved write scope.
+
+#### Request body
+
+| Field | Required | Validation and behavior |
+|---|---|---|
+| `validTo` | Yes | ISO-8601 `yyyy-MM-dd` date; cannot precede the stored `validFrom` |
+
+```json
+{
+  "validTo": "2026-12-31"
+}
+```
+
+#### Example call
+
+```bash
+curl --request POST \
+  --header "Authorization: Bearer ${ACCESS_TOKEN}" \
+  --header "X-Tenant-ID: 22222222-2222-2222-2222-222222222222" \
+  --header "Content-Type: application/json" \
+  --data '{"validTo":"2026-12-31"}' \
+  http://localhost:8080/api/accounts/44444444-4444-4444-4444-444444444444/relationships/66666666-6666-6666-6666-666666666666/end
+```
+
+#### Success and idempotency
+
+- Status: `200 OK`
+- Body: Relationship response shape above, with the requested `validTo`
+
+Ending is history-preserving. Repeating the request with the already stored
+same end date returns the current relationship. A different date after the
+relationship has ended returns `409 ACCOUNT_RELATIONSHIP_ALREADY_ENDED`.
+There is no hard-delete endpoint, reopening endpoint, or endpoint for editing
+the relationship type, Accounts, start date, or description.
+
+### Account Relationship errors
+
+| Status | `errorCode` | When |
+|---|---|---|
+| `400` | `REQUEST_VALIDATION_FAILED` | UUID, enum, body, date, pagination, or size validation fails |
+| `401` | `AUTHENTICATION_REQUIRED` | Authentication is missing or invalid |
+| `403` | `ACCESS_DENIED` | Tenant membership, permission, or required Account data scope is missing |
+| `404` | `ACCOUNT_NOT_FOUND` | The path Account is absent, deleted, cross-tenant, or outside scope |
+| `404` | `ACCOUNT_RELATIONSHIP_NOT_FOUND` | The relationship is absent, outside scope, or does not involve the path Account |
+| `409` | `ACCOUNT_RELATIONSHIP_ALREADY_EXISTS` | The ordered Account pair already has the relationship type |
+| `409` | `ACCOUNT_RELATIONSHIP_ALREADY_ENDED` | A different end date is supplied after the relationship was ended |
+| `422` | `ACCOUNT_RELATIONSHIP_ACCOUNT_INVALID` | The related Account is unavailable or outside the required scope |
+| `422` | `ACCOUNT_RELATIONSHIP_SELF_REFERENCE` | Source and related Account identifiers are equal |
+| `422` | `ACCOUNT_RELATIONSHIP_PERIOD_INVALID` | The validity end date precedes the start date |
+| `500` | `INTERNAL_ERROR` | An unexpected persistence or server failure occurs |
+
+`ACCOUNT_RELATIONSHIP_ACCOUNT_INVALID` is intentionally shared for related
+Accounts that are absent, deleted, cross-tenant, or outside scope, so callers
+cannot discover inaccessible Account identifiers.
+
+## Account Communication Channels
+
+Account Communication Channels are active, Account-owned contact values in the
+selected tenant. Every endpoint requires these headers:
+
+```http
+Authorization: Bearer ${ACCESS_TOKEN}
+X-Tenant-ID: 22222222-2222-2222-2222-222222222222
+```
+
+The server resolves the active tenant membership, functional permission, and
+`ACCOUNT` data scopes from the database; JWT claims do not provide roles,
+permissions, or data scopes. List requires `crm_account.read`. Create, update,
+and delete require `crm_account.write`. The path Account must be active, in the
+selected tenant, and within the caller's applicable Account scope.
+
+Communication Channels are only Account-owned (`contact_id` is not set). The
+API neither returns nor accepts a Contact-owned channel through these routes.
+Soft-deleted channels are omitted from all responses and may be created again.
+
+### Communication Channel response shape
+
+Every create and update response is a single object; the list response is an
+array of these objects.
+
+```json
+{
+  "id": "88888888-8888-8888-8888-888888888888",
+  "accountId": "44444444-4444-4444-4444-444444444444",
+  "channelType": "EMAIL",
+  "rawValue": "Operations@Example.invalid",
+  "normalizedValue": "operations@example.invalid",
+  "label": "Main inbox",
+  "isPrimary": true,
+  "isVerified": false,
+  "verifiedAt": null,
+  "doNotUse": false,
+  "version": 1,
+  "createdAt": "2026-08-12T10:00:00Z",
+  "updatedAt": "2026-08-12T10:00:00Z"
+}
+```
+
+| Field | Type | Behavior |
+|---|---|---|
+| `id` | UUID | Communication Channel identifier |
+| `accountId` | UUID | Owning Account identifier |
+| `channelType` | enum | One of the supported channel types below |
+| `rawValue` | string | Trimmed submitted value; email case is preserved here |
+| `normalizedValue` | string or `null` | Normalized value; `null` only for `OTHER` |
+| `label` | string or `null` | Trimmed optional label; blank labels become `null` |
+| `isPrimary` | boolean | Whether this is the active primary for its Account and type |
+| `isVerified` | boolean | Read-only verification state; new channels are `false` |
+| `verifiedAt` | ISO-8601 instant or `null` | Read-only verification timestamp; new channels return `null` |
+| `doNotUse` | boolean | Prevents the channel from being primary |
+| `version` | positive integer | Optimistic-concurrency version |
+| `createdAt` | ISO-8601 instant | Creation timestamp |
+| `updatedAt` | ISO-8601 instant | Most recent update timestamp |
+
+`isVerified` and `verifiedAt` are response-only in this API. The request body
+does not accept verification state, a verification timestamp, audit fields, or
+`metadata`; `metadata` is also not returned. There is no verification or
+metadata endpoint in this slice.
+
+### Channel types, validation, and normalization
+
+The `channelType` enum values are `EMAIL`, `PHONE`, `MOBILE`, `SMS`,
+`WHATSAPP`, `LINKEDIN`, and `OTHER`. `rawValue` is required, is trimmed before
+validation, and must contain 1 to 255 characters after trimming. `label` is
+optional, is trimmed, and must be at most 255 characters after trimming.
+
+| Type | Value rule | `normalizedValue` and duplicate identity |
+|---|---|---|
+| `EMAIL` | Must match `^[^\s@]+@[^\s@]+\.[^\s@]+$` | Trimmed value lowercased with `Locale.ROOT`; duplicate matching uses that normalized value |
+| `PHONE` | Must match E.164 | The validated trimmed E.164 value; duplicate matching uses it |
+| `MOBILE` | Must match E.164 | The validated trimmed E.164 value; duplicate matching uses it |
+| `SMS` | Must match E.164 | The validated trimmed E.164 value; duplicate matching uses it |
+| `WHATSAPP` | Must match E.164 | The validated trimmed E.164 value; duplicate matching uses it |
+| `LINKEDIN` | Any nonblank trimmed value up to 255 characters | The exact trimmed value; duplicates are case-sensitive |
+| `OTHER` | Any nonblank trimmed value up to 255 characters | `null`; duplicates compare the exact trimmed raw value and are case-sensitive |
+
+The exact E.164 pattern is `^\+[1-9][0-9]{1,14}$`. Values must start with `+`,
+contain 2 through 15 digits in total, and cannot use a leading zero after the
+plus sign. Formatted or local numbers, such as `+1 212 555 0100` or
+`02125550100`, are rejected. `LINKEDIN` and `OTHER` deliberately preserve case
+for duplicate identity; email duplicate matching is case-insensitive through
+normalization.
+
+Type-specific email and E.164 format violations are reported in `errors[]`
+against the `rawValue` field. A missing or blank `rawValue` produces only its
+required-field violation, and a value longer than 255 characters produces only
+its size violation; neither also produces a type-specific format violation.
+
+Duplicates are checked only among active channels of the same tenant, Account,
+and `channelType`. A duplicate create or update returns a stable conflict. A
+soft-deleted channel is not a duplicate and can be recreated.
+
+### Primary and do-not-use behavior
+
+At most one active channel for an Account and channel type is primary. Setting
+`isPrimary` to `true` atomically demotes the existing primary of that same type
+and increments the demoted channel's version. `doNotUse: true` always results
+in `isPrimary: false`, even when `isPrimary: true` is submitted. Updating a
+current primary to `doNotUse: true` demotes it without automatically selecting
+a replacement. Changing a primary channel's type applies primary switching to
+the new type; the former type is not backfilled.
+
+### Create an Account Communication Channel
+
+```http
+POST /api/accounts/{accountId}/communication-channels
+```
+
+Required permission: `crm_account.write`.
+
+#### Request body
+
+| Field | Required | Validation and behavior |
+|---|---|---|
+| `channelType` | Yes | One of `EMAIL`, `PHONE`, `MOBILE`, `SMS`, `WHATSAPP`, `LINKEDIN`, or `OTHER` |
+| `rawValue` | Yes | Trimmed; required and validated by the type-specific rules above; maximum 255 characters |
+| `label` | No | Trimmed; blank becomes `null`; maximum 255 characters |
+| `isPrimary` | No | Boolean; defaults to `false` when omitted and otherwise requests a primary subject to the primary and `doNotUse` rules |
+| `doNotUse` | No | Boolean; defaults to `false` when omitted; `true` forces the created channel to be non-primary |
+
+```json
+{
+  "channelType": "EMAIL",
+  "rawValue": " Operations@Example.invalid ",
+  "label": " Main inbox ",
+  "isPrimary": true,
+  "doNotUse": false
 }
 ```
 
 #### Success
 
 - Status: `201 Created`
-- Body: Created Role detail object.
+- Body: Communication Channel response shape above
 
-### Update Role
+### List Account Communication Channels
 
 ```http
-PUT /api/roles/{id}
+GET /api/accounts/{accountId}/communication-channels
 ```
 
-Required permission: `platform_user.manage`.
+Required permission: `crm_account.read`. The response contains all active,
+Account-owned channels visible through the caller's resolved read scope; there
+is no pagination or filtering on this endpoint. Results use stable ordering by
+`channelType` ascending, `isPrimary` descending, `createdAt` ascending, then
+`id` ascending.
 
 #### Success
 
 - Status: `200 OK`
-- Body: Updated Role detail object.
+- Body: an array of Communication Channel response objects; `[]` when none exist
 
-### Delete Role
+### Update an Account Communication Channel
 
 ```http
-DELETE /api/roles/{id}
+PUT /api/accounts/{accountId}/communication-channels/{channelId}
 ```
 
-Required permission: `platform_user.manage`.
+Required permission: `crm_account.write`. The request body contains the same
+five editable fields and validation rules as create. `channelType`,
+`rawValue`, `label`, `isPrimary`, and `doNotUse` replace their respective
+editable values; verification and metadata remain excluded.
+
+#### Required concurrency header
+
+```http
+If-Match: "1"
+```
+
+`If-Match` must be a strong quoted positive decimal `long`: `"1"`, `"2"`, and
+so on, with no leading zero. Weak tags, unquoted values, `*`, zero, negative
+values, multiple values, nonnumeric values, and values beyond a signed 64-bit
+integer are invalid. The supplied version must match the current channel
+version or the operation returns a version conflict.
+
+#### Success
+
+- Status: `200 OK`
+- Body: Communication Channel response shape above, with its incremented version
+
+### Delete an Account Communication Channel
+
+```http
+DELETE /api/accounts/{accountId}/communication-channels/{channelId}
+```
+
+Required permission: `crm_account.write`. This is a soft delete and requires
+the same strong `If-Match` header as update. It does not choose a replacement
+primary channel.
 
 #### Success
 
 - Status: `204 No Content`
-- Body: empty. System roles cannot be deleted.
+- Body: none
+
+### Account Communication Channel errors
+
+| Status | `errorCode` | When |
+|---|---|---|
+| `400` | `REQUEST_VALIDATION_FAILED` | A UUID, enum, required body field, size, email/E.164 value, or required/valid `If-Match` header is invalid |
+| `401` | `AUTHENTICATION_REQUIRED` | Authentication is missing or invalid |
+| `403` | `ACCESS_DENIED` | Tenant membership, required Account permission, or required Account data scope is missing |
+| `404` | `ACCOUNT_NOT_FOUND` | The path Account is absent, deleted, cross-tenant, or outside the caller's scope |
+| `404` | `ACCOUNT_COMMUNICATION_CHANNEL_NOT_FOUND` | The channel is absent, soft-deleted, not owned by the path Account, cross-tenant, or outside scope |
+| `409` | `ACCOUNT_COMMUNICATION_CHANNEL_ALREADY_EXISTS` | An active channel with the same Account, type, and canonical value already exists |
+| `409` | `ACCOUNT_COMMUNICATION_CHANNEL_VERSION_CONFLICT` | The supplied `If-Match` version is stale, or an optimistic mutation or primary demotion affects no row |
+| `500` | `INTERNAL_ERROR` | An unexpected persistence or server failure occurs |
+
+The Account and Channel not-found outcomes intentionally avoid disclosing
+identifiers across tenant and Account-scope boundaries.
 
 ## OAuth2 Login
 

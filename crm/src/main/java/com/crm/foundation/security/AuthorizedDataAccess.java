@@ -4,7 +4,7 @@ import java.util.Objects;
 import java.util.Set;
 
 public record AuthorizedDataAccess(
-		String permission,
+		SystemPermission permission,
 		String entityType,
 		Set<ResolvedDataScope> scopes) {
 

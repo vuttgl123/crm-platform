@@ -12,6 +12,7 @@ public record AccountSummary(
 		String accountNumber,
 		String displayName,
 		String legalName,
+		UUID parentAccountId,
 		AccountType accountType,
 		AccountLifecycleStage lifecycleStage,
 		AccountOwner owner,

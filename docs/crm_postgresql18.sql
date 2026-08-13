@@ -366,8 +366,8 @@ CREATE TABLE platform.role_data_scopes (
                                                REFERENCES platform.roles(tenant_id, id) ON DELETE CASCADE,
                                            FOREIGN KEY (tenant_id, team_id)
                                                REFERENCES platform.teams(tenant_id, id) ON DELETE CASCADE,
-                                           CHECK ((scope_type IN ('TEAM', 'TEAM_TREE') AND team_id IS NOT NULL)
-                                               OR (scope_type IN ('OWN', 'TENANT') AND team_id IS NULL))
+                                           CHECK ((scope_type IN ('OWN', 'TENANT') AND team_id IS NULL)
+                                               OR (scope_type IN ('TEAM', 'TEAM_TREE')))
 );
 
 CREATE TABLE platform.tenant_settings (

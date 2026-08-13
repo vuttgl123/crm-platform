@@ -30,15 +30,16 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     return <Navigate to={`/login?returnUrl=${returnUrl}`} replace />;
   }
 
-  // Auto-redirect users with no tenant to Tenant Setup Onboarding
-  const hasNoTenant = !session.tenant?.id || session.tenant.id === '';
-  if (hasNoTenant && location.pathname !== '/app/setup-tenant') {
-    return <Navigate to="/app/setup-tenant" replace />;
-  }
+  // Tenant Admins and Active members NEVER go to Pending Approval page. Only non-admin INVITED members do.
+  const isTenantAdminOrActive =
+    session.membership?.is_tenant_admin === true ||
+    session.membership?.membership_status === 'ACTIVE' ||
+    session.activeRole?.role_code === 'TENANT_ADMIN' ||
+    session.activeRole?.role_code === 'ADMIN';
 
-  // Auto-redirect users waiting for Tenant Admin approval to Pending Approval page
-  const isPendingApproval = session.membership?.membership_status === 'INVITED';
-  if (isPendingApproval && location.pathname !== '/app/pending-approval') {
+  const isPendingApproval = !isTenantAdminOrActive && session.membership?.membership_status === 'INVITED';
+
+  if (isPendingApproval && location.pathname !== '/app/pending-approval' && location.pathname !== '/app/setup-tenant') {
     return <Navigate to="/app/pending-approval" replace />;
   }
 

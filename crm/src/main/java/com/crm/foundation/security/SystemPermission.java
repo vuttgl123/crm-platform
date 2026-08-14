@@ -10,6 +10,8 @@ public enum SystemPermission {
 	CRM_LEAD_WRITE("crm_lead.write"),
 	CRM_OPPORTUNITY_READ("crm_opportunity.read"),
 	CRM_OPPORTUNITY_WRITE("crm_opportunity.write"),
+	CRM_ACTIVITY_READ("crm_activity.read"),
+	CRM_ACTIVITY_WRITE("crm_activity.write"),
 	SALES_QUOTE_READ("sales_quote.read"),
 	SALES_QUOTE_WRITE("sales_quote.write"),
 	SALES_QUOTE_APPROVE("sales_quote.approve"),

@@ -2402,7 +2402,1085 @@ duplicate-address detection, geocoding, validation/verification mutation, or
 automatic primary replacement in this slice. These Account routes do not
 accept or return Contact-owned addresses.
 
+## Contact Management
+
+Contact Management is a core CRM API in the `customer` bounded context. Every
+endpoint requires both of these headers:
+
+```http
+Authorization: Bearer ${ACCESS_TOKEN}
+X-Tenant-ID: 22222222-2222-2222-2222-222222222222
+```
+
+The authenticated user must have an active membership in the selected tenant.
+The server checks the operation-specific permission (`crm_contact.read` or
+`crm_contact.write`) and resolves data scopes for entity type `CONTACT` from
+the database.
+
+| Data scope | Visible or assignable Contact owner |
+|---|---|
+| `TENANT` | Any valid user owner, team owner, or unassigned Contact in the tenant |
+| `OWN` | A `USER` owner matching the current user |
+| `TEAM` | A `TEAM` owner matching a directly granted team |
+| `TEAM_TREE` | A `TEAM` owner matching a granted root team or one of its active descendants |
+
+Multiple scopes combine with OR. Read scope is applied to detail and search;
+write scope is applied to create, update, and delete.
+
+### Contact field shapes
+
+The detail response contains:
+
+| Field | Type | Nullable | Notes |
+|---|---|---|---|
+| `id` | UUID | No | Contact identifier |
+| `contactNumber` | string | No | Client-supplied, immutable, maximum 191 characters |
+| `accountId` | UUID | Yes | Associated Account identifier |
+| `owner` | object | Yes | Nested owner shape (`type`: `USER`/`TEAM`, `id`: UUID) |
+| `honorific` | string | Yes | Maximum 255 characters (e.g. Mr., Ms., Dr.) |
+| `givenName` | string | Yes | Maximum 255 characters |
+| `middleName` | string | Yes | Maximum 255 characters |
+| `familyName` | string | Yes | Maximum 255 characters |
+| `displayName` | string | No | Non-blank, maximum 255 characters |
+| `jobTitle` | string | Yes | Maximum 255 characters |
+| `department` | string | Yes | Maximum 255 characters |
+| `preferredLanguageCode` | string | Yes | Maximum 10 characters; language tag such as `vi` or `en-US` |
+| `preferredContactChannel` | enum | Yes | `EMAIL`, `PHONE`, `MOBILE`, `SMS`, `WHATSAPP`, `OTHER` |
+| `lifecycleStage` | enum | No | `PROSPECT`, `QUALIFIED`, `CUSTOMER`, `CHURNED`, `INACTIVE` |
+| `dateOfBirth` | date | Yes | ISO-8601 `YYYY-MM-DD` |
+| `doNotContact` | boolean | No | Suppression flag |
+| `description` | string | Yes | Free-form notes |
+| `createdAt` | timestamp | No | ISO-8601 UTC timestamp |
+| `createdBy` | UUID | Yes | Creating actor |
+| `updatedAt` | timestamp | No | ISO-8601 UTC timestamp |
+| `updatedBy` | UUID | Yes | Updating actor |
+| `version` | positive integer | No | Optimistic-concurrency version |
+
+### Create a Contact
+
+```http
+POST /api/contacts
+```
+
+Required permission: `crm_contact.write`.
+
+#### Request body
+
+```json
+{
+  "contactNumber": "CT-EXAMPLE-001",
+  "accountId": "11111111-1111-1111-1111-111111111111",
+  "owner": {
+    "type": "USER",
+    "id": "44444444-4444-4444-4444-444444444444"
+  },
+  "honorific": "Mr.",
+  "givenName": "Vũ",
+  "familyName": "Phạm",
+  "displayName": "Phạm Tuấn Vũ",
+  "jobTitle": "Chief Technology Officer",
+  "department": "Engineering",
+  "preferredLanguageCode": "vi",
+  "preferredContactChannel": "EMAIL",
+  "lifecycleStage": "CUSTOMER",
+  "doNotContact": false,
+  "description": "Key technical decision maker."
+}
+```
+
+#### Success
+
+- Status: `201 Created`
+- Version: `1`
+
+### Get a Contact by ID
+
+```http
+GET /api/contacts/{id}
+```
+
+Required permission: `crm_contact.read`.
+
+- Status: `200 OK`
+
+### Search Contacts
+
+```http
+GET /api/contacts?q=Vũ&lifecycleStage=CUSTOMER&page=0&size=20
+```
+
+Required permission: `crm_contact.read`.
+
+Supported query parameters:
+
+| Parameter | Type | Description |
+|---|---|---|
+| `q` | string | Free-text search matching `displayName`, `contactNumber`, `jobTitle`, `department` |
+| `accountId` | UUID | Filter by associated Account |
+| `lifecycleStage` | enum | Filter by lifecycle stage |
+| `ownerType` | enum | `USER` or `TEAM` |
+| `ownerId` | UUID | Filter by owner ID |
+| `page` | integer | Zero-indexed page number (default: `0`) |
+| `size` | integer | Page size (1 to 100, default: `20`) |
+
+- Status: `200 OK`
+- Body: `PageResult<ContactSummaryResponse>`
+
+### Update a Contact
+
+```http
+PUT /api/contacts/{id}
+```
+
+Required permission: `crm_contact.write`.
+
+#### Request body
+
+```json
+{
+  "version": 1,
+  "accountId": "11111111-1111-1111-1111-111111111111",
+  "owner": {
+    "type": "USER",
+    "id": "44444444-4444-4444-4444-444444444444"
+  },
+  "displayName": "Phạm Tuấn Vũ (CTO)",
+  "jobTitle": "Chief Technology Officer",
+  "department": "Engineering & Technology",
+  "preferredLanguageCode": "vi",
+  "preferredContactChannel": "MOBILE",
+  "lifecycleStage": "CUSTOMER",
+  "doNotContact": false,
+  "description": "Updated contact info."
+}
+```
+
+- Status: `200 OK`
+- Version incremented by 1.
+
+### Delete a Contact
+
+```http
+DELETE /api/contacts/{id}
+If-Match: "1"
+```
+
+Required permission: `crm_contact.write`.
+
+- Status: `204 No Content`
+
+### Contact Error Codes
+
+| Status | `errorCode` | When |
+|---|---|---|
+| `400` | `REQUEST_VALIDATION_FAILED` | One or more request fields are invalid |
+| `401` | `AUTHENTICATION_REQUIRED` | The Bearer token is missing or invalid |
+| `403` | `ACCESS_DENIED` | Missing `crm_contact.read`/`write` permission or outside authorized data scope |
+| `404` | `CONTACT_NOT_FOUND` | Contact ID does not exist, is soft-deleted, or is outside data scope |
+| `404` | `CONTACT_ACCOUNT_INVALID` | Associated Account ID does not exist or is outside data scope |
+| `409` | `CONTACT_NUMBER_ALREADY_EXISTS` | Contact number is already taken in the tenant |
+| `409` | `CONTACT_VERSION_CONFLICT` | Optimistic concurrency version mismatch |
+
+## Lead Management
+
+Lead Management handles inbound prospective leads, tracking lifecycle ratings,
+qualification notes, ownership, and eventual conversion to accounts, contacts,
+and opportunities.
+
+Every endpoint requires both of these headers:
+
+```http
+Authorization: Bearer ${ACCESS_TOKEN}
+X-Tenant-ID: 22222222-2222-2222-2222-222222222222
+```
+
+The authenticated user must have an active membership in the selected tenant.
+The server checks `crm_lead.read` or `crm_lead.write` and resolves data scopes
+for entity type `LEAD`.
+
+| Data scope | Visible or assignable Lead owner |
+|---|---|
+| `TENANT` | Any valid user owner, team owner, or unassigned Lead in the tenant |
+| `OWN` | A `USER` owner matching the current user |
+| `TEAM` | A `TEAM` owner matching a directly granted team |
+| `TEAM_TREE` | A `TEAM` owner matching a granted root team or one of its active descendants |
+
+Multiple scopes combine with OR. Read scope is applied to detail and search;
+write scope is applied to create, update, convert, and delete.
+
+### Lead field shapes
+
+The detail response contains:
+
+| Field | Type | Nullable | Notes |
+|---|---|---|---|
+| `id` | UUID | No | Lead identifier |
+| `leadNumber` | string | No | Client-supplied, immutable, maximum 191 characters |
+| `statusId` | UUID | No | Active lead status identifier |
+| `sourceId` | UUID | Yes | Active lead source identifier |
+| `owner` | object | Yes | Nested owner shape (`type`: `USER`/`TEAM`, `id`: UUID) |
+| `rating` | enum | Yes | `HOT`, `WARM`, `COLD` |
+| `accountName` | string | Yes | Prospective account name |
+| `companyName` | string | Yes | Company or organization name |
+| `honorific` | string | Yes | Maximum 255 characters |
+| `givenName` | string | Yes | Maximum 255 characters |
+| `familyName` | string | Yes | Maximum 255 characters |
+| `displayName` | string | No | Non-blank, maximum 255 characters |
+| `email` | string | Yes | Valid email address, maximum 320 characters |
+| `phoneE164` | string | Yes | International E.164 phone format (e.g. `+84901234567`) |
+| `jobTitle` | string | Yes | Maximum 255 characters |
+| `website` | string | Yes | URL / domain |
+| `countryCode` | string | Yes | 2-letter uppercase ISO country code (e.g. `VN`) |
+| `preferredLanguageCode` | string | Yes | Language tag such as `vi` or `en-US` |
+| `estimatedValue` | object | Yes | Nested `{ amount: 100000.0, currencyCode: "USD" }` |
+| `qualificationNotes` | string | Yes | Free-form qualification text |
+| `disqualificationReason` | string | Yes | Reason when disqualified |
+| `convertedAt` | timestamp | Yes | ISO-8601 UTC timestamp when converted |
+| `convertedBy` | UUID | Yes | Actor that executed conversion |
+| `convertedAccountId` | UUID | Yes | Generated / attached Account UUID |
+| `convertedContactId` | UUID | Yes | Generated / attached Contact UUID |
+| `convertedOpportunityId` | UUID | Yes | Generated / attached Opportunity UUID |
+| `createdAt` | timestamp | No | ISO-8601 UTC timestamp |
+| `createdBy` | UUID | Yes | Creating actor |
+| `updatedAt` | timestamp | No | ISO-8601 UTC timestamp |
+| `updatedBy` | UUID | Yes | Updating actor |
+| `version` | positive integer | No | Optimistic-concurrency version |
+
+### Create a Lead
+
+```http
+POST /api/leads
+```
+
+Required permission: `crm_lead.write`.
+
+#### Request body
+
+```json
+{
+  "leadNumber": "LD-2026-001",
+  "statusId": "11111111-1111-1111-1111-111111111111",
+  "sourceId": "22222222-2222-2222-2222-222222222222",
+  "owner": {
+    "type": "USER",
+    "id": "33333333-3333-3333-3333-333333333333"
+  },
+  "rating": "HOT",
+  "companyName": "Tech Innovators JSC",
+  "displayName": "Trần Văn An",
+  "email": "an.tran@techinnovators.vn",
+  "phoneE164": "+84901234567",
+  "jobTitle": "Head of Procurement",
+  "countryCode": "VN",
+  "preferredLanguageCode": "vi",
+  "estimatedValue": {
+    "amount": 50000.000000,
+    "currencyCode": "USD"
+  },
+  "qualificationNotes": "Strong interest in CRM enterprise subscription."
+}
+```
+
+- Status: `201 Created`
+- Version: `1`
+
+### Get a Lead by ID
+
+```http
+GET /api/leads/{id}
+```
+
+Required permission: `crm_lead.read`.
+
+- Status: `200 OK`
+
+### Search Leads
+
+```http
+GET /api/leads?q=Tech&rating=HOT&page=0&size=20
+```
+
+Required permission: `crm_lead.read`.
+
+Supported query parameters:
+
+| Parameter | Type | Description |
+|---|---|---|
+| `q` | string | Free-text search matching `displayName`, `leadNumber`, `companyName`, `email`, `phoneE164`, `jobTitle` |
+| `statusId` | UUID | Filter by status ID |
+| `sourceId` | UUID | Filter by source ID |
+| `rating` | enum | `HOT`, `WARM`, `COLD` |
+| `ownerType` | enum | `USER` or `TEAM` |
+| `ownerId` | UUID | Filter by owner ID |
+| `converted` | boolean | `true` for converted, `false` for open |
+| `page` | integer | Zero-indexed page number (default: `0`) |
+| `size` | integer | Page size (1 to 100, default: `20`) |
+
+- Status: `200 OK`
+- Body: `PageResult<LeadSummaryResponse>`
+
+### Update a Lead
+
+```http
+PUT /api/leads/{id}
+```
+
+Required permission: `crm_lead.write`.
+
+- Status: `200 OK`
+- Version incremented by 1.
+
+### Convert a Lead
+
+```http
+POST /api/leads/{id}/convert
+```
+
+Required permission: `crm_lead.write`.
+
+#### Request body
+
+```json
+{
+  "version": 1,
+  "convertedAccountId": "44444444-4444-4444-4444-444444444444",
+  "convertedContactId": "55555555-5555-5555-5555-555555555555",
+  "convertedOpportunityId": "66666666-6666-6666-6666-666666666666",
+  "convertedStatusId": "77777777-7777-7777-7777-777777777777"
+}
+```
+
+- Status: `200 OK`
+- Sets `convertedAt` timestamp and conversion reference IDs.
+
+### Delete a Lead
+
+```http
+DELETE /api/leads/{id}
+If-Match: "1"
+```
+
+Required permission: `crm_lead.write`.
+
+- Status: `204 No Content`
+
+### Lead Error Codes
+
+| Status | `errorCode` | When |
+|---|---|---|
+| `400` | `REQUEST_VALIDATION_FAILED` | One or more request fields are invalid |
+| `401` | `AUTHENTICATION_REQUIRED` | The Bearer token is missing or invalid |
+| `403` | `ACCESS_DENIED` | Missing `crm_lead.read`/`write` permission or outside authorized data scope |
+| `404` | `LEAD_NOT_FOUND` | Lead ID does not exist, is soft-deleted, or is outside data scope |
+| `404` | `LEAD_STATUS_INVALID` | Lead status ID does not exist or is inactive |
+| `404` | `LEAD_SOURCE_INVALID` | Lead source ID does not exist or is inactive |
+| `404` | `LEAD_CONVERSION_INVALID` | Converted Account/Contact ID does not exist or is outside data scope |
+| `409` | `LEAD_NUMBER_ALREADY_EXISTS` | Lead number is already taken in the tenant |
+| `409` | `LEAD_ALREADY_CONVERTED` | Lead has already been converted |
+| `409` | `LEAD_VERSION_CONFLICT` | Optimistic concurrency version mismatch |
+
+## Opportunity Management
+
+Opportunity Management tracks deal cycles, pipeline stages, revenue forecasting,
+weighted probability, and customer deal commitments.
+
+Every endpoint requires both of these headers:
+
+```http
+Authorization: Bearer ${ACCESS_TOKEN}
+X-Tenant-ID: 22222222-2222-2222-2222-222222222222
+```
+
+The authenticated user must have an active membership in the selected tenant.
+The server checks `crm_opportunity.read` or `crm_opportunity.write` and resolves
+data scopes for entity type `OPPORTUNITY`.
+
+| Data scope | Visible or assignable Opportunity owner |
+|---|---|
+| `TENANT` | Any valid user owner, team owner, or unassigned Opportunity in the tenant |
+| `OWN` | A `USER` owner matching the current user |
+| `TEAM` | A `TEAM` owner matching a directly granted team |
+| `TEAM_TREE` | A `TEAM` owner matching a granted root team or one of its active descendants |
+
+Multiple scopes combine with OR. Read scope is applied to detail and search;
+write scope is applied to create, update, and delete.
+
+### Opportunity field shapes
+
+The detail response contains:
+
+| Field | Type | Nullable | Notes |
+|---|---|---|---|
+| `id` | UUID | No | Opportunity identifier |
+| `opportunityNumber` | string | No | Client-supplied, immutable, maximum 191 characters |
+| `name` | string | No | Non-blank, maximum 255 characters |
+| `accountId` | UUID | No | Associated Account identifier |
+| `pipelineId` | UUID | No | Associated Sales Pipeline identifier |
+| `currentStageId` | UUID | No | Current Pipeline Stage identifier |
+| `owner` | object | Yes | Nested owner shape (`type`: `USER`/`TEAM`, `id`: UUID) |
+| `sourceId` | UUID | Yes | Active lead source identifier |
+| `primaryContactId` | UUID | Yes | Primary Contact identifier |
+| `opportunityType` | enum | No | `NEW_BUSINESS`, `UPSELL`, `CROSS_SELL`, `RENEWAL`, `PARTNERSHIP`, `OTHER` |
+| `status` | enum | No | `OPEN`, `WON`, `LOST`, `CANCELLED` |
+| `amount` | object | No | Nested `{ amount: 150000.0, currencyCode: "USD" }` |
+| `probability` | number | No | Decimal percentage `0.00` to `100.00` |
+| `expectedCloseDate` | date | Yes | ISO-8601 `YYYY-MM-DD` |
+| `actualCloseDate` | date | Yes | ISO-8601 `YYYY-MM-DD` |
+| `nextStep` | string | Yes | Immediate milestone |
+| `description` | string | Yes | Deal overview and notes |
+| `lostReasonId` | UUID | Yes | Required when `status` is `LOST` |
+| `lostReasonNotes` | string | Yes | Lost justification notes |
+| `campaignId` | UUID | Yes | Associated marketing campaign |
+| `createdAt` | timestamp | No | ISO-8601 UTC timestamp |
+| `createdBy` | UUID | Yes | Creating actor |
+| `updatedAt` | timestamp | No | ISO-8601 UTC timestamp |
+| `updatedBy` | UUID | Yes | Updating actor |
+| `version` | positive integer | No | Optimistic-concurrency version |
+
+### Create an Opportunity
+
+```http
+POST /api/opportunities
+```
+
+Required permission: `crm_opportunity.write`.
+
+#### Request body
+
+```json
+{
+  "opportunityNumber": "OPP-2026-001",
+  "name": "Cloud Infrastructure Migration Deal",
+  "accountId": "11111111-1111-1111-1111-111111111111",
+  "pipelineId": "22222222-2222-2222-2222-222222222222",
+  "currentStageId": "33333333-3333-3333-3333-333333333333",
+  "owner": {
+    "type": "USER",
+    "id": "44444444-4444-4444-4444-444444444444"
+  },
+  "primaryContactId": "55555555-5555-5555-5555-555555555555",
+  "opportunityType": "NEW_BUSINESS",
+  "amount": {
+    "amount": 150000.000000,
+    "currencyCode": "USD"
+  },
+  "probability": 75.00,
+  "expectedCloseDate": "2026-09-30",
+  "nextStep": "Draft and review final master services agreement",
+  "description": "Enterprise cloud workload modernization project."
+}
+```
+
+- Status: `201 Created`
+- Version: `1`
+
+### Get an Opportunity by ID
+
+```http
+GET /api/opportunities/{id}
+```
+
+Required permission: `crm_opportunity.read`.
+
+- Status: `200 OK`
+
+### Search Opportunities
+
+```http
+GET /api/opportunities?status=OPEN&page=0&size=20
+```
+
+Required permission: `crm_opportunity.read`.
+
+Supported query parameters:
+
+| Parameter | Type | Description |
+|---|---|---|
+| `q` | string | Free-text search matching `name`, `opportunityNumber`, `nextStep` |
+| `accountId` | UUID | Filter by associated Account |
+| `pipelineId` | UUID | Filter by Pipeline |
+| `stageId` | UUID | Filter by Pipeline Stage |
+| `status` | enum | `OPEN`, `WON`, `LOST`, `CANCELLED` |
+| `opportunityType` | enum | Opportunity category |
+| `ownerType` | enum | `USER` or `TEAM` |
+| `ownerId` | UUID | Filter by owner ID |
+| `page` | integer | Zero-indexed page number (default: `0`) |
+| `size` | integer | Page size (1 to 100, default: `20`) |
+
+- Status: `200 OK`
+- Body: `PageResult<OpportunitySummaryResponse>`
+
+### Update an Opportunity
+
+```http
+PUT /api/opportunities/{id}
+```
+
+Required permission: `crm_opportunity.write`.
+
+- Status: `200 OK`
+- Version incremented by 1.
+
+### Delete an Opportunity
+
+```http
+DELETE /api/opportunities/{id}
+If-Match: "1"
+```
+
+Required permission: `crm_opportunity.write`.
+
+- Status: `204 No Content`
+
+### Opportunity Error Codes
+
+| Status | `errorCode` | When |
+|---|---|---|
+| `400` | `REQUEST_VALIDATION_FAILED` | One or more request fields are invalid |
+| `401` | `AUTHENTICATION_REQUIRED` | The Bearer token is missing or invalid |
+| `403` | `ACCESS_DENIED` | Missing `crm_opportunity.read`/`write` permission or outside authorized data scope |
+| `404` | `OPPORTUNITY_NOT_FOUND` | Opportunity ID does not exist, is soft-deleted, or is outside data scope |
+| `404` | `OPPORTUNITY_ACCOUNT_INVALID` | Associated Account ID does not exist or is outside data scope |
+| `404` | `OPPORTUNITY_PIPELINE_INVALID` | Associated Pipeline ID does not exist or is inactive |
+| `404` | `OPPORTUNITY_STAGE_INVALID` | Associated Pipeline Stage ID does not exist in pipeline |
+| `404` | `OPPORTUNITY_CONTACT_INVALID` | Associated Contact ID does not exist or is outside data scope |
+| `409` | `OPPORTUNITY_NUMBER_ALREADY_EXISTS` | Opportunity number is already taken in the tenant |
+| `409` | `OPPORTUNITY_VERSION_CONFLICT` | Optimistic concurrency version mismatch |
+| `422` | `OPPORTUNITY_LOST_REASON_REQUIRED` | Status is set to `LOST` without providing a `lostReasonId` |
+
+## Sales Quote Management
+
+Sales Quote endpoints manage the complete quotation lifecycle including draft quotes, approvals, and order conversions.
+
+### Authorization
+
+All quote endpoints require:
+- Header: `Authorization: Bearer <token>`
+- Permissions:
+  - `sales_quote.read` for `GET` endpoints
+  - `sales_quote.write` for `POST`, `PUT`, `DELETE` endpoints
+  - `sales_quote.approve` for `POST /api/quotes/{id}/approve`
+
+### Endpoints
+
+#### 1. Create Quote
+
+```http
+POST /api/quotes
+Content-Type: application/json
+```
+
+Request Body:
+```json
+{
+  "quoteNumber": "QUO-2026-0001",
+  "accountId": "20000000-0000-0000-0000-000000000001",
+  "contactId": "30000000-0000-0000-0000-000000000001",
+  "opportunityId": "40000000-0000-0000-0000-000000000001",
+  "priceBookId": null,
+  "ownerUserId": null,
+  "amounts": {
+    "currencyCode": "VND",
+    "subtotal": 100000000.0,
+    "discountTotal": 5000000.0,
+    "taxTotal": 9500000.0,
+    "shippingTotal": 0.0
+  },
+  "issueDate": "2026-08-14",
+  "validUntil": "2026-09-14",
+  "paymentTerms": "NET30",
+  "deliveryTerms": "FOB",
+  "customerReference": "PO-REQ-888",
+  "notes": "Standard commercial proposal"
+}
+```
+
+Response: `201 Created`
+
+#### 2. Get Quote by ID
+
+```http
+GET /api/quotes/{id}
+```
+
+Response: `200 OK`
+
+#### 3. Search / Filter Quotes
+
+```http
+GET /api/quotes?q=QUO&accountId=20000000-0000-0000-0000-000000000001&status=DRAFT&page=0&size=20
+```
+
+Response: `200 OK`
+
+#### 4. Update Quote
+
+```http
+PUT /api/quotes/{id}
+Content-Type: application/json
+```
+
+Request Body:
+```json
+{
+  "version": 1,
+  "accountId": "20000000-0000-0000-0000-000000000001",
+  "contactId": "30000000-0000-0000-0000-000000000001",
+  "opportunityId": "40000000-0000-0000-0000-000000000001",
+  "priceBookId": null,
+  "ownerUserId": null,
+  "status": "DRAFT",
+  "amounts": {
+    "currencyCode": "VND",
+    "subtotal": 120000000.0,
+    "discountTotal": 10000000.0,
+    "taxTotal": 11000000.0,
+    "shippingTotal": 0.0
+  },
+  "issueDate": "2026-08-14",
+  "validUntil": "2026-09-30",
+  "paymentTerms": "NET30",
+  "deliveryTerms": "FOB",
+  "customerReference": "PO-REQ-888-REV1",
+  "notes": "Updated pricing"
+}
+```
+
+Response: `200 OK`
+
+#### 5. Approve Quote
+
+```http
+POST /api/quotes/{id}/approve
+If-Match: "1"
+```
+
+Response: `200 OK`
+
+#### 6. Delete Quote
+
+```http
+DELETE /api/quotes/{id}
+If-Match: "1"
+```
+
+Response: `204 No Content`
+
+### Quote Error Codes
+
+| Status | Error Code | Reason |
+| --- | --- | --- |
+| `400` | `INVALID_PAYLOAD` | Validation violation on request payload fields |
+| `401` | `AUTHENTICATION_REQUIRED` | The Bearer token is missing or invalid |
+| `403` | `ACCESS_DENIED` | Missing `sales_quote.read`/`write`/`approve` permission or outside authorized data scope |
+| `404` | `QUOTE_NOT_FOUND` | Quote ID does not exist or is outside data scope |
+| `404` | `QUOTE_ACCOUNT_INVALID` | Associated Account, Contact, Opportunity, or PriceBook ID does not exist |
+| `409` | `QUOTE_NUMBER_ALREADY_EXISTS` | Quote number is already taken in the tenant |
+| `409` | `QUOTE_VERSION_CONFLICT` | Optimistic concurrency version mismatch |
+
+## Sales Order Management
+
+Sales Order endpoints manage the full lifecycle of commercial sales orders including creation, updates, confirmation, fulfillment tracking, and cancellation.
+
+### Authorization
+
+All order endpoints require:
+- Header: `Authorization: Bearer <token>`
+- Permissions:
+  - `sales_order.read` for `GET` endpoints
+  - `sales_order.write` for `POST`, `PUT`, `DELETE` endpoints
+
+### Endpoints
+
+#### 1. Create Order
+
+```http
+POST /api/orders
+Content-Type: application/json
+```
+
+Request Body:
+```json
+{
+  "orderNumber": "ORD-2026-0001",
+  "accountId": "20000000-0000-0000-0000-000000000001",
+  "contactId": "30000000-0000-0000-0000-000000000001",
+  "opportunityId": "40000000-0000-0000-0000-000000000001",
+  "quoteId": "50000000-0000-0000-0000-000000000001",
+  "ownerUserId": null,
+  "amounts": {
+    "currencyCode": "VND",
+    "subtotal": 100000000.0,
+    "discountTotal": 5000000.0,
+    "taxTotal": 9500000.0,
+    "shippingTotal": 500000.0
+  },
+  "orderDate": "2026-08-14",
+  "requestedDeliveryDate": "2026-08-25",
+  "customerReference": "PO-CLIENT-999"
+}
+```
+
+Response: `201 Created`
+
+#### 2. Get Order by ID
+
+```http
+GET /api/orders/{id}
+```
+
+Response: `200 OK`
+
+#### 3. Search / Filter Orders
+
+```http
+GET /api/orders?q=ORD&accountId=20000000-0000-0000-0000-000000000001&status=CONFIRMED&page=0&size=20
+```
+
+Response: `200 OK`
+
+#### 4. Update Order
+
+```http
+PUT /api/orders/{id}
+Content-Type: application/json
+```
+
+Request Body:
+```json
+{
+  "version": 1,
+  "accountId": "20000000-0000-0000-0000-000000000001",
+  "contactId": "30000000-0000-0000-0000-000000000001",
+  "opportunityId": "40000000-0000-0000-0000-000000000001",
+  "quoteId": "50000000-0000-0000-0000-000000000001",
+  "ownerUserId": null,
+  "status": "CONFIRMED",
+  "amounts": {
+    "currencyCode": "VND",
+    "subtotal": 110000000.0,
+    "discountTotal": 5000000.0,
+    "taxTotal": 10500000.0,
+    "shippingTotal": 500000.0
+  },
+  "orderDate": "2026-08-14",
+  "requestedDeliveryDate": "2026-08-28",
+  "customerReference": "PO-CLIENT-999-REV1"
+}
+```
+
+Response: `200 OK`
+
+#### 5. Confirm Order
+
+```http
+POST /api/orders/{id}/confirm
+If-Match: "1"
+```
+
+Response: `200 OK`
+
+#### 6. Cancel Order
+
+```http
+POST /api/orders/{id}/cancel
+If-Match: "1"
+Content-Type: application/json
+```
+
+Request Body:
+```json
+{
+  "reason": "Customer requested cancellation due to budget constraints"
+}
+```
+
+Response: `200 OK`
+
+#### 7. Delete Order
+
+```http
+DELETE /api/orders/{id}
+If-Match: "1"
+```
+
+Response: `204 No Content`
+
+### Order Error Codes
+
+| Status | Error Code | Reason |
+| --- | --- | --- |
+| `400` | `INVALID_PAYLOAD` | Validation violation on request payload fields |
+| `401` | `AUTHENTICATION_REQUIRED` | The Bearer token is missing or invalid |
+| `403` | `ACCESS_DENIED` | Missing `sales_order.read`/`write` permission or outside authorized data scope |
+| `404` | `ORDER_NOT_FOUND` | Order ID does not exist or is outside data scope |
+| `404` | `ORDER_ACCOUNT_INVALID` | Associated Account, Contact, Opportunity, or Quote ID does not exist |
+| `409` | `ORDER_NUMBER_ALREADY_EXISTS` | Order number is already taken in the tenant |
+| `409` | `ORDER_VERSION_CONFLICT` | Optimistic concurrency version mismatch |
+
+## Audit & Compliance Management
+
+Audit endpoints provide read-only access to immutable system change logs (`audit_audit_events`) and data access tracking logs (`audit_data_access_events`) for regulatory compliance (GDPR, SOC2, ISO 27001).
+
+### Authorization
+
+All audit endpoints require:
+- Header: `Authorization: Bearer <token>`
+- Permissions: `audit_read`
+
+### Endpoints
+
+#### 1. Search System Audit Events
+
+```http
+GET /api/audit/events?q=ACCOUNT&aggregateType=ACCOUNT&action=UPDATE&page=0&size=20
+```
+
+Response: `200 OK`
+
+```json
+{
+  "items": [
+    {
+      "id": "70000000-0000-0000-0000-000000000001",
+      "occurredAt": "2026-08-14T11:20:15Z",
+      "schemaName": "crm",
+      "tableName": "crm_opportunities",
+      "aggregateType": "OPPORTUNITY",
+      "aggregateId": "40000000-0000-0000-0000-000000000001",
+      "action": "UPDATE",
+      "changedFields": "[\"current_stage_id\", \"probability\"]",
+      "actorUserId": "10000000-0000-0000-0000-000000000001",
+      "actorType": "USER",
+      "sourceIp": "118.70.12.89",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+    }
+  ],
+  "page": 0,
+  "size": 20,
+  "totalElements": 1,
+  "totalPages": 1
+}
+```
+
+#### 2. Get Single Audit Event by ID
+
+```http
+GET /api/audit/events/{id}
+```
+
+Response: `200 OK`
+
+```json
+{
+  "id": "70000000-0000-0000-0000-000000000001",
+  "occurredAt": "2026-08-14T11:20:15Z",
+  "schemaName": "crm",
+  "tableName": "crm_opportunities",
+  "aggregateType": "OPPORTUNITY",
+  "aggregateId": "40000000-0000-0000-0000-000000000001",
+  "action": "UPDATE",
+  "changedFields": "[\"current_stage_id\", \"probability\"]",
+  "oldValues": "{\"probability\": 50}",
+  "newValues": "{\"probability\": 80}",
+  "actorUserId": "10000000-0000-0000-0000-000000000001",
+  "actorType": "USER",
+  "requestId": "80000000-0000-0000-0000-000000000001",
+  "correlationId": null,
+  "sourceIp": "118.70.12.89",
+  "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+  "applicationName": "CRM-Web"
+}
+```
+
+#### 3. Search Data Access Events
+
+```http
+GET /api/audit/data-access?entityType=CUSTOMER_PII&accessType=EXPORT&page=0&size=20
+```
+
+Response: `200 OK`
+
+```json
+{
+  "items": [
+    {
+      "id": "71000000-0000-0000-0000-000000000001",
+      "occurredAt": "2026-08-14T10:00:00Z",
+      "entityType": "CUSTOMER_PII",
+      "entityId": "20000000-0000-0000-0000-000000000001",
+      "accessType": "EXPORT",
+      "fieldsAccessed": "[\"email\", \"phone_e164\", \"billing_address\"]",
+      "actorUserId": "10000000-0000-0000-0000-000000000001",
+      "actorType": "USER",
+      "purpose": "Marketing Quarterly Report",
+      "legalBasis": "LEGITIMATE_INTEREST",
+      "sourceIp": "118.70.12.89",
+      "userAgent": "Mozilla/5.0"
+    }
+  ],
+  "page": 0,
+  "size": 20,
+  "totalElements": 1,
+  "totalPages": 1
+}
+```
+
+#### 4. Get Single Data Access Event by ID
+
+```http
+GET /api/audit/data-access/{id}
+```
+
+Response: `200 OK`
+
+### Audit Error Codes
+
+| Status | Error Code | Reason |
+| --- | --- | --- |
+| `400` | `INVALID_PAYLOAD` | Validation violation on search parameters |
+| `401` | `AUTHENTICATION_REQUIRED` | The Bearer token is missing or invalid |
+| `403` | `ACCESS_DENIED` | Missing `audit_read` permission |
+| `404` | `AUDIT_EVENT_NOT_FOUND` | System audit event record does not exist |
+| `404` | `DATA_ACCESS_EVENT_NOT_FOUND` | Data access event record does not exist |
+
+## Activity Management
+
+Activity endpoints manage CRM customer engagement activities such as Tasks, Phone Calls, Meetings, Emails, Demos, and Follow-ups.
+
+### Authorization
+
+All activity endpoints require:
+- Header: `Authorization: Bearer <token>`
+- Permissions:
+  - `crm_activity.read` for `GET` endpoints
+  - `crm_activity.write` for `POST`, `PUT`, `DELETE` endpoints
+
+### Endpoints
+
+#### 1. Create Activity
+
+```http
+POST /api/activities
+Content-Type: application/json
+```
+
+Request Body:
+```json
+{
+  "activityType": "TASK",
+  "subject": "Follow up on proposal feedback",
+  "description": "Call client CTO regarding architecture review questions",
+  "direction": "OUTBOUND",
+  "priority": "HIGH",
+  "owner": {
+    "ownerUserId": "10000000-0000-0000-0000-000000000001",
+    "assignedTeamId": null
+  },
+  "scheduledStartAt": "2026-08-15T09:00:00Z",
+  "scheduledEndAt": "2026-08-15T09:30:00Z",
+  "durationSeconds": 1800,
+  "outcomeCode": null,
+  "externalReference": "CAL-9992",
+  "recurrenceRule": null
+}
+```
+
+Response: `201 Created`
+
+#### 2. Get Activity by ID
+
+```http
+GET /api/activities/{id}
+```
+
+Response: `200 OK`
+
+#### 3. Search / Filter Activities
+
+```http
+GET /api/activities?q=proposal&activityType=TASK&status=PLANNED&priority=HIGH&page=0&size=20
+```
+
+Response: `200 OK`
+
+#### 4. Update Activity
+
+```http
+PUT /api/activities/{id}
+Content-Type: application/json
+```
+
+Request Body:
+```json
+{
+  "version": 1,
+  "activityType": "TASK",
+  "subject": "Follow up on proposal feedback (Rescheduled)",
+  "description": "Call client CTO regarding architecture review questions",
+  "direction": "OUTBOUND",
+  "status": "IN_PROGRESS",
+  "priority": "URGENT",
+  "owner": {
+    "ownerUserId": "10000000-0000-0000-0000-000000000001",
+    "assignedTeamId": null
+  },
+  "scheduledStartAt": "2026-08-15T14:00:00Z",
+  "scheduledEndAt": "2026-08-15T14:30:00Z",
+  "durationSeconds": 1800,
+  "outcomeCode": null,
+  "externalReference": "CAL-9992",
+  "recurrenceRule": null
+}
+```
+
+Response: `200 OK`
+
+#### 5. Complete Activity
+
+```http
+POST /api/activities/{id}/complete
+If-Match: "1"
+Content-Type: application/json
+```
+
+Request Body:
+```json
+{
+  "outcomeCode": "CLIENT_ACCEPTED"
+}
+```
+
+Response: `200 OK`
+
+#### 6. Delete Activity
+
+```http
+DELETE /api/activities/{id}
+If-Match: "1"
+```
+
+Response: `204 No Content`
+
+### Activity Error Codes
+
+| Status | Error Code | Reason |
+| --- | --- | --- |
+| `400` | `INVALID_PAYLOAD` | Validation violation on request payload fields |
+| `401` | `AUTHENTICATION_REQUIRED` | The Bearer token is missing or invalid |
+| `403` | `ACCESS_DENIED` | Missing `crm_activity.read`/`write` permission or outside authorized data scope |
+| `404` | `ACTIVITY_NOT_FOUND` | Activity ID does not exist or is outside data scope |
+| `404` | `ACTIVITY_OWNER_INVALID` | Assigned user or team does not exist or is inactive |
+| `409` | `ACTIVITY_VERSION_CONFLICT` | Optimistic concurrency version mismatch |
+
 ## OAuth2 Login
+
+
+
+
+
+
+
 
 Google and Microsoft OIDC login are available only when the corresponding
 provider has both a configured client ID and client secret.

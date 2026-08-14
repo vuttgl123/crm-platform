@@ -15,3 +15,4 @@ export * from './table';
 export * from './tabs';
 export * from './tooltip';
 export * from './collapsible';
+export * from './searchable-select';

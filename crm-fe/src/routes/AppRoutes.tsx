@@ -19,6 +19,7 @@ import { TenantSetupPage } from '@/features/tenant/TenantSetupPage';
 import { PendingApprovalPage } from '@/features/auth/PendingApprovalPage';
 import { UsersPage } from '@/features/platform/users/UsersPage';
 import { RolesPage } from '@/features/platform/roles/RolesPage';
+import { AccountDetailPage } from '@/features/crm/accounts/AccountDetailPage';
 
 export const AppRoutes: React.FC = () => {
   const { isAuthenticated } = useAuth();
@@ -77,6 +78,7 @@ export const AppRoutes: React.FC = () => {
         <Route path="overview" element={<OverviewPage />} />
         <Route path="profile" element={<UserProfilePage />} />
         <Route path="crm/accounts" element={<AccountsPage />} />
+        <Route path="crm/accounts/:id" element={<AccountDetailPage />} />
         <Route path="platform/users" element={<UsersPage />} />
         <Route path="platform/roles" element={<RolesPage />} />
 

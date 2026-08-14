@@ -478,7 +478,7 @@ CREATE TABLE crm_communication_channels (
                                             CHECK (channel_type <> 'EMAIL' OR LOCATE('@', raw_value) > 1),
                                             CHECK (channel_type NOT IN ('PHONE', 'MOBILE', 'SMS', 'WHATSAPP')
                                                 OR normalized_value IS NULL
-                                                OR REGEXP_LIKE(normalized_value, '^\+[1-9][0-9]{1,14}$'))
+                                                OR REGEXP_LIKE(normalized_value, '^[+][1-9][0-9]{1,14}$'))
     ) ENGINE=InnoDB;
 
 CREATE TABLE crm_addresses (

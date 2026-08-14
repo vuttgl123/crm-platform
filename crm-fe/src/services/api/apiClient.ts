@@ -34,6 +34,32 @@ export class ApiError extends Error {
   }
 }
 
+export function extractErrorMessage(err: any, fallback: string = 'Thao tác không thành công'): string {
+  if (!err) return fallback;
+
+  const errors = err?.problemDetail?.errors || err?.errors;
+  if (Array.isArray(errors) && errors.length > 0) {
+    const details = errors
+      .map((e: ApiErrorDetail) => `${e.field ? e.field + ': ' : ''}${e.message || e.errorCode}`)
+      .join('; ');
+    return `Dữ liệu không hợp lệ: ${details}`;
+  }
+
+  if (err?.problemDetail?.detail && err.problemDetail.detail !== 'Request data is invalid') {
+    return err.problemDetail.detail;
+  }
+
+  if (err?.message && err.message !== 'Request data is invalid') {
+    return err.message;
+  }
+
+  if (err?.response?.data?.message && err.response.data.message !== 'Request data is invalid') {
+    return err.response.data.message;
+  }
+
+  return fallback;
+}
+
 let isRefreshing = false;
 let refreshSubscribers: ((token: string) => void)[] = [];
 

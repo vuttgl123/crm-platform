@@ -6,11 +6,12 @@ import { Sparkles } from 'lucide-react';
 
 interface BusinessNumberInputProps {
   id?: string;
-  label: string;
+  label?: string;
   value: string; // Raw numeric string e.g. "350000000000"
   onChange: (rawValue: string) => void;
   placeholder?: string;
   unitSuffix?: string; // e.g. "VNĐ", "người"
+  disabled?: boolean;
   icon?: React.ReactNode;
 }
 
@@ -78,6 +79,7 @@ export const BusinessNumberInput: React.FC<BusinessNumberInputProps> = ({
   onChange,
   placeholder,
   unitSuffix = '',
+  disabled = false,
   icon,
 }) => {
   const numericValue = value ? parseFloat(value.replace(/[^0-9.-]+/g, '')) : 0;
@@ -91,16 +93,19 @@ export const BusinessNumberInput: React.FC<BusinessNumberInputProps> = ({
 
   return (
     <div className="space-y-1.5 font-sans">
-      <Label htmlFor={id} className="text-xs font-semibold flex items-center gap-1.5 text-slate-800">
-        {icon}
-        <span>{label}</span>
-      </Label>
+      {label && (
+        <Label htmlFor={id} className="text-xs font-semibold flex items-center gap-1.5 text-slate-800">
+          {icon}
+          <span>{label}</span>
+        </Label>
+      )}
 
       <Input
         id={id}
         type="text"
         value={formattedThousandStr}
         onChange={handleInputChange}
+        disabled={disabled}
         placeholder={placeholder || 'Nhập số tiền hoặc số lượng...'}
         className="text-xs font-mono font-bold transition-all bg-white text-slate-900 border-slate-200"
       />

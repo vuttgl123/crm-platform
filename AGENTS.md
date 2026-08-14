@@ -130,3 +130,16 @@ The following 37 skills are currently available. Re-check the runtime catalog be
 - Skill creation: use `skill-creator` and `superpowers:writing-skills`.
 - Plugin creation: use `plugin-creator`.
 - Exhaustive file generation or conversion: use `full-output-enforcement`.
+
+## System-Wide CRM Color Palette & Status Standard
+
+All CRM status badges (Lifecycle Stages, Account Types, Lead Status, Priority Levels) must use the following standardized color palette scale across the entire application:
+
+### Account Lifecycle Stages (`lifecycleStage`) & Importance Levels
+1. **PROSPECT (Tiềm năng)**: `bg-purple-50 text-purple-700 border-purple-200 font-bold` (Purple/Indigo badge - Level 3 Priority: New leads & potential accounts, highly visible)
+2. **QUALIFIED (Đạt chuẩn)**: `bg-blue-50 text-blue-700 border-blue-200 font-bold` (Blue badge - Level 2 Priority: Verified budget/authority accounts)
+3. **CUSTOMER (Khách hàng chính thức)**: `bg-emerald-50 text-emerald-700 border-emerald-200 font-bold` (Emerald Green badge - Level 1 Highest Priority: Converted active revenue customers)
+4. **INACTIVE (Ngừng hoạt động)**: `bg-amber-50 text-amber-700 border-amber-200 font-semibold` (Amber/Yellow badge - Level 4 Priority: Dormant or paused accounts)
+5. **CHURNED (Rời bỏ)**: `bg-rose-50 text-rose-700 border-rose-200 font-semibold` (Rose/Red badge - Level 5 Risk: Lost or cancelled accounts)
+
+All status badges must be imported from `@/config/crmStatusConfig` to maintain 100% visual consistency.

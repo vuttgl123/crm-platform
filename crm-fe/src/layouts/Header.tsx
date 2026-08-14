@@ -8,7 +8,6 @@ import {
   Globe,
   User,
   Sliders,
-  ChevronRight,
   Building2,
 } from 'lucide-react';
 import { useAuth } from '@/core/session/useAuth';
@@ -154,53 +153,26 @@ export const Header: React.FC<HeaderProps> = ({
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className="h-8 w-8 relative text-slate-600">
                     <Bell className="w-4 h-4" />
-                    <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-red-500 ring-2 ring-white" />
                   </Button>
                 </DropdownMenuTrigger>
               </TooltipTrigger>
-              <TooltipContent>Thông báo mới</TooltipContent>
+              <TooltipContent>Thông báo hệ thống</TooltipContent>
             </Tooltip>
 
-            <DropdownMenuContent align="end" className="w-80 p-0 text-xs">
+            <DropdownMenuContent align="end" className="w-80 p-0 text-xs shadow-lg border-slate-200">
               <div className="p-3 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-                <span className="font-bold text-slate-900">Thông báo (3 mới)</span>
-                <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-[10px]">
-                  Tất cả
+                <span className="font-bold text-slate-900">Thông báo Hệ thống</span>
+                <Badge variant="outline" className="bg-slate-100 text-slate-600 border-slate-200 text-[10px]">
+                  0 mới
                 </Badge>
               </div>
 
-              <div className="divide-y divide-slate-100 max-h-72 overflow-y-auto">
-                <div className="p-3 hover:bg-slate-50 transition-colors cursor-pointer space-y-0.5">
-                  <div className="font-bold text-slate-900 flex items-center justify-between">
-                    <span>Cơ hội MB Bank được cập nhật</span>
-                    <span className="text-[10px] text-slate-400">10m</span>
-                  </div>
-                  <p className="text-[11px] text-slate-500">Đã cập nhật giá trị hợp đồng thành 380tr VNĐ.</p>
+              <div className="p-6 text-center">
+                <div className="w-10 h-10 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-2">
+                  <Bell className="w-5 h-5 opacity-60" />
                 </div>
-
-                <div className="p-3 hover:bg-slate-50 transition-colors cursor-pointer space-y-0.5">
-                  <div className="font-bold text-slate-900 flex items-center justify-between">
-                    <span>Nhắc nhở cuộc họp Demo</span>
-                    <span className="text-[10px] text-slate-400">4h</span>
-                  </div>
-                  <p className="text-[11px] text-slate-500">Lịch họp demo giải pháp VUM CRM với Tập đoàn Hòa Phát lúc 15:30.</p>
-                </div>
-
-                <div className="p-3 hover:bg-slate-50 transition-colors cursor-pointer space-y-0.5">
-                  <div className="font-bold text-slate-900 flex items-center justify-between">
-                    <span>Lead mới từ Website</span>
-                    <span className="text-[10px] text-slate-400">1d</span>
-                  </div>
-                  <p className="text-[11px] text-slate-500">Thêm mới Khách hàng tiềm năng TH True Milk.</p>
-                </div>
-              </div>
-
-              <DropdownMenuSeparator className="m-0" />
-              <div className="p-2 text-center">
-                <Button variant="ghost" size="sm" className="w-full text-[11px] text-blue-600 h-7 font-semibold">
-                  Xem tất cả thông báo
-                  <ChevronRight className="w-3 h-3 ml-1" />
-                </Button>
+                <p className="text-xs font-semibold text-slate-700">Không có thông báo mới</p>
+                <p className="text-[11px] text-slate-400 mt-0.5">Bạn đã xem hết tất cả thông báo và cập nhật trong hệ thống.</p>
               </div>
             </DropdownMenuContent>
           </DropdownMenu>

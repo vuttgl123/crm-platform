@@ -98,11 +98,16 @@ Account Communication Channel is delivered after Account Relationship. It
 manages scoped Account-owned email, phone, social, and other communication
 values with normalization, optimistic concurrency, and soft-delete filtering.
 
+Account Address is delivered after Account Communication Channel. It manages
+scoped Account-owned postal locations with UTC effective-date history, atomic
+per-type primary switching, validation state, and optimistic concurrency.
+
 The following Account-adjacent capabilities remain deferred, in this order:
 
-1. Account Address.
-2. Contact management, then Contact Communication Channel and Address.
-3. Duplicate detection/merge and lifecycle history after concrete rules exist.
+1. Contact management.
+2. Contact Communication Channel and Contact Address.
+3. Address verification/geocoding when concrete providers and workflows exist.
+4. Duplicate detection, merge, and advanced lifecycle history.
 
 ### 4. Generic audit execution context
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { toast } from 'sonner';
 import {
   Users,
@@ -11,8 +11,14 @@ import {
   RefreshCw,
   Loader2,
   UserCheck,
+  X,
+  RotateCcw,
+  ChevronsLeft,
+  ChevronsRight,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -24,6 +30,7 @@ import {
   SelectContent,
   SelectItem,
 } from '@/components/ui/select';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 import {
   Table,
   TableHeader,
@@ -32,6 +39,7 @@ import {
   TableBody,
   TableCell,
 } from '@/components/ui/table';
+import { EmptyState } from '@/components/common/EmptyState';
 import { useAuth } from '@/core/session/useAuth';
 import { CreateUserWizardModal } from './components/CreateUserWizardModal';
 import {
@@ -67,10 +75,16 @@ export const UsersPage: React.FC = () => {
 
   const [activeUsers, setActiveUsers] = useState<ActiveUser[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedRoleFilter, setSelectedRoleFilter] = useState('ALL');
+  const [statusFilter, setStatusFilter] = useState('ALL');
   const [isCreateWizardOpen, setIsCreateWizardOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState('pending');
+  const [activeTab, setActiveTab] = useState('active');
 
-  // Fetch Real Roles Catalog from Backend API (No Fallback Mock)
+  // Pagination State for Active Users
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  // Fetch Real Roles Catalog from Backend API
   const fetchRoles = useCallback(async () => {
     try {
       const availableRoles = await roleApi.getRoles();
@@ -135,8 +149,8 @@ export const UsersPage: React.FC = () => {
       const activeList = Array.from(membersMap.values());
       setActiveUsers(activeList);
 
-      if (pendingItems.length === 0 && activeList.length > 0) {
-        setActiveTab('active');
+      if (pendingItems.length > 0 && activeList.length === 0) {
+        setActiveTab('pending');
       }
     } catch {
       setPendingRequests([]);
@@ -144,12 +158,15 @@ export const UsersPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [session]);
+  }, [session, roles]);
 
   useEffect(() => {
     fetchRoles();
+  }, [fetchRoles]);
+
+  useEffect(() => {
     fetchMembershipRequests();
-  }, [fetchRoles, fetchMembershipRequests]);
+  }, [fetchMembershipRequests]);
 
   const activePendingCount = pendingRequests.filter((r) => r.status === 'PENDING').length;
 
@@ -214,10 +231,8 @@ export const UsersPage: React.FC = () => {
     const user = activeUsers.find((u) => u.id === userId);
     if (!user) return;
 
-    // Save selected role ID for persistence across reloads
     localStorage.setItem(`user_role_${userId}`, newRoleId);
 
-    // Update UI state immediately
     setActiveUsers((prev) =>
       prev.map((u) => (u.id === userId ? { ...u, roleId: newRoleId, roleName: selectedRole.name } : u))
     );
@@ -257,212 +272,284 @@ export const UsersPage: React.FC = () => {
     }
   };
 
-  const filteredActiveUsers = activeUsers.filter(
-    (u) =>
-      u.displayName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      u.email.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Filtered & Paginated Active Users
+  const filteredActiveUsers = useMemo(() => {
+    return activeUsers.filter((u) => {
+      const matchesSearch =
+        searchQuery === '' ||
+        u.displayName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        u.email.toLowerCase().includes(searchQuery.toLowerCase());
+
+      const matchesRole =
+        selectedRoleFilter === 'ALL' ||
+        u.roleId === selectedRoleFilter ||
+        (roles.find((r) => r.id === selectedRoleFilter)?.name === u.roleName);
+
+      const matchesStatus =
+        statusFilter === 'ALL' ||
+        (statusFilter === 'ADMIN' ? u.isTenantAdmin : u.status === statusFilter);
+
+      return matchesSearch && matchesRole && matchesStatus;
+    });
+  }, [activeUsers, searchQuery, selectedRoleFilter, statusFilter, roles]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredActiveUsers.length / pageSize));
+  const paginatedUsers = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredActiveUsers.slice(start, start + pageSize);
+  }, [filteredActiveUsers, currentPage, pageSize]);
+
+  const activeFiltersCount =
+    (searchQuery ? 1 : 0) +
+    (selectedRoleFilter !== 'ALL' ? 1 : 0) +
+    (statusFilter !== 'ALL' ? 1 : 0);
+
+  const handleResetFilters = () => {
+    setSearchQuery('');
+    setSelectedRoleFilter('ALL');
+    setStatusFilter('ALL');
+    setCurrentPage(1);
+  };
+
+  const getVisiblePageNumbers = () => {
+    const pages: number[] = [];
+    const maxButtons = 5;
+    let start = Math.max(1, currentPage - Math.floor(maxButtons / 2));
+    let end = Math.min(totalPages, start + maxButtons - 1);
+    if (end - start + 1 < maxButtons) {
+      start = Math.max(1, end - maxButtons + 1);
+    }
+    for (let i = start; i <= end; i++) {
+      pages.push(i);
+    }
+    return pages;
+  };
 
   return (
-    <div className="space-y-6 pb-12 font-sans w-full">
-      {/* Top Header Card */}
-      <Card className="shadow-xs border-slate-200">
-        <CardHeader className="pb-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <CardTitle className="text-xl font-bold text-slate-900 flex items-center gap-2">
-              <Users className="w-6 h-6 text-blue-600" />
-              <span>Quản lý Người dùng & Phê duyệt Thành viên</span>
-            </CardTitle>
-            <CardDescription className="text-xs text-slate-500 mt-1">
-              Duyệt yêu cầu gia nhập Tập đoàn từ nhân viên mới và phân quyền thành viên trong tổ chức
-            </CardDescription>
-          </div>
+    <div className="space-y-5 pb-12 font-sans w-full">
+      {/* ── Page Header ── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-xl font-bold text-slate-900 flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shadow-sm shrink-0">
+              <Users className="w-4.5 h-4.5 text-white" />
+            </div>
+            Quản lý Người dùng &amp; Thành viên
+          </h1>
+          <p className="text-xs text-slate-500 mt-1 ml-10.5">
+            Phê duyệt yêu cầu gia nhập và phân bổ vai trò quyền hạn thành viên tổ chức
+          </p>
+        </div>
 
-          <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={fetchMembershipRequests}
+            disabled={loading}
+            className="text-xs gap-1.5 border-slate-200 h-8"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+            <span>Làm mới</span>
+          </Button>
+          {hasManagePermission && (
             <Button
-              variant="outline"
               size="sm"
-              onClick={fetchMembershipRequests}
-              disabled={loading}
-              className="gap-1.5 text-xs font-semibold"
+              onClick={() => setIsCreateWizardOpen(true)}
+              className="text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white gap-1.5 shadow-xs h-8"
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-              Làm mới
+              <Plus className="w-3.5 h-3.5" />
+              <span>Thêm Thành viên Mới</span>
             </Button>
-            {hasManagePermission && (
-              <Button
-                size="sm"
-                onClick={() => setIsCreateWizardOpen(true)}
-                className="gap-1.5 text-xs font-semibold bg-blue-600 hover:bg-blue-700"
-              >
-                <Plus className="w-4 h-4" />
-                Thêm Thành viên Mới
-              </Button>
-            )}
+          )}
+        </div>
+      </div>
+
+      {/* ── Quick Stat KPI Cards ── */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="bg-white rounded-xl border border-slate-200 px-4 py-3 flex items-center gap-3 shadow-xs hover:shadow-sm transition-shadow">
+          <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
+            <Users className="w-4.5 h-4.5 text-blue-600" />
           </div>
-        </CardHeader>
+          <div>
+            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Tổng Thành viên</div>
+            <div className="text-lg font-black text-slate-900 leading-tight">{activeUsers.length}</div>
+          </div>
+        </div>
 
-        {/* Main Tabs Component */}
-        <CardContent className="pt-4 space-y-4">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="bg-slate-100 p-1 border border-slate-200">
-              <TabsTrigger value="pending" className="text-xs font-semibold gap-2 relative">
-                <Clock className="w-3.5 h-3.5 text-amber-600" />
-                <span>Yêu cầu Chờ Phê duyệt</span>
-                {activePendingCount > 0 && (
-                  <Badge className="bg-amber-500 text-white font-bold text-[10px] px-1.5 h-4 rounded-full">
-                    {activePendingCount}
-                  </Badge>
-                )}
-              </TabsTrigger>
+        <div className="bg-white rounded-xl border border-amber-100 px-4 py-3 flex items-center gap-3 shadow-xs hover:shadow-sm transition-shadow">
+          <div className="w-9 h-9 rounded-lg bg-amber-50 flex items-center justify-center shrink-0">
+            <Clock className="w-4.5 h-4.5 text-amber-600" />
+          </div>
+          <div>
+            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Chờ phê duyệt</div>
+            <div className="text-lg font-black text-amber-700 leading-tight">{pendingRequests.length}</div>
+          </div>
+        </div>
 
-              <TabsTrigger value="active" className="text-xs font-semibold gap-2">
-                <UserCheck className="w-3.5 h-3.5 text-emerald-600" />
-                <span>Thành viên Đang Hoạt động ({activeUsers.length})</span>
-              </TabsTrigger>
-            </TabsList>
+        <div className="bg-white rounded-xl border border-emerald-100 px-4 py-3 flex items-center gap-3 shadow-xs hover:shadow-sm transition-shadow">
+          <div className="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center shrink-0">
+            <UserCheck className="w-4.5 h-4.5 text-emerald-600" />
+          </div>
+          <div>
+            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Đang hoạt động</div>
+            <div className="text-lg font-black text-emerald-700 leading-tight">
+              {activeUsers.filter((u) => u.status === 'ACTIVE').length}
+            </div>
+          </div>
+        </div>
 
-            {/* TAB 1: PENDING MEMBERSHIP REQUESTS */}
-            <TabsContent value="pending" className="pt-3 space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-bold text-slate-900">Danh sách Đơn gia nhập chờ duyệt ({pendingRequests.length})</h3>
-                  <p className="text-xs text-slate-500">Các tài khoản đăng ký nhập Mã Tập đoàn đang chờ Quản trị viên cấp quyền</p>
-                </div>
-              </div>
+        <div className="bg-white rounded-xl border border-purple-100 px-4 py-3 flex items-center gap-3 shadow-xs hover:shadow-sm transition-shadow">
+          <div className="w-9 h-9 rounded-lg bg-purple-50 flex items-center justify-center shrink-0">
+            <Shield className="w-4.5 h-4.5 text-purple-600" />
+          </div>
+          <div>
+            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Quản trị viên</div>
+            <div className="text-lg font-black text-purple-700 leading-tight">
+              {activeUsers.filter((u) => u.isTenantAdmin).length}
+            </div>
+          </div>
+        </div>
+      </div>
 
-              <Table>
-                <TableHeader className="bg-slate-50">
-                  <TableRow>
-                    <TableHead className="text-xs font-bold text-slate-700">Người đăng ký</TableHead>
-                    <TableHead className="text-xs font-bold text-slate-700">Email Công vụ</TableHead>
-                    <TableHead className="text-xs font-bold text-slate-700">Thời gian đăng ký</TableHead>
-                    <TableHead className="text-xs font-bold text-slate-700">Chọn Vai trò Gán</TableHead>
-                    <TableHead className="text-xs font-bold text-slate-700 text-right pr-6">Thao tác Phê duyệt</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {loading && (
-                    <TableRow>
-                      <TableCell colSpan={5} className="text-center py-8 text-slate-500 text-xs font-medium">
-                        <Loader2 className="w-5 h-5 animate-spin mx-auto text-blue-600 mb-2" />
-                        Đang tải danh sách đơn đăng ký từ máy chủ...
-                      </TableCell>
-                    </TableRow>
-                  )}
+      {/* ── Main Tabs Component ── */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+        <TabsList className="bg-slate-100 p-1 border border-slate-200">
+          <TabsTrigger value="active" className="text-xs font-semibold gap-2">
+            <UserCheck className="w-3.5 h-3.5 text-emerald-600" />
+            <span>Thành viên Hoạt động ({activeUsers.length})</span>
+          </TabsTrigger>
+          <TabsTrigger value="pending" className="text-xs font-semibold gap-2 relative">
+            <Clock className="w-3.5 h-3.5 text-amber-600" />
+            <span>Yêu cầu Chờ Phê duyệt</span>
+            {activePendingCount > 0 && (
+              <Badge className="bg-amber-500 text-white font-bold text-[10px] px-1.5 h-4 rounded-full">
+                {activePendingCount}
+              </Badge>
+            )}
+          </TabsTrigger>
+        </TabsList>
 
-                  {!loading && pendingRequests.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={5} className="text-center py-12 text-slate-500 text-xs">
-                        <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto mb-2 opacity-80" />
-                        <p className="font-bold text-slate-700 text-sm">Không có yêu cầu gia nhập nào đang chờ duyệt</p>
-                        <p className="text-slate-400 mt-0.5">Tất cả tài khoản đăng ký gia nhập Tập đoàn đã được xử lý xong.</p>
-                      </TableCell>
-                    </TableRow>
-                  )}
-
-                  {!loading &&
-                    pendingRequests.map((req) => (
-                      <TableRow key={req.id} className="hover:bg-slate-50/80 transition-colors">
-                        <TableCell className="font-bold text-slate-900 text-xs">
-                          {req.requester.displayName || req.requester.email}
-                        </TableCell>
-                        <TableCell className="text-xs text-slate-600 font-mono">
-                          {req.requester.email}
-                        </TableCell>
-                        <TableCell className="text-xs text-slate-500">
-                          {new Date(req.requestedAt).toLocaleString('vi-VN')}
-                        </TableCell>
-                        <TableCell className="text-xs">
-                          <Select
-                            value={selectedRoleIds[req.id] || (roles[0] ? roles[0].id : '')}
-                            onValueChange={(val) => setSelectedRoleIds((prev) => ({ ...prev, [req.id]: val }))}
-                          >
-                            <SelectTrigger className="w-56 h-8 text-xs font-medium border-slate-200 bg-white">
-                              <SelectValue placeholder="Chọn vai trò gán..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {roles.map((r) => (
-                                <SelectItem key={r.id} value={r.id} className="text-xs font-medium">
-                                  {r.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </TableCell>
-                        <TableCell className="text-right pr-6">
-                          <div className="flex items-center justify-end gap-2">
-                            <Button
-                              size="sm"
-                              onClick={() => handleApprove(req)}
-                              disabled={actionLoadingId === req.id}
-                              className="h-8 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white gap-1"
-                            >
-                              {actionLoadingId === req.id ? (
-                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                              ) : (
-                                <CheckCircle2 className="w-3.5 h-3.5" />
-                              )}
-                              Phê duyệt
-                            </Button>
-
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleReject(req)}
-                              disabled={actionLoadingId === req.id}
-                              className="h-8 text-xs font-semibold text-rose-600 hover:text-rose-700 hover:bg-rose-50 border-rose-200 gap-1"
-                            >
-                              <XCircle className="w-3.5 h-3.5" />
-                              Từ chối
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                </TableBody>
-              </Table>
-            </TabsContent>
-
-            {/* TAB 2: ACTIVE MEMBERS */}
-            <TabsContent value="active" className="pt-3 space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div>
-                  <h3 className="text-sm font-bold text-slate-900">Danh sách Thành viên Đang Hoạt động trong Tập đoàn</h3>
-                  <p className="text-xs text-slate-500">Tất cả nhân sự đã được Quản trị viên duyệt quyền truy cập dữ liệu CRM</p>
-                </div>
-
-                <div className="relative w-full sm:w-64">
+        {/* TAB 1: ACTIVE MEMBERS */}
+        <TabsContent value="active" className="space-y-4">
+          {/* ── Filter & Search Bar ── */}
+          <Card className="shadow-xs border-slate-200 w-full">
+            <CardContent className="py-3 px-4">
+              <div className="flex flex-col md:flex-row items-center gap-2.5">
+                {/* Search Input */}
+                <div className="relative w-full md:w-[280px] shrink-0">
                   <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400" />
                   <Input
-                    placeholder="Tìm thành viên theo tên hoặc email..."
+                    placeholder="Tìm theo tên thành viên, email..."
                     value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-8 text-xs h-8"
+                    onChange={(e) => {
+                      setSearchQuery(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                    className="pl-8 pr-8 text-xs h-9 border-slate-200"
                   />
+                  {searchQuery && (
+                    <button
+                      onClick={() => {
+                        setSearchQuery('');
+                        setCurrentPage(1);
+                      }}
+                      className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+
+                {/* Filter Dropdowns */}
+                <div className="flex items-center gap-2 w-full md:w-auto flex-wrap">
+                  <SearchableSelect
+                    options={[
+                      { value: 'ALL', label: `Tất cả vai trò (${roles.length})` },
+                      ...roles.map((r) => ({
+                        value: r.id,
+                        label: r.name,
+                        badge: r.roleCode,
+                        description: r.description,
+                      })),
+                    ]}
+                    value={selectedRoleFilter}
+                    onValueChange={(val) => {
+                      setSelectedRoleFilter(val);
+                      setCurrentPage(1);
+                    }}
+                    placeholder="Tất cả vai trò"
+                    searchPlaceholder="Tìm kiếm vai trò..."
+                    className="w-[200px]"
+                  />
+
+                  <SearchableSelect
+                    options={[
+                      { value: 'ALL', label: 'Tất cả trạng thái' },
+                      { value: 'ACTIVE', label: 'Đang hoạt động' },
+                      { value: 'ADMIN', label: 'Quản trị viên' },
+                    ]}
+                    value={statusFilter}
+                    onValueChange={(val) => {
+                      setStatusFilter(val);
+                      setCurrentPage(1);
+                    }}
+                    placeholder="Tất cả trạng thái"
+                    searchPlaceholder="Tìm trạng thái..."
+                    className="w-[170px]"
+                  />
+
+                  {/* Reset Button */}
+                  {activeFiltersCount > 0 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleResetFilters}
+                      className="h-9 px-2 text-xs text-slate-500 hover:text-red-600 gap-1"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                      <span>Đặt lại ({activeFiltersCount})</span>
+                    </Button>
+                  )}
                 </div>
               </div>
+            </CardContent>
+          </Card>
 
-              <Table>
-                <TableHeader className="bg-slate-50">
+          {/* Table Card */}
+          <Card className="shadow-xs border-slate-200 w-full overflow-hidden">
+            <Table>
+              <TableHeader className="bg-slate-50/90">
+                <TableRow className="text-xs">
+                  <TableHead className="font-bold text-slate-900">Họ và Tên</TableHead>
+                  <TableHead className="font-bold text-slate-900">Email Công vụ</TableHead>
+                  <TableHead className="font-bold text-slate-900">Vai trò &amp; Quyền hạn</TableHead>
+                  <TableHead className="font-bold text-slate-900">Trạng thái</TableHead>
+                  <TableHead className="font-bold text-slate-900">Ngày gia nhập</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody className="text-xs">
+                {loading ? (
                   <TableRow>
-                    <TableHead className="text-xs font-bold text-slate-700">Họ và Tên</TableHead>
-                    <TableHead className="text-xs font-bold text-slate-700">Email Công vụ</TableHead>
-                    <TableHead className="text-xs font-bold text-slate-700">Vai trò & Quyền hạn</TableHead>
-                    <TableHead className="text-xs font-bold text-slate-700">Trạng thái</TableHead>
-                    <TableHead className="text-xs font-bold text-slate-700">Ngày gia nhập</TableHead>
+                    <TableCell colSpan={5} className="h-36 text-center text-slate-500">
+                      <Loader2 className="w-5 h-5 animate-spin mx-auto text-blue-600 mb-2" />
+                      <span>Đang tải dữ liệu thành viên từ Backend...</span>
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredActiveUsers.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={5} className="text-center py-8 text-xs text-slate-500 font-medium">
-                        Không tìm thấy thành viên nào phù hợp với từ khóa tìm kiếm.
-                      </TableCell>
-                    </TableRow>
-                  )}
-
-                  {filteredActiveUsers.map((user) => {
+                ) : filteredActiveUsers.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="p-6">
+                      <EmptyState
+                        icon={Users}
+                        title={searchQuery || activeFiltersCount > 0 ? 'Không tìm thấy thành viên phù hợp' : 'Chưa có thành viên nào'}
+                        description={searchQuery || activeFiltersCount > 0 ? 'Vui lòng thử tìm kiếm với bộ lọc hoặc từ khóa khác.' : 'Bắt đầu bằng cách thêm thành viên mới hoặc duyệt yêu cầu gia nhập.'}
+                        actionLabel={activeFiltersCount > 0 ? undefined : 'Thêm Thành viên Mới'}
+                        onAction={activeFiltersCount > 0 ? undefined : () => setIsCreateWizardOpen(true)}
+                      />
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  paginatedUsers.map((user) => {
                     const effectiveRoleId = getEffectiveRoleId(user);
                     return (
                       <TableRow key={user.id} className="hover:bg-slate-50/80 transition-colors">
@@ -486,21 +573,19 @@ export const UsersPage: React.FC = () => {
                               <span>{user.roleName}</span>
                             </div>
                           ) : (
-                            <Select
+                            <SearchableSelect
+                              options={roles.map((r) => ({
+                                value: r.id,
+                                label: r.name,
+                                badge: r.roleCode,
+                              }))}
                               value={effectiveRoleId}
                               onValueChange={(val) => handleChangeMemberRole(user.id, val)}
-                            >
-                              <SelectTrigger className="w-56 h-8 text-xs font-semibold border-slate-200 bg-white">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {roles.map((r) => (
-                                  <SelectItem key={r.id} value={r.id} className="text-xs font-medium">
-                                    {r.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                              placeholder="Chọn vai trò..."
+                              searchPlaceholder="Tìm vai trò..."
+                              triggerClassName="h-8 font-semibold"
+                              className="w-56"
+                            />
                           )}
                         </TableCell>
                         <TableCell className="text-xs">
@@ -513,18 +598,205 @@ export const UsersPage: React.FC = () => {
                         </TableCell>
                       </TableRow>
                     );
-                  })}
-                </TableBody>
-              </Table>
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
+                  })
+                )}
+              </TableBody>
+            </Table>
+
+            {/* Pagination Controls Bar */}
+            {!loading && filteredActiveUsers.length > 0 && (
+              <div className="px-4 py-3 bg-slate-50/80 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+                <div className="flex items-center gap-4 text-slate-600">
+                  <span>
+                    Hiển thị <strong className="text-slate-900 font-bold">{Math.min((currentPage - 1) * pageSize + 1, filteredActiveUsers.length)} - {Math.min(currentPage * pageSize, filteredActiveUsers.length)}</strong> trên tổng số <strong className="text-slate-900 font-bold">{filteredActiveUsers.length}</strong> thành viên
+                  </span>
+
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-slate-500">Số hàng:</span>
+                    <Select
+                      value={String(pageSize)}
+                      onValueChange={(v) => {
+                        setPageSize(Number(v));
+                        setCurrentPage(1);
+                      }}
+                    >
+                      <SelectTrigger className="h-7 w-16 text-xs bg-white border-slate-200">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="5">5</SelectItem>
+                        <SelectItem value="10">10</SelectItem>
+                        <SelectItem value="20">20</SelectItem>
+                        <SelectItem value="50">50</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(1)}
+                    disabled={currentPage === 1}
+                    className="h-8 px-2 text-xs border-slate-200"
+                    title="Trang đầu"
+                  >
+                    <ChevronsLeft className="w-3.5 h-3.5" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                    disabled={currentPage === 1}
+                    className="h-8 px-2 text-xs border-slate-200"
+                    title="Trang trước"
+                  >
+                    <ChevronLeft className="w-3.5 h-3.5" />
+                  </Button>
+
+                  {getVisiblePageNumbers().map((pageNum) => (
+                    <Button
+                      key={pageNum}
+                      variant={currentPage === pageNum ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setCurrentPage(pageNum)}
+                      className={`h-8 w-8 text-xs font-semibold p-0 ${
+                        currentPage === pageNum
+                          ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                          : 'border-slate-200 text-slate-700 hover:bg-slate-100'
+                      }`}
+                    >
+                      {pageNum}
+                    </Button>
+                  ))}
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                    disabled={currentPage === totalPages}
+                    className="h-8 px-2 text-xs border-slate-200"
+                    title="Trang tiếp"
+                  >
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(totalPages)}
+                    disabled={currentPage === totalPages}
+                    className="h-8 px-2 text-xs border-slate-200"
+                    title="Trang cuối"
+                  >
+                    <ChevronsRight className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
+              </div>
+            )}
+          </Card>
+        </TabsContent>
+
+        {/* TAB 2: PENDING MEMBERSHIP REQUESTS */}
+        <TabsContent value="pending" className="space-y-4">
+          <Card className="shadow-xs border-slate-200 w-full overflow-hidden">
+            <Table>
+              <TableHeader className="bg-slate-50/90">
+                <TableRow className="text-xs">
+                  <TableHead className="font-bold text-slate-900">Người đăng ký</TableHead>
+                  <TableHead className="font-bold text-slate-900">Email Công vụ</TableHead>
+                  <TableHead className="font-bold text-slate-900">Thời gian đăng ký</TableHead>
+                  <TableHead className="font-bold text-slate-900">Chọn Vai trò Gán</TableHead>
+                  <TableHead className="font-bold text-slate-900 text-right pr-6">Thao tác Phê duyệt</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody className="text-xs">
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="h-36 text-center text-slate-500">
+                      <Loader2 className="w-5 h-5 animate-spin mx-auto text-blue-600 mb-2" />
+                      <span>Đang tải danh sách đơn đăng ký từ máy chủ...</span>
+                    </TableCell>
+                  </TableRow>
+                ) : pendingRequests.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="p-6">
+                      <EmptyState
+                        icon={CheckCircle2}
+                        title="Không có yêu cầu gia nhập nào đang chờ duyệt"
+                        description="Tất cả tài khoản đăng ký gia nhập Tập đoàn đã được xử lý hoàn tất."
+                      />
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  pendingRequests.map((req) => (
+                    <TableRow key={req.id} className="hover:bg-slate-50/80 transition-colors">
+                      <TableCell className="font-bold text-slate-900 text-xs">
+                        {req.requester.displayName || req.requester.email}
+                      </TableCell>
+                      <TableCell className="text-xs text-slate-600 font-mono">
+                        {req.requester.email}
+                      </TableCell>
+                      <TableCell className="text-xs text-slate-500">
+                        {new Date(req.requestedAt).toLocaleString('vi-VN')}
+                      </TableCell>
+                      <TableCell className="text-xs">
+                        <SearchableSelect
+                          options={roles.map((r) => ({
+                            value: r.id,
+                            label: r.name,
+                            badge: r.roleCode,
+                          }))}
+                          value={selectedRoleIds[req.id] || (roles[0] ? roles[0].id : '')}
+                          onValueChange={(val) => setSelectedRoleIds((prev) => ({ ...prev, [req.id]: val }))}
+                          placeholder="Chọn vai trò gán..."
+                          searchPlaceholder="Tìm vai trò gán..."
+                          triggerClassName="h-8 font-medium"
+                          className="w-56"
+                        />
+                      </TableCell>
+                      <TableCell className="text-right pr-6">
+                        <div className="flex items-center justify-end gap-2">
+                          <Button
+                            size="sm"
+                            onClick={() => handleApprove(req)}
+                            disabled={actionLoadingId === req.id}
+                            className="h-8 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white gap-1"
+                          >
+                            {actionLoadingId === req.id ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            ) : (
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                            )}
+                            Phê duyệt
+                          </Button>
+
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleReject(req)}
+                            disabled={actionLoadingId === req.id}
+                            className="h-8 text-xs font-semibold text-rose-600 hover:text-rose-700 hover:bg-rose-50 border-rose-200 gap-1"
+                          >
+                            <XCircle className="w-3.5 h-3.5" />
+                            Từ chối
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       {/* Create User Wizard Modal */}
       <CreateUserWizardModal
         open={isCreateWizardOpen}
         onOpenChange={setIsCreateWizardOpen}
+        roles={roles}
         onUserCreated={() => fetchMembershipRequests()}
       />
     </div>

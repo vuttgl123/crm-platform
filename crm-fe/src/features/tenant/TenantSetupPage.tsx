@@ -17,13 +17,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 
 export const TenantSetupPage: React.FC = () => {
   const navigate = useNavigate();
@@ -173,16 +167,17 @@ export const TenantSetupPage: React.FC = () => {
                     <DollarSign className="w-3.5 h-3.5 text-emerald-600" />
                     Đơn vị Tiền tệ Mặc định *
                   </Label>
-                  <Select value={currencyCode} onValueChange={setCurrencyCode}>
-                    <SelectTrigger id="curr" className="bg-white border-slate-200 text-slate-900 text-xs">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-white border-slate-200 text-slate-900 text-xs">
-                      <SelectItem value="VND">VND (Việt Nam Đồng)</SelectItem>
-                      <SelectItem value="USD">USD (Đô la Mỹ)</SelectItem>
-                      <SelectItem value="EUR">EUR (Euro)</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <SearchableSelect
+                    options={[
+                      { value: 'VND', label: 'VND (Việt Nam Đồng)', badge: '₫' },
+                      { value: 'USD', label: 'USD (Đô la Mỹ)', badge: '$' },
+                      { value: 'EUR', label: 'EUR (Euro)', badge: '€' },
+                    ]}
+                    value={currencyCode}
+                    onValueChange={setCurrencyCode}
+                    placeholder="Chọn đơn vị tiền tệ..."
+                    searchPlaceholder="Tìm tiền tệ..."
+                  />
                 </div>
 
                 <div className="space-y-1.5">
@@ -190,47 +185,50 @@ export const TenantSetupPage: React.FC = () => {
                     <Globe className="w-3.5 h-3.5 text-blue-600" />
                     Quốc gia Mặc định *
                   </Label>
-                  <Select value={countryCode} onValueChange={setCountryCode}>
-                    <SelectTrigger id="country" className="bg-white border-slate-200 text-slate-900 text-xs">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-white border-slate-200 text-slate-900 text-xs">
-                      <SelectItem value="VN">Việt Nam (VN)</SelectItem>
-                      <SelectItem value="US">Hoa Kỳ (US)</SelectItem>
-                      <SelectItem value="JP">Nhật Bản (JP)</SelectItem>
-                      <SelectItem value="SG">Singapore (SG)</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <SearchableSelect
+                    options={[
+                      { value: 'VN', label: 'Việt Nam (VN)', badge: 'VN' },
+                      { value: 'US', label: 'Hoa Kỳ (US)', badge: 'US' },
+                      { value: 'JP', label: 'Nhật Bản (JP)', badge: 'JP' },
+                      { value: 'SG', label: 'Singapore (SG)', badge: 'SG' },
+                    ]}
+                    value={countryCode}
+                    onValueChange={setCountryCode}
+                    placeholder="Chọn quốc gia..."
+                    searchPlaceholder="Tìm quốc gia..."
+                  />
                 </div>
 
                 <div className="space-y-1.5">
                   <Label htmlFor="lang" className="text-xs font-semibold text-slate-700">
                     Ngôn ngữ Hệ thống
                   </Label>
-                  <Select value={languageCode} onValueChange={setLanguageCode}>
-                    <SelectTrigger id="lang" className="bg-white border-slate-200 text-slate-900 text-xs">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-white border-slate-200 text-slate-900 text-xs">
-                      <SelectItem value="vi">Tiếng Việt (vi)</SelectItem>
-                      <SelectItem value="en">English (en)</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <SearchableSelect
+                    options={[
+                      { value: 'vi', label: 'Tiếng Việt (vi)', badge: 'VI' },
+                      { value: 'en', label: 'English (en)', badge: 'EN' },
+                    ]}
+                    value={languageCode}
+                    onValueChange={setLanguageCode}
+                    placeholder="Chọn ngôn ngữ..."
+                    searchPlaceholder="Tìm ngôn ngữ..."
+                  />
                 </div>
 
                 <div className="space-y-1.5">
                   <Label htmlFor="tz" className="text-xs font-semibold text-slate-700">
                     Múi giờ Khu vực
                   </Label>
-                  <Select value={timezone} onValueChange={setTimezone}>
-                    <SelectTrigger id="tz" className="bg-white border-slate-200 text-slate-900 text-xs">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-white border-slate-200 text-slate-900 text-xs">
-                      <SelectItem value="Asia/Ho_Chi_Minh">Asia/Ho_Chi_Minh (UTC+7)</SelectItem>
-                      <SelectItem value="UTC">UTC (Coordinated Universal Time)</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <SearchableSelect
+                    options={[
+                      { value: 'Asia/Ho_Chi_Minh', label: 'Asia/Ho_Chi_Minh (UTC+7)', badge: 'UTC+7' },
+                      { value: 'UTC', label: 'UTC (Coordinated Universal Time)', badge: 'UTC' },
+                    ]}
+                    value={timezone}
+                    onValueChange={setTimezone}
+                    placeholder="Chọn múi giờ..."
+                    searchPlaceholder="Tìm múi giờ..."
+                  />
                 </div>
               </div>
 

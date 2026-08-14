@@ -221,6 +221,10 @@ HttpOnly cookie and never appears in this JSON object.
 | `GET` | `/api/accounts/{accountId}/communication-channels` | Bearer token, tenant, `crm_account.read` | `200 OK` |
 | `PUT` | `/api/accounts/{accountId}/communication-channels/{channelId}` | Bearer token, tenant, `crm_account.write` | `200 OK` |
 | `DELETE` | `/api/accounts/{accountId}/communication-channels/{channelId}` | Bearer token, tenant, `crm_account.write` | `204 No Content` |
+| `POST` | `/api/accounts/{accountId}/addresses` | Bearer token, tenant, `crm_account.write`, resolved `ACCOUNT` data scope | `201 Created` |
+| `GET` | `/api/accounts/{accountId}/addresses` | Bearer token, tenant, `crm_account.read`, resolved `ACCOUNT` data scope | `200 OK` |
+| `PUT` | `/api/accounts/{accountId}/addresses/{addressId}` | Bearer token, tenant, `crm_account.write`, resolved `ACCOUNT` data scope | `200 OK` |
+| `POST` | `/api/accounts/{accountId}/addresses/{addressId}/end` | Bearer token, tenant, `crm_account.write`, resolved `ACCOUNT` data scope | `200 OK` |
 
 ## Authentication Endpoints
 
@@ -2123,6 +2127,280 @@ primary channel.
 
 The Account and Channel not-found outcomes intentionally avoid disclosing
 identifiers across tenant and Account-scope boundaries.
+
+## Account Addresses
+
+Account Addresses are tenant-scoped, Account-owned postal locations with
+effective-date history. Every endpoint requires Bearer authentication and the
+selected tenant header:
+
+```http
+Authorization: Bearer ${ACCESS_TOKEN}
+X-Tenant-ID: 22222222-2222-2222-2222-222222222222
+```
+
+List requires `crm_account.read`; create, replace, and end require
+`crm_account.write`. Each operation also resolves the caller's `ACCOUNT` data
+scope from current database authorization state. A missing functional
+permission or missing applicable `ACCOUNT` scope is denied with `403`; an
+Account or address that is cross-tenant, deleted, belongs to another Account,
+or is filtered out by that resolved scope is reported with the same scoped
+not-found outcome used for an absent resource. This deliberately does not
+disclose identifiers outside the selected tenant and Account scope.
+
+### Path parameters
+
+| Parameter | Type | Ownership and route applicability | Scoped not-found behavior |
+|---|---|---|---|
+| `accountId` | UUID | Owning Account identifier; required by create, list, replace, and end | An absent, deleted, cross-tenant, or out-of-scope Account returns `ACCOUNT_NOT_FOUND` |
+| `addressId` | UUID | Identifier of an address owned by the path Account; required by replace and end | An absent, deleted, cross-tenant, out-of-scope, or differently owned address returns `ACCOUNT_ADDRESS_NOT_FOUND` |
+
+An invalid UUID value for either path parameter returns
+`REQUEST_VALIDATION_FAILED`.
+
+The supported `addressType` values are `BILLING`, `SHIPPING`, `OFFICE`,
+`REGISTERED`, and `OTHER`. At most one current address per Account and
+`addressType` is primary.
+
+### Address response shape
+
+Create, replace, and end return one address object. List returns an array of
+the same objects.
+
+```json
+{
+  "id": "99999999-9999-9999-9999-999999999999",
+  "accountId": "44444444-4444-4444-4444-444444444444",
+  "addressType": "OFFICE",
+  "addressLine1": "17 Lantern Way",
+  "addressLine2": "Suite 4",
+  "locality": "Northport",
+  "administrativeArea": "Harbor District",
+  "postalCode": "1042",
+  "countryCode": "NZ",
+  "latitude": -36.812345,
+  "longitude": 174.745678,
+  "formattedAddress": "17 Lantern Way, Northport 1042",
+  "validationStatus": "UNVERIFIED",
+  "isPrimary": true,
+  "validFrom": "2026-08-01",
+  "validTo": null,
+  "version": 1,
+  "createdAt": "2026-08-13T03:00:00Z",
+  "updatedAt": "2026-08-13T03:00:00Z"
+}
+```
+
+| Field | Type | Behavior |
+|---|---|---|
+| `id` | UUID | Address identifier |
+| `accountId` | UUID | Owning Account identifier from the route |
+| `addressType` | enum | One of `BILLING`, `SHIPPING`, `OFFICE`, `REGISTERED`, or `OTHER` |
+| `addressLine1` | string or `null` | Trimmed address line; maximum 255 characters |
+| `addressLine2` | string or `null` | Trimmed secondary line; maximum 255 characters |
+| `locality` | string or `null` | Trimmed locality; maximum 255 characters |
+| `administrativeArea` | string or `null` | Trimmed state, province, or administrative area; maximum 255 characters |
+| `postalCode` | string or `null` | Trimmed postal code; maximum 191 characters |
+| `countryCode` | string | Valid ISO 3166-1 alpha-2 code normalized to uppercase |
+| `latitude` | decimal or `null` | Latitude in the inclusive range -90 through 90, with at most 6 fractional digits |
+| `longitude` | decimal or `null` | Longitude in the inclusive range -180 through 180, with at most 6 fractional digits |
+| `formattedAddress` | string or `null` | Trimmed display form; maximum 255 characters |
+| `validationStatus` | enum | Read-only state: `UNVERIFIED`, `VALID`, `INVALID`, or `PARTIAL` |
+| `isPrimary` | boolean | Whether the address is the current primary for its Account and type |
+| `validFrom` | ISO `YYYY-MM-DD` date or `null` | Optional effective start date |
+| `validTo` | ISO `YYYY-MM-DD` date or `null` | Read-only end date set by the end operation |
+| `version` | positive integer | Optimistic-concurrency version; new addresses start at `1` |
+| `createdAt` | ISO-8601 instant | Creation timestamp |
+| `updatedAt` | ISO-8601 instant | Most recent content, association, or primary-state update timestamp |
+
+`validationStatus` and `validTo` are response-only. The create and replace
+bodies do not accept identifiers, validation state, end dates, versions,
+timestamps, or audit fields. New addresses always start with
+`validationStatus: "UNVERIFIED"`, `validTo: null`, and version `1`. This slice
+does not expose an operation that changes validation state.
+
+### Address input validation and normalization
+
+Create and replace use the same editable fields:
+
+| Field | Required | Validation and behavior |
+|---|---|---|
+| `addressType` | Yes | One of the five supported address types |
+| `addressLine1` | No | Trimmed; blank becomes `null`; maximum 255 characters |
+| `addressLine2` | No | Trimmed; blank becomes `null`; maximum 255 characters |
+| `locality` | No | Trimmed; blank becomes `null`; maximum 255 characters |
+| `administrativeArea` | No | Trimmed; blank becomes `null`; maximum 255 characters |
+| `postalCode` | No | Trimmed; blank becomes `null`; maximum 191 characters |
+| `countryCode` | Yes | Nonblank, exactly two characters after trimming, and a real ISO 3166-1 alpha-2 code; normalized to uppercase |
+| `latitude` | No | Must be supplied together with `longitude`; inclusive range -90 through 90; at most 2 integer and 6 fractional digits |
+| `longitude` | No | Must be supplied together with `latitude`; inclusive range -180 through 180; at most 3 integer and 6 fractional digits |
+| `formattedAddress` | No | Trimmed; blank becomes `null`; maximum 255 characters |
+| `isPrimary` | No | Boolean; defaults to `false` when omitted |
+| `validFrom` | No | ISO `YYYY-MM-DD` date; `null` means no explicit start date |
+
+The country code is trimmed and uppercased before validation and storage. For
+example, `" nz "` becomes `"NZ"`; a two-letter value not present in the ISO
+country list is rejected.
+
+At least one meaningful address component must be nonblank after trimming:
+`addressLine1`, `locality`, `administrativeArea`, `postalCode`, or
+`formattedAddress`. `addressLine2`, `countryCode`, and coordinates do not by
+themselves satisfy this rule. Latitude and longitude must either both be absent
+or both be present, and present values must satisfy both their inclusive range
+and maximum-six-fractional-digit rules.
+
+### Effective dates, history, and primary behavior
+
+All effective-date decisions use the current date derived from the server
+clock in UTC:
+
+- A **current** address has `validFrom` absent or on/before the current UTC
+  date, and `validTo` absent.
+- A **scheduled** address has `validFrom` after the current UTC date and
+  `validTo` absent.
+- An **ended** address has a non-null `validTo`.
+
+Creating or replacing an address with `isPrimary: true` atomically demotes the
+existing current primary for the same Account and resulting `addressType`.
+The demoted address receives a new version and `updatedAt`. A scheduled address
+cannot be primary: create or replace rejects `isPrimary: true` when
+`validFrom` is after the current UTC date. Changing a primary address's type
+applies switching to the new type and does not select a replacement for the
+old type. Replacing a primary with `isPrimary: false`, or ending a primary,
+also does not select a replacement.
+
+### Create an Account Address
+
+```http
+POST /api/accounts/{accountId}/addresses
+Content-Type: application/json
+```
+
+Required permission: `crm_account.write` with resolved `ACCOUNT` data scope.
+
+```json
+{
+  "addressType": "OFFICE",
+  "addressLine1": " 17 Lantern Way ",
+  "addressLine2": "Suite 4",
+  "locality": "Northport",
+  "administrativeArea": "Harbor District",
+  "postalCode": "1042",
+  "countryCode": " nz ",
+  "latitude": -36.812345,
+  "longitude": 174.745678,
+  "formattedAddress": "17 Lantern Way, Northport 1042",
+  "isPrimary": true,
+  "validFrom": "2026-08-01"
+}
+```
+
+#### Success
+
+- Status: `201 Created`
+- Body: Address response shape above with normalized content,
+  `validationStatus: "UNVERIFIED"`, `validTo: null`, and version `1`
+
+### List Account Addresses
+
+```http
+GET /api/accounts/{accountId}/addresses?addressType=OFFICE&includeHistory=true
+```
+
+Required permission: `crm_account.read` with resolved `ACCOUNT` data scope.
+Both query parameters are optional. `addressType` filters to one of the five
+enum values. `includeHistory` is a boolean that defaults to `false`; the
+default response contains current addresses only. `includeHistory=true`
+returns current, scheduled, and ended addresses. The type filter and history
+flag can be used independently or together. The endpoint is not paginated.
+
+Results have this exact deterministic order:
+
+1. `addressType` ascending.
+2. Current addresses before scheduled and ended addresses.
+3. `isPrimary` descending.
+4. Rows with a non-null `validFrom` before rows with a null `validFrom`.
+5. `validFrom` descending.
+6. `createdAt` ascending.
+7. `id` ascending.
+
+#### Success
+
+- Status: `200 OK`
+- Body: an array of Address response objects; `[]` when none exist
+
+### Replace an Account Address
+
+```http
+PUT /api/accounts/{accountId}/addresses/{addressId}
+If-Match: "1"
+Content-Type: application/json
+```
+
+Required permission: `crm_account.write` with resolved `ACCOUNT` data scope.
+This is full replacement of all editable fields, not a partial update. The
+body has the same fields and validation rules as create. Omitted optional text,
+coordinate, and `validFrom` fields become `null`, while omitted `isPrimary`
+becomes `false`. `validationStatus` is preserved and cannot be submitted;
+`validTo` is also read-only, and an already-ended address cannot be replaced.
+
+`If-Match` must contain exactly one strong, quoted, positive decimal signed-
+`long` version, such as `"1"` or `"27"`, with no leading zero. Weak tags,
+unquoted values, `*`, zero, negative values, multiple values, nonnumeric values,
+and values beyond the signed 64-bit range are invalid. After syntactic request
+validation and scoped Account/address lookup, the supplied version is compared
+before ended-state, effective-period, and primary lifecycle rules. Therefore a
+stale version returns `ACCOUNT_ADDRESS_VERSION_CONFLICT` even when the resolved
+address is already ended or the requested replacement would violate a
+lifecycle rule. A concurrent primary demotion or address mutation that affects
+no row also returns this conflict.
+
+#### Success
+
+- Status: `200 OK`
+- Body: Address response shape above with the address's incremented version
+
+### End an Account Address
+
+```http
+POST /api/accounts/{accountId}/addresses/{addressId}/end
+If-Match: "2"
+```
+
+Required permission: `crm_account.write` with resolved `ACCOUNT` data scope.
+The operation accepts no body. It sets `validTo` to the current UTC date,
+forces `isPrimary` to `false`, increments the version, and updates `updatedAt`.
+It does not delete address content and does not select a replacement primary.
+Ending a scheduled address before its `validFrom` date is rejected. An ended
+address disappears immediately from the default current-only list but remains
+available with `includeHistory=true`. The same strong `If-Match` syntax and
+version-first priority described for replace apply to end.
+
+#### Success
+
+- Status: `200 OK`
+- Body: the ended Address response with its UTC `validTo`, `isPrimary: false`,
+  and incremented version
+
+### Account Address errors
+
+| Status | `errorCode` | When |
+|---|---|---|
+| `400` | `REQUEST_VALIDATION_FAILED` | JSON, path UUID, query enum/boolean, body enum, required field, size, ISO country, meaningful-component, coordinate pair/range/scale, or required/valid strong `If-Match` syntax is invalid |
+| `401` | `AUTHENTICATION_REQUIRED` | Bearer authentication is missing or invalid |
+| `403` | `ACCESS_DENIED` | Active tenant membership, required Account permission, or an applicable resolved `ACCOUNT` data scope is missing |
+| `404` | `ACCOUNT_NOT_FOUND` | The path Account is absent, deleted, cross-tenant, or outside the caller's resolved Account scope |
+| `404` | `ACCOUNT_ADDRESS_NOT_FOUND` | The address is absent, deleted, not associated with the path Account, cross-tenant, or outside the caller's resolved Account scope |
+| `409` | `ACCOUNT_ADDRESS_VERSION_CONFLICT` | `If-Match` is stale, or an optimistic address mutation or primary demotion affects no row |
+| `409` | `ACCOUNT_ADDRESS_ALREADY_ENDED` | Replace or end targets an address association that has already ended, after version comparison succeeds |
+| `422` | `ACCOUNT_ADDRESS_PERIOD_INVALID` | End targets a scheduled address before its `validFrom` date |
+| `422` | `ACCOUNT_ADDRESS_PRIMARY_INVALID` | Create or replace requests a primary address whose `validFrom` is after the current UTC date |
+| `500` | `INTERNAL_ERROR` | An unexpected persistence or server failure occurs |
+
+There is no single-address `GET`, `DELETE`, address sharing or relinking,
+duplicate-address detection, geocoding, validation/verification mutation, or
+automatic primary replacement in this slice. These Account routes do not
+accept or return Contact-owned addresses.
 
 ## OAuth2 Login
 

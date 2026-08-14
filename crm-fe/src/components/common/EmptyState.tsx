@@ -1,34 +1,42 @@
 import React from 'react';
-import { Inbox } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
+import { FolderOpen, LucideIcon } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface EmptyStateProps {
-  title?: string;
+  icon?: LucideIcon;
+  title: string;
   description?: string;
-  icon?: React.ReactNode;
-  action?: React.ReactNode;
+  actionLabel?: string;
+  onAction?: () => void;
 }
 
 export const EmptyState: React.FC<EmptyStateProps> = ({
+  icon: Icon = FolderOpen,
   title,
   description,
-  icon,
-  action,
+  actionLabel,
+  onAction,
 }) => {
-  const { t } = useTranslation();
-
   return (
-    <div className="flex flex-col items-center justify-center p-8 text-center bg-white border border-slate-200 rounded-lg shadow-sm">
-      <div className="w-12 h-12 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center mb-3">
-        {icon || <Inbox className="w-6 h-6" />}
+    <div className="p-8 text-center border border-dashed border-slate-200 rounded-xl bg-slate-50/50 my-2">
+      <div className="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-3">
+        <Icon className="w-6 h-6" />
       </div>
-      <h3 className="text-base font-semibold text-slate-900 mb-1">
-        {title || t('states.emptyTitle', 'Không có dữ liệu')}
-      </h3>
-      <p className="text-sm text-slate-500 max-w-sm mb-4">
-        {description || t('states.emptyDesc', 'Chưa có bản ghi nào được ghi nhận.')}
-      </p>
-      {action && <div>{action}</div>}
+      <h3 className="text-sm font-bold text-slate-800">{title}</h3>
+      {description && (
+        <p className="text-xs text-slate-500 max-w-md mx-auto mt-1 leading-relaxed">
+          {description}
+        </p>
+      )}
+      {actionLabel && onAction && (
+        <Button
+          onClick={onAction}
+          size="sm"
+          className="mt-4 text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white"
+        >
+          {actionLabel}
+        </Button>
+      )}
     </div>
   );
 };

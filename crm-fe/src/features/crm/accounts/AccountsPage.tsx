@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { AccountDetailModal } from './components/AccountDetailModal';
+import { useNavigate, Link } from 'react-router-dom';
 import {
   accountApi,
   AccountSummaryResponse,
-  AccountResponse,
   AccountType,
   AccountLifecycleStage,
   CreateAccountRequest,
@@ -12,34 +11,35 @@ import { membershipApi } from '@/services/api/membershipApi';
 import { toast } from 'sonner';
 import { BusinessNumberInput } from '@/components/ui/BusinessNumberInput';
 import {
+  renderLifecycleStageBadge as getLifecycleStageBadge,
+  renderAccountTypeBadge as getAccountTypeBadge,
+  renderRootAccountBadge,
+  renderChildCountBadge,
+} from '@/config/crmStatusConfig';
+import {
   Building2,
   Search,
   Plus,
   RefreshCw,
   Eye,
-  Edit3,
   Trash2,
   Building,
   Loader2,
-  Filter,
   ChevronDown,
   ChevronRight,
   ChevronLeft,
   ChevronsLeft,
   ChevronsRight,
-  Maximize2,
-  Minimize2,
   X,
   RotateCcw,
   Users,
   ShieldAlert,
   CornerDownRight,
 } from 'lucide-react';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   Select,
@@ -48,6 +48,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 import {
   Table,
   TableHeader,
@@ -59,15 +60,12 @@ import {
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
 } from '@/components/ui/dialog';
 
 import { useAuth } from '@/core/session/useAuth';
 
 export const AccountsPage: React.FC = () => {
+  const navigate = useNavigate();
   const { session } = useAuth();
   const [accounts, setAccounts] = useState<AccountSummaryResponse[]>([]);
   const [loading, setLoading] = useState(false);
@@ -76,7 +74,7 @@ export const AccountsPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState<string>('ALL');
   const [selectedStage, setSelectedStage] = useState<string>('ALL');
-  const [hierarchyFilter, setHierarchyFilter] = useState<'ALL' | 'PARENT_ONLY' | 'CHILD_ONLY'>('ALL');
+  const [ownerFilter, setOwnerFilter] = useState<string>('ALL');
   const [dncOnly, setDncOnly] = useState(false);
 
   // Pagination State: Max 3 Parent Corporations per Page
@@ -98,23 +96,9 @@ export const AccountsPage: React.FC = () => {
     });
   };
 
-  const handleExpandAll = () => setCollapsedNodeIds(new Set());
-
-  const handleCollapseAll = () => {
-    const parentIdsWithChildren = new Set(
-      accounts
-        .filter((a) => accounts.some((c) => c.parentAccountId === a.id))
-        .map((a) => a.id)
-    );
-    setCollapsedNodeIds(parentIdsWithChildren);
-  };
-
   // Modal State
   const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [isDetailOpen, setIsDetailOpen] = useState(false);
-  const [isDetailInitialEdit, setIsDetailInitialEdit] = useState(false);
-  const [selectedAccount, setSelectedAccount] = useState<AccountResponse | null>(null);
-  const [detailLoading, setDetailLoading] = useState(false);
+  const [activeFormTab, setActiveFormTab] = useState<'general' | 'legal'>('general');
 
   // Synchronized Complete Form State for Creating Account
   const [formAccountNumber, setFormAccountNumber] = useState('');
@@ -195,7 +179,7 @@ export const AccountsPage: React.FC = () => {
     setSearchQuery('');
     setSelectedType('ALL');
     setSelectedStage('ALL');
-    setHierarchyFilter('ALL');
+    setOwnerFilter('ALL');
     setDncOnly(false);
     setCurrentPage(1);
     fetchAccounts();
@@ -245,19 +229,8 @@ export const AccountsPage: React.FC = () => {
     }
   };
 
-  const handleViewDetail = async (id: string, startInEditMode = false) => {
-    setIsDetailInitialEdit(startInEditMode);
-    setIsDetailOpen(true);
-    setDetailLoading(true);
-    try {
-      const details = await accountApi.get(id);
-      setSelectedAccount(details);
-    } catch {
-      toast.error('Không thể tải thông tin chi tiết khách hàng.');
-      setIsDetailOpen(false);
-    } finally {
-      setDetailLoading(false);
-    }
+  const handleViewDetail = (id: string) => {
+    navigate(`/app/crm/accounts/${id}`);
   };
 
   const handleDeleteAccount = async (id: string, version: number, name: string) => {
@@ -287,48 +260,28 @@ export const AccountsPage: React.FC = () => {
     setFormRevenueAmount('');
     setFormDescription('');
     setFormDoNotContact(false);
+    setActiveFormTab('general');
   };
 
-  const getAccountTypeBadge = (type: AccountType) => {
-    switch (type) {
-      case 'ORGANIZATION':
-        return <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 font-bold">Doanh nghiệp</Badge>;
-      case 'PERSON':
-        return <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200 font-bold">Cá nhân</Badge>;
-      case 'PARTNER':
-        return <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 font-bold">Đối tác</Badge>;
-      case 'RESELLER':
-        return <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 font-bold">Đại lý</Badge>;
-      case 'SUPPLIER':
-        return <Badge variant="outline" className="bg-slate-100 text-slate-700 border-slate-200 font-bold">Nhà cung cấp</Badge>;
-    }
-  };
 
-  const getLifecycleStageBadge = (stage: AccountLifecycleStage) => {
-    switch (stage) {
-      case 'PROSPECT':
-        return <Badge variant="outline" className="bg-slate-100 text-slate-600 border-slate-200 font-medium">Tiềm năng (Prospect)</Badge>;
-      case 'QUALIFIED':
-        return <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 font-medium">Đạt chuẩn (Qualified)</Badge>;
-      case 'CUSTOMER':
-        return <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 font-bold">Khách hàng chính thức</Badge>;
-      case 'CHURNED':
-        return <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 font-medium">Rời bỏ (Churned)</Badge>;
-      case 'INACTIVE':
-        return <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 font-medium">Ngừng hoạt động</Badge>;
-    }
-  };
 
-  // Client-side Filtered Accounts for Hierarchy & DNC
+  // Client-side Filtered Accounts for Owner & DNC
   const filteredAccounts = useMemo(() => {
     return accounts.filter((acc) => {
-      const isParent = !acc.parentAccountId || !accounts.some((p) => p.id === acc.parentAccountId);
-      if (hierarchyFilter === 'PARENT_ONLY' && !isParent) return false;
-      if (hierarchyFilter === 'CHILD_ONLY' && isParent) return false;
+      // Filter by Owner (Admin View)
+      if (ownerFilter !== 'ALL') {
+        if (ownerFilter === 'MY_OWN') {
+          if (!session?.user || acc.owner?.id !== session.user.id) return false;
+        } else {
+          if (acc.owner?.id !== ownerFilter) return false;
+        }
+      }
+
+      // Filter by DNC
       if (dncOnly && !acc.doNotContact) return false;
       return true;
     });
-  }, [accounts, hierarchyFilter, dncOnly]);
+  }, [accounts, ownerFilter, dncOnly, session]);
 
   // Statistics Summary Counters
   const totalCount = accounts.length;
@@ -348,7 +301,7 @@ export const AccountsPage: React.FC = () => {
   // Reset to page 1 whenever filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, selectedType, selectedStage, hierarchyFilter, dncOnly]);
+  }, [searchQuery, selectedType, selectedStage, ownerFilter, dncOnly]);
 
   // Paginated Root Parents for Current Page
   const paginatedRootParents = useMemo(() => {
@@ -403,19 +356,12 @@ export const AccountsPage: React.FC = () => {
           <TableCell>
             <div className="flex items-center gap-2">
               <div>
-                <div className="font-bold text-slate-900 text-xs flex items-center gap-2">
-                  <span>{acc.displayName}</span>
-                  {isParentRoot && (
-                    <Badge className="bg-blue-600 text-white font-bold text-[10px] gap-1 px-2 py-0.5 shadow-xs">
-                      <Building className="w-3 h-3" />
-                      <span>CẤP CAO NHẤT</span>
-                    </Badge>
-                  )}
-                  {hasChildren && (
-                    <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-[10px] font-bold">
-                      {childAccounts.length} Đơn vị trực thuộc
-                    </Badge>
-                  )}
+                <div className="font-bold text-slate-900 text-xs flex items-center gap-2 flex-wrap">
+                  <Link to={`/app/crm/accounts/${acc.id}`} className="hover:text-blue-600 hover:underline transition-colors">
+                    {acc.displayName}
+                  </Link>
+                  {isParentRoot && renderRootAccountBadge()}
+                  {hasChildren && renderChildCountBadge(childAccounts.length)}
                 </div>
                 {acc.legalName && (
                   <div className="text-[11px] text-slate-500 mt-0.5">{acc.legalName}</div>
@@ -440,30 +386,21 @@ export const AccountsPage: React.FC = () => {
             <div className="flex items-center justify-end gap-1">
               <Button
                 variant="ghost"
-                size="sm"
+                size="icon"
                 onClick={() => handleCreateChildAccount(acc.id)}
-                className="h-7 px-2.5 text-[11px] font-bold text-emerald-700 hover:text-emerald-800 hover:bg-emerald-50 rounded"
+                className="h-7 w-7 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
                 title={`Thêm đơn vị trực thuộc ${acc.displayName}`}
               >
-                <span>Thêm đơn vị trực thuộc</span>
+                <Plus className="w-3.5 h-3.5" />
               </Button>
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => handleViewDetail(acc.id, false)}
+                onClick={() => handleViewDetail(acc.id)}
                 className="h-7 w-7 text-slate-600 hover:text-blue-600 hover:bg-blue-50"
                 title="Xem chi tiết"
               >
                 <Eye className="w-3.5 h-3.5" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => handleViewDetail(acc.id, true)}
-                className="h-7 w-7 text-slate-600 hover:text-amber-600 hover:bg-amber-50"
-                title="Chỉnh sửa thông tin"
-              >
-                <Edit3 className="w-3.5 h-3.5" />
               </Button>
               <Button
                 variant="ghost"
@@ -489,79 +426,99 @@ export const AccountsPage: React.FC = () => {
     (searchQuery ? 1 : 0) +
     (selectedType !== 'ALL' ? 1 : 0) +
     (selectedStage !== 'ALL' ? 1 : 0) +
-    (hierarchyFilter !== 'ALL' ? 1 : 0) +
+    (ownerFilter !== 'ALL' ? 1 : 0) +
     (dncOnly ? 1 : 0);
 
   return (
-    <div className="space-y-6 pb-12 font-sans w-full">
-      {/* Top Header Card with Quick Stats Summary Bar */}
-      <Card className="shadow-xs border-slate-200 w-full">
-        <CardHeader className="pb-4 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2">
-              <CardTitle className="text-xl font-bold text-slate-900 flex items-center gap-2">
-                <Building2 className="w-6 h-6 text-blue-600" />
-                <span>Quản lý Khách hàng & Tổ chức</span>
-              </CardTitle>
+    <div className="space-y-5 pb-12 font-sans w-full">
+      {/* ── Page Header ── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-xl font-bold text-slate-900 flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shadow-sm shrink-0">
+              <Building2 className="w-4.5 h-4.5 text-white" />
             </div>
-            <CardDescription className="text-xs text-slate-500 mt-1">
-              Cơ cấu quản lý liên kết theo mô hình Cây phân cấp Doanh nghiệp & Đơn vị trực thuộc
-            </CardDescription>
-          </div>
+            Quản lý Khách hàng &amp; Tổ chức
+          </h1>
+          <p className="text-xs text-slate-500 mt-1 ml-10.5">
+            Cơ cấu liên kết theo mô hình Cây phân cấp Doanh nghiệp &amp; Đơn vị trực thuộc
+          </p>
+        </div>
 
-          <div className="flex items-center gap-2 flex-wrap">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={fetchAccounts}
-              disabled={loading}
-              className="text-xs gap-1.5 border-slate-200"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-              <span>Làm mới</span>
-            </Button>
-            <Button
-              size="sm"
-              onClick={() => {
-                resetForm();
-                setIsCreateOpen(true);
-              }}
-              className="text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white gap-1.5 shadow-xs"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Thêm Khách hàng Mới</span>
-            </Button>
-          </div>
-        </CardHeader>
+        <div className="flex items-center gap-2 shrink-0">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={fetchAccounts}
+            disabled={loading}
+            className="text-xs gap-1.5 border-slate-200 h-8"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+            <span>Làm mới</span>
+          </Button>
+          <Button
+            size="sm"
+            onClick={() => { resetForm(); setIsCreateOpen(true); }}
+            className="text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white gap-1.5 shadow-xs h-8"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>Thêm Khách hàng Mới</span>
+          </Button>
+        </div>
+      </div>
 
-        {/* Quick Statistics Summary Counters Bar */}
-        <div className="px-6 py-3 bg-slate-50/70 border-b border-slate-100 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-          <div className="flex items-center gap-2 text-slate-700">
-            <Building className="w-4 h-4 text-blue-600 shrink-0" />
-            <span>Tổng số Khách hàng: <strong className="font-bold text-slate-900">{totalCount}</strong></span>
+      {/* ── Quick Stat Cards ── */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="bg-white rounded-xl border border-slate-200 px-4 py-3 flex items-center gap-3 shadow-xs hover:shadow-sm transition-shadow">
+          <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
+            <Building className="w-4.5 h-4.5 text-blue-600" />
           </div>
-          <div className="flex items-center gap-2 text-slate-700">
-            <Badge className="bg-blue-600 text-white font-bold text-[9px] px-1.5 py-0">MẸ</Badge>
-            <span>Cấp cao nhất: <strong className="font-bold text-blue-700">{parentCount}</strong></span>
-          </div>
-          <div className="flex items-center gap-2 text-slate-700">
-            <CornerDownRight className="w-4 h-4 text-emerald-600 shrink-0" />
-            <span>Đơn vị trực thuộc: <strong className="font-bold text-emerald-700">{childCount}</strong></span>
-          </div>
-          <div className="flex items-center gap-2 text-slate-700">
-            <Users className="w-4 h-4 text-purple-600 shrink-0" />
-            <span>Khách chính thức: <strong className="font-bold text-purple-700">{customerCount}</strong></span>
+          <div>
+            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Tổng Khách hàng</div>
+            <div className="text-lg font-black text-slate-900 leading-tight">{totalCount}</div>
           </div>
         </div>
 
-        {/* Enhanced Multi-Criteria Filter Bar */}
-        <CardContent className="pt-4 pb-4 space-y-3">
-          <div className="flex flex-col lg:flex-row items-center gap-3">
+        <div className="bg-white rounded-xl border border-indigo-100 px-4 py-3 flex items-center gap-3 shadow-xs hover:shadow-sm transition-shadow">
+          <div className="w-9 h-9 rounded-lg bg-indigo-50 flex items-center justify-center shrink-0">
+            <Building2 className="w-4.5 h-4.5 text-indigo-600" />
+          </div>
+          <div>
+            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Cấp cao nhất</div>
+            <div className="text-lg font-black text-indigo-700 leading-tight">{parentCount}</div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl border border-emerald-100 px-4 py-3 flex items-center gap-3 shadow-xs hover:shadow-sm transition-shadow">
+          <div className="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center shrink-0">
+            <CornerDownRight className="w-4.5 h-4.5 text-emerald-600" />
+          </div>
+          <div>
+            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Đơn vị trực thuộc</div>
+            <div className="text-lg font-black text-emerald-700 leading-tight">{childCount}</div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl border border-purple-100 px-4 py-3 flex items-center gap-3 shadow-xs hover:shadow-sm transition-shadow">
+          <div className="w-9 h-9 rounded-lg bg-purple-50 flex items-center justify-center shrink-0">
+            <Users className="w-4.5 h-4.5 text-purple-600" />
+          </div>
+          <div>
+            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Khách hàng chính thức</div>
+            <div className="text-lg font-black text-purple-700 leading-tight">{customerCount}</div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Filter & Search Bar ── */}
+      <Card className="shadow-xs border-slate-200 w-full">
+        <CardContent className="py-3 px-4">
+          <div className="flex flex-col md:flex-row items-center gap-2.5">
             {/* Search Input */}
-            <div className="relative w-full lg:flex-1">
+            <div className="relative w-full md:w-[280px] shrink-0">
               <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400" />
               <Input
-                placeholder="Tìm theo Mã KH, Tên thương hiệu hoặc Tên pháp lý..."
+                placeholder="Tìm theo Mã KH, Tên thương hiệu, Pháp lý..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-8 pr-8 text-xs h-9 border-slate-200"
@@ -576,55 +533,61 @@ export const AccountsPage: React.FC = () => {
               )}
             </div>
 
-            {/* Filter Dropdowns & Utilities */}
-            <div className="flex items-center gap-2 w-full lg:w-auto flex-wrap">
-              {/* Filter 1: Cấu trúc Cấp bậc */}
-              <div className="flex items-center gap-1">
-                <Filter className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                <Select value={hierarchyFilter} onValueChange={(v) => setHierarchyFilter(v as any)}>
-                  <SelectTrigger className="w-[170px] text-xs h-9 bg-white border-slate-200">
-                    <SelectValue placeholder="Cấu trúc doanh nghiệp" />
-                  </SelectTrigger>
-                  <SelectContent className="text-xs">
-                    <SelectItem value="ALL">Tất cả cấu trúc</SelectItem>
-                    <SelectItem value="PARENT_ONLY">👑 Chỉ Cấp cao nhất</SelectItem>
-                    <SelectItem value="CHILD_ONLY">🌳 Chỉ Đơn vị trực thuộc</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            {/* Filter Dropdowns */}
+            <div className="flex items-center gap-2 w-full md:w-auto flex-wrap">
+              {/* Filter 1: Người phụ trách */}
+              <SearchableSelect
+                options={[
+                  { value: 'ALL', label: 'Tất cả người phụ trách' },
+                  ...(session?.user ? [{ value: 'MY_OWN', label: 'Chỉ Khách hàng của tôi' }] : []),
+                  ...teamMembers.map((m) => ({
+                    value: m.id,
+                    label: m.name,
+                  })),
+                ]}
+                value={ownerFilter}
+                onValueChange={setOwnerFilter}
+                placeholder="Tất cả người phụ trách"
+                searchPlaceholder="Tìm người phụ trách..."
+                className="w-[190px]"
+              />
 
               {/* Filter 2: Loại hình */}
-              <Select value={selectedType} onValueChange={setSelectedType}>
-                <SelectTrigger className="w-[130px] text-xs h-9 bg-white border-slate-200">
-                  <SelectValue placeholder="Loại hình" />
-                </SelectTrigger>
-                <SelectContent className="text-xs">
-                  <SelectItem value="ALL">Tất cả loại hình</SelectItem>
-                  <SelectItem value="ORGANIZATION">Doanh nghiệp</SelectItem>
-                  <SelectItem value="PERSON">Cá nhân</SelectItem>
-                  <SelectItem value="PARTNER">Đối tác</SelectItem>
-                  <SelectItem value="RESELLER">Đại lý</SelectItem>
-                  <SelectItem value="SUPPLIER">Nhà cung cấp</SelectItem>
-                </SelectContent>
-              </Select>
+              <SearchableSelect
+                options={[
+                  { value: 'ALL', label: 'Tất cả loại hình' },
+                  { value: 'ORGANIZATION', label: 'Doanh nghiệp' },
+                  { value: 'PERSON', label: 'Cá nhân' },
+                  { value: 'PARTNER', label: 'Đối tác' },
+                  { value: 'RESELLER', label: 'Đại lý' },
+                  { value: 'SUPPLIER', label: 'Nhà cung cấp' },
+                ]}
+                value={selectedType}
+                onValueChange={setSelectedType}
+                placeholder="Loại hình"
+                searchPlaceholder="Tìm loại hình..."
+                className="w-[155px]"
+              />
 
               {/* Filter 3: Vòng đời */}
-              <Select value={selectedStage} onValueChange={setSelectedStage}>
-                <SelectTrigger className="w-[150px] text-xs h-9 bg-white border-slate-200">
-                  <SelectValue placeholder="Vòng đời kinh doanh" />
-                </SelectTrigger>
-                <SelectContent className="text-xs">
-                  <SelectItem value="ALL">Tất cả vòng đời</SelectItem>
-                  <SelectItem value="PROSPECT">Tiềm năng (Prospect)</SelectItem>
-                  <SelectItem value="QUALIFIED">Đạt chuẩn (Qualified)</SelectItem>
-                  <SelectItem value="CUSTOMER">Khách hàng chính thức</SelectItem>
-                  <SelectItem value="CHURNED">Rời bỏ (Churned)</SelectItem>
-                  <SelectItem value="INACTIVE">Ngừng hoạt động</SelectItem>
-                </SelectContent>
-              </Select>
+              <SearchableSelect
+                options={[
+                  { value: 'ALL', label: 'Tất cả vòng đời' },
+                  { value: 'PROSPECT', label: 'Tiềm năng', badge: 'Mới' },
+                  { value: 'QUALIFIED', label: 'Đạt chuẩn', badge: 'Chuẩn' },
+                  { value: 'CUSTOMER', label: 'Khách hàng chính thức', badge: 'Active' },
+                  { value: 'INACTIVE', label: 'Ngừng hoạt động', badge: 'Tạm dừng' },
+                  { value: 'CHURNED', label: 'Rời bỏ', badge: 'Mất' },
+                ]}
+                value={selectedStage}
+                onValueChange={setSelectedStage}
+                placeholder="Vòng đời kinh doanh"
+                searchPlaceholder="Tìm vòng đời..."
+                className="w-[170px]"
+              />
 
-              {/* Filter 4: Checkbox DNC */}
-              <div className="flex items-center space-x-1.5 px-2.5 py-1.5 bg-slate-50 rounded border border-slate-200 h-9">
+              {/* Filter 4: DNC */}
+              <div className="flex items-center space-x-1.5 px-3 py-1.5 bg-slate-50 rounded border border-slate-200 h-9">
                 <Checkbox
                   id="filterDnc"
                   checked={dncOnly}
@@ -636,14 +599,13 @@ export const AccountsPage: React.FC = () => {
                 </Label>
               </div>
 
-              {/* Reset Filters Button */}
+              {/* Reset Button */}
               {activeFiltersCount > 0 && (
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={handleResetFilters}
-                  className="h-9 px-2 text-xs text-slate-600 hover:text-red-600 gap-1"
-                  title="Đặt lại bộ lọc về mặc định"
+                  className="h-9 px-2 text-xs text-slate-500 hover:text-red-600 gap-1"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
                   <span>Đặt lại ({activeFiltersCount})</span>
@@ -654,39 +616,9 @@ export const AccountsPage: React.FC = () => {
         </CardContent>
       </Card>
 
+
       {/* Main Accounts Multi-Level Tree Hierarchy Table */}
       <Card className="shadow-xs border-slate-200 w-full overflow-hidden">
-        {/* Toolbar: Expand All / Collapse All Controls */}
-        <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between text-xs">
-          <div className="font-semibold text-slate-700 flex items-center gap-2">
-            <span>Danh sách Cây Phân cấp Doanh nghiệp</span>
-            <Badge variant="outline" className="bg-white border-slate-300 text-slate-700 text-[10px]">
-              Hiển thị {paginatedRootParents.length} Khách hàng Cấp cao nhất / Trang
-            </Badge>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleExpandAll}
-              className="h-7 text-[11px] gap-1 px-2.5 bg-white text-blue-700 border-blue-200 hover:bg-blue-50"
-            >
-              <Maximize2 className="w-3 h-3" />
-              <span>Mở rộng tất cả</span>
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleCollapseAll}
-              className="h-7 text-[11px] gap-1 px-2.5 bg-white text-slate-700 border-slate-300 hover:bg-slate-100"
-            >
-              <Minimize2 className="w-3 h-3" />
-              <span>Thu gọn tất cả</span>
-            </Button>
-          </div>
-        </div>
-
         <Table>
           <TableHeader className="bg-slate-50/90">
             <TableRow className="text-xs">
@@ -789,299 +721,365 @@ export const AccountsPage: React.FC = () => {
         )}
       </Card>
 
-      {/* Modal 1: Create Account Dialog (100% Synchronized Form) */}
+      {/* Modal 1: Create Account Dialog — 100% Synchronized Flat Tabbed Design */}
       <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden font-sans border-slate-200 shadow-xl">
-          <DialogHeader className="p-5 pb-4 border-b border-slate-200 bg-slate-50/90 shrink-0">
-            <DialogTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
-              <Building className="w-5 h-5 text-blue-600" />
-              <span>
-                {formParentAccountId ? 'Tạo Mới Đơn Vị Trực Thuộc' : 'Tạo Mới Khách Hàng / Doanh Nghiệp'}
-              </span>
-            </DialogTitle>
-            <DialogDescription className="text-xs text-slate-500 mt-0.5">
-              Khởi tạo hồ sơ khách hàng doanh nghiệp hoặc đơn vị trực thuộc với đầy đủ thông tin pháp lý
-            </DialogDescription>
-          </DialogHeader>
+        <DialogContent className="max-w-3xl w-full flex flex-col p-0 gap-0 overflow-hidden font-sans border-slate-200 shadow-xl rounded-2xl bg-white">
+
+          {/* ── Dialog Header ── */}
+          <div className="shrink-0 px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-white">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center shadow-sm shrink-0">
+                <Building className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h2 className="text-base font-bold text-slate-900 leading-tight">
+                  {formParentAccountId ? 'Tạo Mới Đơn Vị Trực Thuộc' : 'Tạo Mới Khách Hàng / Doanh Nghiệp'}
+                </h2>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Khởi tạo hồ sơ thông tin khách hàng &amp; cấu trúc tổ chức
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* ── Synchronized Horizontal Tabs Bar ── */}
+          <div className="shrink-0 flex items-center gap-1 px-6 bg-slate-50/70 border-b border-slate-200/80">
+            <button
+              type="button"
+              onClick={() => setActiveFormTab('general')}
+              className={`py-3 px-4 text-xs font-bold border-b-2 transition-all flex items-center gap-2 relative ${
+                activeFormTab === 'general'
+                  ? 'border-blue-600 text-blue-600 bg-white shadow-2xs rounded-t-lg'
+                  : 'border-transparent text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              <Building2 className="w-3.5 h-3.5" />
+              <span>1. Thông tin Chung &amp; Phân cấp</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveFormTab('legal')}
+              className={`py-3 px-4 text-xs font-bold border-b-2 transition-all flex items-center gap-2 relative ${
+                activeFormTab === 'legal'
+                  ? 'border-blue-600 text-blue-600 bg-white shadow-2xs rounded-t-lg'
+                  : 'border-transparent text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              <ShieldAlert className="w-3.5 h-3.5" />
+              <span>2. Thông tin Pháp lý &amp; Bổ sung</span>
+            </button>
+          </div>
 
           <form onSubmit={handleCreateAccount} className="flex flex-col flex-1 overflow-hidden">
-            <div className="p-6 overflow-y-auto space-y-4 flex-1">
+            {/* ── Form Body (No nested card clutter, perfect flat layout) ── */}
+            <div className="p-6 space-y-6 overflow-y-auto max-h-[58vh]">
+
               {/* Alert: Parent Account Preset Banner */}
               {formParentAccountId && formParentAccountId !== 'NONE' && (
-                <div className="p-3 bg-blue-50 border border-blue-200 rounded-md flex items-center justify-between text-xs text-blue-800">
+                <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl flex items-center justify-between text-xs text-blue-900">
                   <div className="flex items-center gap-2">
-                    <Building className="w-4 h-4 text-blue-600 shrink-0" />
+                    <Building2 className="w-4 h-4 text-blue-600 shrink-0" />
                     <span>
-                      Đang khởi tạo đơn vị trực thuộc cho khách hàng cha: <strong>{selectedParentAccountObj?.displayName}</strong> ({selectedParentAccountObj?.accountNumber})
+                      Đang tạo đơn vị trực thuộc cho: <strong>{selectedParentAccountObj?.displayName}</strong> ({selectedParentAccountObj?.accountNumber})
                     </span>
                   </div>
-                  <Button
+                  <button
                     type="button"
-                    variant="ghost"
-                    size="sm"
                     onClick={() => setFormParentAccountId(undefined)}
-                    className="h-6 text-[11px] text-blue-700 hover:bg-blue-100 px-2"
+                    className="text-[11px] text-blue-700 hover:text-blue-900 font-semibold underline"
                   >
-                    Bỏ chọn khách hàng cha
-                  </Button>
+                    Bỏ chọn
+                  </button>
                 </div>
               )}
 
-              {/* Grid 1: Basic Identifiers */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label htmlFor="accNumber" className="text-xs font-semibold flex items-center gap-1">
-                    <span>Mã Khách hàng</span>
-                    <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    id="accNumber"
-                    value={formAccountNumber}
-                    onChange={(e) => setFormAccountNumber(e.target.value)}
-                    placeholder="Mã số (VD: ACC-1002)..."
-                    className="text-xs font-mono"
-                    required
-                  />
-                </div>
+              {/* ── TAB 1: THÔNG TIN CHUNG & PHÂN CẤP ── */}
+              {activeFormTab === 'general' && (
+                <div className="space-y-6">
+                  {/* Section A: Định danh */}
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 pb-1.5 border-b border-slate-100">
+                      <Building2 className="w-3.5 h-3.5 text-blue-600" />
+                      <h3 className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        Thông tin Định danh
+                      </h3>
+                    </div>
 
-                <div className="space-y-1.5">
-                  <Label htmlFor="displayName" className="text-xs font-semibold flex items-center gap-1">
-                    <span>Tên Khách hàng / Thương hiệu</span>
-                    <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    id="displayName"
-                    value={formDisplayName}
-                    onChange={(e) => setFormDisplayName(e.target.value)}
-                    placeholder="Tên thương hiệu (VD: MB Securities)..."
-                    className="text-xs font-medium"
-                    required
-                  />
-                </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <Label htmlFor="accNumber" className="text-xs font-semibold text-slate-700">
+                          Mã Khách hàng <span className="text-red-500">*</span>
+                        </Label>
+                        <Input
+                          id="accNumber"
+                          value={formAccountNumber}
+                          onChange={(e) => setFormAccountNumber(e.target.value)}
+                          placeholder="VD: ACC-1002"
+                          className="text-xs font-mono h-9 border-slate-200 focus-visible:ring-blue-500 bg-white"
+                          required
+                        />
+                      </div>
 
-                <div className="space-y-1.5 md:col-span-2">
-                  <Label htmlFor="legalName" className="text-xs font-semibold">Tên Pháp lý Đầy đủ (Tên ĐKKD)</Label>
-                  <Input
-                    id="legalName"
-                    value={formLegalName}
-                    onChange={(e) => setFormLegalName(e.target.value)}
-                    placeholder="Công ty Cổ phần Chứng khoán MB..."
-                    className="text-xs"
-                  />
-                </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="displayName" className="text-xs font-semibold text-slate-700">
+                          Tên Thương hiệu / Viết tắt <span className="text-red-500">*</span>
+                        </Label>
+                        <Input
+                          id="displayName"
+                          value={formDisplayName}
+                          onChange={(e) => setFormDisplayName(e.target.value)}
+                          placeholder="VD: MB Securities"
+                          className="text-xs h-9 border-slate-200 focus-visible:ring-blue-500 bg-white"
+                          required
+                        />
+                      </div>
 
-                {/* Parent Account Selection */}
-                <div className="space-y-1.5 md:col-span-2">
-                  <Label className="text-xs font-semibold flex items-center gap-1 text-slate-900">
-                    <Building className="w-3.5 h-3.5 text-blue-600" />
-                    <span>Khách hàng Cha / Đơn vị cấp trên</span>
-                  </Label>
-                  <Select
-                    value={formParentAccountId || 'NONE'}
-                    onValueChange={(v) => setFormParentAccountId(v === 'NONE' ? undefined : v)}
-                  >
-                    <SelectTrigger className="text-xs bg-white border-slate-200">
-                      <SelectValue placeholder="Chọn Khách hàng Cha / Đơn vị cấp trên" />
-                    </SelectTrigger>
-                    <SelectContent className="text-xs">
-                      <SelectItem value="NONE" className="font-semibold text-slate-700">
-                        Không có (Khách hàng độc lập / Cấp cao nhất)
-                      </SelectItem>
-                      {accounts.map((acc) => (
-                        <SelectItem key={acc.id} value={acc.id}>
-                          🏢 {acc.accountNumber} - {acc.displayName}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Role-Based Owner Info / Member Selector Component */}
-                <div className="space-y-2 md:col-span-2 p-3.5 bg-slate-50 border border-slate-200 rounded-lg">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
-                      <Users className="w-4 h-4 text-blue-600" />
-                      <span>Thành viên phụ trách</span>
-                    </Label>
-                    <span className="text-[11px] text-slate-500">Phân bổ theo quyền quản lý</span>
+                      <div className="md:col-span-2 space-y-1.5">
+                        <Label htmlFor="legalName" className="text-xs font-semibold text-slate-700">
+                          Tên Pháp lý Đầy đủ (Tên ĐKKD)
+                        </Label>
+                        <Input
+                          id="legalName"
+                          value={formLegalName}
+                          onChange={(e) => setFormLegalName(e.target.value)}
+                          placeholder="VD: Công ty Cổ phần Chứng khoán MB"
+                          className="text-xs h-9 border-slate-200 focus-visible:ring-blue-500 bg-white"
+                        />
+                      </div>
+                    </div>
                   </div>
 
-                  {teamMembers.length > 1 ? (
-                    <div className="space-y-1">
-                      <Select
-                        value={selectedOwnerId || session?.user?.id || ''}
-                        onValueChange={(v) => setSelectedOwnerId(v)}
+                  {/* Section B: Phân cấp & Quản lý */}
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 pb-1.5 border-b border-slate-100">
+                      <CornerDownRight className="w-3.5 h-3.5 text-emerald-600" />
+                      <h3 className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        Phân cấp Tổ chức &amp; Phụ trách
+                      </h3>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <Label className="text-xs font-semibold text-slate-700">Khách hàng Cha / Cấp trên</Label>
+                        <SearchableSelect
+                          options={[
+                            { value: 'NONE', label: 'Không có – Cấp cao nhất (Độc lập)' },
+                            ...accounts.map((acc) => ({
+                              value: acc.id,
+                              label: `${acc.accountNumber} – ${acc.displayName}`,
+                              badge: acc.accountType,
+                              description: acc.legalName || undefined,
+                            })),
+                          ]}
+                          value={formParentAccountId || 'NONE'}
+                          onValueChange={(v) => setFormParentAccountId(v === 'NONE' ? undefined : v)}
+                          placeholder="Chọn Khách hàng Cha..."
+                          searchPlaceholder="Tìm mã hoặc tên khách hàng..."
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <Label className="text-xs font-semibold text-slate-700">Thành viên phụ trách</Label>
+                        {teamMembers.length > 1 ? (
+                          <SearchableSelect
+                            options={teamMembers.map((member) => {
+                              const isSelf = member.id === session?.user?.id;
+                              const label = member.name && member.name !== member.email
+                                ? `${member.name} (${member.email})`
+                                : member.email;
+                              return {
+                                value: member.id,
+                                label: `${label}${isSelf ? ' – Chính tôi' : ''}`,
+                              };
+                            })}
+                            value={selectedOwnerId || session?.user?.id || ''}
+                            onValueChange={(v) => setSelectedOwnerId(v)}
+                            placeholder="Chọn thành viên phụ trách..."
+                            searchPlaceholder="Tìm tên hoặc email..."
+                          />
+                        ) : (
+                          <div className="flex items-center justify-between h-9 px-3 bg-white border border-slate-200 rounded-md text-xs text-slate-700 w-full">
+                            <span className="truncate">{session?.user?.email || 'Chính bạn (Tài khoản hiện tại)'}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Section C: Phân loại & Vòng đời */}
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 pb-1.5 border-b border-slate-100">
+                      <Users className="w-3.5 h-3.5 text-purple-600" />
+                      <h3 className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        Phân loại Kinh doanh
+                      </h3>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <Label htmlFor="accType" className="text-xs font-semibold text-slate-700">Loại hình Khách hàng</Label>
+                        <Select value={formAccountType} onValueChange={(v) => setFormAccountType(v as AccountType)}>
+                          <SelectTrigger className="text-xs h-9 border-slate-200 bg-white">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="text-xs">
+                            <SelectItem value="ORGANIZATION">Doanh nghiệp</SelectItem>
+                            <SelectItem value="PERSON">Cá nhân</SelectItem>
+                            <SelectItem value="PARTNER">Đối tác chiến lược</SelectItem>
+                            <SelectItem value="RESELLER">Đại lý ủy quyền</SelectItem>
+                            <SelectItem value="SUPPLIER">Nhà cung cấp</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <Label htmlFor="lifecycle" className="text-xs font-semibold text-slate-700">Giai đoạn Vòng đời</Label>
+                        <Select value={formLifecycleStage} onValueChange={(v) => setFormLifecycleStage(v as AccountLifecycleStage)}>
+                          <SelectTrigger className="text-xs h-9 border-slate-200 bg-white">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="text-xs">
+                            <SelectItem value="PROSPECT">Tiềm năng (Prospect)</SelectItem>
+                            <SelectItem value="QUALIFIED">Đạt chuẩn (Qualified)</SelectItem>
+                            <SelectItem value="CUSTOMER">Khách hàng chính thức</SelectItem>
+                            <SelectItem value="INACTIVE">Ngừng hoạt động</SelectItem>
+                            <SelectItem value="CHURNED">Rời bỏ (Churned)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* ── TAB 2: THÔNG TIN PHÁP LÝ & BỔ SUNG ── */}
+              {activeFormTab === 'legal' && (
+                <div className="space-y-6">
+                  {/* Section D: Pháp lý */}
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 pb-1.5 border-b border-slate-100">
+                      <ShieldAlert className="w-3.5 h-3.5 text-amber-600" />
+                      <h3 className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        Thông tin Đăng ký &amp; Liên hệ
+                      </h3>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <Label htmlFor="taxId" className="text-xs font-semibold text-slate-700">Mã số thuế (MST)</Label>
+                        <Input id="taxId" value={formTaxIdentifier} onChange={(e) => setFormTaxIdentifier(e.target.value)} placeholder="VD: 0102065678" className="text-xs h-9 border-slate-200 bg-white" />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <Label htmlFor="regNo" className="text-xs font-semibold text-slate-700">Số Giấy phép ĐKKD</Label>
+                        <Input id="regNo" value={formRegistrationNumber} onChange={(e) => setFormRegistrationNumber(e.target.value)} placeholder="VD: 0102065678-GP" className="text-xs h-9 border-slate-200 bg-white" />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <Label htmlFor="website" className="text-xs font-semibold text-slate-700">Website chính thức</Label>
+                        <Input id="website" value={formWebsite} onChange={(e) => setFormWebsite(e.target.value)} placeholder="https://..." className="text-xs h-9 border-slate-200 bg-white" />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <Label htmlFor="industry" className="text-xs font-semibold text-slate-700">Ngành nghề / Lĩnh vực</Label>
+                        <Input id="industry" value={formIndustryCode} onChange={(e) => setFormIndustryCode(e.target.value)} placeholder="VD: Tài chính - Bất động sản" className="text-xs h-9 border-slate-200 bg-white" />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <BusinessNumberInput
+                          id="empCount"
+                          label="Quy mô Nhân sự"
+                          value={formEmployeeCount}
+                          onChange={setFormEmployeeCount}
+                          placeholder="VD: 2500"
+                          unitSuffix="người"
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <BusinessNumberInput
+                          id="revenue"
+                          label="Doanh thu Hàng năm"
+                          value={formRevenueAmount}
+                          onChange={setFormRevenueAmount}
+                          placeholder="VD: 350,000,000,000"
+                          unitSuffix="VNĐ"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Section E: Ghi chú & DNC */}
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 pb-1.5 border-b border-slate-100">
+                      <Users className="w-3.5 h-3.5 text-slate-600" />
+                      <h3 className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        Ghi chú &amp; Quyền riêng tư
+                      </h3>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div className="space-y-1.5">
+                        <Label htmlFor="desc" className="text-xs font-semibold text-slate-700">Mô tả / Ghi chú Chăm sóc</Label>
+                        <textarea
+                          id="desc"
+                          rows={3}
+                          value={formDescription}
+                          onChange={(e) => setFormDescription(e.target.value)}
+                          placeholder="Nhập thông tin ghi chú, đặc điểm chăm sóc đối tác..."
+                          className="w-full rounded-lg border border-slate-200 p-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white resize-none"
+                        />
+                      </div>
+
+                      <div
+                        className="flex items-center gap-3 bg-rose-50/60 hover:bg-rose-50 border border-rose-200/80 rounded-xl px-4 py-3 cursor-pointer transition-colors"
+                        onClick={() => setFormDoNotContact(!formDoNotContact)}
                       >
-                        <SelectTrigger className="text-xs bg-white border-slate-200 font-semibold h-9">
-                          <SelectValue placeholder="Chọn thành viên trong team phụ trách" />
-                        </SelectTrigger>
-                        <SelectContent className="text-xs">
-                          {teamMembers.map((member) => (
-                            <SelectItem key={member.id} value={member.id}>
-                              👤 {member.name} ({member.email}) {member.id === session?.user?.id ? ' - (Chính tôi)' : ''}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                        <Checkbox
+                          id="createDnc"
+                          checked={formDoNotContact}
+                          onCheckedChange={(c) => setFormDoNotContact(Boolean(c))}
+                        />
+                        <div>
+                          <Label htmlFor="createDnc" className="text-xs font-semibold cursor-pointer text-rose-800">
+                            Đánh dấu Từ chối Tiếp thị (Do Not Contact - DNC)
+                          </Label>
+                          <p className="text-[11px] text-rose-600 mt-0.5">Từ chối cuộc gọi / email tiếp thị tự động tới khách hàng này</p>
+                        </div>
+                      </div>
                     </div>
-                  ) : (
-                    <div className="flex items-center justify-between pt-1">
-                      <span className="text-xs text-slate-600">Khách hàng được tự động thuộc quyền phụ trách của bạn</span>
-                      <Badge variant="outline" className="bg-white border-blue-200 text-blue-800 font-bold text-[11px] px-2.5 py-1">
-                        👤 {session?.user?.email || 'Chính bạn (Tài khoản hiện tại)'}
-                      </Badge>
-                    </div>
-                  )}
-                </div>
-
-                <div className="space-y-1.5">
-                  <Label htmlFor="accType" className="text-xs font-semibold">Loại hình Khách hàng</Label>
-                  <Select value={formAccountType} onValueChange={(v) => setFormAccountType(v as AccountType)}>
-                    <SelectTrigger className="text-xs">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="text-xs">
-                      <SelectItem value="ORGANIZATION">Doanh nghiệp</SelectItem>
-                      <SelectItem value="PERSON">Cá nhân</SelectItem>
-                      <SelectItem value="PARTNER">Đối tác chiến lược</SelectItem>
-                      <SelectItem value="RESELLER">Đại lý ủy quyền</SelectItem>
-                      <SelectItem value="SUPPLIER">Nhà cung cấp</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-1.5">
-                  <Label htmlFor="lifecycle" className="text-xs font-semibold">Giai đoạn Vòng đời</Label>
-                  <Select value={formLifecycleStage} onValueChange={(v) => setFormLifecycleStage(v as AccountLifecycleStage)}>
-                    <SelectTrigger className="text-xs">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="text-xs">
-                      <SelectItem value="PROSPECT">Tiềm năng (Prospect)</SelectItem>
-                      <SelectItem value="QUALIFIED">Đạt chuẩn (Qualified)</SelectItem>
-                      <SelectItem value="CUSTOMER">Khách hàng chính thức</SelectItem>
-                      <SelectItem value="CHURNED">Rời bỏ (Churned)</SelectItem>
-                      <SelectItem value="INACTIVE">Ngừng hoạt động</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-1.5">
-                  <Label htmlFor="taxId" className="text-xs font-semibold">Mã số thuế (MST)</Label>
-                  <Input
-                    id="taxId"
-                    value={formTaxIdentifier}
-                    onChange={(e) => setFormTaxIdentifier(e.target.value)}
-                    placeholder="Ví dụ: 0102065678"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <Label htmlFor="regNo" className="text-xs font-semibold">Số Giấy phép ĐKKD</Label>
-                  <Input
-                    id="regNo"
-                    value={formRegistrationNumber}
-                    onChange={(e) => setFormRegistrationNumber(e.target.value)}
-                    placeholder="Ví dụ: 0102065678-GP"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <Label htmlFor="industry" className="text-xs font-semibold">Ngành nghề / Lĩnh vực</Label>
-                  <Input
-                    id="industry"
-                    value={formIndustryCode}
-                    onChange={(e) => setFormIndustryCode(e.target.value)}
-                    placeholder="Ngành nghề kinh doanh"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <Label htmlFor="website" className="text-xs font-semibold">Website chính thức</Label>
-                  <Input
-                    id="website"
-                    value={formWebsite}
-                    onChange={(e) => setFormWebsite(e.target.value)}
-                    placeholder="https://..."
-                  />
-                </div>
-
-                <BusinessNumberInput
-                  id="empCount"
-                  label="Quy mô Nhân sự (Số người)"
-                  value={formEmployeeCount}
-                  onChange={setFormEmployeeCount}
-                  placeholder="Ví dụ: 2500"
-                  unitSuffix="người"
-                />
-
-                <div className="md:col-span-2">
-                  <BusinessNumberInput
-                    id="revenue"
-                    label="Doanh thu Hàng năm (Số tiền)"
-                    value={formRevenueAmount}
-                    onChange={setFormRevenueAmount}
-                    placeholder="Ví dụ: 350000000000"
-                    unitSuffix="VNĐ"
-                  />
-                </div>
-
-                <div className="space-y-1.5 md:col-span-2">
-                  <Label htmlFor="desc" className="text-xs font-semibold">Mô tả / Ghi chú Chăm sóc</Label>
-                  <textarea
-                    id="desc"
-                    rows={3}
-                    value={formDescription}
-                    onChange={(e) => setFormDescription(e.target.value)}
-                    placeholder="Nhập thông tin ghi chú chăm sóc đối tác..."
-                    className="w-full rounded-md border border-slate-200 p-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-600"
-                  />
-                </div>
-
-                <div className="md:col-span-2">
-                  <div className="flex items-center space-x-2 bg-slate-50 p-3 rounded-lg border border-slate-200">
-                    <Checkbox
-                      id="createDnc"
-                      checked={formDoNotContact}
-                      onCheckedChange={(c) => setFormDoNotContact(Boolean(c))}
-                    />
-                    <Label htmlFor="createDnc" className="text-xs font-semibold cursor-pointer text-slate-800">
-                      Từ chối nhận cuộc gọi / email tiếp thị (Do Not Contact - DNC)
-                    </Label>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
 
-            <DialogFooter className="p-4 border-t border-slate-200 bg-slate-50/80 shrink-0">
-              <Button type="button" variant="outline" onClick={() => setIsCreateOpen(false)} className="text-xs">
+            {/* ── Synchronized Dialog Footer ── */}
+            <div className="shrink-0 px-6 py-3.5 bg-slate-50/80 border-t border-slate-100 flex items-center justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => setIsCreateOpen(false)} className="text-xs h-9 px-4 border-slate-200">
                 Hủy
               </Button>
-              <Button type="submit" className="text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white min-w-28" disabled={isSubmitting}>
+              <Button
+                type="submit"
+                disabled={isSubmitting}
+                className="text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white min-w-32 h-9 gap-1.5 shadow-sm"
+              >
                 {isSubmitting ? (
                   <>
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
                     <span>Đang tạo...</span>
                   </>
                 ) : (
-                  <span>Tạo mới</span>
+                  <>
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Tạo mới Khách hàng</span>
+                  </>
                 )}
               </Button>
-            </DialogFooter>
+            </div>
           </form>
         </DialogContent>
       </Dialog>
-
-      {/* Modal 2: Account Details & In-Place Edit Dialog */}
-      <AccountDetailModal
-        open={isDetailOpen}
-        onOpenChange={setIsDetailOpen}
-        account={selectedAccount}
-        loading={detailLoading}
-        allAccounts={accounts}
-        initialEditMode={isDetailInitialEdit}
-        onSuccess={fetchAccounts}
-      />
     </div>
   );
 };

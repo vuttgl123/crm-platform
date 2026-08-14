@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '@/core/session/useAuth';
 import { toast } from 'sonner';
+import { ProfileHeaderCard } from '@/components/common/ProfileHeaderCard';
 import {
   User,
   Shield,
@@ -16,7 +17,6 @@ import {
   Lock,
   Smartphone,
   Save,
-  Sparkles,
   Users,
   FileText,
   LifeBuoy,
@@ -26,7 +26,6 @@ import {
   ChevronRight,
   Maximize2,
   Minimize2,
-  Settings,
 } from 'lucide-react';
 import {
   Card,
@@ -41,7 +40,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import {
   Collapsible,
@@ -112,11 +110,19 @@ export const UserProfilePage: React.FC = () => {
   // Personal Info Form State
   const [displayName, setDisplayName] = useState(session?.user.display_name || '');
   const [email] = useState(session?.user.email || '');
-  const [phone, setPhone] = useState('0988 123 456');
-  const [jobTitle, setJobTitle] = useState('Senior Account Executive / Quản trị viên');
-  const [department, setDepartment] = useState('Khối Kinh doanh Enterprise');
-  const [employeeCode] = useState('EMP-8802');
-  const [timezone, setTimezone] = useState('Asia/Ho_Chi_Minh (GMT+07:00)');
+  const [phone, setPhone] = useState((session?.user as any)?.phone || '');
+  const [jobTitle, setJobTitle] = useState(
+    session?.membership?.is_tenant_admin
+      ? 'Quản trị viên Tập đoàn (Tenant Admin)'
+      : session?.activeRole?.name || 'Thành viên Tập đoàn'
+  );
+  const [department, setDepartment] = useState(session?.tenant?.display_name || 'Khối Điều hành Tập đoàn');
+  const [employeeCode] = useState(
+    session?.membership?.user_id
+      ? `EMP-${session.membership.user_id.replace(/[^a-zA-Z0-9]/g, '').slice(0, 6).toUpperCase()}`
+      : `EMP-${session?.user.id.replace(/[^a-zA-Z0-9]/g, '').slice(0, 6).toUpperCase() || 'USER'}`
+  );
+  const [timezone, setTimezone] = useState(session?.tenant?.default_timezone || 'Asia/Ho_Chi_Minh');
   const [isSaving, setIsSaving] = useState(false);
 
   // Password Change Form State
@@ -195,63 +201,39 @@ export const UserProfilePage: React.FC = () => {
   const areAllOpen = PERMISSION_GROUPS.every((g) => openGroupMap[g.module]);
 
   return (
-    <div className="space-y-6 pb-12 font-sans w-full">
-      {/* Top Banner Cover Card - Full Width */}
-      <Card className="shadow-xs border-slate-200 overflow-hidden w-full">
-        <div className="h-36 bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-800 relative">
-          <div className="absolute top-4 right-4">
-            <Badge variant="outline" className="bg-white/10 text-white border-white/20 backdrop-blur-xs gap-1.5 px-3 py-1 text-xs">
-              <Sparkles className="w-3.5 h-3.5 text-blue-200" />
-              Tài khoản Xác thực Hệ thống
+    <ProfileHeaderCard
+      coverTag="Tài khoản Xác thực Hệ thống"
+      avatarText={getInitials(displayName)}
+      avatarAction={
+        <button
+          type="button"
+          className="absolute bottom-0 right-0 p-2 rounded-full bg-white border border-slate-200 shadow-sm text-slate-600 hover:text-blue-600 hover:bg-slate-50 transition-colors"
+          title="Thay đổi ảnh đại diện"
+        >
+          <Camera className="w-4 h-4" />
+        </button>
+      }
+      title={displayName}
+      subtitle={`${jobTitle} • ${department}`}
+      verified={true}
+      badges={
+        <>
+          {session.tenant.display_name && (
+            <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 font-semibold gap-1.5 text-xs py-1 px-3">
+              <Building className="w-3.5 h-3.5" />
+              {session.tenant.display_name} {session.tenant.tenant_code ? `(${session.tenant.tenant_code})` : ''}
             </Badge>
-          </div>
-        </div>
-
-        <CardContent className="px-6 pb-6 pt-0 relative">
-          <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4 -mt-14 mb-2">
-            <div className="flex items-end gap-5">
-              <div className="relative">
-                <Avatar className="w-28 h-28 border-4 border-white shadow-md">
-                  <AvatarFallback className="bg-blue-600 text-white font-black text-3xl">
-                    {getInitials(displayName)}
-                  </AvatarFallback>
-                </Avatar>
-                <button
-                  type="button"
-                  className="absolute bottom-0 right-0 p-2 rounded-full bg-white border border-slate-200 shadow-sm text-slate-600 hover:text-blue-600 hover:bg-slate-50 transition-colors"
-                  title="Thay đổi ảnh đại diện"
-                >
-                  <Camera className="w-4 h-4" />
-                </button>
-              </div>
-
-              <div className="mb-2">
-                <h1 className="text-2xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
-                  <span>{displayName}</span>
-                  <CheckCircle2 className="w-5 h-5 text-blue-600 fill-blue-50" />
-                </h1>
-                <p className="text-xs text-slate-500 font-medium mt-0.5">{jobTitle} • {department}</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 flex-wrap mb-2">
-              {session.tenant.display_name && (
-                <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 font-semibold gap-1.5 text-xs py-1 px-3">
-                  <Building className="w-3.5 h-3.5" />
-                  {session.tenant.display_name} {session.tenant.tenant_code ? `(${session.tenant.tenant_code})` : ''}
-                </Badge>
-              )}
-              <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 font-semibold gap-1.5 text-xs py-1 px-3">
-                <Shield className="w-3.5 h-3.5" />
-                {session.activeRole.name}
-              </Badge>
-              <Badge variant="outline" className="bg-slate-100 text-slate-700 font-mono text-xs py-1 px-3">
-                Scope: {session.effectiveScopeType}
-              </Badge>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          )}
+          <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 font-semibold gap-1.5 text-xs py-1 px-3">
+            <Shield className="w-3.5 h-3.5" />
+            {session.activeRole.name}
+          </Badge>
+          <Badge variant="outline" className="bg-slate-100 text-slate-700 font-mono text-xs py-1 px-3">
+            Scope: {session.effectiveScopeType}
+          </Badge>
+        </>
+      }
+    >
 
       {/* Main Tabs Navigation */}
       <Tabs defaultValue="info" className="w-full">
@@ -672,10 +654,10 @@ export const UserProfilePage: React.FC = () => {
             <CardHeader className="pb-4 border-b border-slate-100">
               <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
                 <Clock className="w-4 h-4 text-blue-600" />
-                <span>Nhật ký Thao tác Tài khoản</span>
+                <span>Nhật ký Thao tác & Phiên làm việc</span>
               </CardTitle>
               <CardDescription className="text-xs text-slate-500">
-                Lịch sử đăng nhập và thay đổi thiết lập hệ thống cá nhân
+                Thông tin phiên đăng nhập hiện tại và bản ghi bảo mật tài khoản
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-6">
@@ -685,38 +667,50 @@ export const UserProfilePage: React.FC = () => {
                     <Check className="w-3 h-3 text-white" />
                   </div>
                   <div>
-                    <h4 className="text-xs font-bold text-slate-900">Đăng nhập hệ thống thành công</h4>
-                    <p className="text-[11px] text-slate-500 mt-0.5">Trình duyệt Chrome on Windows 11 • IP: 14.225.21.18</p>
-                    <span className="text-[10px] text-slate-400 font-mono mt-1 block">Hôm nay, 13:30</span>
+                    <h4 className="text-xs font-bold text-slate-900">Phiên làm việc hiện tại đang hoạt động</h4>
+                    <p className="text-[11px] text-slate-500 mt-0.5">
+                      Tài khoản {session.user.email} đang đăng nhập tại Tập đoàn {session.tenant.display_name}
+                    </p>
+                    <span className="text-[10px] text-slate-400 font-mono mt-1 block">
+                      Thời hạn phiên: {session.expiresAt ? new Date(session.expiresAt).toLocaleString('vi-VN') : 'Đang duy trì'}
+                    </span>
                   </div>
                 </div>
 
                 <div className="relative pl-6">
                   <div className="absolute -left-2.5 top-0.5 w-5 h-5 rounded-full bg-blue-500 text-white flex items-center justify-center text-xs font-bold shadow-xs">
-                    <Settings className="w-3 h-3 text-white" />
+                    <ShieldCheck className="w-3 h-3 text-white" />
                   </div>
                   <div>
-                    <h4 className="text-xs font-bold text-slate-900">Chuyển đổi Demo Role sang SYSTEM_ADMIN</h4>
-                    <p className="text-[11px] text-slate-500 mt-0.5">Kích hoạt phạm vi dữ liệu TENANT scope</p>
-                    <span className="text-[10px] text-slate-400 font-mono mt-1 block">Hôm nay, 11:15</span>
+                    <h4 className="text-xs font-bold text-slate-900">Vai trò phân quyền đang kích hoạt</h4>
+                    <p className="text-[11px] text-slate-500 mt-0.5">
+                      {session.activeRole?.name || 'Thành viên'} (Phạm vi dữ liệu: {session.effectiveScopeType || 'OWN'})
+                    </p>
+                    <span className="text-[10px] text-slate-400 font-mono mt-1 block">
+                      {session.grantedPermissions?.length || 0} quyền hạn chức năng được cấp
+                    </span>
                   </div>
                 </div>
 
-                <div className="relative pl-6">
-                  <div className="absolute -left-2.5 top-0.5 w-5 h-5 rounded-full bg-purple-500 text-white flex items-center justify-center text-xs font-bold shadow-xs">
-                    <Key className="w-3 h-3 text-white" />
+                {session.user.created_at && (
+                  <div className="relative pl-6">
+                    <div className="absolute -left-2.5 top-0.5 w-5 h-5 rounded-full bg-purple-500 text-white flex items-center justify-center text-xs font-bold shadow-xs">
+                      <Key className="w-3 h-3 text-white" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-900">Hồ sơ người dùng trong hệ thống</h4>
+                      <p className="text-[11px] text-slate-500 mt-0.5">Hồ sơ người dùng {session.user.email} được ghi nhận trong cơ sở dữ liệu</p>
+                      <span className="text-[10px] text-slate-400 font-mono mt-1 block">
+                        Ngày tạo: {new Date(session.user.created_at).toLocaleString('vi-VN')}
+                      </span>
+                    </div>
                   </div>
-                  <div>
-                    <h4 className="text-xs font-bold text-slate-900">Đăng ký tài khoản người dùng thành công</h4>
-                    <p className="text-[11px] text-slate-500 mt-0.5">Tài khoản ptv14012003@gmail.com được tạo mới</p>
-                    <span className="text-[10px] text-slate-400 font-mono mt-1 block">10/08/2026, 10:45</span>
-                  </div>
-                </div>
+                )}
               </div>
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
-    </div>
+    </ProfileHeaderCard>
   );
 };

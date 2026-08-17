@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  mockTicketsApi,
+  ticketApi,
   TicketItem,
   TicketPriority,
   TicketStatus,
   TicketChannel,
   TICKET_STATUS_CONFIG,
-} from '@/services/mock/mockTicketsData';
+} from '@/services/api/ticketApi';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -84,7 +84,7 @@ export const TicketsPage: React.FC = () => {
   const fetchTickets = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await mockTicketsApi.list({
+      const res = await ticketApi.list({
         search: searchQuery,
         status: selectedStatus,
         priority: selectedPriority,
@@ -128,13 +128,13 @@ export const TicketsPage: React.FC = () => {
   const handleOpenEdit = (ticket: TicketItem) => {
     setEditingTicket(ticket);
     setSubject(ticket.subject);
-    setAccountName(ticket.accountName);
+    setAccountName(ticket.accountName || '');
     setContactName(ticket.contactName || '');
     setPriority(ticket.priority);
     setStatus(ticket.status);
-    setChannel(ticket.channel);
-    setCategory(ticket.category);
-    setAssignedTo(ticket.assignedTo);
+    setChannel(ticket.channel || 'PORTAL');
+    setCategory(ticket.category || 'Yêu cầu Dịch vụ');
+    setAssignedTo(ticket.assignedTo || '');
     setIsModalOpen(true);
   };
 
@@ -148,7 +148,8 @@ export const TicketsPage: React.FC = () => {
     setIsSubmitting(true);
     try {
       if (editingTicket) {
-        await mockTicketsApi.update(editingTicket.id, {
+        await ticketApi.update(editingTicket.id, {
+          version: editingTicket.version || 1,
           subject,
           accountName,
           contactName,
@@ -160,16 +161,15 @@ export const TicketsPage: React.FC = () => {
         });
         toast.success('Đã cập nhật phiếu hỗ trợ thành công!');
       } else {
-        await mockTicketsApi.create({
+        await ticketApi.create({
           subject,
           accountId: 'acc-custom',
           accountName,
           contactName: contactName || 'Người gửi yêu cầu',
           priority,
-          status,
-          channel,
           category,
           assignedTo: assignedTo || 'Phạm Tuấn Vũ',
+          channel,
         });
         toast.success('Đã tạo phiếu hỗ trợ mới thành công!');
       }
@@ -185,7 +185,7 @@ export const TicketsPage: React.FC = () => {
   const handleDelete = async (id: string, code: string) => {
     if (!window.confirm(`Bạn có chắc chắn muốn xóa phiếu "${code}"?`)) return;
     try {
-      await mockTicketsApi.delete(id);
+      await ticketApi.delete(id);
       toast.success(`Đã xóa ticket "${code}"`);
       fetchTickets();
     } catch {
@@ -363,6 +363,7 @@ export const TicketsPage: React.FC = () => {
                 <TableHead className="text-[11px] font-bold text-slate-600 uppercase tracking-wider py-3">Khách hàng yêu cầu</TableHead>
                 <TableHead className="text-[11px] font-bold text-slate-600 uppercase tracking-wider py-3">Phân loại &amp; Kênh</TableHead>
                 <TableHead className="text-[11px] font-bold text-slate-600 uppercase tracking-wider py-3">Ưu tiên</TableHead>
+                <TableHead className="text-[11px] font-bold text-slate-600 uppercase tracking-wider py-3">Cam kết SLA</TableHead>
                 <TableHead className="text-[11px] font-bold text-slate-600 uppercase tracking-wider py-3">Trạng thái</TableHead>
                 <TableHead className="text-[11px] font-bold text-slate-600 uppercase tracking-wider py-3">Phụ trách</TableHead>
                 <TableHead className="text-[11px] font-bold text-slate-600 uppercase tracking-wider py-3 text-right pr-4">Thao tác</TableHead>
@@ -371,7 +372,7 @@ export const TicketsPage: React.FC = () => {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="h-48 text-center">
+                  <TableCell colSpan={8} className="h-48 text-center">
                     <div className="flex flex-col items-center justify-center gap-2 text-slate-500">
                       <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
                       <span className="text-xs">Đang tải danh sách phiếu hỗ trợ...</span>
@@ -380,7 +381,7 @@ export const TicketsPage: React.FC = () => {
                 </TableRow>
               ) : tickets.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="p-0">
+                  <TableCell colSpan={8} className="p-0">
                     <EmptyState
                       icon={Headphones}
                       title="Không tìm thấy phiếu hỗ trợ nào"
@@ -393,6 +394,42 @@ export const TicketsPage: React.FC = () => {
               ) : (
                 tickets.map((ticket) => {
                   const statusInfo = TICKET_STATUS_CONFIG[ticket.status] || { label: ticket.status, className: 'bg-slate-100 text-slate-700' };
+
+                  // Calculate SLA
+                  const getSlaBadge = () => {
+                    if (ticket.status === 'RESOLVED' || ticket.status === 'CLOSED') {
+                      return (
+                        <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px] font-bold">
+                          <CheckCircle2 className="w-3 h-3 mr-0.5" /> Đạt SLA
+                        </Badge>
+                      );
+                    }
+                    const createdTime = new Date(ticket.createdAt).getTime();
+                    const now = Date.now();
+                    const hoursElapsed = (now - createdTime) / (1000 * 60 * 60);
+                    const slaLimit = ticket.priority === 'URGENT' ? 4 : ticket.priority === 'HIGH' ? 24 : 48;
+                    const remaining = slaLimit - hoursElapsed;
+
+                    if (remaining < 0) {
+                      return (
+                        <Badge variant="outline" className="bg-rose-50 text-rose-700 border-rose-200 text-[10px] font-bold animate-pulse">
+                          <AlertCircle className="w-3 h-3 mr-0.5" /> Quá hạn SLA ({Math.abs(Math.round(remaining))}h)
+                        </Badge>
+                      );
+                    }
+                    if (remaining <= 4) {
+                      return (
+                        <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 text-[10px] font-bold">
+                          <Clock className="w-3 h-3 mr-0.5" /> Sắp hạn ({Math.round(remaining)}h còn)
+                        </Badge>
+                      );
+                    }
+                    return (
+                      <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-[10px] font-semibold">
+                        <Clock className="w-3 h-3 mr-0.5" /> Còn {Math.round(remaining)}h
+                      </Badge>
+                    );
+                  };
 
                   return (
                     <TableRow key={ticket.id} className="hover:bg-slate-50/80 transition-colors border-b border-slate-100 text-xs">
@@ -435,19 +472,24 @@ export const TicketsPage: React.FC = () => {
                         {renderPriorityBadge(ticket.priority)}
                       </TableCell>
 
-                      {/* Cột 5: Trạng thái */}
+                      {/* Cột 5: SLA Status */}
+                      <TableCell>
+                        {getSlaBadge()}
+                      </TableCell>
+
+                      {/* Cột 6: Trạng thái */}
                       <TableCell>
                         <Badge className={`${statusInfo.className} text-[11px]`}>
                           {statusInfo.label}
                         </Badge>
                       </TableCell>
 
-                      {/* Cột 6: Phụ trách */}
+                      {/* Cột 7: Phụ trách */}
                       <TableCell className="text-slate-700">
                         {ticket.assignedTo}
                       </TableCell>
 
-                      {/* Cột 7: Thao tác */}
+                      {/* Cột 8: Thao tác */}
                       <TableCell className="text-right pr-4">
                         <div className="flex items-center justify-end gap-1">
                           <Button

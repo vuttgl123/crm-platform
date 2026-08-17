@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  mockMarketingApi,
+  campaignApi,
   CampaignItem,
   CampaignStatus,
   CampaignType,
   CAMPAIGN_STATUS_CONFIG,
   CAMPAIGN_TYPE_CONFIG,
-} from '@/services/mock/mockMarketingData';
+} from '@/services/api/campaignApi';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -85,7 +85,7 @@ export const CampaignsPage: React.FC = () => {
   const fetchCampaigns = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await mockMarketingApi.list({
+      const res = await campaignApi.list({
         search: searchQuery,
         status: selectedStatus,
         type: selectedType,
@@ -124,11 +124,11 @@ export const CampaignsPage: React.FC = () => {
     setName(c.name);
     setType(c.type);
     setStatus(c.status);
-    setStartDate(c.startDate);
-    setEndDate(c.endDate);
-    setBudget(c.budget.toString());
-    setExpectedRevenue(c.expectedRevenue.toString());
-    setAssignedTo(c.assignedTo);
+    setStartDate(c.startDate || '');
+    setEndDate(c.endDate || '');
+    setBudget((c.budget || c.budgetAmount || 0).toString());
+    setExpectedRevenue((c.expectedRevenue || 0).toString());
+    setAssignedTo(c.assignedTo || '');
     setIsModalOpen(true);
   };
 
@@ -142,30 +142,28 @@ export const CampaignsPage: React.FC = () => {
     setIsSubmitting(true);
     try {
       if (editingCampaign) {
-        await mockMarketingApi.update(editingCampaign.id, {
+        await campaignApi.update(editingCampaign.id, {
+          version: editingCampaign.version || 1,
           name,
           type,
           status,
           startDate,
           endDate,
           budget: Number(budget) || 0,
+          budgetAmount: Number(budget) || 0,
           expectedRevenue: Number(expectedRevenue) || 0,
           assignedTo,
         });
         toast.success('Đã cập nhật chiến dịch thành công!');
       } else {
-        await mockMarketingApi.create({
+        await campaignApi.create({
           name,
           type,
-          status,
           startDate,
           endDate,
           budget: Number(budget) || 0,
-          actualCost: 0,
+          budgetAmount: Number(budget) || 0,
           expectedRevenue: Number(expectedRevenue) || 0,
-          leadsGenerated: 0,
-          conversionsCount: 0,
-          assignedTo,
         });
         toast.success('Đã tạo chiến dịch tiếp thị mới thành công!');
       }
@@ -181,7 +179,7 @@ export const CampaignsPage: React.FC = () => {
   const handleDelete = async (id: string, campName: string) => {
     if (!window.confirm(`Bạn có chắc chắn muốn xóa chiến dịch "${campName}"?`)) return;
     try {
-      await mockMarketingApi.delete(id);
+      await campaignApi.delete(id);
       toast.success(`Đã xóa chiến dịch "${campName}"`);
       fetchCampaigns();
     } catch {

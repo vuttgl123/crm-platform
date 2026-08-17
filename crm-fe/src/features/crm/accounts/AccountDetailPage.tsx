@@ -37,6 +37,11 @@ import {
   renderAccountTypeBadge as getAccountTypeBadge,
 } from '@/config/crmStatusConfig';
 import { SearchableSelect } from '@/components/ui/searchable-select';
+import { ActivityTimelineWidget } from '@/features/crm/timeline/ActivityTimelineWidget';
+import { QuickNotesWidget } from '@/features/crm/notes/QuickNotesWidget';
+import { QuickTaggingWidget } from '@/features/crm/tags/QuickTaggingWidget';
+import { CustomFieldsRenderer } from '@/features/crm/customfields/CustomFieldsRenderer';
+import { CustomerHealthWidget } from '@/features/crm/health/CustomerHealthWidget';
 import {
   RefreshCw,
   Edit3,
@@ -69,6 +74,7 @@ import {
   Truck,
   Search,
   X,
+  Clock,
 } from 'lucide-react';
 
 interface AccountNoteItem {
@@ -625,9 +631,18 @@ export const AccountDetailPage: React.FC = () => {
       }
     >
 
+      {/* Quick Tagging Widget Bar */}
+      <div className="bg-white p-3.5 rounded-xl border border-slate-200/90 shadow-2xs mb-4 flex items-center justify-between gap-4">
+        <QuickTaggingWidget targetType="ACCOUNT" targetId={account.id} />
+      </div>
+
       {/* Main Tabs Navigation Component - Standardized with User Profile Page */}
-      <Tabs defaultValue="info" className="w-full">
+      <Tabs defaultValue="timeline" className="w-full">
         <TabsList className="bg-white border border-slate-200 p-1 shadow-2xs w-full justify-start flex-wrap sm:flex-nowrap h-auto overflow-hidden">
+          <TabsTrigger value="timeline" className="gap-2 text-xs font-semibold py-2 px-4">
+            <Clock className="w-4 h-4 text-blue-600" />
+            <span>Dòng thời gian 360°</span>
+          </TabsTrigger>
           <TabsTrigger value="info" className="gap-2 text-xs font-semibold py-2 px-4">
             <Building2 className="w-4 h-4 text-slate-500" />
             <span>Hồ sơ & Pháp lý</span>
@@ -646,14 +661,35 @@ export const AccountDetailPage: React.FC = () => {
           </TabsTrigger>
           <TabsTrigger value="notes" className="gap-2 text-xs font-semibold py-2 px-4">
             <FileText className="w-4 h-4 text-slate-500" />
-            <span>Ghi chú & Đánh giá</span>
+            <span>Sổ Ghi chú & Đánh giá</span>
           </TabsTrigger>
         </TabsList>
+
+        {/* TAB 0: 360° ACTIVITY TIMELINE & QUICK ACTIONS */}
+        <TabsContent value="timeline" className="mt-6 space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 space-y-6">
+              <ActivityTimelineWidget
+                entityType="account"
+                entityId={account.id}
+              />
+            </div>
+            <div className="space-y-6">
+              <QuickNotesWidget
+                accountId={account.id}
+                onNoteAdded={fetchAccountDetail}
+              />
+            </div>
+          </div>
+        </TabsContent>
 
         {/* TAB 1: ENTERPRISE PROFILE & LEGAL DETAILS */}
         <TabsContent value="info" className="mt-6 space-y-6">
           {!isEditing ? (
             <>
+              {/* Customer Health Score & Churn Risk Engine */}
+              <CustomerHealthWidget accountId={account.id} accountName={account.displayName} />
+
               {/* 4 Premium Summary Cards */}
               {/* 4 Harmonious Uniform Metric Cards with Light Colored Borders */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -848,6 +884,13 @@ export const AccountDetailPage: React.FC = () => {
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Dynamic Custom Fields Section */}
+              <CustomFieldsRenderer
+                entityType="ACCOUNT"
+                entityId={account.id}
+                onSaved={fetchAccountDetail}
+              />
             </>
           ) : (
             /* IN-PLACE EDIT FORM MODE */

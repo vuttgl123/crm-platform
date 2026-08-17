@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { mockPlatformApi, TeamItem } from '@/services/mock/mockPlatformData';
+import { teamApi, TeamItem } from '@/services/api/teamApi';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -52,7 +52,7 @@ export const TeamsPage: React.FC = () => {
   const fetchTeams = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await mockPlatformApi.listTeams({ search: searchQuery });
+      const data = await teamApi.listTeams({ search: searchQuery });
       setTeams(data);
     } catch {
       toast.error('Không thể tải danh sách phòng ban');
@@ -72,19 +72,19 @@ export const TeamsPage: React.FC = () => {
 
   const handleOpenCreate = () => {
     setEditingTeam(null);
-    setCode(`TEAM-${Math.floor(10 + Math.random() * 90)}`);
+    setCode(`TM-${Math.floor(10 + Math.random() * 90)}`);
     setName('');
-    setLeaderName('Phạm Tuấn Vũ');
+    setLeaderName('');
     setDescription('');
     setIsModalOpen(true);
   };
 
   const handleOpenEdit = (team: TeamItem) => {
     setEditingTeam(team);
-    setCode(team.code);
+    setCode(team.code || '');
     setName(team.name);
-    setLeaderName(team.leaderName);
-    setDescription(team.description);
+    setLeaderName(team.leaderName || '');
+    setDescription(team.description || '');
     setIsModalOpen(true);
   };
 
@@ -98,17 +98,17 @@ export const TeamsPage: React.FC = () => {
     setIsSubmitting(true);
     try {
       if (editingTeam) {
-        setTeams((prev) =>
-          prev.map((t) => (t.id === editingTeam.id ? { ...t, code, name, leaderName, description } : t))
-        );
+        await teamApi.updateTeam(editingTeam.id, {
+          version: editingTeam.version || 1,
+          name,
+          description,
+        });
         toast.success('Đã cập nhật phòng ban thành công!');
       } else {
-        await mockPlatformApi.createTeam({
+        await teamApi.createTeam({
           code,
           name,
-          leaderName,
           description,
-          status: 'ACTIVE',
         });
         toast.success('Đã tạo phòng ban mới thành công!');
       }

@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  mockCatalogApi,
+  catalogApi,
   ProductItem,
-} from '@/services/mock/mockCatalogData';
+} from '@/services/api/catalogApi';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -71,7 +71,7 @@ export const ProductsPage: React.FC = () => {
   const fetchProducts = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await mockCatalogApi.listProducts({
+      const res = await catalogApi.listProducts({
         search: searchQuery,
         category: selectedCategory,
         page,
@@ -112,9 +112,9 @@ export const ProductsPage: React.FC = () => {
     setEditingProduct(prd);
     setSku(prd.sku);
     setName(prd.name);
-    setCategoryName(prd.categoryName);
-    setUnit(prd.unit);
-    setUnitPrice(prd.unitPrice.toString());
+    setCategoryName(prd.categoryName || 'Bản quyền Phần mềm');
+    setUnit(prd.unit || 'Cái');
+    setUnitPrice((prd.unitPrice || 0).toString());
     setIsModalOpen(true);
   };
 
@@ -128,22 +128,19 @@ export const ProductsPage: React.FC = () => {
     setIsSubmitting(true);
     try {
       if (editingProduct) {
-        await mockCatalogApi.updateProduct(editingProduct.id, {
+        await catalogApi.updateProduct(editingProduct.id, {
+          version: editingProduct.version || 1,
           name,
-          categoryName,
           unit,
           unitPrice: parseFloat(unitPrice),
         });
         toast.success('Đã cập nhật sản phẩm thành công!');
       } else {
-        await mockCatalogApi.createProduct({
+        await catalogApi.createProduct({
           sku,
           name,
-          categoryName,
           unit,
           unitPrice: parseFloat(unitPrice),
-          inventoryCount: 9999,
-          status: 'ACTIVE',
         });
         toast.success('Đã tạo sản phẩm mới thành công!');
       }
@@ -159,7 +156,7 @@ export const ProductsPage: React.FC = () => {
   const handleDelete = async (id: string, name: string) => {
     if (!window.confirm(`Bạn có chắc chắn muốn xóa sản phẩm "${name}"?`)) return;
     try {
-      await mockCatalogApi.deleteProduct(id);
+      await catalogApi.deleteProduct(id);
       toast.success(`Đã xóa sản phẩm "${name}"`);
       fetchProducts();
     } catch {
@@ -168,9 +165,9 @@ export const ProductsPage: React.FC = () => {
   };
 
   // KPI Metrics
-  const softwareCount = products.filter((p) => p.categoryName.includes('Phần mềm')).length;
-  const serviceCount = products.filter((p) => p.categoryName.includes('Dịch vụ')).length;
-  const avgPrice = products.length > 0 ? products.reduce((sum, p) => sum + p.unitPrice, 0) / products.length : 0;
+  const softwareCount = products.filter((p) => (p.categoryName || '').includes('Phần mềm')).length;
+  const serviceCount = products.filter((p) => (p.categoryName || '').includes('Dịch vụ')).length;
+  const avgPrice = products.length > 0 ? products.reduce((sum, p) => sum + (p.unitPrice || 0), 0) / products.length : 0;
 
   const activeFiltersCount =
     (searchQuery ? 1 : 0) +

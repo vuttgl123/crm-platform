@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  mockContractsApi,
+  contractApi,
   ContractItem,
   ContractStatus,
   CONTRACT_STATUS_CONFIG,
-} from '@/services/mock/mockContractsData';
+} from '@/services/api/contractApi';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -37,6 +37,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from 'sonner';
+import { DocumentPreviewModal } from '@/features/sales/templates/DocumentPreviewModal';
 import {
   FileCheck,
   Search,
@@ -52,6 +53,7 @@ import {
   Building2,
   Calendar,
   ShieldCheck,
+  Printer,
 } from 'lucide-react';
 
 export const ContractsPage: React.FC = () => {
@@ -63,6 +65,8 @@ export const ContractsPage: React.FC = () => {
   const [pageSize, setPageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
+  const [previewContract, setPreviewContract] = useState<ContractItem | null>(null);
+  const [showPrintModal, setShowPrintModal] = useState(false);
 
   // Modal
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -83,7 +87,7 @@ export const ContractsPage: React.FC = () => {
   const fetchContracts = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await mockContractsApi.list({
+      const res = await contractApi.list({
         search: searchQuery,
         status: selectedStatus,
         page,
@@ -121,13 +125,13 @@ export const ContractsPage: React.FC = () => {
     setEditingContract(c);
     setContractNumber(c.contractNumber);
     setTitle(c.title);
-    setAccountName(c.accountName);
-    setContractValue(c.contractValue.toString());
+    setAccountName(c.accountName || '');
+    setContractValue((c.contractValue || c.totalValue || 0).toString());
     setStartDate(c.startDate);
     setEndDate(c.endDate);
     setStatus(c.status);
     setSignedByCustomer(c.signedByCustomer || '');
-    setAssignedTo(c.assignedTo);
+    setAssignedTo(c.assignedTo || '');
     setIsModalOpen(true);
   };
 
@@ -141,11 +145,12 @@ export const ContractsPage: React.FC = () => {
     setIsSubmitting(true);
     try {
       if (editingContract) {
-        await mockContractsApi.update(editingContract.id, {
+        await contractApi.update(editingContract.id, {
+          version: editingContract.version || 1,
           contractNumber,
           title,
-          accountName: accountName || 'Khách hàng',
           contractValue: Number(contractValue) || 0,
+          totalValue: Number(contractValue) || 0,
           startDate,
           endDate,
           status,
@@ -154,12 +159,12 @@ export const ContractsPage: React.FC = () => {
         });
         toast.success('Đã cập nhật hợp đồng thành công!');
       } else {
-        await mockContractsApi.create({
+        await contractApi.create({
           contractNumber,
           title,
           accountId: 'acc-custom',
-          accountName: accountName || 'Khách hàng mới',
           contractValue: Number(contractValue) || 0,
+          totalValue: Number(contractValue) || 0,
           startDate,
           endDate,
           status,
@@ -180,7 +185,7 @@ export const ContractsPage: React.FC = () => {
   const handleDelete = async (id: string, num: string) => {
     if (!window.confirm(`Bạn có chắc chắn muốn xóa hợp đồng "${num}"?`)) return;
     try {
-      await mockContractsApi.delete(id);
+      await contractApi.delete(id);
       toast.success(`Đã xóa hợp đồng "${num}"`);
       fetchContracts();
     } catch {
@@ -400,6 +405,18 @@ export const ContractsPage: React.FC = () => {
 
                       <TableCell className="text-right pr-5 py-3.5">
                         <div className="flex items-center justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setPreviewContract(c);
+                              setShowPrintModal(true);
+                            }}
+                            className="h-8 w-8 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                            title="Xem bản in & Xuất PDF"
+                          >
+                            <Printer className="w-3.5 h-3.5" />
+                          </Button>
                           <Button
                             variant="ghost"
                             size="sm"
@@ -634,6 +651,34 @@ export const ContractsPage: React.FC = () => {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Printable Contract Modal */}
+      {previewContract && (
+        <DocumentPreviewModal
+          open={showPrintModal}
+          onClose={() => {
+            setShowPrintModal(false);
+            setPreviewContract(null);
+          }}
+          documentType="CONTRACT"
+          documentNumber={previewContract.contractNumber}
+          documentDate={previewContract.startDate}
+          validUntilDate={previewContract.endDate}
+          clientName={previewContract.accountName}
+          clientRepresentative={previewContract.signedByCustomer}
+          items={[
+            {
+              name: previewContract.title,
+              quantity: 1,
+              unit: 'Hợp đồng',
+              unitPrice: previewContract.contractValue,
+              totalAmount: previewContract.contractValue,
+            },
+          ]}
+          subtotal={previewContract.contractValue}
+          grandTotal={previewContract.contractValue}
+        />
+      )}
     </div>
   );
 };

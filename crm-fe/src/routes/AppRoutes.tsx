@@ -29,6 +29,7 @@ import { ActivitiesPage } from '@/features/crm/activities/ActivitiesPage';
 import { QuotesPage } from '@/features/sales/quotes/QuotesPage';
 import { OrdersPage } from '@/features/sales/orders/OrdersPage';
 import { ContractsPage } from '@/features/sales/contracts/ContractsPage';
+import { SalesForecastPage } from '@/features/sales/forecast/SalesForecastPage';
 import { CategoriesPage } from '@/features/catalog/categories/CategoriesPage';
 import { ProductsPage } from '@/features/catalog/products/ProductsPage';
 import { PriceBooksPage } from '@/features/catalog/pricebooks/PriceBooksPage';
@@ -40,6 +41,7 @@ import { CampaignsPage } from '@/features/marketing/campaigns/CampaignsPage';
 // Platform, Privacy, Audit & Integration Screens
 import { TeamsPage } from '@/features/platform/teams/TeamsPage';
 import { TenantSettingsPage } from '@/features/platform/settings/TenantSettingsPage';
+import { PipelineSettingsPage } from '@/features/platform/pipeline/PipelineSettingsPage';
 import { AuditLogsPage } from '@/features/audit/logs/AuditLogsPage';
 import { DataAccessPage } from '@/features/audit/access/DataAccessPage';
 import { PrivacyConsentPage } from '@/features/privacy/consent/PrivacyConsentPage';
@@ -117,6 +119,7 @@ export const AppRoutes: React.FC = () => {
         <Route path="crm/activities" element={<ActivitiesPage />} />
 
         {/* 2. Sales & Orders Module */}
+        <Route path="sales/forecast" element={<SalesForecastPage />} />
         <Route path="sales/quotes" element={<QuotesPage />} />
         <Route path="sales/orders" element={<OrdersPage />} />
         <Route path="sales/contracts" element={<ContractsPage />} />
@@ -153,6 +156,7 @@ export const AppRoutes: React.FC = () => {
         <Route path="platform/teams" element={<TeamsPage />} />
         <Route path="platform/roles" element={<RolesPage />} />
         <Route path="platform/settings" element={<TenantSettingsPage />} />
+        <Route path="platform/pipelines" element={<PipelineSettingsPage />} />
       </Route>
 
       {/* Global 404 Fallback */}

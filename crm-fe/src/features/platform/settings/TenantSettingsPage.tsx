@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { mockPlatformApi, TenantSettingsData } from '@/services/mock/mockPlatformData';
+import { teamApi, TenantSettingsData } from '@/services/api/teamApi';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -55,7 +55,7 @@ export const TenantSettingsPage: React.FC = () => {
 
   const fetchSettings = () => {
     setLoading(true);
-    mockPlatformApi.getSettings().then((data) => {
+    teamApi.getSettings().then((data) => {
       setSettings({ ...data });
       setInitialSettings({ ...data });
       setLoading(false);
@@ -73,7 +73,7 @@ export const TenantSettingsPage: React.FC = () => {
     if (!settings) return;
     setIsSaving(true);
     try {
-      await mockPlatformApi.updateSettings(settings);
+      await teamApi.updateSettings(settings);
       setInitialSettings({ ...settings });
       toast.success('Đã lưu cấu hình tổ chức & hệ thống thành công!');
     } catch {

@@ -59,6 +59,15 @@ export const NAVIGATION_GROUPS: NavigationGroup[] = [
     titleEn: 'Sales & Orders',
     items: [
       {
+        id: 'sales-forecast',
+        moduleGroup: 'sales',
+        titleVi: 'Dự báo Doanh số',
+        titleEn: 'Revenue Forecast',
+        path: '/app/sales/forecast',
+        iconName: 'BarChart3',
+        requiredPermission: 'crm_opportunity.read',
+      },
+      {
         id: 'sales-quotes',
         moduleGroup: 'sales',
         titleVi: 'Báo giá',
@@ -303,6 +312,15 @@ export const NAVIGATION_GROUPS: NavigationGroup[] = [
         titleEn: 'Tenant Settings',
         path: '/app/platform/settings',
         iconName: 'Settings',
+        requiredPermission: 'platform_user.manage',
+      },
+      {
+        id: 'platform-pipelines',
+        moduleGroup: 'platform',
+        titleVi: 'Phễu & Quy trình',
+        titleEn: 'Sales Pipelines',
+        path: '/app/platform/pipelines',
+        iconName: 'Workflow',
         requiredPermission: 'platform_user.manage',
       },
     ],

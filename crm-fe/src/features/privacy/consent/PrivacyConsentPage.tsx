@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { mockPrivacyApi, ConsentItem } from '@/services/mock/mockPrivacyData';
+import { privacyApi, ConsentItem } from '@/services/api/privacyApi';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -12,7 +12,7 @@ export const PrivacyConsentPage: React.FC = () => {
 
   const fetchConsents = () => {
     setLoading(true);
-    mockPrivacyApi.listConsents().then((data) => {
+    privacyApi.listConsents().then((data) => {
       setConsents(data);
       setLoading(false);
     });

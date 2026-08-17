@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { mockIntegrationApi, DataImportJob } from '@/services/mock/mockIntegrationData';
+import { integrationApi, DataImportJob } from '@/services/api/integrationApi';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -13,7 +13,7 @@ export const DataImportPage: React.FC = () => {
 
   const fetchJobs = () => {
     setLoading(true);
-    mockIntegrationApi.listImportJobs().then((data) => {
+    integrationApi.listImportJobs().then((data) => {
       setJobs(data);
       setLoading(false);
     });

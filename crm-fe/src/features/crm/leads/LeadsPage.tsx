@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  mockLeadsApi,
+  leadApi,
   LeadItem,
+  LeadScoringResult,
   LEAD_SOURCE_CONFIG,
-} from '@/services/mock/mockLeadsData';
+} from '@/services/api/leadApi';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -31,6 +32,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from 'sonner';
+import { QuickCallLogModal } from '@/features/crm/call/QuickCallLogModal';
 import {
   UserPlus,
   Flame,
@@ -51,6 +53,10 @@ import {
   ArrowRightCircle,
   Sparkles,
   Target,
+  UserCheck,
+  CheckCircle2,
+  ShieldAlert,
+  PhoneCall,
 } from 'lucide-react';
 
 const RATING_CONFIG: Record<string, { label: string; className: string; icon: any }> = {
@@ -64,6 +70,8 @@ export const LeadsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('ALL');
+  const [callingLead, setCallingLead] = useState<LeadItem | null>(null);
+  const [isCallModalOpen, setIsCallModalOpen] = useState(false);
   const [selectedSource, setSelectedSource] = useState('ALL');
   const [selectedRating, setSelectedRating] = useState('ALL');
   const [page, setPage] = useState(0);
@@ -75,6 +83,11 @@ export const LeadsPage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingLead, setEditingLead] = useState<LeadItem | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Scoring Modal State
+  const [scoringResult, setScoringResult] = useState<LeadScoringResult | null>(null);
+  const [isScoringLoading, setIsScoringLoading] = useState(false);
+  const [showScoringModal, setShowScoringModal] = useState(false);
 
   // Form Fields
   const [fullName, setFullName] = useState('');
@@ -90,10 +103,34 @@ export const LeadsPage: React.FC = () => {
   const [notes, setNotes] = useState('');
   const [city, setCity] = useState('Hà Nội');
 
+  const handleCalculateScore = async (lead: LeadItem) => {
+    setIsScoringLoading(true);
+    setShowScoringModal(true);
+    try {
+      const res = await leadApi.calculateScore(lead.id);
+      setScoringResult(res);
+    } catch {
+      toast.error('Không thể tính toán điểm Lead Score');
+      setShowScoringModal(false);
+    } finally {
+      setIsScoringLoading(false);
+    }
+  };
+
+  const handleAutoAssign = async (lead: LeadItem) => {
+    try {
+      await leadApi.autoAssign(lead.id);
+      toast.success(`Đã tự động phân bổ Lead "${lead.fullName}" theo cơ chế Round-Robin`);
+      fetchLeads();
+    } catch {
+      toast.error('Không thể tự động phân bổ Lead');
+    }
+  };
+
   const fetchLeads = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await mockLeadsApi.list({
+      const res = await leadApi.list({
         search: searchQuery,
         status: selectedStatus,
         leadSource: selectedSource,
@@ -167,7 +204,7 @@ export const LeadsPage: React.FC = () => {
     setIsSubmitting(true);
     try {
       if (editingLead) {
-        await mockLeadsApi.update(editingLead.id, {
+        await leadApi.update(editingLead.id, {
           fullName,
           companyName,
           jobTitle,
@@ -183,7 +220,7 @@ export const LeadsPage: React.FC = () => {
         });
         toast.success('Đã cập nhật thông tin tiềm năng thành công!');
       } else {
-        await mockLeadsApi.create({
+        await leadApi.create({
           fullName,
           companyName: companyName || 'Khách hàng cá nhân',
           jobTitle: jobTitle || 'Đại diện',
@@ -211,7 +248,7 @@ export const LeadsPage: React.FC = () => {
   const handleDelete = async (id: string, name: string) => {
     if (!window.confirm(`Bạn có chắc chắn muốn xóa khách hàng tiềm năng "${name}"?`)) return;
     try {
-      await mockLeadsApi.delete(id);
+      await leadApi.delete(id);
       toast.success(`Đã xóa tiềm năng "${name}"`);
       fetchLeads();
     } catch {
@@ -222,7 +259,7 @@ export const LeadsPage: React.FC = () => {
   const handleConvert = async (lead: LeadItem) => {
     if (!window.confirm(`Chuyển đổi tiềm năng "${lead.fullName}" thành Khách hàng chính thức & Cơ hội?`)) return;
     try {
-      await mockLeadsApi.convert(lead.id);
+      await leadApi.convert(lead.id);
       toast.success(`Đã chuyển đổi thành công "${lead.fullName}" sang Khách hàng chính thức!`);
       fetchLeads();
     } catch {
@@ -508,6 +545,36 @@ export const LeadsPage: React.FC = () => {
                       {/* Cột 7: Thao tác */}
                       <TableCell className="text-right pr-4">
                         <div className="flex items-center justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => {
+                              setCallingLead(lead);
+                              setIsCallModalOpen(true);
+                            }}
+                            className="h-7 w-7 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                            title="Gọi nhanh & Ghi nhận nhật ký cuộc gọi"
+                          >
+                            <PhoneCall className="w-3.5 h-3.5" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleCalculateScore(lead)}
+                            className="h-7 w-7 text-purple-600 hover:text-purple-700 hover:bg-purple-50"
+                            title="Đánh giá & Chấm điểm tiềm năng (Lead Scoring)"
+                          >
+                            <Sparkles className="w-3.5 h-3.5" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleAutoAssign(lead)}
+                            className="h-7 w-7 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                            title="Tự động phân bổ Lead (Round-Robin)"
+                          >
+                            <UserCheck className="w-3.5 h-3.5" />
+                          </Button>
                           {lead.status !== 'CONVERTED' && (
                             <Button
                               variant="ghost"
@@ -795,6 +862,99 @@ export const LeadsPage: React.FC = () => {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Lead Scoring Intelligence Modal */}
+      {showScoringModal && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-xl w-full max-w-lg p-5 space-y-4 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-bold">
+                  <Sparkles className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm text-slate-900">Báo cáo Đánh giá Tiềm năng (Lead Scoring)</h3>
+                  <p className="text-[11px] text-slate-500">Phân tích đa chiều về ngân sách, thông tin & cơ hội chuyển đổi</p>
+                </div>
+              </div>
+              <button onClick={() => setShowScoringModal(false)} className="text-slate-400 hover:text-slate-600">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {isScoringLoading ? (
+              <div className="py-12 text-center text-slate-500 flex flex-col items-center justify-center gap-2">
+                <Loader2 className="w-6 h-6 animate-spin text-purple-600" />
+                <span className="text-xs font-semibold">Đang tổng hợp dữ liệu và chấm điểm...</span>
+              </div>
+            ) : scoringResult ? (
+              <div className="space-y-4 text-xs">
+                {/* Big Score Card */}
+                <div className="p-4 rounded-xl bg-gradient-to-r from-purple-50 via-indigo-50 to-white border border-purple-200 flex items-center justify-between">
+                  <div>
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-purple-600 block">Điểm số Tiềm năng</span>
+                    <div className="text-3xl font-black text-purple-900 tracking-tight mt-0.5">
+                      {scoringResult.score} <span className="text-sm font-normal text-purple-600">/ 100</span>
+                    </div>
+                  </div>
+                  <Badge className={`text-xs font-black px-3 py-1 ${
+                    scoringResult.grade === 'HOT' ? 'bg-rose-600 text-white shadow-xs' :
+                    scoringResult.grade === 'WARM' ? 'bg-amber-500 text-white shadow-xs' :
+                    'bg-slate-500 text-white'
+                  }`}>
+                    {scoringResult.grade === 'HOT' ? '🔥 HOT LEAD (Cực kỳ Tiềm năng)' :
+                     scoringResult.grade === 'WARM' ? '⚡ WARM LEAD (Tiềm năng)' : '❄ COLD LEAD (Nuôi dưỡng)'}
+                  </Badge>
+                </div>
+
+                {/* Factors list */}
+                <div className="space-y-2">
+                  <span className="font-bold text-slate-700 block">Các yếu tố cấu thành điểm số:</span>
+                  <div className="space-y-1.5 bg-slate-50 p-3 rounded-xl border border-slate-200/80">
+                    {scoringResult.scoringFactors.map((f, i) => (
+                      <div key={i} className="flex items-center gap-2 text-slate-700 text-xs">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                        <span>{f}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Recommendation */}
+                <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl space-y-1">
+                  <span className="font-bold text-amber-900 flex items-center gap-1.5">
+                    <ShieldAlert className="w-3.5 h-3.5 text-amber-700" />
+                    Đề xuất hành động kinh doanh:
+                  </span>
+                  <p className="text-amber-800 leading-relaxed text-xs">
+                    {scoringResult.recommendedAction}
+                  </p>
+                </div>
+              </div>
+            ) : null}
+
+            <div className="flex justify-end pt-3 border-t border-slate-100">
+              <Button size="sm" onClick={() => setShowScoringModal(false)} className="h-8 text-xs font-semibold bg-slate-900 text-white">
+                Đóng
+              </Button>
+            </div>
+          </div>
+        </div>
+      {/* Quick Call Log Modal */}
+      {callingLead && (
+        <QuickCallLogModal
+          open={isCallModalOpen}
+          onClose={() => {
+            setIsCallModalOpen(false);
+            setCallingLead(null);
+          }}
+          targetName={callingLead.fullName}
+          targetPhone={callingLead.phone}
+          entityType="LEAD"
+          entityId={callingLead.id}
+          onCallLogged={fetchLeads}
+        />
+      )}
     </div>
   );
 };

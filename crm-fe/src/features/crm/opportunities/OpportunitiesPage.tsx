@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  mockOpportunitiesApi,
+  opportunityApi,
   OpportunityItem,
   OpportunityStage,
   PIPELINE_STAGES,
-} from '@/services/mock/mockOpportunitiesData';
+} from '@/services/api/opportunityApi';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -52,6 +52,7 @@ import {
   Building2,
   Trophy,
   Target,
+  ArrowRight,
 } from 'lucide-react';
 
 export const OpportunitiesPage: React.FC = () => {
@@ -86,11 +87,11 @@ export const OpportunitiesPage: React.FC = () => {
     setLoading(true);
     try {
       if (viewMode === 'KANBAN') {
-        const data = await mockOpportunitiesApi.getAllForKanban();
+        const data = await opportunityApi.getAllForKanban();
         setOpportunities(data);
         setTotalElements(data.length);
       } else {
-        const res = await mockOpportunitiesApi.list({
+        const res = await opportunityApi.list({
           search: searchQuery,
           stage: selectedStage,
           page,
@@ -135,7 +136,7 @@ export const OpportunitiesPage: React.FC = () => {
   const handleOpenEdit = (opp: OpportunityItem) => {
     setEditingOpp(opp);
     setDealName(opp.dealName);
-    setAccountName(opp.accountName);
+    setAccountName(opp.accountName || '');
     setContactName(opp.contactName || '');
     setAmount(opp.amount.toString());
     setStage(opp.stage);
@@ -157,7 +158,8 @@ export const OpportunitiesPage: React.FC = () => {
     setIsSubmitting(true);
     try {
       if (editingOpp) {
-        await mockOpportunitiesApi.update(editingOpp.id, {
+        await opportunityApi.update(editingOpp.id, {
+          version: editingOpp.version || 1,
           dealName,
           accountName,
           contactName,
@@ -171,7 +173,7 @@ export const OpportunitiesPage: React.FC = () => {
         });
         toast.success('Đã cập nhật cơ hội bán hàng thành công!');
       } else {
-        await mockOpportunitiesApi.create({
+        await opportunityApi.create({
           dealName,
           accountId: 'acc-custom',
           accountName: accountName || 'Khách hàng chưa gán',
@@ -198,11 +200,37 @@ export const OpportunitiesPage: React.FC = () => {
   const handleDelete = async (id: string, name: string) => {
     if (!window.confirm(`Bạn có chắc chắn muốn xóa cơ hội "${name}"?`)) return;
     try {
-      await mockOpportunitiesApi.delete(id);
+      await opportunityApi.delete(id);
       toast.success(`Đã xóa cơ hội "${name}"`);
       fetchOpportunities();
     } catch {
       toast.error('Không thể xóa cơ hội');
+    }
+  };
+
+  const handleAdvanceStage = async (deal: OpportunityItem, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const stageIndex = PIPELINE_STAGES.findIndex((s) => s.id === deal.stage);
+    if (stageIndex >= PIPELINE_STAGES.length - 1) return;
+    const nextStage = PIPELINE_STAGES[stageIndex + 1];
+
+    try {
+      await opportunityApi.update(deal.id, {
+        ...deal,
+        stage: nextStage.id,
+        probability: nextStage.defaultProb,
+      });
+
+      if (nextStage.id === 'PROPOSAL') {
+        toast.success(`⚡ Workflow Automation: Đã chuyển sang "${nextStage.title}" và tự động kích hoạt tạo nhiệm vụ 'Soạn báo giá'`);
+      } else if (nextStage.id === 'CLOSED_WON') {
+        toast.success(`🎉 Chúc mừng! Đã chuyển sang "Ký kết Thành công" và tự động kích hoạt Workflow khởi tạo Đơn hàng / Hợp đồng mới`);
+      } else {
+        toast.success(`Đã chuyển cơ hội sang "${nextStage.title}"`);
+      }
+      fetchOpportunities();
+    } catch {
+      toast.error('Không thể cập nhật giai đoạn cơ hội');
     }
   };
 
@@ -605,7 +633,18 @@ export const OpportunitiesPage: React.FC = () => {
                           <span className="font-bold text-slate-900 font-mono">
                             {(deal.amount / 1_000_000).toFixed(0)} Tr
                           </span>
-                          <span className="text-slate-400 text-[10px]">{deal.expectedCloseDate}</span>
+                          <div className="flex items-center gap-1">
+                            <span className="text-slate-400 text-[10px]">{deal.expectedCloseDate}</span>
+                            {deal.stage !== 'CLOSED_WON' && deal.stage !== 'CLOSED_LOST' && (
+                              <button
+                                onClick={(e) => handleAdvanceStage(deal, e)}
+                                className="p-0.5 rounded hover:bg-blue-50 text-slate-400 hover:text-blue-600 transition-colors ml-1"
+                                title="Chuyển sang giai đoạn tiếp theo (Workflow Trigger)"
+                              >
+                                <ArrowRight className="w-3 h-3" />
+                              </button>
+                            )}
+                          </div>
                         </div>
                       </div>
                     ))

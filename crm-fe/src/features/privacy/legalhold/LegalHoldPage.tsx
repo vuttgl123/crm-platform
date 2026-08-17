@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { mockPrivacyApi, LegalHoldItem } from '@/services/mock/mockPrivacyData';
+import { privacyApi, LegalHoldItem } from '@/services/api/privacyApi';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -12,7 +12,7 @@ export const LegalHoldPage: React.FC = () => {
 
   const fetchHolds = () => {
     setLoading(true);
-    mockPrivacyApi.listLegalHolds().then((data) => {
+    privacyApi.listLegalHolds().then((data) => {
       setHolds(data);
       setLoading(false);
     });

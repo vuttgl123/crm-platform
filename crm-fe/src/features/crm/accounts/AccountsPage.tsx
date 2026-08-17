@@ -35,7 +35,9 @@ import {
   Users,
   ShieldAlert,
   CornerDownRight,
+  GitMerge,
 } from 'lucide-react';
+import { SmartMergeModal } from '@/features/crm/deduplication/SmartMergeModal';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -98,6 +100,7 @@ export const AccountsPage: React.FC = () => {
 
   // Modal State
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isMergeModalOpen, setIsMergeModalOpen] = useState(false);
   const [activeFormTab, setActiveFormTab] = useState<'general' | 'legal'>('general');
 
   // Synchronized Complete Form State for Creating Account
@@ -455,6 +458,15 @@ export const AccountsPage: React.FC = () => {
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
             <span>Làm mới</span>
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsMergeModalOpen(true)}
+            className="text-xs font-semibold border-slate-200 bg-white hover:bg-slate-50 text-slate-700 gap-1.5 shadow-2xs h-8"
+          >
+            <GitMerge className="w-3.5 h-3.5 text-blue-600" />
+            <span>Quét trùng lặp &amp; Gộp</span>
           </Button>
           <Button
             size="sm"
@@ -1080,6 +1092,13 @@ export const AccountsPage: React.FC = () => {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Smart Deduplication & Merge Modal */}
+      <SmartMergeModal
+        open={isMergeModalOpen}
+        onClose={() => setIsMergeModalOpen(false)}
+        onMerged={fetchAccounts}
+      />
     </div>
   );
 };

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { mockPrivacyApi, RetentionPolicyItem } from '@/services/mock/mockPrivacyData';
+import { privacyApi, RetentionPolicyItem } from '@/services/api/privacyApi';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -12,7 +12,7 @@ export const RetentionPoliciesPage: React.FC = () => {
 
   const fetchPolicies = () => {
     setLoading(true);
-    mockPrivacyApi.listRetentionPolicies().then((data) => {
+    privacyApi.listRetentionPolicies().then((data) => {
       setPolicies(data);
       setLoading(false);
     });

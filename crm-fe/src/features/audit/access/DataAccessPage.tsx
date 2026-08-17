@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { mockAuditApi, DataAccessLogItem } from '@/services/mock/mockAuditData';
+import { auditApi, DataAccessLogItem } from '@/services/api/auditApi';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -43,7 +43,7 @@ export const DataAccessPage: React.FC = () => {
   const fetchLogs = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await mockAuditApi.listDataAccess();
+      const data = await auditApi.listDataAccess();
       let list = data || [];
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();

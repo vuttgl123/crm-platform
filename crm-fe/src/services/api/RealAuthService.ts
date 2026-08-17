@@ -7,7 +7,7 @@ import {
 } from '@/types/auth';
 import { IAuthService } from '../contracts/IAuthService';
 import { apiFetch } from './apiClient';
-import { storageAdapter } from '../mock/storageAdapter';
+import { storageAdapter } from '../storageAdapter';
 import { DEMO_ROLES, DEMO_TENANT, DEMO_USERS } from '@/mocks/fixtures/demoData';
 import { PlatformTenant, PlatformTenantMembership, PlatformUser } from '@/types/schema';
 

@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  mockQuotesApi,
+  quoteApi,
   QuoteItem,
   QuoteStatus,
   QUOTE_STATUS_CONFIG,
-} from '@/services/mock/mockQuotesData';
+} from '@/services/api/quoteApi';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -31,6 +31,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from 'sonner';
+import { DocumentPreviewModal } from '@/features/sales/templates/DocumentPreviewModal';
 import {
   FileText,
   Search,
@@ -49,6 +50,7 @@ import {
   Building2,
   CheckCircle2,
   Send,
+  Printer,
 } from 'lucide-react';
 
 export const QuotesPage: React.FC = () => {
@@ -58,6 +60,8 @@ export const QuotesPage: React.FC = () => {
   const [selectedStatus, setSelectedStatus] = useState('ALL');
   const [page, setPage] = useState(0);
   const pageSize = 10;
+  const [previewQuote, setPreviewQuote] = useState<QuoteItem | null>(null);
+  const [showPrintModal, setShowPrintModal] = useState(false);
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
 
@@ -79,7 +83,7 @@ export const QuotesPage: React.FC = () => {
   const fetchQuotes = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await mockQuotesApi.list({
+      const res = await quoteApi.list({
         search: searchQuery,
         status: selectedStatus,
         page,
@@ -120,14 +124,14 @@ export const QuotesPage: React.FC = () => {
 
   const handleOpenEdit = (quote: QuoteItem) => {
     setEditingQuote(quote);
-    setTitle(quote.title);
-    setAccountName(quote.accountName);
+    setTitle(quote.title || '');
+    setAccountName(quote.accountName || '');
     setContactName(quote.contactName || '');
-    setTotalAmount(quote.totalAmount.toString());
-    setDiscountPercent(quote.discountPercent.toString());
+    setTotalAmount((quote.totalAmount || 0).toString());
+    setDiscountPercent('0');
     setStatus(quote.status);
-    setValidUntil(quote.validUntil);
-    setAssignedTo(quote.assignedTo);
+    setValidUntil(quote.validUntil || '');
+    setAssignedTo(quote.assignedTo || '');
     setIsModalOpen(true);
   };
 
@@ -145,27 +149,24 @@ export const QuotesPage: React.FC = () => {
     setIsSubmitting(true);
     try {
       if (editingQuote) {
-        await mockQuotesApi.update(editingQuote.id, {
+        await quoteApi.update(editingQuote.id, {
+          version: editingQuote.version || 1,
           title,
           accountName,
           contactName,
           totalAmount: tAmount,
-          discountPercent: dPercent,
-          finalAmount: fAmount,
           status,
           validUntil,
           assignedTo,
         });
         toast.success('Đã cập nhật báo giá thành công!');
       } else {
-        await mockQuotesApi.create({
+        await quoteApi.create({
           title,
           accountId: 'acc-custom',
           accountName: accountName || 'Khách hàng',
           contactName: contactName || 'Người liên hệ',
           totalAmount: tAmount,
-          discountPercent: dPercent,
-          finalAmount: fAmount,
           status,
           validUntil: validUntil || new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0],
           assignedTo: assignedTo || 'Phạm Tuấn Vũ',
@@ -184,7 +185,7 @@ export const QuotesPage: React.FC = () => {
   const handleDelete = async (id: string, name: string) => {
     if (!window.confirm(`Bạn có chắc chắn muốn xóa báo giá "${name}"?`)) return;
     try {
-      await mockQuotesApi.delete(id);
+      await quoteApi.delete(id);
       toast.success(`Đã xóa báo giá "${name}"`);
       fetchQuotes();
     } catch {
@@ -446,6 +447,18 @@ export const QuotesPage: React.FC = () => {
                           <Button
                             variant="ghost"
                             size="icon"
+                            onClick={() => {
+                              setPreviewQuote(quote);
+                              setShowPrintModal(true);
+                            }}
+                            className="h-7 w-7 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                            title="Xem bản in & Xuất PDF"
+                          >
+                            <Printer className="w-3.5 h-3.5" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
                             onClick={() => handleOpenEdit(quote)}
                             className="h-7 w-7 text-slate-600 hover:text-blue-600 hover:bg-blue-50"
                             title="Chỉnh sửa báo giá"
@@ -666,6 +679,36 @@ export const QuotesPage: React.FC = () => {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Printable Document Modal */}
+      {previewQuote && (
+        <DocumentPreviewModal
+          open={showPrintModal}
+          onClose={() => {
+            setShowPrintModal(false);
+            setPreviewQuote(null);
+          }}
+          documentType="QUOTE"
+          documentNumber={previewQuote.quoteNumber}
+          documentDate={new Date(previewQuote.createdAt).toLocaleDateString('vi-VN')}
+          validUntilDate={new Date(previewQuote.validUntil).toLocaleDateString('vi-VN')}
+          clientName={previewQuote.accountName}
+          clientRepresentative={previewQuote.contactName}
+          items={[
+            {
+              name: previewQuote.title,
+              quantity: 1,
+              unit: 'Gói',
+              unitPrice: previewQuote.totalAmount,
+              discountAmount: (previewQuote.totalAmount * (previewQuote.discountPercent || 0)) / 100,
+              totalAmount: previewQuote.totalAmount,
+            },
+          ]}
+          subtotal={previewQuote.totalAmount}
+          discountTotal={(previewQuote.totalAmount * (previewQuote.discountPercent || 0)) / 100}
+          grandTotal={previewQuote.totalAmount}
+        />
+      )}
     </div>
   );
 };

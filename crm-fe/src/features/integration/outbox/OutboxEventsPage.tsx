@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { mockIntegrationApi, OutboxEventItem } from '@/services/mock/mockIntegrationData';
+import { integrationApi, OutboxEventItem } from '@/services/api/integrationApi';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -12,7 +12,7 @@ export const OutboxEventsPage: React.FC = () => {
 
   const fetchEvents = () => {
     setLoading(true);
-    mockIntegrationApi.listOutboxEvents().then((data) => {
+    integrationApi.listOutboxEvents().then((data) => {
       setEvents(data);
       setLoading(false);
     });

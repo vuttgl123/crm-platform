@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  mockContactsApi,
+  contactApi,
   ContactItem,
-} from '@/services/mock/mockContactsData';
+} from '@/services/api/contactApi';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -30,6 +30,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from 'sonner';
+import { QuickCallLogModal } from '@/features/crm/call/QuickCallLogModal';
 import {
   Users,
   UserCheck,
@@ -50,6 +51,7 @@ import {
   X,
   RotateCcw,
   UserX,
+  PhoneCall,
 } from 'lucide-react';
 
 export const ContactsPage: React.FC = () => {
@@ -61,6 +63,8 @@ export const ContactsPage: React.FC = () => {
   const [primaryOnly, setPrimaryOnly] = useState(false);
   const [page, setPage] = useState(0);
   const pageSize = 10;
+  const [callingContact, setCallingContact] = useState<ContactItem | null>(null);
+  const [isCallModalOpen, setIsCallModalOpen] = useState(false);
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
 
@@ -84,7 +88,7 @@ export const ContactsPage: React.FC = () => {
   const fetchContacts = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await mockContactsApi.list({
+      const res = await contactApi.list({
         search: searchQuery,
         status: selectedStatus,
         page,
@@ -141,11 +145,11 @@ export const ContactsPage: React.FC = () => {
     setSalutation(contact.salutation || 'MR');
     setJobTitle(contact.jobTitle);
     setDepartment(contact.department);
-    setAccountName(contact.accountName);
-    setEmail(contact.email);
-    setPhone(contact.phone);
-    setCity(contact.city);
-    setIsPrimary(contact.isPrimaryContact);
+    setAccountName(contact.accountName || '');
+    setEmail(contact.email || '');
+    setPhone(contact.phone || '');
+    setCity(contact.city || '');
+    setIsPrimary(contact.isPrimaryContact || false);
     setStatus(contact.status);
     setIsModalOpen(true);
   };
@@ -160,12 +164,13 @@ export const ContactsPage: React.FC = () => {
     setIsSubmitting(true);
     try {
       if (editingContact) {
-        await mockContactsApi.update(editingContact.id, {
+        await contactApi.update(editingContact.id, {
+          version: editingContact.version || 1,
           fullName,
           salutation,
           jobTitle,
           department,
-          accountName,
+          displayName: fullName,
           email,
           phone,
           city,
@@ -174,13 +179,12 @@ export const ContactsPage: React.FC = () => {
         });
         toast.success('Đã cập nhật thông tin người liên hệ!');
       } else {
-        await mockContactsApi.create({
+        await contactApi.create({
           fullName,
           salutation,
           jobTitle,
           department,
-          accountId: 'acc-custom',
-          accountName: accountName || 'Doanh nghiệp chưa gán',
+          displayName: fullName,
           email,
           phone,
           city: city || 'Hà Nội',
@@ -201,7 +205,7 @@ export const ContactsPage: React.FC = () => {
   const handleDelete = async (id: string, name: string) => {
     if (!window.confirm(`Bạn có chắc chắn muốn xóa người liên hệ "${name}"?`)) return;
     try {
-      await mockContactsApi.delete(id);
+      await contactApi.delete(id);
       toast.success(`Đã xóa liên hệ "${name}"`);
       fetchContacts();
     } catch {
@@ -488,6 +492,18 @@ export const ContactsPage: React.FC = () => {
                         <Button
                           variant="ghost"
                           size="icon"
+                          onClick={() => {
+                            setCallingContact(contact);
+                            setIsCallModalOpen(true);
+                          }}
+                          className="h-7 w-7 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                          title="Gọi nhanh & Ghi nhận nhật ký cuộc gọi"
+                        >
+                          <PhoneCall className="w-3.5 h-3.5" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
                           onClick={() => handleOpenEdit(contact)}
                           className="h-7 w-7 text-slate-600 hover:text-blue-600 hover:bg-blue-50"
                           title="Chỉnh sửa thông tin"
@@ -730,6 +746,22 @@ export const ContactsPage: React.FC = () => {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Quick Call Log Modal */}
+      {callingContact && (
+        <QuickCallLogModal
+          open={isCallModalOpen}
+          onClose={() => {
+            setIsCallModalOpen(false);
+            setCallingContact(null);
+          }}
+          targetName={callingContact.fullName}
+          targetPhone={callingContact.phone}
+          entityType="CONTACT"
+          entityId={callingContact.id}
+          onCallLogged={fetchContacts}
+        />
+      )}
     </div>
   );
 };

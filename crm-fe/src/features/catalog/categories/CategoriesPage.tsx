@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  mockCatalogApi,
+  catalogApi,
   CategoryItem,
-} from '@/services/mock/mockCatalogData';
+} from '@/services/api/catalogApi';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -52,7 +52,7 @@ export const CategoriesPage: React.FC = () => {
   const fetchCategories = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await mockCatalogApi.listCategories({ search: searchQuery });
+      const res = await catalogApi.listCategories({ search: searchQuery });
       setCategories(res);
     } catch {
       toast.error('Không thể tải danh mục sản phẩm');
@@ -72,23 +72,24 @@ export const CategoriesPage: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) {
       toast.error('Vui lòng nhập tên danh mục');
       return;
     }
-    const newCat: CategoryItem = {
-      id: `cat-${Date.now().toString().slice(-4)}`,
-      code,
-      name,
-      description,
-      productsCount: 0,
-      isActive: true,
-    };
-    setCategories((prev) => [newCat, ...prev]);
-    toast.success('Đã thêm danh mục mới thành công!');
-    setIsModalOpen(false);
+    try {
+      await catalogApi.createCategory({
+        categoryCode: code,
+        name,
+        description,
+      });
+      toast.success('Đã thêm danh mục mới thành công!');
+      setIsModalOpen(false);
+      fetchCategories();
+    } catch {
+      toast.error('Không thể thêm danh mục');
+    }
   };
 
   const totalProducts = categories.reduce((sum, c) => sum + c.productsCount, 0);

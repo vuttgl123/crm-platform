@@ -7170,6 +7170,275 @@ Tenant-specific stable codes include:
 | `TENANT_CODE_ALREADY_EXISTS` | A tenant already uses the requested tenant code |
 | `TENANT_BOOTSTRAP_NOT_ALLOWED` | The current user already has a non-removed tenant membership |
 
+## Customer 360 Timeline API
+
+### Get Unified Activity Timeline
+
+Aggregates chronological interaction history (notes, activities, sales orders, quotes, service tickets) for an entity.
+
+```http
+GET /api/crm/timeline/{entityType}/{entityId}
+Authorization: Bearer <access-token>
+X-Tenant-ID: <tenant-id>
+```
+
+#### Path Parameters
+- `entityType`: `account`, `lead`, `contact`, or `opportunity`.
+- `entityId`: Identifier of the target entity.
+
+#### Response `200 OK`
+```json
+[
+  {
+    "id": "act-001",
+    "eventType": "ACTIVITY_CALL",
+    "title": "Cuộc gọi trao đổi giải pháp",
+    "description": "Thảo luận yêu cầu tích hợp với CTO",
+    "actorName": "user-uuid",
+    "occurredAt": "2026-08-17T10:00:00Z",
+    "category": "ENGAGEMENT",
+    "metadata": {
+      "status": "COMPLETED",
+      "priority": "HIGH"
+    },
+    "pinned": false
+  }
+]
+```
+
+## Lead Scoring & Auto-Assignment API
+
+### Calculate Lead Score
+Evaluates demographic, financial, and engagement factors to compute an intelligent lead score (0-100) and grade (`HOT`, `WARM`, `COLD`).
+
+```http
+POST /api/leads/{id}/calculate-score
+Authorization: Bearer <access-token>
+X-Tenant-ID: <tenant-id>
+```
+
+#### Response `200 OK`
+```json
+{
+  "leadId": "550e8400-e29b-41d4-a716-446655440000",
+  "score": 85,
+  "grade": "HOT",
+  "scoringFactors": [
+    "+25 điểm: Có tên pháp nhân / doanh nghiệp rõ ràng",
+    "+30 điểm: Ngân sách dự kiến cao (>= 1 tỷ VNĐ)",
+    "+20 điểm: Đầy đủ cả kênh liên lạc Email và Số điện thoại"
+  ],
+  "recommendedAction": "Chuyển gấp cho Trưởng nhóm Sales gọi tư vấn trực tiếp trong vòng 2 giờ."
+}
+```
+
+### Auto-Assign Lead (Round-Robin)
+Automatically assigns a lead to an active team member using round-robin distribution.
+
+```http
+POST /api/leads/{id}/auto-assign
+Authorization: Bearer <access-token>
+X-Tenant-ID: <tenant-id>
+```
+
+#### Response `200 OK`
+```json
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "leadCode": "LD-2026-0012",
+  "displayName": "Tập đoàn Vingroup",
+  "owner": {
+    "ownerType": "USER",
+    "id": "660e8400-e29b-41d4-a716-446655440001"
+  },
+  "status": "QUALIFIED"
+}
+```
+
+## Sales Forecast API
+
+### Get Revenue Forecast Summary
+
+```http
+GET /api/sales/forecast?period={THIS_MONTH|THIS_QUARTER|THIS_YEAR}
+```
+
+Required permission: `crm_opportunity.read` or `sales_order.read`.
+
+#### Request Headers
+```http
+Authorization: Bearer <access-token>
+X-Tenant-ID: <tenant-id>
+```
+
+#### Query Parameters
+- `period` (optional): Timeframe for forecasting (`THIS_MONTH`, `THIS_QUARTER`, `THIS_YEAR`). Default is `THIS_MONTH`.
+
+#### Response `200 OK`
+```json
+{
+  "period": "THIS_MONTH",
+  "closedWonAmount": 450000000.0,
+  "commitAmount": 320000000.0,
+  "bestCaseAmount": 280000000.0,
+  "pipelineAmount": 190000000.0,
+  "totalTargetQuota": 1200000000.0,
+  "weightedForecastAmount": 850000000.0,
+  "winRatePercent": 78.5,
+  "totalDealsCount": 18,
+  "salesRepPerformance": [
+    {
+      "repName": "Phạm Tuấn Vũ",
+      "closedAmount": 202500000.0,
+      "openAmount": 128000000.0,
+      "targetQuota": 400000000.0,
+      "quotaAttainmentPercent": 112.5,
+      "wonDealsCount": 4,
+      "lostDealsCount": 1
+    }
+  ]
+}
+```
+
+## Customer Health Score & Churn Risk API
+
+### Calculate Account Health Score
+
+```http
+GET /api/crm/health-score/{accountId}
+```
+
+Required permission: `crm_account.read`.
+
+#### Request Headers
+```http
+Authorization: Bearer <access-token>
+X-Tenant-ID: <tenant-id>
+```
+
+#### Response `200 OK`
+```json
+{
+  "accountId": "44444444-4444-4444-4444-444444444444",
+  "healthScore": 82,
+  "healthGrade": "HEALTHY",
+  "activityScore": 28,
+  "ticketScore": 22,
+  "contractScore": 20,
+  "transactionScore": 12,
+  "churnRiskFactors": [],
+  "recommendedAction": "Khách hàng duy trì mối quan hệ rất tốt. Đề xuất gửi thư tri ân và giới thiệu gói giải pháp nâng cấp (Upsell)."
+}
+```
+
+### List At-Risk Accounts
+
+```http
+GET /api/crm/health-score/at-risk
+```
+
+Required permission: `crm_account.read`.
+
+#### Response `200 OK`
+```json
+[
+  {
+    "accountId": "55555555-5555-5555-5555-555555555555",
+    "healthScore": 45,
+    "healthGrade": "CRITICAL",
+    "activityScore": 5,
+    "ticketScore": 10,
+    "contractScore": 15,
+    "transactionScore": 15,
+    "churnRiskFactors": [
+      "Không có tương tác (cuộc gọi/email/họp) nào trong 30 ngày qua",
+      "Đang tồn đọng nhiều phiếu khiếu nại hỗ trợ kỹ thuật chưa giải quyết"
+    ],
+    "recommendedAction": "CẢNH BÁO NGUY CƠ RỜI BỎ CAO: Cần lập tức tổ chức buổi làm việc trực tiếp (Executive Meeting) để tháo gỡ các vướng mắc tồn đọng."
+  }
+]
+```
+
+## Customer Deduplication & Merge API
+
+### Scan Duplicate Accounts
+
+```http
+GET /api/crm/deduplication/scan
+```
+
+Required permission: `crm_account.read`.
+
+#### Request Headers
+```http
+Authorization: Bearer <access-token>
+X-Tenant-ID: <tenant-id>
+```
+
+#### Response `200 OK`
+```json
+[
+  {
+    "matchReason": "Trùng Mã số thuế (MST) Doanh nghiệp",
+    "confidenceScore": 100,
+    "matchValue": "0108999888",
+    "accounts": [
+      {
+        "id": "44444444-4444-4444-4444-444444444444",
+        "accountNumber": "ACC-2026-001",
+        "displayName": "Tập đoàn Công nghệ FPT (Bản chính)",
+        "legalName": "Công ty Cổ phần FPT",
+        "taxIdentifier": "0108999888",
+        "phone": "024 7300 7300",
+        "email": "fpt@fpt.com.vn",
+        "lifecycleStage": "CUSTOMER",
+        "updatedAt": "2026-08-15 10:00:00"
+      },
+      {
+        "id": "55555555-5555-5555-5555-555555555555",
+        "accountNumber": "ACC-2026-089",
+        "displayName": "FPT Software Chi nhánh Hà Nội (Bản phụ trùng)",
+        "legalName": "Công ty Cổ phần FPT - CN HN",
+        "taxIdentifier": "0108999888",
+        "phone": "024 7300 7300",
+        "email": "info@fpt-software.com",
+        "lifecycleStage": "PROSPECT",
+        "updatedAt": "2026-08-17 08:30:00"
+      }
+    ]
+  }
+]
+```
+
+### Merge Duplicate Accounts
+
+```http
+POST /api/crm/deduplication/merge
+```
+
+Required permission: `crm_account.write`.
+
+#### Request Headers
+```http
+Authorization: Bearer <access-token>
+X-Tenant-ID: <tenant-id>
+Content-Type: application/json
+```
+
+#### Request Body
+```json
+{
+  "sourceAccountId": "55555555-5555-5555-5555-555555555555",
+  "targetAccountId": "44444444-4444-4444-4444-444444444444",
+  "selectedFields": {}
+}
+```
+
+#### Response `200 OK`
+```json
+true
+```
+
 ## Maintenance Rules
 
 Every API addition, modification, or removal must update this file in the same

@@ -7,3 +7,34 @@ export const authService: IAuthService = env.useMocks ? mockAuthService : realAu
 
 export { mockAuthService } from './mock/MockAuthService';
 export { realAuthService } from './api/RealAuthService';
+
+export * from './api/accountApi';
+export * from './api/accountAddressApi';
+export * from './api/accountChannelApi';
+export * from './api/accountRelationshipApi';
+export * from './api/contactApi';
+export * from './api/leadApi';
+export * from './api/opportunityApi';
+export * from './api/activityApi';
+export * from './api/quoteApi';
+export * from './api/orderApi';
+export * from './api/contractApi';
+export * from './api/ticketApi';
+export * from './api/catalogApi';
+export * from './api/campaignApi';
+export * from './api/privacyApi';
+export * from './api/integrationApi';
+export * from './api/teamApi';
+export * from './api/auditApi';
+export * from './api/roleApi';
+export * from './api/membershipApi';
+export * from './api/tenantApi';
+export * from './api/noteApi';
+export * from './api/tagApi';
+export * from './api/customFieldApi';
+export * from './api/pipelineApi';
+export * from './api/salesConfigApi';
+export * from './api/timelineApi';
+export * from './api/forecastApi';
+export * from './api/healthScoreApi';
+export * from './api/deduplicationApi';

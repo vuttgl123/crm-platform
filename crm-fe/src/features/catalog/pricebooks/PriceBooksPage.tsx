@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  mockCatalogApi,
+  catalogApi,
   PriceBookItem,
-} from '@/services/mock/mockCatalogData';
+} from '@/services/api/catalogApi';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -35,7 +35,7 @@ export const PriceBooksPage: React.FC = () => {
   const fetchPriceBooks = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await mockCatalogApi.listPriceBooks({ search: searchQuery });
+      const res = await catalogApi.listPriceBooks({ search: searchQuery });
       setPriceBooks(res);
     } catch {
       toast.error('Không thể tải bảng giá');

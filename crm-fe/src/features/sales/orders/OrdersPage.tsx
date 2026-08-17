@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  mockOrdersApi,
+  orderApi,
   OrderItem,
   OrderStatus,
   PaymentStatus,
   ORDER_STATUS_CONFIG,
   PAYMENT_STATUS_CONFIG,
-} from '@/services/mock/mockOrdersData';
+} from '@/services/api/orderApi';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -82,7 +82,7 @@ export const OrdersPage: React.FC = () => {
   const fetchOrders = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await mockOrdersApi.list({
+      const res = await orderApi.list({
         search: searchQuery,
         status: selectedStatus,
         paymentStatus: selectedPaymentStatus,
@@ -116,7 +116,7 @@ export const OrdersPage: React.FC = () => {
     setAccountName('');
     setTotalAmount('');
     setPaidAmount('0');
-    setStatus('PENDING');
+    setStatus('DRAFT');
     setPaymentStatus('UNPAID');
     setOrderDate(new Date().toISOString().split('T')[0]);
     setDeliveryDate(new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0]);
@@ -125,14 +125,14 @@ export const OrdersPage: React.FC = () => {
 
   const handleOpenEdit = (order: OrderItem) => {
     setEditingOrder(order);
-    setAccountName(order.accountName);
-    setTotalAmount(order.totalAmount.toString());
-    setPaidAmount(order.paidAmount.toString());
+    setAccountName(order.accountName || '');
+    setTotalAmount((order.totalAmount || 0).toString());
+    setPaidAmount('0');
     setStatus(order.status);
     setPaymentStatus(order.paymentStatus);
-    setOrderDate(order.orderDate);
+    setOrderDate(order.deliveryDate || '');
     setDeliveryDate(order.deliveryDate || '');
-    setAssignedTo(order.assignedTo);
+    setAssignedTo(order.assignedTo || '');
     setIsModalOpen(true);
   };
 
@@ -146,29 +146,25 @@ export const OrdersPage: React.FC = () => {
     setIsSubmitting(true);
     try {
       if (editingOrder) {
-        await mockOrdersApi.update(editingOrder.id, {
+        await orderApi.update(editingOrder.id, {
+          version: editingOrder.version || 1,
           accountName,
           totalAmount: parseFloat(totalAmount),
-          paidAmount: parseFloat(paidAmount) || 0,
           status,
           paymentStatus,
-          orderDate,
           deliveryDate,
           assignedTo,
         });
         toast.success('Đã cập nhật đơn hàng thành công!');
       } else {
-        await mockOrdersApi.create({
+        await orderApi.create({
           accountId: 'acc-custom',
           accountName,
           totalAmount: parseFloat(totalAmount),
-          paidAmount: parseFloat(paidAmount) || 0,
           status,
           paymentStatus,
-          orderDate: orderDate || new Date().toISOString().split('T')[0],
           deliveryDate,
           assignedTo: assignedTo || 'Phạm Tuấn Vũ',
-          itemsCount: 1,
         });
         toast.success('Đã tạo đơn hàng mới thành công!');
       }
@@ -184,7 +180,7 @@ export const OrdersPage: React.FC = () => {
   const handleDelete = async (id: string, code: string) => {
     if (!window.confirm(`Bạn có chắc chắn muốn xóa đơn hàng "${code}"?`)) return;
     try {
-      await mockOrdersApi.delete(id);
+      await orderApi.delete(id);
       toast.success(`Đã xóa đơn hàng "${code}"`);
       fetchOrders();
     } catch {

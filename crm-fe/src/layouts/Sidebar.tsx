@@ -29,6 +29,8 @@ import {
   Shield,
   Settings,
   Layers,
+  Workflow,
+  BarChart3,
 } from 'lucide-react';
 import { NAVIGATION_GROUPS } from '@/config/navigationConfig';
 import { useAuth } from '@/core/session/useAuth';
@@ -64,6 +66,8 @@ const ICON_MAP: Record<string, React.ElementType> = {
   Network,
   Shield,
   Settings,
+  Workflow,
+  BarChart3,
 };
 
 export const Sidebar: React.FC = () => {

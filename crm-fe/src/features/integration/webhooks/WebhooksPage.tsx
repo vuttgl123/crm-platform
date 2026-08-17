@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { mockIntegrationApi, WebhookSubscription } from '@/services/mock/mockIntegrationData';
+import { integrationApi, WebhookSubscription } from '@/services/api/integrationApi';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -13,7 +13,7 @@ export const WebhooksPage: React.FC = () => {
 
   const fetchWebhooks = () => {
     setLoading(true);
-    mockIntegrationApi.listWebhooks().then((data) => {
+    integrationApi.listWebhooks().then((data) => {
       setWebhooks(data);
       setLoading(false);
     });

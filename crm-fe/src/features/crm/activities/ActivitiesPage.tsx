@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  mockActivitiesApi,
+  activityApi,
   ActivityItem,
   ActivityType,
   ActivityPriority,
   ActivityStatus,
   ACTIVITY_TYPE_CONFIG,
-} from '@/services/mock/mockActivitiesData';
+} from '@/services/api/activityApi';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -103,7 +103,7 @@ export const ActivitiesPage: React.FC = () => {
   const fetchActivities = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await mockActivitiesApi.list({
+      const res = await activityApi.list({
         search: searchQuery,
         type: selectedType,
         priority: selectedPriority,
@@ -173,7 +173,8 @@ export const ActivitiesPage: React.FC = () => {
     setIsSubmitting(true);
     try {
       if (editingAct) {
-        await mockActivitiesApi.update(editingAct.id, {
+        await activityApi.update(editingAct.id, {
+          version: editingAct.version || 1,
           subject,
           type,
           priority,
@@ -187,7 +188,7 @@ export const ActivitiesPage: React.FC = () => {
         });
         toast.success('Đã cập nhật hoạt động thành công!');
       } else {
-        await mockActivitiesApi.create({
+        await activityApi.create({
           subject,
           type,
           priority,
@@ -212,7 +213,7 @@ export const ActivitiesPage: React.FC = () => {
 
   const handleToggleComplete = async (act: ActivityItem) => {
     try {
-      await mockActivitiesApi.toggleComplete(act.id);
+      await activityApi.complete(act.id, act.version || 1);
       toast.success(`Đã cập nhật trạng thái: "${act.subject}"`);
       fetchActivities();
     } catch {
@@ -220,11 +221,11 @@ export const ActivitiesPage: React.FC = () => {
     }
   };
 
-  const handleDelete = async (id: string, name: string) => {
-    if (!window.confirm(`Bạn có chắc chắn muốn xóa hoạt động "${name}"?`)) return;
+  const handleDelete = async (id: string, sub: string) => {
+    if (!window.confirm(`Bạn có chắc chắn muốn xóa hoạt động "${sub}"?`)) return;
     try {
-      await mockActivitiesApi.delete(id);
-      toast.success(`Đã xóa hoạt động "${name}"`);
+      await activityApi.delete(id);
+      toast.success(`Đã xóa hoạt động "${sub}"`);
       fetchActivities();
     } catch {
       toast.error('Không thể xóa hoạt động');

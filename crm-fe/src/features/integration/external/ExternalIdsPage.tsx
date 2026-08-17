@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { mockIntegrationApi, ExternalIdMapping } from '@/services/mock/mockIntegrationData';
+import { integrationApi, ExternalIdMapping } from '@/services/api/integrationApi';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -12,7 +12,7 @@ export const ExternalIdsPage: React.FC = () => {
 
   const fetchMappings = () => {
     setLoading(true);
-    mockIntegrationApi.listExternalIds().then((data) => {
+    integrationApi.listExternalIds().then((data) => {
       setMappings(data);
       setLoading(false);
     });

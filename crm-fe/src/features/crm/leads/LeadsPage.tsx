@@ -4,23 +4,16 @@ import {
   LeadItem,
   LEAD_SOURCE_CONFIG,
 } from '@/services/mock/mockLeadsData';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { SearchableSelect } from '@/components/ui/searchable-select';
 import { EmptyState } from '@/components/common/EmptyState';
-import {
-  renderLeadStatusBadge,
-} from '@/config/crmStatusConfig';
+import { renderLeadStatusBadge } from '@/config/crmStatusConfig';
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
 } from '@/components/ui/dialog';
 import {
   Table,
@@ -49,20 +42,21 @@ import {
   Loader2,
   ChevronLeft,
   ChevronRight,
-  Save,
-  CheckCircle2,
+  ChevronsLeft,
+  ChevronsRight,
+  X,
+  RotateCcw,
   TrendingUp,
-  DollarSign,
   Building2,
-  Mail,
-  Phone,
   ArrowRightCircle,
+  Sparkles,
+  Target,
 } from 'lucide-react';
 
 const RATING_CONFIG: Record<string, { label: string; className: string; icon: any }> = {
   HOT: { label: 'NÓNG (Hot)', className: 'bg-rose-50 text-rose-700 border-rose-200 font-bold', icon: Flame },
   WARM: { label: 'ẤM (Warm)', className: 'bg-amber-50 text-amber-700 border-amber-200 font-semibold', icon: TrendingUp },
-  COLD: { label: 'LẠNH (Cold)', className: 'bg-slate-100 text-slate-600 border-slate-200', icon: CheckCircle2 },
+  COLD: { label: 'LẠNH (Cold)', className: 'bg-slate-100 text-slate-600 border-slate-200', icon: Target },
 };
 
 export const LeadsPage: React.FC = () => {
@@ -73,7 +67,7 @@ export const LeadsPage: React.FC = () => {
   const [selectedSource, setSelectedSource] = useState('ALL');
   const [selectedRating, setSelectedRating] = useState('ALL');
   const [page, setPage] = useState(0);
-  const [pageSize, setPageSize] = useState(10);
+  const pageSize = 10;
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
 
@@ -111,7 +105,7 @@ export const LeadsPage: React.FC = () => {
       setTotalPages(res.totalPages);
       setTotalElements(res.totalElements);
     } catch {
-      toast.error('Không thể tải danh sách Leads');
+      toast.error('Không thể tải danh sách khách hàng tiềm năng');
     } finally {
       setLoading(false);
     }
@@ -120,6 +114,15 @@ export const LeadsPage: React.FC = () => {
   useEffect(() => {
     fetchLeads();
   }, [fetchLeads]);
+
+  const handleResetFilters = () => {
+    setSearchQuery('');
+    setSelectedStatus('ALL');
+    setSelectedSource('ALL');
+    setSelectedRating('ALL');
+    setPage(0);
+    fetchLeads();
+  };
 
   const handleOpenCreate = () => {
     setEditingLead(null);
@@ -132,7 +135,6 @@ export const LeadsPage: React.FC = () => {
     setStatus('NEW');
     setRating('HOT');
     setEstimatedRevenue('');
-    setAssignedTo('Phạm Tuấn Vũ');
     setNotes('');
     setCity('Hà Nội');
     setIsModalOpen(true);
@@ -157,8 +159,8 @@ export const LeadsPage: React.FC = () => {
 
   const handleSaveLead = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!fullName.trim() || !companyName.trim()) {
-      toast.error('Vui lòng nhập họ tên và tên công ty');
+    if (!fullName.trim() || !email.trim()) {
+      toast.error('Vui lòng nhập họ tên và email');
       return;
     }
 
@@ -174,7 +176,7 @@ export const LeadsPage: React.FC = () => {
           leadSource,
           status,
           rating,
-          estimatedRevenue: Number(estimatedRevenue) || 0,
+          estimatedRevenue: estimatedRevenue ? parseFloat(estimatedRevenue) : 0,
           assignedTo,
           notes,
           city,
@@ -183,17 +185,17 @@ export const LeadsPage: React.FC = () => {
       } else {
         await mockLeadsApi.create({
           fullName,
-          companyName,
-          jobTitle,
+          companyName: companyName || 'Khách hàng cá nhân',
+          jobTitle: jobTitle || 'Đại diện',
           email,
           phone,
           leadSource,
           status,
           rating,
-          estimatedRevenue: Number(estimatedRevenue) || 0,
-          assignedTo,
+          estimatedRevenue: estimatedRevenue ? parseFloat(estimatedRevenue) : 0,
+          assignedTo: assignedTo || 'Phạm Tuấn Vũ',
           notes,
-          city,
+          city: city || 'Hà Nội',
         });
         toast.success('Đã thêm khách hàng tiềm năng mới thành công!');
       }
@@ -206,22 +208,8 @@ export const LeadsPage: React.FC = () => {
     }
   };
 
-  const handleConvertLead = async (lead: LeadItem) => {
-    if (!window.confirm(`Chuyển đổi tiềm năng "${lead.fullName} (${lead.companyName})" thành Khách hàng chính thức & Cơ hội kinh doanh?`)) {
-      return;
-    }
-
-    try {
-      await mockLeadsApi.convert(lead.id);
-      toast.success(`Đã chuyển đổi thành công tiềm năng "${lead.fullName}"!`);
-      fetchLeads();
-    } catch {
-      toast.error('Không thể chuyển đổi Lead');
-    }
-  };
-
   const handleDelete = async (id: string, name: string) => {
-    if (!window.confirm(`Bạn có chắc chắn muốn xóa tiềm năng "${name}"?`)) return;
+    if (!window.confirm(`Bạn có chắc chắn muốn xóa khách hàng tiềm năng "${name}"?`)) return;
     try {
       await mockLeadsApi.delete(id);
       toast.success(`Đã xóa tiềm năng "${name}"`);
@@ -231,31 +219,51 @@ export const LeadsPage: React.FC = () => {
     }
   };
 
+  const handleConvert = async (lead: LeadItem) => {
+    if (!window.confirm(`Chuyển đổi tiềm năng "${lead.fullName}" thành Khách hàng chính thức & Cơ hội?`)) return;
+    try {
+      await mockLeadsApi.convert(lead.id);
+      toast.success(`Đã chuyển đổi thành công "${lead.fullName}" sang Khách hàng chính thức!`);
+      fetchLeads();
+    } catch {
+      toast.error('Chuyển đổi thất bại');
+    }
+  };
+
+  // KPI Metrics
   const hotCount = leads.filter((l) => l.rating === 'HOT').length;
-  const newCount = leads.filter((l) => l.status === 'NEW').length;
-  const totalPipeline = leads.reduce((sum, l) => sum + (l.estimatedRevenue || 0), 0);
+  const qualifiedCount = leads.filter((l) => l.status === 'QUALIFIED').length;
+  const convertedCount = leads.filter((l) => l.status === 'CONVERTED').length;
+
+  const activeFiltersCount =
+    (searchQuery ? 1 : 0) +
+    (selectedStatus !== 'ALL' ? 1 : 0) +
+    (selectedSource !== 'ALL' ? 1 : 0) +
+    (selectedRating !== 'ALL' ? 1 : 0);
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
+    <div className="space-y-5 pb-12 font-sans w-full">
+      {/* ── Page Header ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black tracking-tight text-slate-900 flex items-center gap-2">
-            <UserPlus className="w-7 h-7 text-blue-600" />
-            <span>Khách hàng tiềm năng (Leads)</span>
+          <h1 className="text-xl font-bold text-slate-900 flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shadow-xs shrink-0">
+              <UserPlus className="w-4.5 h-4.5 text-white" />
+            </div>
+            Quản lý Khách hàng Tiềm năng (Leads)
           </h1>
-          <p className="text-sm text-slate-500 mt-1">
-            Theo dõi, đánh giá và nuôi dưỡng các cơ hội tiềm năng từ nguồn tiếp thị đến chốt hợp đồng
+          <p className="text-xs text-slate-500 mt-1 ml-10.5">
+            Thu thập, phân loại mức độ quan tâm (Hot/Warm/Cold) và chuyển đổi thành Khách hàng
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2 shrink-0">
           <Button
             variant="outline"
             size="sm"
             onClick={fetchLeads}
             disabled={loading}
-            className="h-9 px-3 text-xs font-semibold gap-1.5 shadow-2xs border-slate-200"
+            className="text-xs gap-1.5 border-slate-200 h-8"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
             <span>Làm mới</span>
@@ -264,272 +272,268 @@ export const LeadsPage: React.FC = () => {
           <Button
             size="sm"
             onClick={handleOpenCreate}
-            className="h-9 px-4 text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white gap-1.5 shadow-2xs"
+            className="text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white gap-1.5 shadow-xs h-8"
           >
-            <Plus className="w-4 h-4" />
-            <span>Thêm Tiềm năng Mới</span>
+            <Plus className="w-3.5 h-3.5" />
+            <span>Thêm Tiềm Năng Mới</span>
           </Button>
         </div>
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="border-slate-200 shadow-2xs bg-white">
-          <CardContent className="p-4 flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Tổng số Leads</p>
-              <h3 className="text-2xl font-black text-slate-900 mt-1">{totalElements}</h3>
-            </div>
-            <div className="w-11 h-11 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
-              <UserPlus className="w-5 h-5" />
-            </div>
-          </CardContent>
-        </Card>
+      {/* ── Quick Stat Cards ── */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="bg-white rounded-xl border border-slate-200 px-4 py-3 flex items-center gap-3 shadow-xs hover:shadow-sm transition-shadow">
+          <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
+            <UserPlus className="w-4.5 h-4.5 text-blue-600" />
+          </div>
+          <div>
+            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Tổng Tiềm năng</div>
+            <div className="text-lg font-black text-slate-900 leading-tight">{totalElements}</div>
+          </div>
+        </div>
 
-        <Card className="border-slate-200 shadow-2xs bg-white">
-          <CardContent className="p-4 flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Tiềm năng Nóng (Hot)</p>
-              <h3 className="text-2xl font-black text-rose-600 mt-1">{hotCount}</h3>
-            </div>
-            <div className="w-11 h-11 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
-              <Flame className="w-5 h-5 fill-rose-500 text-rose-600" />
-            </div>
-          </CardContent>
-        </Card>
+        <div className="bg-white rounded-xl border border-rose-100 px-4 py-3 flex items-center gap-3 shadow-xs hover:shadow-sm transition-shadow">
+          <div className="w-9 h-9 rounded-lg bg-rose-50 flex items-center justify-center shrink-0">
+            <Flame className="w-4.5 h-4.5 text-rose-600" />
+          </div>
+          <div>
+            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Tiềm năng NÓNG (Hot)</div>
+            <div className="text-lg font-black text-rose-700 leading-tight">{hotCount}</div>
+          </div>
+        </div>
 
-        <Card className="border-slate-200 shadow-2xs bg-white">
-          <CardContent className="p-4 flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Mới tiếp nhận</p>
-              <h3 className="text-2xl font-black text-purple-600 mt-1">{newCount}</h3>
-            </div>
-            <div className="w-11 h-11 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
-              <CheckCircle2 className="w-5 h-5" />
-            </div>
-          </CardContent>
-        </Card>
+        <div className="bg-white rounded-xl border border-emerald-100 px-4 py-3 flex items-center gap-3 shadow-xs hover:shadow-sm transition-shadow">
+          <div className="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center shrink-0">
+            <Target className="w-4.5 h-4.5 text-emerald-600" />
+          </div>
+          <div>
+            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Đạt chuẩn tiềm năng</div>
+            <div className="text-lg font-black text-emerald-700 leading-tight">{qualifiedCount}</div>
+          </div>
+        </div>
 
-        <Card className="border-slate-200 shadow-2xs bg-white">
-          <CardContent className="p-4 flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Tổng giá trị dự kiến</p>
-              <h3 className="text-xl font-black text-emerald-600 mt-1">
-                {(totalPipeline / 1000000000).toFixed(2)} tỷ ₫
-              </h3>
-            </div>
-            <div className="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-              <DollarSign className="w-5 h-5" />
-            </div>
-          </CardContent>
-        </Card>
+        <div className="bg-white rounded-xl border border-indigo-100 px-4 py-3 flex items-center gap-3 shadow-xs hover:shadow-sm transition-shadow">
+          <div className="w-9 h-9 rounded-lg bg-indigo-50 flex items-center justify-center shrink-0">
+            <Sparkles className="w-4.5 h-4.5 text-indigo-600" />
+          </div>
+          <div>
+            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Đã chuyển đổi</div>
+            <div className="text-lg font-black text-indigo-700 leading-tight">{convertedCount}</div>
+          </div>
+        </div>
       </div>
 
-      {/* Filter Card */}
-      <Card className="border-slate-200 shadow-2xs bg-white">
-        <CardContent className="p-4">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-            <div className="flex-1 flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200/80 focus-within:border-blue-500 focus-within:bg-white transition-all">
-              <Search className="w-4 h-4 text-slate-400 shrink-0" />
-              <input
-                type="text"
-                placeholder="Tìm kiếm theo họ tên, công ty, email, số điện thoại..."
-                value={searchQuery}
-                onChange={(e) => {
-                  setSearchQuery(e.target.value);
-                  setPage(0);
-                }}
-                className="w-full bg-transparent text-xs text-slate-800 placeholder-slate-400 focus:outline-none"
-              />
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2.5">
-              <div className="w-40">
-                <SearchableSelect
-                  placeholder="Lọc trạng thái..."
-                  searchPlaceholder="Tìm trạng thái..."
-                  value={selectedStatus}
-                  onValueChange={(val) => {
-                    setSelectedStatus(val);
-                    setPage(0);
-                  }}
-                  options={[
-                    { label: 'Tất cả trạng thái', value: 'ALL' },
-                    { label: 'Mới tiếp nhận', value: 'NEW' },
-                    { label: 'Đã liên hệ', value: 'CONTACTED' },
-                    { label: 'Đạt chuẩn tiềm năng', value: 'QUALIFIED' },
-                    { label: 'Đã chuyển đổi', value: 'CONVERTED' },
-                    { label: 'Không tiềm năng', value: 'UNQUALIFIED' },
-                  ]}
-                  className="h-9 text-xs"
-                />
-              </div>
-
-              <div className="w-44">
-                <SearchableSelect
-                  placeholder="Lọc nguồn lead..."
-                  searchPlaceholder="Tìm nguồn..."
-                  value={selectedSource}
-                  onValueChange={(val) => {
-                    setSelectedSource(val);
-                    setPage(0);
-                  }}
-                  options={[
-                    { label: 'Tất cả nguồn Lead', value: 'ALL' },
-                    { label: 'Website / Landing Page', value: 'WEBSITE' },
-                    { label: 'Sự kiện / Hội thảo', value: 'EVENT' },
-                    { label: 'Khách hàng giới thiệu', value: 'REFERRAL' },
-                    { label: 'Telesale / Gọi điện', value: 'COLD_CALL' },
-                    { label: 'Mạng xã hội', value: 'SOCIAL' },
-                    { label: 'Kênh đối tác', value: 'PARTNER' },
-                  ]}
-                  className="h-9 text-xs"
-                />
-              </div>
-
-              <div className="w-36">
-                <SearchableSelect
-                  placeholder="Lọc mức độ..."
-                  searchPlaceholder="Tìm mức độ..."
-                  value={selectedRating}
-                  onValueChange={(val) => {
-                    setSelectedRating(val);
-                    setPage(0);
-                  }}
-                  options={[
-                    { label: 'Tất cả mức độ', value: 'ALL' },
-                    { label: 'Nóng (Hot)', value: 'HOT' },
-                    { label: 'Ấm (Warm)', value: 'WARM' },
-                    { label: 'Lạnh (Cold)', value: 'COLD' },
-                  ]}
-                  className="h-9 text-xs"
-                />
-              </div>
-            </div>
+      {/* ── Search & Filter Toolbar ── */}
+      <Card className="p-3.5 bg-white border border-slate-200 rounded-xl shadow-xs space-y-3">
+        <div className="flex flex-col md:flex-row gap-2.5 items-stretch md:items-center justify-between">
+          <div className="relative flex-1">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <Input
+              placeholder="Tìm kiếm theo họ tên, công ty, email, số điện thoại..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 pr-8 text-xs h-8.5 bg-slate-50/60 focus:bg-white border-slate-200 rounded-lg"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
-        </CardContent>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="w-36">
+              <Select value={selectedStatus} onValueChange={(val) => { setSelectedStatus(val); setPage(0); }}>
+                <SelectTrigger className="h-8.5 text-xs bg-slate-50/60 border-slate-200 rounded-lg">
+                  <SelectValue placeholder="Trạng thái" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">Tất cả trạng thái</SelectItem>
+                  <SelectItem value="NEW">Mới tiếp nhận</SelectItem>
+                  <SelectItem value="CONTACTED">Đã liên hệ</SelectItem>
+                  <SelectItem value="QUALIFIED">Đạt chuẩn</SelectItem>
+                  <SelectItem value="CONVERTED">Đã chuyển đổi</SelectItem>
+                  <SelectItem value="UNQUALIFIED">Không đạt</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="w-36">
+              <Select value={selectedRating} onValueChange={(val) => { setSelectedRating(val); setPage(0); }}>
+                <SelectTrigger className="h-8.5 text-xs bg-slate-50/60 border-slate-200 rounded-lg">
+                  <SelectValue placeholder="Đánh giá" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">Tất cả đánh giá</SelectItem>
+                  <SelectItem value="HOT">NÓNG (Hot)</SelectItem>
+                  <SelectItem value="WARM">ẤM (Warm)</SelectItem>
+                  <SelectItem value="COLD">LẠNH (Cold)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="w-36">
+              <Select value={selectedSource} onValueChange={(val) => { setSelectedSource(val); setPage(0); }}>
+                <SelectTrigger className="h-8.5 text-xs bg-slate-50/60 border-slate-200 rounded-lg">
+                  <SelectValue placeholder="Nguồn đến" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">Tất cả nguồn</SelectItem>
+                  <SelectItem value="WEBSITE">Website</SelectItem>
+                  <SelectItem value="EVENT">Hội thảo &amp; Sự kiện</SelectItem>
+                  <SelectItem value="REFERRAL">Giới thiệu</SelectItem>
+                  <SelectItem value="COLD_CALL">Telesales</SelectItem>
+                  <SelectItem value="SOCIAL">Mạng xã hội</SelectItem>
+                  <SelectItem value="PARTNER">Đối tác</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {activeFiltersCount > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleResetFilters}
+                className="text-xs text-slate-500 hover:text-slate-800 gap-1 h-8.5 px-2"
+              >
+                <RotateCcw className="w-3 h-3" />
+                <span>Đặt lại ({activeFiltersCount})</span>
+              </Button>
+            )}
+          </div>
+        </div>
       </Card>
 
-      {/* Main Table */}
-      <Card className="border-slate-200 shadow-2xs bg-white overflow-hidden">
-        {loading ? (
-          <div className="py-20 flex flex-col items-center justify-center text-slate-400 gap-2">
-            <Loader2 className="w-7 h-7 animate-spin text-blue-600" />
-            <span className="text-xs font-semibold">Đang tải danh sách khách hàng tiềm năng...</span>
-          </div>
-        ) : leads.length === 0 ? (
-          <div className="p-8">
-            <EmptyState
-              icon={UserPlus}
-              title="Không tìm thấy tiềm năng nào"
-              description="Thử thay đổi điều kiện tìm kiếm hoặc thêm mới tiềm năng đầu tiên."
-              actionLabel="Thêm Tiềm năng Mới"
-              onAction={handleOpenCreate}
-            />
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader className="bg-slate-50/80 border-b border-slate-200">
+      {/* ── Leads Table ── */}
+      <Card className="overflow-hidden border border-slate-200 rounded-xl bg-white shadow-xs">
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-slate-50/80 hover:bg-slate-50/80 border-b border-slate-200">
+                <TableHead className="text-[11px] font-bold text-slate-600 uppercase tracking-wider py-3 pl-4">Khách hàng Tiềm năng</TableHead>
+                <TableHead className="text-[11px] font-bold text-slate-600 uppercase tracking-wider py-3">Công ty &amp; Chức danh</TableHead>
+                <TableHead className="text-[11px] font-bold text-slate-600 uppercase tracking-wider py-3">Mức độ (Rating)</TableHead>
+                <TableHead className="text-[11px] font-bold text-slate-600 uppercase tracking-wider py-3">Trạng thái</TableHead>
+                <TableHead className="text-[11px] font-bold text-slate-600 uppercase tracking-wider py-3">Doanh thu dự kiến</TableHead>
+                <TableHead className="text-[11px] font-bold text-slate-600 uppercase tracking-wider py-3">Nguồn</TableHead>
+                <TableHead className="text-[11px] font-bold text-slate-600 uppercase tracking-wider py-3 text-right pr-4">Thao tác</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {loading ? (
                 <TableRow>
-                  <TableHead className="text-xs font-bold text-slate-700 py-3.5 pl-5">Họ & Tên Tiềm năng</TableHead>
-                  <TableHead className="text-xs font-bold text-slate-700 py-3.5">Doanh nghiệp & Chức danh</TableHead>
-                  <TableHead className="text-xs font-bold text-slate-700 py-3.5">Nguồn & Mức độ</TableHead>
-                  <TableHead className="text-xs font-bold text-slate-700 py-3.5">Giá trị dự kiến</TableHead>
-                  <TableHead className="text-xs font-bold text-slate-700 py-3.5">Trạng thái</TableHead>
-                  <TableHead className="text-xs font-bold text-slate-700 py-3.5 text-right pr-5">Thao tác</TableHead>
+                  <TableCell colSpan={7} className="h-48 text-center">
+                    <div className="flex flex-col items-center justify-center gap-2 text-slate-500">
+                      <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+                      <span className="text-xs">Đang tải danh sách tiềm năng...</span>
+                    </div>
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody className="divide-y divide-slate-100">
-                {leads.map((lead) => {
-                  const ratingObj = RATING_CONFIG[lead.rating] || RATING_CONFIG.HOT;
-                  const RatingIcon = ratingObj.icon;
-                  const sourceObj = LEAD_SOURCE_CONFIG[lead.leadSource];
-
+              ) : leads.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="p-0">
+                    <EmptyState
+                      icon={UserPlus}
+                      title="Không tìm thấy khách hàng tiềm năng nào"
+                      description="Hãy thử thay đổi điều kiện lọc hoặc thêm tiềm năng mới."
+                      actionLabel="Thêm Tiềm Năng"
+                      onAction={handleOpenCreate}
+                    />
+                  </TableCell>
+                </TableRow>
+              ) : (
+                leads.map((lead) => {
+                  const ratingInfo = RATING_CONFIG[lead.rating] || RATING_CONFIG.HOT;
+                  const RatingIcon = ratingInfo.icon;
                   return (
-                    <TableRow key={lead.id} className="hover:bg-slate-50/70 transition-colors">
-                      <TableCell className="pl-5 py-3.5">
+                    <TableRow key={lead.id} className="hover:bg-slate-50/80 transition-colors border-b border-slate-100 text-xs">
+                      {/* Cột 1: Họ tên */}
+                      <TableCell className="pl-4 py-3">
                         <div className="flex items-center gap-2.5">
-                          <div className="w-8 h-8 rounded-full bg-purple-100/80 text-purple-700 font-bold text-xs flex items-center justify-center shrink-0">
+                          <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-purple-600 to-indigo-600 text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-xs">
                             {lead.fullName.charAt(0)}
                           </div>
                           <div>
-                            <span className="font-bold text-slate-900 text-xs block">{lead.fullName}</span>
-                            <div className="flex items-center gap-2 text-[11px] text-slate-400 mt-0.5">
-                              <span className="flex items-center gap-1">
-                                <Mail className="w-3 h-3 text-slate-400" />
-                                {lead.email}
-                              </span>
+                            <div className="font-bold text-slate-900">{lead.fullName}</div>
+                            <div className="flex items-center gap-2 mt-0.5 text-[11px] text-slate-500">
+                              <span className="font-mono text-slate-400">{lead.id.toUpperCase()}</span>
                               <span>•</span>
-                              <span className="flex items-center gap-1">
-                                <Phone className="w-3 h-3 text-slate-400" />
-                                {lead.phone}
-                              </span>
+                              <span className="font-mono">{lead.phone}</span>
                             </div>
                           </div>
                         </div>
                       </TableCell>
 
-                      <TableCell className="py-3.5">
-                        <p className="text-xs font-semibold text-slate-800 flex items-center gap-1.5">
-                          <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                          <span>{lead.companyName}</span>
-                        </p>
-                        <p className="text-[11px] text-slate-400 mt-0.5 pl-5">{lead.jobTitle} • {lead.city}</p>
-                      </TableCell>
-
-                      <TableCell className="py-3.5">
-                        <div className="space-y-1">
-                          <Badge variant="outline" className={`text-[10px] font-semibold ${sourceObj?.className || ''}`}>
-                            {sourceObj?.label || lead.leadSource}
-                          </Badge>
-                          <div>
-                            <Badge variant="outline" className={`text-[10px] gap-1 px-1.5 py-0 ${ratingObj.className}`}>
-                              <RatingIcon className="w-3 h-3" />
-                              <span>{ratingObj.label}</span>
-                            </Badge>
+                      {/* Cột 2: Công ty & Chức vụ */}
+                      <TableCell>
+                        <div>
+                          <div className="font-semibold text-slate-800 flex items-center gap-1">
+                            <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                            <span>{lead.companyName}</span>
                           </div>
+                          <div className="text-[11px] text-slate-500">{lead.jobTitle}</div>
                         </div>
                       </TableCell>
 
-                      <TableCell className="py-3.5">
-                        <p className="text-xs font-bold text-slate-900">
-                          {lead.estimatedRevenue ? `${lead.estimatedRevenue.toLocaleString('vi-VN')} ₫` : 'Chưa định giá'}
-                        </p>
-                        <p className="text-[11px] text-slate-400 mt-0.5">Phụ trách: {lead.assignedTo}</p>
+                      {/* Cột 3: Rating */}
+                      <TableCell>
+                        <Badge className={`${ratingInfo.className} gap-1 text-[11px] px-2 py-0.5`}>
+                          <RatingIcon className="w-3 h-3" />
+                          <span>{ratingInfo.label}</span>
+                        </Badge>
                       </TableCell>
 
-                      <TableCell className="py-3.5">
+                      {/* Cột 4: Trạng thái */}
+                      <TableCell>
                         {renderLeadStatusBadge(lead.status)}
                       </TableCell>
 
-                      <TableCell className="text-right pr-5 py-3.5">
+                      {/* Cột 5: Doanh thu dự kiến */}
+                      <TableCell>
+                        <div className="font-bold text-slate-900 font-mono">
+                          {lead.estimatedRevenue ? `${lead.estimatedRevenue.toLocaleString('vi-VN')} ₫` : '—'}
+                        </div>
+                      </TableCell>
+
+                      {/* Cột 6: Nguồn */}
+                      <TableCell>
+                        <Badge variant="outline" className="bg-slate-50 text-slate-700 border-slate-200 text-[10px]">
+                          {LEAD_SOURCE_CONFIG[lead.leadSource]?.label || lead.leadSource}
+                        </Badge>
+                      </TableCell>
+
+                      {/* Cột 7: Thao tác */}
+                      <TableCell className="text-right pr-4">
                         <div className="flex items-center justify-end gap-1">
                           {lead.status !== 'CONVERTED' && (
                             <Button
                               variant="ghost"
-                              size="sm"
-                              title="Chuyển đổi thành Khách hàng & Cơ hội"
-                              onClick={() => handleConvertLead(lead)}
-                              className="h-8 text-xs font-semibold text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 px-2 gap-1"
+                              size="icon"
+                              onClick={() => handleConvert(lead)}
+                              className="h-7 w-7 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                              title="Chuyển đổi thành Khách hàng chính thức"
                             >
                               <ArrowRightCircle className="w-3.5 h-3.5" />
-                              <span>Chuyển đổi</span>
                             </Button>
                           )}
                           <Button
                             variant="ghost"
-                            size="sm"
+                            size="icon"
                             onClick={() => handleOpenEdit(lead)}
-                            className="h-8 w-8 p-0 text-slate-500 hover:text-blue-600 hover:bg-blue-50"
+                            className="h-7 w-7 text-slate-600 hover:text-blue-600 hover:bg-blue-50"
+                            title="Chỉnh sửa thông tin"
                           >
                             <Edit className="w-3.5 h-3.5" />
                           </Button>
                           <Button
                             variant="ghost"
-                            size="sm"
+                            size="icon"
                             onClick={() => handleDelete(lead.id, lead.fullName)}
-                            className="h-8 w-8 p-0 text-slate-400 hover:text-rose-600 hover:bg-rose-50"
+                            className="h-7 w-7 text-slate-600 hover:text-red-600 hover:bg-red-50"
+                            title="Xóa tiềm năng"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </Button>
@@ -537,176 +541,179 @@ export const LeadsPage: React.FC = () => {
                       </TableCell>
                     </TableRow>
                   );
-                })}
-              </TableBody>
-            </Table>
-          </div>
-        )}
+                })
+              )}
+            </TableBody>
+          </Table>
+        </div>
 
-        {/* Pagination */}
+        {/* ── Pagination Bar ── */}
         {!loading && leads.length > 0 && (
-          <div className="p-4 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-slate-500">
-            <div className="flex items-center gap-2">
-              <span>Hiển thị</span>
-              <Select
-                value={pageSize.toString()}
-                onValueChange={(val) => {
-                  setPageSize(Number(val));
-                  setPage(0);
-                }}
-              >
-                <SelectTrigger className="h-8 w-16 text-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="10">10</SelectItem>
-                  <SelectItem value="20">20</SelectItem>
-                  <SelectItem value="50">50</SelectItem>
-                </SelectContent>
-              </Select>
-              <span>trên tổng số <b>{totalElements}</b> bản ghi</span>
+          <div className="px-4 py-3 bg-slate-50/50 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
+            <div>
+              Hiển thị <span className="font-bold text-slate-800">{page * pageSize + 1}</span> -{' '}
+              <span className="font-bold text-slate-800">{Math.min((page + 1) * pageSize, totalElements)}</span> trong tổng số{' '}
+              <span className="font-bold text-slate-800">{totalElements}</span> tiềm năng
             </div>
-
-            <div className="flex items-center gap-2">
-              <span className="font-semibold text-slate-700">
-                Trang {page + 1} / {totalPages || 1}
-              </span>
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage(Math.max(0, page - 1))}
-                  disabled={page === 0}
-                  className="h-8 w-8 p-0"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage(Math.min(totalPages - 1, page + 1))}
-                  disabled={page >= totalPages - 1}
-                  className="h-8 w-8 p-0"
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </Button>
+            <div className="flex items-center gap-1.5">
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-7 w-7 border-slate-200"
+                onClick={() => setPage(0)}
+                disabled={page === 0}
+              >
+                <ChevronsLeft className="w-3.5 h-3.5" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-7 w-7 border-slate-200"
+                onClick={() => setPage((p) => Math.max(p - 1, 0))}
+                disabled={page === 0}
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+              </Button>
+              <div className="px-2 font-medium text-slate-700">
+                Trang {page + 1} / {Math.max(totalPages, 1)}
               </div>
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-7 w-7 border-slate-200"
+                onClick={() => setPage((p) => p + 1)}
+                disabled={page >= totalPages - 1}
+              >
+                <ChevronRight className="w-3.5 h-3.5" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-7 w-7 border-slate-200"
+                onClick={() => setPage(totalPages - 1)}
+                disabled={page >= totalPages - 1}
+              >
+                <ChevronsRight className="w-3.5 h-3.5" />
+              </Button>
             </div>
           </div>
         )}
       </Card>
 
-      {/* Add / Edit Lead Dialog */}
+      {/* ── Create / Edit Lead Modal ── */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="max-w-xl bg-white p-0 gap-0 overflow-hidden font-sans border-slate-200 shadow-xl rounded-2xl">
-          <DialogHeader className="p-5 pb-4 border-b border-slate-100 bg-slate-50/70">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-blue-100/80 text-blue-700 flex items-center justify-center shrink-0">
-                <UserPlus className="w-5 h-5" />
-              </div>
-              <div>
-                <DialogTitle className="text-base font-bold text-slate-900">
-                  {editingLead ? 'Chỉnh sửa Khách hàng Tiềm năng' : 'Thêm Tiềm năng Mới'}
-                </DialogTitle>
-                <DialogDescription className="text-xs text-slate-500 mt-0.5">
-                  Nhập thông tin đầu mối kinh doanh và phân loại nguồn tiếp thị
-                </DialogDescription>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0 rounded-2xl border border-slate-200 shadow-xl">
+          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-5 text-white">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20">
+                  <UserPlus className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-base">
+                    {editingLead ? 'Chỉnh sửa Khách hàng Tiềm năng' : 'Thêm Tiềm Năng Mới'}
+                  </h3>
+                  <p className="text-xs text-blue-100 mt-0.5">
+                    {editingLead ? `Mã: ${editingLead.id.toUpperCase()}` : 'Ghi nhận thông tin đầu mối kinh doanh và phân loại'}
+                  </p>
+                </div>
               </div>
             </div>
-          </DialogHeader>
+          </div>
 
-          <form onSubmit={handleSaveLead} className="p-5 space-y-4 text-xs">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-              <div className="space-y-1.5">
-                <Label className="font-bold text-slate-700 text-xs">Họ và tên *</Label>
+          <form onSubmit={handleSaveLead} className="p-6 space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs font-semibold text-slate-700">
+                  Họ và tên người liên hệ <span className="text-rose-500">*</span>
+                </Label>
                 <Input
-                  placeholder="VD: Nguyễn Văn Hùng"
+                  required
+                  placeholder="Ví dụ: Trần Quốc Toản"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  className="h-9 text-xs"
-                  required
+                  className="h-9 text-xs border-slate-200 mt-1"
                 />
               </div>
-
-              <div className="space-y-1.5">
-                <Label className="font-bold text-slate-700 text-xs">Doanh nghiệp / Tổ chức *</Label>
+              <div>
+                <Label className="text-xs font-semibold text-slate-700">Tên Doanh nghiệp / Tổ chức</Label>
                 <Input
-                  placeholder="VD: Công ty CP Vận tải Biển Đông"
+                  placeholder="Ví dụ: Công ty CP Công Nghệ ABC"
                   value={companyName}
                   onChange={(e) => setCompanyName(e.target.value)}
-                  className="h-9 text-xs"
-                  required
+                  className="h-9 text-xs border-slate-200 mt-1"
                 />
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-              <div className="space-y-1.5">
-                <Label className="font-bold text-slate-700 text-xs">Chức danh</Label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs font-semibold text-slate-700">Chức vụ</Label>
                 <Input
-                  placeholder="VD: Giám đốc Điều hành"
+                  placeholder="Ví dụ: Giám đốc Điều hành (CEO)"
                   value={jobTitle}
                   onChange={(e) => setJobTitle(e.target.value)}
-                  className="h-9 text-xs"
+                  className="h-9 text-xs border-slate-200 mt-1"
                 />
               </div>
-
-              <div className="space-y-1.5">
-                <Label className="font-bold text-slate-700 text-xs">Tỉnh / Thành phố</Label>
+              <div>
+                <Label className="text-xs font-semibold text-slate-700">Tỉnh / Thành phố</Label>
                 <Input
-                  placeholder="VD: Hải Phòng"
+                  placeholder="Ví dụ: TP. Hồ Chí Minh"
                   value={city}
                   onChange={(e) => setCity(e.target.value)}
-                  className="h-9 text-xs"
+                  className="h-9 text-xs border-slate-200 mt-1"
                 />
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-              <div className="space-y-1.5">
-                <Label className="font-bold text-slate-700 text-xs">Email liên hệ</Label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs font-semibold text-slate-700">
+                  Email <span className="text-rose-500">*</span>
+                </Label>
                 <Input
+                  required
                   type="email"
-                  placeholder="VD: hung.nguyen@company.vn"
+                  placeholder="ceo@company.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="h-9 text-xs"
+                  className="h-9 text-xs border-slate-200 mt-1 font-mono"
                 />
               </div>
-
-              <div className="space-y-1.5">
-                <Label className="font-bold text-slate-700 text-xs">Số điện thoại</Label>
+              <div>
+                <Label className="text-xs font-semibold text-slate-700">Số điện thoại</Label>
                 <Input
-                  placeholder="VD: 0908 123 789"
+                  placeholder="0903 123 456"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  className="h-9 text-xs"
+                  className="h-9 text-xs border-slate-200 mt-1 font-mono"
                 />
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-              <div className="space-y-1.5">
-                <Label className="font-bold text-slate-700 text-xs">Nguồn Tiềm năng</Label>
-                <Select value={leadSource} onValueChange={(v) => setLeadSource(v as any)}>
-                  <SelectTrigger className="h-9 text-xs">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <Label className="text-xs font-semibold text-slate-700">Nguồn tiềm năng</Label>
+                <Select value={leadSource} onValueChange={(val: any) => setLeadSource(val)}>
+                  <SelectTrigger className="h-9 text-xs border-slate-200 mt-1">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="WEBSITE">Website / Landing</SelectItem>
-                    <SelectItem value="EVENT">Sự kiện / Hội thảo</SelectItem>
-                    <SelectItem value="REFERRAL">Khách giới thiệu</SelectItem>
-                    <SelectItem value="COLD_CALL">Telesale</SelectItem>
+                    <SelectItem value="WEBSITE">Website</SelectItem>
+                    <SelectItem value="EVENT">Hội thảo / Sự kiện</SelectItem>
+                    <SelectItem value="REFERRAL">Giới thiệu</SelectItem>
+                    <SelectItem value="COLD_CALL">Telesales</SelectItem>
                     <SelectItem value="SOCIAL">Mạng xã hội</SelectItem>
                     <SelectItem value="PARTNER">Đối tác</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
-              <div className="space-y-1.5">
-                <Label className="font-bold text-slate-700 text-xs">Mức độ quan tâm</Label>
-                <Select value={rating} onValueChange={(v) => setRating(v as any)}>
-                  <SelectTrigger className="h-9 text-xs">
+              <div>
+                <Label className="text-xs font-semibold text-slate-700">Mức độ quan tâm</Label>
+                <Select value={rating} onValueChange={(val: any) => setRating(val)}>
+                  <SelectTrigger className="h-9 text-xs border-slate-200 mt-1">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -717,80 +724,74 @@ export const LeadsPage: React.FC = () => {
                 </Select>
               </div>
 
-              <div className="space-y-1.5">
-                <Label className="font-bold text-slate-700 text-xs">Trạng thái</Label>
-                <Select value={status} onValueChange={(v) => setStatus(v as any)}>
-                  <SelectTrigger className="h-9 text-xs">
+              <div>
+                <Label className="text-xs font-semibold text-slate-700">Doanh thu dự kiến (VNĐ)</Label>
+                <Input
+                  type="number"
+                  placeholder="50,000,000"
+                  value={estimatedRevenue}
+                  onChange={(e) => setEstimatedRevenue(e.target.value)}
+                  className="h-9 text-xs border-slate-200 mt-1 font-mono"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs font-semibold text-slate-700">Trạng thái xử lý</Label>
+                <Select value={status} onValueChange={(val: any) => setStatus(val)}>
+                  <SelectTrigger className="h-9 text-xs border-slate-200 mt-1">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="NEW">Mới tiếp nhận</SelectItem>
                     <SelectItem value="CONTACTED">Đã liên hệ</SelectItem>
-                    <SelectItem value="QUALIFIED">Đạt chuẩn</SelectItem>
+                    <SelectItem value="QUALIFIED">Đạt chuẩn tiềm năng</SelectItem>
                     <SelectItem value="CONVERTED">Đã chuyển đổi</SelectItem>
                     <SelectItem value="UNQUALIFIED">Không tiềm năng</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-              <div className="space-y-1.5">
-                <Label className="font-bold text-slate-700 text-xs">Giá trị dự kiến (VNĐ)</Label>
+              <div>
+                <Label className="text-xs font-semibold text-slate-700">Nhân viên phụ trách</Label>
                 <Input
-                  type="number"
-                  placeholder="VD: 450000000"
-                  value={estimatedRevenue}
-                  onChange={(e) => setEstimatedRevenue(e.target.value)}
-                  className="h-9 text-xs"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <Label className="font-bold text-slate-700 text-xs">Nhân viên phụ trách</Label>
-                <Input
-                  placeholder="VD: Phạm Tuấn Vũ"
+                  placeholder="Phạm Tuấn Vũ"
                   value={assignedTo}
                   onChange={(e) => setAssignedTo(e.target.value)}
-                  className="h-9 text-xs"
+                  className="h-9 text-xs border-slate-200 mt-1"
                 />
               </div>
             </div>
 
-            <div className="space-y-1.5">
-              <Label className="font-bold text-slate-700 text-xs">Ghi chú nhu cầu</Label>
-              <Input
-                placeholder="Ghi chú thêm về nhu cầu phần mềm hoặc lịch hẹn..."
+            <div>
+              <Label className="text-xs font-semibold text-slate-700">Ghi chú nhu cầu khách hàng</Label>
+              <textarea
+                rows={3}
+                placeholder="Khách quan tâm gói Enterprise CRM và cần tư vấn trong tuần này..."
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                className="h-9 text-xs"
+                className="w-full text-xs border border-slate-200 rounded-lg p-2.5 mt-1 focus:ring-1 focus:ring-blue-500 focus:outline-hidden"
               />
             </div>
 
-            <DialogFooter className="pt-4 border-t border-slate-100 flex items-center justify-end gap-2">
+            <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-100">
               <Button
                 type="button"
                 variant="outline"
-                size="sm"
                 onClick={() => setIsModalOpen(false)}
-                className="h-9 text-xs font-semibold px-4"
+                className="text-xs border-slate-200 h-9"
               >
                 Hủy bỏ
               </Button>
               <Button
                 type="submit"
-                size="sm"
                 disabled={isSubmitting}
-                className="h-9 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-5 gap-1.5"
+                className="text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white gap-1.5 shadow-xs h-9"
               >
-                {isSubmitting ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  <Save className="w-3.5 h-3.5" />
-                )}
-                <span>{editingLead ? 'Lưu Thay đổi' : 'Tạo Tiềm năng'}</span>
+                {isSubmitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+                <span>{editingLead ? 'Lưu Thay Đổi' : 'Thêm Tiềm Năng'}</span>
               </Button>
-            </DialogFooter>
+            </div>
           </form>
         </DialogContent>
       </Dialog>

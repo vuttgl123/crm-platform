@@ -13,6 +13,7 @@ import com.crm.sales.quote.domain.QuoteAmounts;
 import com.crm.sales.quote.domain.QuoteId;
 import com.crm.sharedkernel.application.PageQuery;
 import com.crm.sharedkernel.application.PageResult;
+import com.crm.sharedkernel.domain.ActorId;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
@@ -34,12 +35,20 @@ public interface QuoteWebMapper {
 
 	QuoteSummaryResponse toSummaryResponse(QuoteSummary summary);
 
-	default QuoteId toQuoteId(UUID value) {
-		return value == null ? null : new QuoteId(value);
+	default UUID map(ActorId value) {
+		return value == null ? null : value.value();
 	}
 
-	default UUID fromQuoteId(QuoteId value) {
+	default ActorId map(UUID value) {
+		return value == null ? null : new ActorId(value);
+	}
+
+	default UUID map(QuoteId value) {
 		return value == null ? null : value.value();
+	}
+
+	default QuoteId toQuoteId(UUID value) {
+		return value == null ? null : new QuoteId(value);
 	}
 
 	default QuoteAmounts toAmounts(CreateQuoteRequest.Amounts value) {

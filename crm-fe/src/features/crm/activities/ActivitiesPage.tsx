@@ -7,22 +7,16 @@ import {
   ActivityStatus,
   ACTIVITY_TYPE_CONFIG,
 } from '@/services/mock/mockActivitiesData';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { SearchableSelect } from '@/components/ui/searchable-select';
-import { DatePicker } from '@/components/ui/date-picker';
 import { EmptyState } from '@/components/common/EmptyState';
 import { renderPriorityBadge } from '@/config/crmStatusConfig';
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
 } from '@/components/ui/dialog';
 import {
   Table,
@@ -52,12 +46,16 @@ import {
   Loader2,
   ChevronLeft,
   ChevronRight,
-  Save,
+  ChevronsLeft,
+  ChevronsRight,
+  X,
+  RotateCcw,
   Building2,
   Phone,
   Mail,
   Users,
   CheckSquare,
+  CalendarCheck,
 } from 'lucide-react';
 
 const TYPE_ICON_MAP: Record<ActivityType, any> = {
@@ -65,6 +63,12 @@ const TYPE_ICON_MAP: Record<ActivityType, any> = {
   MEETING: Users,
   TASK: CheckSquare,
   EMAIL: Mail,
+};
+
+const STATUS_CONFIG: Record<ActivityStatus, { label: string; className: string }> = {
+  PENDING: { label: 'Chờ xử lý', className: 'bg-amber-50 text-amber-700 border-amber-200 font-semibold' },
+  COMPLETED: { label: 'Hoàn thành', className: 'bg-emerald-50 text-emerald-700 border-emerald-200 font-bold' },
+  CANCELLED: { label: 'Đã hủy', className: 'bg-rose-50 text-rose-700 border-rose-200 font-semibold' },
 };
 
 export const ActivitiesPage: React.FC = () => {
@@ -75,7 +79,7 @@ export const ActivitiesPage: React.FC = () => {
   const [selectedPriority, setSelectedPriority] = useState('ALL');
   const [selectedStatus, setSelectedStatus] = useState('ALL');
   const [page, setPage] = useState(0);
-  const [pageSize, setPageSize] = useState(10);
+  const pageSize = 10;
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
 
@@ -121,6 +125,15 @@ export const ActivitiesPage: React.FC = () => {
     fetchActivities();
   }, [fetchActivities]);
 
+  const handleResetFilters = () => {
+    setSearchQuery('');
+    setSelectedType('ALL');
+    setSelectedPriority('ALL');
+    setSelectedStatus('ALL');
+    setPage(0);
+    fetchActivities();
+  };
+
   const handleOpenCreate = () => {
     setEditingAct(null);
     setSubject('');
@@ -131,7 +144,6 @@ export const ActivitiesPage: React.FC = () => {
     setDueTime('09:00');
     setAccountName('');
     setContactName('');
-    setAssignedTo('Phạm Tuấn Vũ');
     setDescription('');
     setIsModalOpen(true);
   };
@@ -166,7 +178,7 @@ export const ActivitiesPage: React.FC = () => {
           type,
           priority,
           status,
-          dueDate: dueDate || new Date().toISOString().split('T')[0],
+          dueDate,
           dueTime,
           accountName,
           contactName,
@@ -181,74 +193,78 @@ export const ActivitiesPage: React.FC = () => {
           priority,
           status,
           dueDate: dueDate || new Date().toISOString().split('T')[0],
-          dueTime,
-          accountName,
-          contactName,
-          assignedTo,
+          dueTime: dueTime || '09:00',
+          accountName: accountName || 'Khách hàng',
+          contactName: contactName || 'Người liên hệ',
+          assignedTo: assignedTo || 'Phạm Tuấn Vũ',
           description,
         });
-        toast.success('Đã tạo hoạt động mới thành công!');
+        toast.success('Đã thêm hoạt động mới thành công!');
       }
       setIsModalOpen(false);
       fetchActivities();
     } catch {
-      toast.error('Không thể lưu hoạt động');
+      toast.error('Không thể lưu thông tin');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleToggleComplete = async (id: string, currentStatus: ActivityStatus) => {
+  const handleToggleComplete = async (act: ActivityItem) => {
     try {
-      await mockActivitiesApi.toggleComplete(id);
-      toast.success(
-        currentStatus === 'COMPLETED'
-          ? 'Đã chuyển về trạng thái Chưa hoàn thành'
-          : 'Đã đánh dấu Hoàn thành hoạt động!'
-      );
+      await mockActivitiesApi.toggleComplete(act.id);
+      toast.success(`Đã cập nhật trạng thái: "${act.subject}"`);
       fetchActivities();
     } catch {
       toast.error('Không thể cập nhật trạng thái');
     }
   };
 
-  const handleDelete = async (id: string, subjectName: string) => {
-    if (!window.confirm(`Bạn có chắc chắn muốn xóa hoạt động "${subjectName}"?`)) return;
+  const handleDelete = async (id: string, name: string) => {
+    if (!window.confirm(`Bạn có chắc chắn muốn xóa hoạt động "${name}"?`)) return;
     try {
       await mockActivitiesApi.delete(id);
-      toast.success(`Đã xóa hoạt động "${subjectName}"`);
+      toast.success(`Đã xóa hoạt động "${name}"`);
       fetchActivities();
     } catch {
       toast.error('Không thể xóa hoạt động');
     }
   };
 
-  // Metrics
+  // KPI Metrics
+  const callsCount = activities.filter((a) => a.type === 'CALL').length;
+  const meetingsCount = activities.filter((a) => a.type === 'MEETING').length;
   const pendingCount = activities.filter((a) => a.status === 'PENDING').length;
-  const completedCount = activities.filter((a) => a.status === 'COMPLETED').length;
-  const callMeetingCount = activities.filter((a) => a.type === 'CALL' || a.type === 'MEETING').length;
+
+  const activeFiltersCount =
+    (searchQuery ? 1 : 0) +
+    (selectedType !== 'ALL' ? 1 : 0) +
+    (selectedPriority !== 'ALL' ? 1 : 0) +
+    (selectedStatus !== 'ALL' ? 1 : 0);
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
+    <div className="space-y-5 pb-12 font-sans w-full">
+      {/* ── Page Header ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black tracking-tight text-slate-900 flex items-center gap-2">
-            <Calendar className="w-7 h-7 text-blue-600" />
-            <span>Hoạt động & Lịch làm việc</span>
+          <h1 className="text-xl font-bold text-slate-900 flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shadow-xs shrink-0">
+              <Calendar className="w-4.5 h-4.5 text-white" />
+            </div>
+            Quản lý Hoạt động &amp; Công việc (Activities)
           </h1>
-          <p className="text-sm text-slate-500 mt-1">
-            Lên lịch cuộc gọi, cuộc họp, gửi email và theo dõi nhiệm vụ cần hoàn thành với khách hàng
+          <p className="text-xs text-slate-500 mt-1 ml-10.5">
+            Lên lịch cuộc gọi, sự kiện hội họp, gửi email và nhiệm vụ chăm sóc khách hàng
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2 shrink-0">
           <Button
             variant="outline"
             size="sm"
             onClick={fetchActivities}
             disabled={loading}
-            className="h-9 px-3 text-xs font-semibold gap-1.5 shadow-2xs border-slate-200"
+            className="text-xs gap-1.5 border-slate-200 h-8"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
             <span>Làm mới</span>
@@ -257,265 +273,264 @@ export const ActivitiesPage: React.FC = () => {
           <Button
             size="sm"
             onClick={handleOpenCreate}
-            className="h-9 px-4 text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white gap-1.5 shadow-2xs"
+            className="text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white gap-1.5 shadow-xs h-8"
           >
-            <Plus className="w-4 h-4" />
-            <span>Thêm Hoạt động</span>
+            <Plus className="w-3.5 h-3.5" />
+            <span>Thêm Hoạt Động Mới</span>
           </Button>
         </div>
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="border-slate-200 shadow-2xs bg-white">
-          <CardContent className="p-4 flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Tổng hoạt động</p>
-              <h3 className="text-2xl font-black text-slate-900 mt-1">{totalElements}</h3>
-            </div>
-            <div className="w-11 h-11 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
-              <Calendar className="w-5 h-5" />
-            </div>
-          </CardContent>
-        </Card>
+      {/* ── Quick Stat Cards ── */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="bg-white rounded-xl border border-slate-200 px-4 py-3 flex items-center gap-3 shadow-xs hover:shadow-sm transition-shadow">
+          <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
+            <CalendarCheck className="w-4.5 h-4.5 text-blue-600" />
+          </div>
+          <div>
+            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Tổng Hoạt động</div>
+            <div className="text-lg font-black text-slate-900 leading-tight">{totalElements}</div>
+          </div>
+        </div>
 
-        <Card className="border-slate-200 shadow-2xs bg-white">
-          <CardContent className="p-4 flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Chờ xử lý</p>
-              <h3 className="text-2xl font-black text-amber-600 mt-1">{pendingCount}</h3>
-            </div>
-            <div className="w-11 h-11 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
-              <Clock className="w-5 h-5" />
-            </div>
-          </CardContent>
-        </Card>
+        <div className="bg-white rounded-xl border border-emerald-100 px-4 py-3 flex items-center gap-3 shadow-xs hover:shadow-sm transition-shadow">
+          <div className="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center shrink-0">
+            <Phone className="w-4.5 h-4.5 text-emerald-600" />
+          </div>
+          <div>
+            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Cuộc gọi Telesales</div>
+            <div className="text-lg font-black text-emerald-700 leading-tight">{callsCount}</div>
+          </div>
+        </div>
 
-        <Card className="border-slate-200 shadow-2xs bg-white">
-          <CardContent className="p-4 flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Đã hoàn thành</p>
-              <h3 className="text-2xl font-black text-emerald-600 mt-1">{completedCount}</h3>
-            </div>
-            <div className="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-              <CheckCircle2 className="w-5 h-5" />
-            </div>
-          </CardContent>
-        </Card>
+        <div className="bg-white rounded-xl border border-purple-100 px-4 py-3 flex items-center gap-3 shadow-xs hover:shadow-sm transition-shadow">
+          <div className="w-9 h-9 rounded-lg bg-purple-50 flex items-center justify-center shrink-0">
+            <Users className="w-4.5 h-4.5 text-purple-600" />
+          </div>
+          <div>
+            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Lịch họp &amp; Demo</div>
+            <div className="text-lg font-black text-purple-700 leading-tight">{meetingsCount}</div>
+          </div>
+        </div>
 
-        <Card className="border-slate-200 shadow-2xs bg-white">
-          <CardContent className="p-4 flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Cuộc gọi & Họp</p>
-              <h3 className="text-2xl font-black text-purple-600 mt-1">{callMeetingCount}</h3>
-            </div>
-            <div className="w-11 h-11 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
-              <Phone className="w-5 h-5" />
-            </div>
-          </CardContent>
-        </Card>
+        <div className="bg-white rounded-xl border border-amber-100 px-4 py-3 flex items-center gap-3 shadow-xs hover:shadow-sm transition-shadow">
+          <div className="w-9 h-9 rounded-lg bg-amber-50 flex items-center justify-center shrink-0">
+            <Clock className="w-4.5 h-4.5 text-amber-600" />
+          </div>
+          <div>
+            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Đang chờ xử lý</div>
+            <div className="text-lg font-black text-amber-700 leading-tight">{pendingCount}</div>
+          </div>
+        </div>
       </div>
 
-      {/* Filter Card */}
-      <Card className="border-slate-200 shadow-2xs bg-white">
-        <CardContent className="p-4">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-            <div className="flex-1 flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200/80 focus-within:border-blue-500 focus-within:bg-white transition-all">
-              <Search className="w-4 h-4 text-slate-400 shrink-0" />
-              <input
-                type="text"
-                placeholder="Tìm kiếm theo tiêu đề, khách hàng, nhân viên..."
-                value={searchQuery}
-                onChange={(e) => {
-                  setSearchQuery(e.target.value);
-                  setPage(0);
-                }}
-                className="w-full bg-transparent text-xs text-slate-800 placeholder-slate-400 focus:outline-none"
-              />
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2.5">
-              <div className="w-44">
-                <SearchableSelect
-                  placeholder="Lọc loại hoạt động..."
-                  searchPlaceholder="Tìm loại..."
-                  value={selectedType}
-                  onValueChange={(val) => {
-                    setSelectedType(val);
-                    setPage(0);
-                  }}
-                  options={[
-                    { label: 'Tất cả loại hình', value: 'ALL' },
-                    { label: 'Cuộc gọi điện', value: 'CALL' },
-                    { label: 'Cuộc họp / Gặp gỡ', value: 'MEETING' },
-                    { label: 'Nhiệm vụ cần làm', value: 'TASK' },
-                    { label: 'Gửi Email', value: 'EMAIL' },
-                  ]}
-                  className="h-9 text-xs"
-                />
-              </div>
-
-              <div className="w-36">
-                <SearchableSelect
-                  placeholder="Lọc ưu tiên..."
-                  searchPlaceholder="Tìm mức..."
-                  value={selectedPriority}
-                  onValueChange={(val) => {
-                    setSelectedPriority(val);
-                    setPage(0);
-                  }}
-                  options={[
-                    { label: 'Tất cả ưu tiên', value: 'ALL' },
-                    { label: 'Ưu tiên Cao', value: 'HIGH' },
-                    { label: 'Trung bình', value: 'MEDIUM' },
-                    { label: 'Thấp', value: 'LOW' },
-                  ]}
-                  className="h-9 text-xs"
-                />
-              </div>
-
-              <div className="w-40">
-                <SearchableSelect
-                  placeholder="Lọc trạng thái..."
-                  searchPlaceholder="Tìm trạng thái..."
-                  value={selectedStatus}
-                  onValueChange={(val) => {
-                    setSelectedStatus(val);
-                    setPage(0);
-                  }}
-                  options={[
-                    { label: 'Tất cả trạng thái', value: 'ALL' },
-                    { label: 'Chờ xử lý', value: 'PENDING' },
-                    { label: 'Đã hoàn thành', value: 'COMPLETED' },
-                    { label: 'Đã hủy bỏ', value: 'CANCELLED' },
-                  ]}
-                  className="h-9 text-xs"
-                />
-              </div>
-            </div>
+      {/* ── Search & Filter Toolbar ── */}
+      <Card className="p-3.5 bg-white border border-slate-200 rounded-xl shadow-xs space-y-3">
+        <div className="flex flex-col md:flex-row gap-2.5 items-stretch md:items-center justify-between">
+          <div className="relative flex-1">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <Input
+              placeholder="Tìm kiếm theo tiêu đề hoạt động, khách hàng, nội dung..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 pr-8 text-xs h-8.5 bg-slate-50/60 focus:bg-white border-slate-200 rounded-lg"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
-        </CardContent>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="w-36">
+              <Select value={selectedType} onValueChange={(val) => { setSelectedType(val); setPage(0); }}>
+                <SelectTrigger className="h-8.5 text-xs bg-slate-50/60 border-slate-200 rounded-lg">
+                  <SelectValue placeholder="Loại hình" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">Tất cả loại</SelectItem>
+                  <SelectItem value="CALL">Cuộc gọi</SelectItem>
+                  <SelectItem value="MEETING">Lịch họp</SelectItem>
+                  <SelectItem value="TASK">Nhiệm vụ</SelectItem>
+                  <SelectItem value="EMAIL">Gửi Email</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="w-36">
+              <Select value={selectedStatus} onValueChange={(val) => { setSelectedStatus(val); setPage(0); }}>
+                <SelectTrigger className="h-8.5 text-xs bg-slate-50/60 border-slate-200 rounded-lg">
+                  <SelectValue placeholder="Trạng thái" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">Tất cả trạng thái</SelectItem>
+                  <SelectItem value="PENDING">Chờ xử lý</SelectItem>
+                  <SelectItem value="COMPLETED">Hoàn thành</SelectItem>
+                  <SelectItem value="CANCELLED">Đã hủy</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="w-36">
+              <Select value={selectedPriority} onValueChange={(val) => { setSelectedPriority(val); setPage(0); }}>
+                <SelectTrigger className="h-8.5 text-xs bg-slate-50/60 border-slate-200 rounded-lg">
+                  <SelectValue placeholder="Độ ưu tiên" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">Tất cả ưu tiên</SelectItem>
+                  <SelectItem value="HIGH">Cao (High)</SelectItem>
+                  <SelectItem value="MEDIUM">Trung bình</SelectItem>
+                  <SelectItem value="LOW">Thấp (Low)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {activeFiltersCount > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleResetFilters}
+                className="text-xs text-slate-500 hover:text-slate-800 gap-1 h-8.5 px-2"
+              >
+                <RotateCcw className="w-3 h-3" />
+                <span>Đặt lại ({activeFiltersCount})</span>
+              </Button>
+            )}
+          </div>
+        </div>
       </Card>
 
-      {/* Main Table */}
-      <Card className="border-slate-200 shadow-2xs bg-white overflow-hidden">
-        {loading ? (
-          <div className="py-20 flex flex-col items-center justify-center text-slate-400 gap-2">
-            <Loader2 className="w-7 h-7 animate-spin text-blue-600" />
-            <span className="text-xs font-semibold">Đang tải danh sách hoạt động...</span>
-          </div>
-        ) : activities.length === 0 ? (
-          <div className="p-8">
-            <EmptyState
-              icon={Calendar}
-              title="Không có hoạt động nào"
-              description="Thử thay đổi bộ lọc tìm kiếm hoặc thêm mới hoạt động/lịch hẹn đầu tiên."
-              actionLabel="Thêm Hoạt động"
-              onAction={handleOpenCreate}
-            />
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader className="bg-slate-50/80 border-b border-slate-200">
+      {/* ── Activities Table ── */}
+      <Card className="overflow-hidden border border-slate-200 rounded-xl bg-white shadow-xs">
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-slate-50/80 hover:bg-slate-50/80 border-b border-slate-200">
+                <TableHead className="text-[11px] font-bold text-slate-600 uppercase tracking-wider py-3 pl-4">Tiêu đề Hoạt động</TableHead>
+                <TableHead className="text-[11px] font-bold text-slate-600 uppercase tracking-wider py-3">Loại hình</TableHead>
+                <TableHead className="text-[11px] font-bold text-slate-600 uppercase tracking-wider py-3">Doanh nghiệp / Khách hàng</TableHead>
+                <TableHead className="text-[11px] font-bold text-slate-600 uppercase tracking-wider py-3">Thời hạn (Due Date)</TableHead>
+                <TableHead className="text-[11px] font-bold text-slate-600 uppercase tracking-wider py-3">Ưu tiên</TableHead>
+                <TableHead className="text-[11px] font-bold text-slate-600 uppercase tracking-wider py-3">Trạng thái</TableHead>
+                <TableHead className="text-[11px] font-bold text-slate-600 uppercase tracking-wider py-3 text-right pr-4">Thao tác</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {loading ? (
                 <TableRow>
-                  <TableHead className="w-12 pl-5 py-3.5"></TableHead>
-                  <TableHead className="text-xs font-bold text-slate-700 py-3.5">Tiêu đề Hoạt động</TableHead>
-                  <TableHead className="text-xs font-bold text-slate-700 py-3.5">Loại hình</TableHead>
-                  <TableHead className="text-xs font-bold text-slate-700 py-3.5">Khách hàng liên quan</TableHead>
-                  <TableHead className="text-xs font-bold text-slate-700 py-3.5">Hạn hoàn thành</TableHead>
-                  <TableHead className="text-xs font-bold text-slate-700 py-3.5">Mức độ ưu tiên</TableHead>
-                  <TableHead className="text-xs font-bold text-slate-700 py-3.5 text-right pr-5">Thao tác</TableHead>
+                  <TableCell colSpan={7} className="h-48 text-center">
+                    <div className="flex flex-col items-center justify-center gap-2 text-slate-500">
+                      <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+                      <span className="text-xs">Đang tải danh sách hoạt động...</span>
+                    </div>
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody className="divide-y divide-slate-100">
-                {activities.map((act) => {
-                  const typeObj = ACTIVITY_TYPE_CONFIG[act.type];
-                  const Icon = TYPE_ICON_MAP[act.type] || CheckSquare;
+              ) : activities.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="p-0">
+                    <EmptyState
+                      icon={Calendar}
+                      title="Không tìm thấy hoạt động nào"
+                      description="Hãy thử thay đổi điều kiện lọc hoặc tạo thêm hoạt động chăm sóc mới."
+                      actionLabel="Thêm Hoạt Động"
+                      onAction={handleOpenCreate}
+                    />
+                  </TableCell>
+                </TableRow>
+              ) : (
+                activities.map((act) => {
+                  const TypeIcon = TYPE_ICON_MAP[act.type] || Calendar;
+                  const typeInfo = ACTIVITY_TYPE_CONFIG[act.type] || { label: act.type, className: 'bg-slate-100 text-slate-700' };
+                  const statusInfo = STATUS_CONFIG[act.status] || STATUS_CONFIG.PENDING;
 
                   return (
-                    <TableRow key={act.id} className="hover:bg-slate-50/70 transition-colors">
-                      <TableCell className="pl-5 py-3.5">
-                        <button
-                          type="button"
-                          onClick={() => handleToggleComplete(act.id, act.status)}
-                          className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all ${
-                            act.status === 'COMPLETED'
-                              ? 'bg-emerald-600 border-emerald-600 text-white'
-                              : 'border-slate-300 hover:border-blue-500 bg-white text-transparent'
-                          }`}
-                        >
-                          <CheckCircle2 className="w-3.5 h-3.5" />
-                        </button>
+                    <TableRow key={act.id} className="hover:bg-slate-50/80 transition-colors border-b border-slate-100 text-xs">
+                      {/* Cột 1: Tiêu đề */}
+                      <TableCell className="pl-4 py-3">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 border border-blue-100 shadow-2xs">
+                            <TypeIcon className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <div className="font-bold text-slate-900">{act.subject}</div>
+                            {act.description && (
+                              <div className="text-[11px] text-slate-500 line-clamp-1 mt-0.5">{act.description}</div>
+                            )}
+                          </div>
+                        </div>
                       </TableCell>
 
-                      <TableCell className="py-3.5">
-                        <span
-                          className={`font-bold text-xs block ${
-                            act.status === 'COMPLETED'
-                              ? 'line-through text-slate-400'
-                              : 'text-slate-900'
-                          }`}
-                        >
-                          {act.subject}
-                        </span>
-                        {act.description && (
-                          <span className="text-[11px] text-slate-400 mt-0.5 block truncate max-w-[300px]">
-                            {act.description}
-                          </span>
-                        )}
-                      </TableCell>
-
-                      <TableCell className="py-3.5">
-                        <Badge variant="outline" className={`text-[10px] gap-1 font-semibold ${typeObj.className}`}>
-                          <Icon className="w-3 h-3" />
-                          <span>{typeObj.label}</span>
+                      {/* Cột 2: Loại hình */}
+                      <TableCell>
+                        <Badge className={`${typeInfo.className} text-[10px] px-2 py-0.5 font-bold`}>
+                          {typeInfo.label}
                         </Badge>
                       </TableCell>
 
-                      <TableCell className="py-3.5">
-                        {act.accountName ? (
-                          <div>
-                            <p className="text-xs font-semibold text-slate-800 flex items-center gap-1">
-                              <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                              <span>{act.accountName}</span>
-                            </p>
-                            {act.contactName && (
-                              <p className="text-[11px] text-slate-400 pl-4">{act.contactName}</p>
-                            )}
+                      {/* Cột 3: Khách hàng */}
+                      <TableCell>
+                        <div>
+                          <div className="font-semibold text-slate-800 flex items-center gap-1">
+                            <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                            <span>{act.accountName || 'Khách hàng'}</span>
                           </div>
-                        ) : (
-                          <span className="text-xs text-slate-400">Không gán</span>
-                        )}
-                      </TableCell>
-
-                      <TableCell className="py-3.5">
-                        <div className="flex items-center gap-1.5 text-xs text-slate-700 font-medium">
-                          <Clock className="w-3.5 h-3.5 text-slate-400" />
-                          <span>{act.dueDate} {act.dueTime ? `(${act.dueTime})` : ''}</span>
+                          {act.contactName && (
+                            <div className="text-[11px] text-slate-500 mt-0.5">{act.contactName}</div>
+                          )}
                         </div>
-                        <span className="text-[11px] text-slate-400 block mt-0.5">Phụ trách: {act.assignedTo}</span>
                       </TableCell>
 
-                      <TableCell className="py-3.5">
+                      {/* Cột 4: Hạn chót */}
+                      <TableCell className="font-mono text-slate-600 text-[11px]">
+                        <div>{act.dueDate}</div>
+                        {act.dueTime && <div className="text-slate-400 text-[10px]">{act.dueTime}</div>}
+                      </TableCell>
+
+                      {/* Cột 5: Ưu tiên */}
+                      <TableCell>
                         {renderPriorityBadge(act.priority)}
                       </TableCell>
 
-                      <TableCell className="text-right pr-5 py-3.5">
+                      {/* Cột 6: Trạng thái */}
+                      <TableCell>
+                        <Badge className={`${statusInfo.className} text-[11px]`}>
+                          {statusInfo.label}
+                        </Badge>
+                      </TableCell>
+
+                      {/* Cột 7: Thao tác */}
+                      <TableCell className="text-right pr-4">
                         <div className="flex items-center justify-end gap-1">
+                          {act.status !== 'COMPLETED' && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleToggleComplete(act)}
+                              className="h-7 w-7 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                              title="Đánh dấu hoàn thành"
+                            >
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                            </Button>
+                          )}
                           <Button
                             variant="ghost"
-                            size="sm"
+                            size="icon"
                             onClick={() => handleOpenEdit(act)}
-                            className="h-8 w-8 p-0 text-slate-500 hover:text-blue-600 hover:bg-blue-50"
+                            className="h-7 w-7 text-slate-600 hover:text-blue-600 hover:bg-blue-50"
+                            title="Chỉnh sửa"
                           >
                             <Edit className="w-3.5 h-3.5" />
                           </Button>
                           <Button
                             variant="ghost"
-                            size="sm"
+                            size="icon"
                             onClick={() => handleDelete(act.id, act.subject)}
-                            className="h-8 w-8 p-0 text-slate-400 hover:text-rose-600 hover:bg-rose-50"
+                            className="h-7 w-7 text-slate-600 hover:text-red-600 hover:bg-red-50"
+                            title="Xóa hoạt động"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </Button>
@@ -523,219 +538,216 @@ export const ActivitiesPage: React.FC = () => {
                       </TableCell>
                     </TableRow>
                   );
-                })}
-              </TableBody>
-            </Table>
-          </div>
-        )}
+                })
+              )}
+            </TableBody>
+          </Table>
+        </div>
 
-        {/* Pagination */}
+        {/* ── Pagination Bar ── */}
         {!loading && activities.length > 0 && (
-          <div className="p-4 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-slate-500">
-            <div className="flex items-center gap-2">
-              <span>Hiển thị</span>
-              <Select
-                value={pageSize.toString()}
-                onValueChange={(val) => {
-                  setPageSize(Number(val));
-                  setPage(0);
-                }}
-              >
-                <SelectTrigger className="h-8 w-16 text-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="10">10</SelectItem>
-                  <SelectItem value="20">20</SelectItem>
-                  <SelectItem value="50">50</SelectItem>
-                </SelectContent>
-              </Select>
-              <span>trên tổng số <b>{totalElements}</b> bản ghi</span>
+          <div className="px-4 py-3 bg-slate-50/50 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
+            <div>
+              Hiển thị <span className="font-bold text-slate-800">{page * pageSize + 1}</span> -{' '}
+              <span className="font-bold text-slate-800">{Math.min((page + 1) * pageSize, totalElements)}</span> trong tổng số{' '}
+              <span className="font-bold text-slate-800">{totalElements}</span> hoạt động
             </div>
-
-            <div className="flex items-center gap-2">
-              <span className="font-semibold text-slate-700">
-                Trang {page + 1} / {totalPages || 1}
-              </span>
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage(Math.max(0, page - 1))}
-                  disabled={page === 0}
-                  className="h-8 w-8 p-0"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage(Math.min(totalPages - 1, page + 1))}
-                  disabled={page >= totalPages - 1}
-                  className="h-8 w-8 p-0"
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </Button>
+            <div className="flex items-center gap-1.5">
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-7 w-7 border-slate-200"
+                onClick={() => setPage(0)}
+                disabled={page === 0}
+              >
+                <ChevronsLeft className="w-3.5 h-3.5" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-7 w-7 border-slate-200"
+                onClick={() => setPage((p) => Math.max(p - 1, 0))}
+                disabled={page === 0}
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+              </Button>
+              <div className="px-2 font-medium text-slate-700">
+                Trang {page + 1} / {Math.max(totalPages, 1)}
               </div>
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-7 w-7 border-slate-200"
+                onClick={() => setPage((p) => p + 1)}
+                disabled={page >= totalPages - 1}
+              >
+                <ChevronRight className="w-3.5 h-3.5" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-7 w-7 border-slate-200"
+                onClick={() => setPage(totalPages - 1)}
+                disabled={page >= totalPages - 1}
+              >
+                <ChevronsRight className="w-3.5 h-3.5" />
+              </Button>
             </div>
           </div>
         )}
       </Card>
 
-      {/* Add / Edit Dialog */}
+      {/* ── Create / Edit Activity Modal ── */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="max-w-xl bg-white p-0 gap-0 overflow-hidden font-sans border-slate-200 shadow-xl rounded-2xl">
-          <DialogHeader className="p-5 pb-4 border-b border-slate-100 bg-slate-50/70">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-blue-100/80 text-blue-700 flex items-center justify-center shrink-0">
-                <Calendar className="w-5 h-5" />
-              </div>
-              <div>
-                <DialogTitle className="text-base font-bold text-slate-900">
-                  {editingAct ? 'Chỉnh sửa Hoạt động' : 'Thêm Hoạt động Mới'}
-                </DialogTitle>
-                <DialogDescription className="text-xs text-slate-500 mt-0.5">
-                  Lên lịch công việc, cuộc gọi hoặc cuộc hẹn gặp gỡ khách hàng
-                </DialogDescription>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0 rounded-2xl border border-slate-200 shadow-xl">
+          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-5 text-white">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20">
+                  <Calendar className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-base">
+                    {editingAct ? 'Chỉnh sửa Hoạt động' : 'Thêm Hoạt Động Mới'}
+                  </h3>
+                  <p className="text-xs text-blue-100 mt-0.5">
+                    Lên lịch cuộc gọi, sự kiện hội họp hoặc nhiệm vụ chăm sóc
+                  </p>
+                </div>
               </div>
             </div>
-          </DialogHeader>
+          </div>
 
-          <form onSubmit={handleSaveActivity} className="p-5 space-y-4 text-xs">
-            <div className="space-y-1.5">
-              <Label className="font-bold text-slate-700 text-xs">Tiêu đề Hoạt động *</Label>
+          <form onSubmit={handleSaveActivity} className="p-6 space-y-4">
+            <div>
+              <Label className="text-xs font-semibold text-slate-700">
+                Tiêu đề hoạt động <span className="text-rose-500">*</span>
+              </Label>
               <Input
-                placeholder="VD: Gọi điện xác nhận lịch demo với khách hàng"
+                required
+                placeholder="Ví dụ: Gọi điện thảo luận hợp đồng bản quyền phần mềm"
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
-                className="h-9 text-xs"
-                required
+                className="h-9 text-xs border-slate-200 mt-1"
               />
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-              <div className="space-y-1.5">
-                <Label className="font-bold text-slate-700 text-xs">Loại hình</Label>
-                <Select value={type} onValueChange={(v) => setType(v as ActivityType)}>
-                  <SelectTrigger className="h-9 text-xs">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <Label className="text-xs font-semibold text-slate-700">Loại hình</Label>
+                <Select value={type} onValueChange={(val: any) => setType(val)}>
+                  <SelectTrigger className="h-9 text-xs border-slate-200 mt-1">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="CALL">Cuộc gọi điện</SelectItem>
-                    <SelectItem value="MEETING">Cuộc họp / Gặp gỡ</SelectItem>
-                    <SelectItem value="TASK">Nhiệm vụ cần làm</SelectItem>
+                    <SelectItem value="CALL">Cuộc gọi (Call)</SelectItem>
+                    <SelectItem value="MEETING">Lịch họp (Meeting)</SelectItem>
+                    <SelectItem value="TASK">Nhiệm vụ (Task)</SelectItem>
                     <SelectItem value="EMAIL">Gửi Email</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
-              <div className="space-y-1.5">
-                <Label className="font-bold text-slate-700 text-xs">Mức ưu tiên</Label>
-                <Select value={priority} onValueChange={(v) => setPriority(v as ActivityPriority)}>
-                  <SelectTrigger className="h-9 text-xs">
+              <div>
+                <Label className="text-xs font-semibold text-slate-700">Mức độ ưu tiên</Label>
+                <Select value={priority} onValueChange={(val: any) => setPriority(val)}>
+                  <SelectTrigger className="h-9 text-xs border-slate-200 mt-1">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="HIGH">Ưu tiên Cao</SelectItem>
+                    <SelectItem value="HIGH">Cao (High)</SelectItem>
                     <SelectItem value="MEDIUM">Trung bình</SelectItem>
-                    <SelectItem value="LOW">Thấp</SelectItem>
+                    <SelectItem value="LOW">Thấp (Low)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
-              <div className="space-y-1.5">
-                <Label className="font-bold text-slate-700 text-xs">Trạng thái</Label>
-                <Select value={status} onValueChange={(v) => setStatus(v as ActivityStatus)}>
-                  <SelectTrigger className="h-9 text-xs">
+              <div>
+                <Label className="text-xs font-semibold text-slate-700">Trạng thái</Label>
+                <Select value={status} onValueChange={(val: any) => setStatus(val)}>
+                  <SelectTrigger className="h-9 text-xs border-slate-200 mt-1">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="PENDING">Chờ xử lý</SelectItem>
-                    <SelectItem value="COMPLETED">Đã hoàn thành</SelectItem>
+                    <SelectItem value="COMPLETED">Hoàn thành</SelectItem>
                     <SelectItem value="CANCELLED">Đã hủy</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-              <div className="space-y-1.5">
-                <Label className="font-bold text-slate-700 text-xs">Hạn ngày hoàn thành</Label>
-                <DatePicker
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs font-semibold text-slate-700">Ngày đến hạn</Label>
+                <Input
+                  type="date"
                   value={dueDate}
-                  onChange={setDueDate}
-                  placeholder="Chọn ngày hạn..."
-                  className="h-9 text-xs"
+                  onChange={(e) => setDueDate(e.target.value)}
+                  className="h-9 text-xs border-slate-200 mt-1 font-mono"
                 />
               </div>
-
-              <div className="space-y-1.5">
-                <Label className="font-bold text-slate-700 text-xs">Giờ hẹn (Time)</Label>
+              <div>
+                <Label className="text-xs font-semibold text-slate-700">Thời gian</Label>
                 <Input
                   type="time"
                   value={dueTime}
                   onChange={(e) => setDueTime(e.target.value)}
-                  className="h-9 text-xs"
+                  className="h-9 text-xs border-slate-200 mt-1 font-mono"
                 />
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-              <div className="space-y-1.5">
-                <Label className="font-bold text-slate-700 text-xs">Khách hàng liên quan</Label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs font-semibold text-slate-700">Doanh nghiệp liên quan</Label>
                 <Input
-                  placeholder="VD: Tập đoàn Công nghệ FPT"
+                  placeholder="Nhập tên doanh nghiệp..."
                   value={accountName}
                   onChange={(e) => setAccountName(e.target.value)}
-                  className="h-9 text-xs"
+                  className="h-9 text-xs border-slate-200 mt-1"
                 />
               </div>
-
-              <div className="space-y-1.5">
-                <Label className="font-bold text-slate-700 text-xs">Người phụ trách</Label>
+              <div>
+                <Label className="text-xs font-semibold text-slate-700">Người liên hệ</Label>
                 <Input
-                  placeholder="VD: Phạm Tuấn Vũ"
-                  value={assignedTo}
-                  onChange={(e) => setAssignedTo(e.target.value)}
-                  className="h-9 text-xs"
+                  placeholder="Nhập người đại diện..."
+                  value={contactName}
+                  onChange={(e) => setContactName(e.target.value)}
+                  className="h-9 text-xs border-slate-200 mt-1"
                 />
               </div>
             </div>
 
-            <div className="space-y-1.5">
-              <Label className="font-bold text-slate-700 text-xs">Ghi chú chi tiết</Label>
-              <Input
-                placeholder="Nội dung trao đổi hoặc địa điểm họp..."
+            <div>
+              <Label className="text-xs font-semibold text-slate-700">Mô tả &amp; Chi tiết nội dung</Label>
+              <textarea
+                rows={3}
+                placeholder="Chuẩn bị tài liệu slide giới thiệu và demo tính năng quản trị bảo mật..."
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                className="h-9 text-xs"
+                className="w-full text-xs border border-slate-200 rounded-lg p-2.5 mt-1 focus:ring-1 focus:ring-blue-500 focus:outline-hidden"
               />
             </div>
 
-            <DialogFooter className="pt-4 border-t border-slate-100 flex items-center justify-end gap-2">
+            <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-100">
               <Button
                 type="button"
                 variant="outline"
-                size="sm"
                 onClick={() => setIsModalOpen(false)}
-                className="h-9 text-xs font-semibold px-4"
+                className="text-xs border-slate-200 h-9"
               >
                 Hủy bỏ
               </Button>
               <Button
                 type="submit"
-                size="sm"
                 disabled={isSubmitting}
-                className="h-9 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-5 gap-1.5"
+                className="text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white gap-1.5 shadow-xs h-9"
               >
-                {isSubmitting ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  <Save className="w-3.5 h-3.5" />
-                )}
-                <span>{editingAct ? 'Lưu Thay đổi' : 'Tạo Hoạt động'}</span>
+                {isSubmitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+                <span>{editingAct ? 'Lưu Thay Đổi' : 'Tạo Hoạt Động'}</span>
               </Button>
-            </DialogFooter>
+            </div>
           </form>
         </DialogContent>
       </Dialog>

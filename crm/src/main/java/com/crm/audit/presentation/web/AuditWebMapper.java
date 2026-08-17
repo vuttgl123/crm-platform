@@ -1,5 +1,7 @@
 package com.crm.audit.presentation.web;
 
+import java.util.UUID;
+
 import com.crm.audit.application.dto.AuditEventSummary;
 import com.crm.audit.application.dto.DataAccessEventSummary;
 import com.crm.audit.application.query.AuditEventSearchQuery;
@@ -9,6 +11,7 @@ import com.crm.audit.domain.DataAccessEvent;
 import com.crm.foundation.mapping.CrmMapperConfig;
 import com.crm.sharedkernel.application.PageQuery;
 import com.crm.sharedkernel.application.PageResult;
+import com.crm.sharedkernel.domain.ActorId;
 import org.mapstruct.Mapper;
 
 @Mapper(config = CrmMapperConfig.class)
@@ -21,6 +24,14 @@ public interface AuditWebMapper {
 	DataAccessEventResponse toResponse(DataAccessEvent event);
 
 	DataAccessEventSummaryResponse toSummaryResponse(DataAccessEventSummary summary);
+
+	default UUID map(ActorId value) {
+		return value == null ? null : value.value();
+	}
+
+	default ActorId map(UUID value) {
+		return value == null ? null : new ActorId(value);
+	}
 
 	default AuditEventSearchQuery toSearchQuery(AuditEventSearchRequest request) {
 		int page = request.page() == null ? 0 : request.page();

@@ -7,21 +7,16 @@ import {
   TicketChannel,
   TICKET_STATUS_CONFIG,
 } from '@/services/mock/mockTicketsData';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { SearchableSelect } from '@/components/ui/searchable-select';
 import { EmptyState } from '@/components/common/EmptyState';
 import { renderPriorityBadge } from '@/config/crmStatusConfig';
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
 } from '@/components/ui/dialog';
 import {
   Table,
@@ -40,7 +35,6 @@ import {
 } from '@/components/ui/select';
 import { toast } from 'sonner';
 import {
-  LifeBuoy,
   Search,
   Plus,
   RefreshCw,
@@ -49,11 +43,16 @@ import {
   Loader2,
   ChevronLeft,
   ChevronRight,
-  Save,
+  ChevronsLeft,
+  ChevronsRight,
+  X,
+  RotateCcw,
   Building2,
   CheckCircle2,
   Clock,
   AlertCircle,
+  Headphones,
+  Inbox,
 } from 'lucide-react';
 
 export const TicketsPage: React.FC = () => {
@@ -63,7 +62,7 @@ export const TicketsPage: React.FC = () => {
   const [selectedStatus, setSelectedStatus] = useState('ALL');
   const [selectedPriority, setSelectedPriority] = useState('ALL');
   const [page, setPage] = useState(0);
-  const [pageSize, setPageSize] = useState(10);
+  const pageSize = 10;
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
 
@@ -106,6 +105,14 @@ export const TicketsPage: React.FC = () => {
     fetchTickets();
   }, [fetchTickets]);
 
+  const handleResetFilters = () => {
+    setSearchQuery('');
+    setSelectedStatus('ALL');
+    setSelectedPriority('ALL');
+    setPage(0);
+    fetchTickets();
+  };
+
   const handleOpenCreate = () => {
     setEditingTicket(null);
     setSubject('');
@@ -115,27 +122,26 @@ export const TicketsPage: React.FC = () => {
     setStatus('NEW');
     setChannel('PORTAL');
     setCategory('Yêu cầu Dịch vụ');
-    setAssignedTo('Phạm Tuấn Vũ');
     setIsModalOpen(true);
   };
 
-  const handleOpenEdit = (t: TicketItem) => {
-    setEditingTicket(t);
-    setSubject(t.subject);
-    setAccountName(t.accountName);
-    setContactName(t.contactName);
-    setPriority(t.priority);
-    setStatus(t.status);
-    setChannel(t.channel);
-    setCategory(t.category);
-    setAssignedTo(t.assignedTo);
+  const handleOpenEdit = (ticket: TicketItem) => {
+    setEditingTicket(ticket);
+    setSubject(ticket.subject);
+    setAccountName(ticket.accountName);
+    setContactName(ticket.contactName || '');
+    setPriority(ticket.priority);
+    setStatus(ticket.status);
+    setChannel(ticket.channel);
+    setCategory(ticket.category);
+    setAssignedTo(ticket.assignedTo);
     setIsModalOpen(true);
   };
 
   const handleSaveTicket = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!subject.trim() || !accountName.trim()) {
-      toast.error('Vui lòng nhập tiêu đề và tên khách hàng');
+      toast.error('Vui lòng nhập tiêu đề ticket và tên khách hàng');
       return;
     }
 
@@ -158,12 +164,12 @@ export const TicketsPage: React.FC = () => {
           subject,
           accountId: 'acc-custom',
           accountName,
-          contactName: contactName || 'Chưa gán',
+          contactName: contactName || 'Người gửi yêu cầu',
           priority,
           status,
           channel,
           category,
-          assignedTo,
+          assignedTo: assignedTo || 'Phạm Tuấn Vũ',
         });
         toast.success('Đã tạo phiếu hỗ trợ mới thành công!');
       }
@@ -176,43 +182,50 @@ export const TicketsPage: React.FC = () => {
     }
   };
 
-  const handleDelete = async (id: string, num: string) => {
-    if (!window.confirm(`Bạn có chắc chắn muốn xóa phiếu "${num}"?`)) return;
+  const handleDelete = async (id: string, code: string) => {
+    if (!window.confirm(`Bạn có chắc chắn muốn xóa phiếu "${code}"?`)) return;
     try {
       await mockTicketsApi.delete(id);
-      toast.success(`Đã xóa phiếu "${num}"`);
+      toast.success(`Đã xóa ticket "${code}"`);
       fetchTickets();
     } catch {
-      toast.error('Không thể xóa phiếu');
+      toast.error('Không thể xóa ticket');
     }
   };
 
-  // Metrics
-  const openCount = tickets.filter((t) => t.status === 'OPEN' || t.status === 'NEW' || t.status === 'IN_PROGRESS').length;
-  const resolvedCount = tickets.filter((t) => t.status === 'RESOLVED').length;
-  const urgentCount = tickets.filter((t) => t.priority === 'URGENT').length;
+  // KPI Metrics
+  const newCount = tickets.filter((t) => t.status === 'NEW').length;
+  const inProgressCount = tickets.filter((t) => t.status === 'IN_PROGRESS' || t.status === 'OPEN').length;
+  const resolvedCount = tickets.filter((t) => t.status === 'RESOLVED' || t.status === 'CLOSED').length;
+
+  const activeFiltersCount =
+    (searchQuery ? 1 : 0) +
+    (selectedStatus !== 'ALL' ? 1 : 0) +
+    (selectedPriority !== 'ALL' ? 1 : 0);
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
+    <div className="space-y-5 pb-12 font-sans w-full">
+      {/* ── Page Header ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black tracking-tight text-slate-900 flex items-center gap-2">
-            <LifeBuoy className="w-7 h-7 text-blue-600" />
-            <span>Chăm sóc Khách hàng & Hỗ trợ (Tickets)</span>
+          <h1 className="text-xl font-bold text-slate-900 flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shadow-xs shrink-0">
+              <Headphones className="w-4.5 h-4.5 text-white" />
+            </div>
+            Dịch vụ &amp; Hỗ trợ Khách hàng (Helpdesk Tickets)
           </h1>
-          <p className="text-sm text-slate-500 mt-1">
-            Tiếp nhận sự cố kỹ thuật, theo dõi cam kết SLA giải quyết và phân bổ chuyên viên xử lý
+          <p className="text-xs text-slate-500 mt-1 ml-10.5">
+            Tiếp nhận sự cố kỹ thuật, giải quyết khiếu nại và cam kết chất lượng dịch vụ (SLA)
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2 shrink-0">
           <Button
             variant="outline"
             size="sm"
             onClick={fetchTickets}
             disabled={loading}
-            className="h-9 px-3 text-xs font-semibold gap-1.5 shadow-2xs border-slate-200"
+            className="text-xs gap-1.5 border-slate-200 h-8"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
             <span>Làm mới</span>
@@ -221,214 +234,237 @@ export const TicketsPage: React.FC = () => {
           <Button
             size="sm"
             onClick={handleOpenCreate}
-            className="h-9 px-4 text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white gap-1.5 shadow-2xs"
+            className="text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white gap-1.5 shadow-xs h-8"
           >
-            <Plus className="w-4 h-4" />
-            <span>Tạo Phiếu Hỗ trợ</span>
+            <Plus className="w-3.5 h-3.5" />
+            <span>Tạo Phiếu Hỗ Trợ Mới</span>
           </Button>
         </div>
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="border-slate-200 shadow-2xs bg-white">
-          <CardContent className="p-4 flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Tổng phiếu tiếp nhận</p>
-              <h3 className="text-2xl font-black text-slate-900 mt-1">{totalElements}</h3>
-            </div>
-            <div className="w-11 h-11 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
-              <LifeBuoy className="w-5 h-5" />
-            </div>
-          </CardContent>
-        </Card>
+      {/* ── Quick Stat Cards ── */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="bg-white rounded-xl border border-slate-200 px-4 py-3 flex items-center gap-3 shadow-xs hover:shadow-sm transition-shadow">
+          <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
+            <Inbox className="w-4.5 h-4.5 text-blue-600" />
+          </div>
+          <div>
+            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Tổng Số Phiếu</div>
+            <div className="text-lg font-black text-slate-900 leading-tight">{totalElements}</div>
+          </div>
+        </div>
 
-        <Card className="border-slate-200 shadow-2xs bg-white">
-          <CardContent className="p-4 flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Đang chờ xử lý</p>
-              <h3 className="text-2xl font-black text-amber-600 mt-1">{openCount}</h3>
-            </div>
-            <div className="w-11 h-11 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
-              <Clock className="w-5 h-5" />
-            </div>
-          </CardContent>
-        </Card>
+        <div className="bg-white rounded-xl border border-rose-100 px-4 py-3 flex items-center gap-3 shadow-xs hover:shadow-sm transition-shadow">
+          <div className="w-9 h-9 rounded-lg bg-rose-50 flex items-center justify-center shrink-0">
+            <AlertCircle className="w-4.5 h-4.5 text-rose-600" />
+          </div>
+          <div>
+            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Phiếu mới tiếp nhận</div>
+            <div className="text-lg font-black text-rose-700 leading-tight">{newCount}</div>
+          </div>
+        </div>
 
-        <Card className="border-slate-200 shadow-2xs bg-white">
-          <CardContent className="p-4 flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Đã giải quyết xong</p>
-              <h3 className="text-2xl font-black text-emerald-600 mt-1">{resolvedCount}</h3>
-            </div>
-            <div className="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-              <CheckCircle2 className="w-5 h-5" />
-            </div>
-          </CardContent>
-        </Card>
+        <div className="bg-white rounded-xl border border-amber-100 px-4 py-3 flex items-center gap-3 shadow-xs hover:shadow-sm transition-shadow">
+          <div className="w-9 h-9 rounded-lg bg-amber-50 flex items-center justify-center shrink-0">
+            <Clock className="w-4.5 h-4.5 text-amber-600" />
+          </div>
+          <div>
+            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Đang xử lý / SLA</div>
+            <div className="text-lg font-black text-amber-700 leading-tight">{inProgressCount}</div>
+          </div>
+        </div>
 
-        <Card className="border-slate-200 shadow-2xs bg-white">
-          <CardContent className="p-4 flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Sự cố khẩn cấp (SLA)</p>
-              <h3 className="text-2xl font-black text-rose-600 mt-1">{urgentCount}</h3>
-            </div>
-            <div className="w-11 h-11 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
-              <AlertCircle className="w-5 h-5" />
-            </div>
-          </CardContent>
-        </Card>
+        <div className="bg-white rounded-xl border border-emerald-100 px-4 py-3 flex items-center gap-3 shadow-xs hover:shadow-sm transition-shadow">
+          <div className="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center shrink-0">
+            <CheckCircle2 className="w-4.5 h-4.5 text-emerald-600" />
+          </div>
+          <div>
+            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Đã giải quyết</div>
+            <div className="text-lg font-black text-emerald-700 leading-tight">{resolvedCount}</div>
+          </div>
+        </div>
       </div>
 
-      {/* Filter Card */}
-      <Card className="border-slate-200 shadow-2xs bg-white">
-        <CardContent className="p-4">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-            <div className="flex-1 flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200/80 focus-within:border-blue-500 focus-within:bg-white transition-all">
-              <Search className="w-4 h-4 text-slate-400 shrink-0" />
-              <input
-                type="text"
-                placeholder="Tìm theo mã ticket, tiêu đề sự cố, khách hàng..."
-                value={searchQuery}
-                onChange={(e) => {
-                  setSearchQuery(e.target.value);
-                  setPage(0);
-                }}
-                className="w-full bg-transparent text-xs text-slate-800 placeholder-slate-400 focus:outline-none"
-              />
-            </div>
-
-            <div className="flex items-center gap-2.5">
-              <div className="w-44">
-                <SearchableSelect
-                  placeholder="Lọc trạng thái..."
-                  searchPlaceholder="Tìm trạng thái..."
-                  value={selectedStatus}
-                  onValueChange={(val) => {
-                    setSelectedStatus(val);
-                    setPage(0);
-                  }}
-                  options={[
-                    { label: 'Tất cả trạng thái', value: 'ALL' },
-                    { label: 'Mới tạo', value: 'NEW' },
-                    { label: 'Đang mở', value: 'OPEN' },
-                    { label: 'Đang xử lý', value: 'IN_PROGRESS' },
-                    { label: 'Đã giải quyết', value: 'RESOLVED' },
-                    { label: 'Đã đóng', value: 'CLOSED' },
-                  ]}
-                  className="h-9 text-xs"
-                />
-              </div>
-
-              <div className="w-40">
-                <SearchableSelect
-                  placeholder="Lọc ưu tiên..."
-                  searchPlaceholder="Tìm mức..."
-                  value={selectedPriority}
-                  onValueChange={(val) => {
-                    setSelectedPriority(val);
-                    setPage(0);
-                  }}
-                  options={[
-                    { label: 'Tất cả ưu tiên', value: 'ALL' },
-                    { label: 'Khẩn cấp (Urgent)', value: 'URGENT' },
-                    { label: 'Cao (High)', value: 'HIGH' },
-                    { label: 'Trung bình', value: 'MEDIUM' },
-                    { label: 'Thấp', value: 'LOW' },
-                  ]}
-                  className="h-9 text-xs"
-                />
-              </div>
-            </div>
+      {/* ── Search & Filter Toolbar ── */}
+      <Card className="p-3.5 bg-white border border-slate-200 rounded-xl shadow-xs space-y-3">
+        <div className="flex flex-col md:flex-row gap-2.5 items-stretch md:items-center justify-between">
+          <div className="relative flex-1">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <Input
+              placeholder="Tìm kiếm theo mã phiếu, tiêu đề, khách hàng..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 pr-8 text-xs h-8.5 bg-slate-50/60 focus:bg-white border-slate-200 rounded-lg"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
-        </CardContent>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="w-40">
+              <Select value={selectedStatus} onValueChange={(val) => { setSelectedStatus(val); setPage(0); }}>
+                <SelectTrigger className="h-8.5 text-xs bg-slate-50/60 border-slate-200 rounded-lg">
+                  <SelectValue placeholder="Trạng thái" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">Tất cả trạng thái</SelectItem>
+                  <SelectItem value="NEW">Mới tiếp nhận</SelectItem>
+                  <SelectItem value="OPEN">Đang mở</SelectItem>
+                  <SelectItem value="IN_PROGRESS">Đang xử lý</SelectItem>
+                  <SelectItem value="RESOLVED">Đã giải quyết</SelectItem>
+                  <SelectItem value="CLOSED">Đã đóng</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="w-36">
+              <Select value={selectedPriority} onValueChange={(val) => { setSelectedPriority(val); setPage(0); }}>
+                <SelectTrigger className="h-8.5 text-xs bg-slate-50/60 border-slate-200 rounded-lg">
+                  <SelectValue placeholder="Độ ưu tiên" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">Tất cả ưu tiên</SelectItem>
+                  <SelectItem value="URGENT">Khẩn cấp (Urgent)</SelectItem>
+                  <SelectItem value="HIGH">Cao (High)</SelectItem>
+                  <SelectItem value="MEDIUM">Trung bình</SelectItem>
+                  <SelectItem value="LOW">Thấp (Low)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {activeFiltersCount > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleResetFilters}
+                className="text-xs text-slate-500 hover:text-slate-800 gap-1 h-8.5 px-2"
+              >
+                <RotateCcw className="w-3 h-3" />
+                <span>Đặt lại ({activeFiltersCount})</span>
+              </Button>
+            )}
+          </div>
+        </div>
       </Card>
 
-      {/* Table */}
-      <Card className="border-slate-200 shadow-2xs bg-white overflow-hidden">
-        {loading ? (
-          <div className="py-20 flex flex-col items-center justify-center text-slate-400 gap-2">
-            <Loader2 className="w-7 h-7 animate-spin text-blue-600" />
-            <span className="text-xs font-semibold">Đang tải danh sách phiếu hỗ trợ...</span>
-          </div>
-        ) : tickets.length === 0 ? (
-          <div className="p-8">
-            <EmptyState
-              icon={LifeBuoy}
-              title="Không tìm thấy phiếu hỗ trợ nào"
-              description="Thử thay đổi bộ lọc tìm kiếm hoặc tạo phiếu hỗ trợ mới."
-              actionLabel="Tạo Phiếu Hỗ trợ"
-              onAction={handleOpenCreate}
-            />
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader className="bg-slate-50/80 border-b border-slate-200">
+      {/* ── Tickets Table ── */}
+      <Card className="overflow-hidden border border-slate-200 rounded-xl bg-white shadow-xs">
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-slate-50/80 hover:bg-slate-50/80 border-b border-slate-200">
+                <TableHead className="text-[11px] font-bold text-slate-600 uppercase tracking-wider py-3 pl-4">Mã Phiếu &amp; Tiêu đề</TableHead>
+                <TableHead className="text-[11px] font-bold text-slate-600 uppercase tracking-wider py-3">Khách hàng yêu cầu</TableHead>
+                <TableHead className="text-[11px] font-bold text-slate-600 uppercase tracking-wider py-3">Phân loại &amp; Kênh</TableHead>
+                <TableHead className="text-[11px] font-bold text-slate-600 uppercase tracking-wider py-3">Ưu tiên</TableHead>
+                <TableHead className="text-[11px] font-bold text-slate-600 uppercase tracking-wider py-3">Trạng thái</TableHead>
+                <TableHead className="text-[11px] font-bold text-slate-600 uppercase tracking-wider py-3">Phụ trách</TableHead>
+                <TableHead className="text-[11px] font-bold text-slate-600 uppercase tracking-wider py-3 text-right pr-4">Thao tác</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {loading ? (
                 <TableRow>
-                  <TableHead className="text-xs font-bold text-slate-700 py-3.5 pl-5">Mã & Tiêu đề Sự cố</TableHead>
-                  <TableHead className="text-xs font-bold text-slate-700 py-3.5">Khách hàng & Liên hệ</TableHead>
-                  <TableHead className="text-xs font-bold text-slate-700 py-3.5">Phân loại & Kênh</TableHead>
-                  <TableHead className="text-xs font-bold text-slate-700 py-3.5">Mức độ ưu tiên</TableHead>
-                  <TableHead className="text-xs font-bold text-slate-700 py-3.5">Trạng thái</TableHead>
-                  <TableHead className="text-xs font-bold text-slate-700 py-3.5 text-right pr-5">Thao tác</TableHead>
+                  <TableCell colSpan={7} className="h-48 text-center">
+                    <div className="flex flex-col items-center justify-center gap-2 text-slate-500">
+                      <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+                      <span className="text-xs">Đang tải danh sách phiếu hỗ trợ...</span>
+                    </div>
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody className="divide-y divide-slate-100">
-                {tickets.map((t) => {
-                  const statusObj = TICKET_STATUS_CONFIG[t.status];
+              ) : tickets.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="p-0">
+                    <EmptyState
+                      icon={Headphones}
+                      title="Không tìm thấy phiếu hỗ trợ nào"
+                      description="Hãy thử thay đổi điều kiện lọc hoặc tạo mới ticket hỗ trợ khách hàng."
+                      actionLabel="Tạo Phiếu Hỗ Trợ"
+                      onAction={handleOpenCreate}
+                    />
+                  </TableCell>
+                </TableRow>
+              ) : (
+                tickets.map((ticket) => {
+                  const statusInfo = TICKET_STATUS_CONFIG[ticket.status] || { label: ticket.status, className: 'bg-slate-100 text-slate-700' };
 
                   return (
-                    <TableRow key={t.id} className="hover:bg-slate-50/70 transition-colors">
-                      <TableCell className="pl-5 py-3.5">
-                        <span className="font-mono text-[11px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200 inline-block mb-1">
-                          {t.ticketNumber}
-                        </span>
-                        <span className="font-bold text-slate-900 text-xs block">{t.subject}</span>
-                        <span className="text-[11px] text-slate-400 block mt-0.5">Tạo: {t.createdAt}</span>
+                    <TableRow key={ticket.id} className="hover:bg-slate-50/80 transition-colors border-b border-slate-100 text-xs">
+                      {/* Cột 1: Mã & Tiêu đề */}
+                      <TableCell className="pl-4 py-3">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 border border-blue-100 shadow-2xs">
+                            <Headphones className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <div className="font-bold text-slate-900">{ticket.subject}</div>
+                            <div className="text-[11px] text-slate-400 mt-0.5 font-mono">{ticket.ticketNumber}</div>
+                          </div>
+                        </div>
                       </TableCell>
 
-                      <TableCell className="py-3.5">
-                        <p className="text-xs font-semibold text-slate-800 flex items-center gap-1">
-                          <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                          <span>{t.accountName}</span>
-                        </p>
-                        <p className="text-[11px] text-slate-400 pl-4">{t.contactName}</p>
+                      {/* Cột 2: Khách hàng */}
+                      <TableCell>
+                        <div>
+                          <div className="font-semibold text-slate-800 flex items-center gap-1">
+                            <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                            <span>{ticket.accountName}</span>
+                          </div>
+                          {ticket.contactName && (
+                            <div className="text-[11px] text-slate-500 mt-0.5">{ticket.contactName}</div>
+                          )}
+                        </div>
                       </TableCell>
 
-                      <TableCell className="py-3.5">
-                        <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200 font-semibold text-xs mb-1">
-                          {t.category}
+                      {/* Cột 3: Phân loại & Kênh */}
+                      <TableCell>
+                        <div>
+                          <div className="text-slate-800 font-medium">{ticket.category}</div>
+                          <div className="text-[10px] text-slate-400 font-mono">Kênh: {ticket.channel}</div>
+                        </div>
+                      </TableCell>
+
+                      {/* Cột 4: Ưu tiên */}
+                      <TableCell>
+                        {renderPriorityBadge(ticket.priority)}
+                      </TableCell>
+
+                      {/* Cột 5: Trạng thái */}
+                      <TableCell>
+                        <Badge className={`${statusInfo.className} text-[11px]`}>
+                          {statusInfo.label}
                         </Badge>
-                        <span className="text-[11px] text-slate-400 block">Kênh: {t.channel}</span>
                       </TableCell>
 
-                      <TableCell className="py-3.5">
-                        {renderPriorityBadge(t.priority as any)}
-                        <span className="text-[11px] text-slate-400 block mt-1">Xử lý: {t.assignedTo}</span>
+                      {/* Cột 6: Phụ trách */}
+                      <TableCell className="text-slate-700">
+                        {ticket.assignedTo}
                       </TableCell>
 
-                      <TableCell className="py-3.5">
-                        <Badge variant="outline" className={`text-[10px] font-bold ${statusObj.className}`}>
-                          {statusObj.label}
-                        </Badge>
-                      </TableCell>
-
-                      <TableCell className="text-right pr-5 py-3.5">
+                      {/* Cột 7: Thao tác */}
+                      <TableCell className="text-right pr-4">
                         <div className="flex items-center justify-end gap-1">
                           <Button
                             variant="ghost"
-                            size="sm"
-                            onClick={() => handleOpenEdit(t)}
-                            className="h-8 w-8 p-0 text-slate-500 hover:text-blue-600 hover:bg-blue-50"
+                            size="icon"
+                            onClick={() => handleOpenEdit(ticket)}
+                            className="h-7 w-7 text-slate-600 hover:text-blue-600 hover:bg-blue-50"
+                            title="Chỉnh sửa phiếu"
                           >
                             <Edit className="w-3.5 h-3.5" />
                           </Button>
                           <Button
                             variant="ghost"
-                            size="sm"
-                            onClick={() => handleDelete(t.id, t.ticketNumber)}
-                            className="h-8 w-8 p-0 text-slate-400 hover:text-rose-600 hover:bg-rose-50"
+                            size="icon"
+                            onClick={() => handleDelete(ticket.id, ticket.ticketNumber)}
+                            className="h-7 w-7 text-slate-600 hover:text-red-600 hover:bg-red-50"
+                            title="Xóa phiếu"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </Button>
@@ -436,143 +472,149 @@ export const TicketsPage: React.FC = () => {
                       </TableCell>
                     </TableRow>
                   );
-                })}
-              </TableBody>
-            </Table>
-          </div>
-        )}
+                })
+              )}
+            </TableBody>
+          </Table>
+        </div>
 
-        {/* Pagination */}
+        {/* ── Pagination Bar ── */}
         {!loading && tickets.length > 0 && (
-          <div className="p-4 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-slate-500">
-            <div className="flex items-center gap-2">
-              <span>Hiển thị</span>
-              <Select
-                value={pageSize.toString()}
-                onValueChange={(val) => {
-                  setPageSize(Number(val));
-                  setPage(0);
-                }}
-              >
-                <SelectTrigger className="h-8 w-16 text-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="10">10</SelectItem>
-                  <SelectItem value="20">20</SelectItem>
-                  <SelectItem value="50">50</SelectItem>
-                </SelectContent>
-              </Select>
-              <span>trên tổng số <b>{totalElements}</b> bản ghi</span>
+          <div className="px-4 py-3 bg-slate-50/50 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
+            <div>
+              Hiển thị <span className="font-bold text-slate-800">{page * pageSize + 1}</span> -{' '}
+              <span className="font-bold text-slate-800">{Math.min((page + 1) * pageSize, totalElements)}</span> trong tổng số{' '}
+              <span className="font-bold text-slate-800">{totalElements}</span> phiếu hỗ trợ
             </div>
-
-            <div className="flex items-center gap-2">
-              <span className="font-semibold text-slate-700">
-                Trang {page + 1} / {totalPages || 1}
-              </span>
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage(Math.max(0, page - 1))}
-                  disabled={page === 0}
-                  className="h-8 w-8 p-0"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage(Math.min(totalPages - 1, page + 1))}
-                  disabled={page >= totalPages - 1}
-                  className="h-8 w-8 p-0"
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </Button>
+            <div className="flex items-center gap-1.5">
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-7 w-7 border-slate-200"
+                onClick={() => setPage(0)}
+                disabled={page === 0}
+              >
+                <ChevronsLeft className="w-3.5 h-3.5" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-7 w-7 border-slate-200"
+                onClick={() => setPage((p) => Math.max(p - 1, 0))}
+                disabled={page === 0}
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+              </Button>
+              <div className="px-2 font-medium text-slate-700">
+                Trang {page + 1} / {Math.max(totalPages, 1)}
               </div>
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-7 w-7 border-slate-200"
+                onClick={() => setPage((p) => p + 1)}
+                disabled={page >= totalPages - 1}
+              >
+                <ChevronRight className="w-3.5 h-3.5" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-7 w-7 border-slate-200"
+                onClick={() => setPage(totalPages - 1)}
+                disabled={page >= totalPages - 1}
+              >
+                <ChevronsRight className="w-3.5 h-3.5" />
+              </Button>
             </div>
           </div>
         )}
       </Card>
 
-      {/* Modal */}
+      {/* ── Create / Edit Ticket Modal ── */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="max-w-xl bg-white p-0 gap-0 overflow-hidden font-sans border-slate-200 shadow-xl rounded-2xl">
-          <DialogHeader className="p-5 pb-4 border-b border-slate-100 bg-slate-50/70">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-blue-100/80 text-blue-700 flex items-center justify-center shrink-0">
-                <LifeBuoy className="w-5 h-5" />
-              </div>
-              <div>
-                <DialogTitle className="text-base font-bold text-slate-900">
-                  {editingTicket ? 'Chỉnh sửa Phiếu Hỗ trợ' : 'Tạo Phiếu Hỗ trợ Mới'}
-                </DialogTitle>
-                <DialogDescription className="text-xs text-slate-500 mt-0.5">
-                  Nhập thông tin sự cố, mức độ khẩn cấp và phân công chuyên viên xử lý
-                </DialogDescription>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0 rounded-2xl border border-slate-200 shadow-xl">
+          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-5 text-white">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20">
+                  <Headphones className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-base">
+                    {editingTicket ? `Chỉnh sửa Phiếu ${editingTicket.ticketNumber}` : 'Tạo Phiếu Hỗ Trợ Mới'}
+                  </h3>
+                  <p className="text-xs text-blue-100 mt-0.5">
+                    Ghi nhận yêu cầu hỗ trợ và chỉ định chuyên viên xử lý
+                  </p>
+                </div>
               </div>
             </div>
-          </DialogHeader>
+          </div>
 
-          <form onSubmit={handleSaveTicket} className="p-5 space-y-4 text-xs">
-            <div className="space-y-1.5">
-              <Label className="font-bold text-slate-700 text-xs">Tiêu đề Sự cố / Yêu cầu *</Label>
+          <form onSubmit={handleSaveTicket} className="p-6 space-y-4">
+            <div>
+              <Label className="text-xs font-semibold text-slate-700">
+                Tiêu đề sự cố / Yêu cầu <span className="text-rose-500">*</span>
+              </Label>
               <Input
-                placeholder="VD: Lỗi đồng bộ dữ liệu liên hệ từ Zalo ZNS qua API"
+                required
+                placeholder="Ví dụ: Không kết nối được cổng API tích hợp ngân hàng"
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
-                className="h-9 text-xs"
-                required
+                className="h-9 text-xs border-slate-200 mt-1"
               />
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-              <div className="space-y-1.5">
-                <Label className="font-bold text-slate-700 text-xs">Khách hàng / Doanh nghiệp *</Label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs font-semibold text-slate-700">
+                  Khách hàng / Doanh nghiệp <span className="text-rose-500">*</span>
+                </Label>
                 <Input
-                  placeholder="VD: Tập đoàn Công nghệ FPT"
+                  required
+                  placeholder="Ví dụ: Tập đoàn Bán Lẻ SunGroup"
                   value={accountName}
                   onChange={(e) => setAccountName(e.target.value)}
-                  className="h-9 text-xs"
-                  required
+                  className="h-9 text-xs border-slate-200 mt-1"
                 />
               </div>
 
-              <div className="space-y-1.5">
-                <Label className="font-bold text-slate-700 text-xs">Người gửi yêu cầu</Label>
+              <div>
+                <Label className="text-xs font-semibold text-slate-700">Người liên hệ gửi yêu cầu</Label>
                 <Input
-                  placeholder="VD: Trần Minh Đức"
+                  placeholder="Nhập người đại diện..."
                   value={contactName}
                   onChange={(e) => setContactName(e.target.value)}
-                  className="h-9 text-xs"
+                  className="h-9 text-xs border-slate-200 mt-1"
                 />
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-              <div className="space-y-1.5">
-                <Label className="font-bold text-slate-700 text-xs">Mức độ ưu tiên</Label>
-                <Select value={priority} onValueChange={(v) => setPriority(v as TicketPriority)}>
-                  <SelectTrigger className="h-9 text-xs">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <Label className="text-xs font-semibold text-slate-700">Mức độ ưu tiên</Label>
+                <Select value={priority} onValueChange={(val: any) => setPriority(val)}>
+                  <SelectTrigger className="h-9 text-xs border-slate-200 mt-1">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="URGENT">Khẩn cấp (Urgent)</SelectItem>
                     <SelectItem value="HIGH">Cao (High)</SelectItem>
                     <SelectItem value="MEDIUM">Trung bình</SelectItem>
-                    <SelectItem value="LOW">Thấp</SelectItem>
+                    <SelectItem value="LOW">Thấp (Low)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
-              <div className="space-y-1.5">
-                <Label className="font-bold text-slate-700 text-xs">Trạng thái</Label>
-                <Select value={status} onValueChange={(v) => setStatus(v as TicketStatus)}>
-                  <SelectTrigger className="h-9 text-xs">
+              <div>
+                <Label className="text-xs font-semibold text-slate-700">Trạng thái xử lý</Label>
+                <Select value={status} onValueChange={(val: any) => setStatus(val)}>
+                  <SelectTrigger className="h-9 text-xs border-slate-200 mt-1">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="NEW">Mới tạo</SelectItem>
+                    <SelectItem value="NEW">Mới tiếp nhận</SelectItem>
                     <SelectItem value="OPEN">Đang mở</SelectItem>
                     <SelectItem value="IN_PROGRESS">Đang xử lý</SelectItem>
                     <SelectItem value="RESOLVED">Đã giải quyết</SelectItem>
@@ -581,68 +623,62 @@ export const TicketsPage: React.FC = () => {
                 </Select>
               </div>
 
-              <div className="space-y-1.5">
-                <Label className="font-bold text-slate-700 text-xs">Kênh tiếp nhận</Label>
-                <Select value={channel} onValueChange={(v) => setChannel(v as TicketChannel)}>
-                  <SelectTrigger className="h-9 text-xs">
+              <div>
+                <Label className="text-xs font-semibold text-slate-700">Kênh tiếp nhận</Label>
+                <Select value={channel} onValueChange={(val: any) => setChannel(val)}>
+                  <SelectTrigger className="h-9 text-xs border-slate-200 mt-1">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="PORTAL">Cổng Portal</SelectItem>
-                    <SelectItem value="EMAIL">Email</SelectItem>
-                    <SelectItem value="PHONE">Tổng đài điện thoại</SelectItem>
-                    <SelectItem value="CHAT">Live Chat / Zalo</SelectItem>
+                    <SelectItem value="PORTAL">Cổng Portal KH</SelectItem>
+                    <SelectItem value="EMAIL">Email hỗ trợ</SelectItem>
+                    <SelectItem value="PHONE">Tổng đài Hotline</SelectItem>
+                    <SelectItem value="CHAT">Trò chuyện trực tiếp</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-              <div className="space-y-1.5">
-                <Label className="font-bold text-slate-700 text-xs">Phân loại sự cố</Label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs font-semibold text-slate-700">Phân loại yêu cầu</Label>
                 <Input
-                  placeholder="VD: Lỗi Kỹ thuật & API"
+                  placeholder="Ví dụ: Sự cố kỹ thuật (Bug / Issue)"
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
-                  className="h-9 text-xs"
+                  className="h-9 text-xs border-slate-200 mt-1"
                 />
               </div>
 
-              <div className="space-y-1.5">
-                <Label className="font-bold text-slate-700 text-xs">Chuyên viên phụ trách</Label>
+              <div>
+                <Label className="text-xs font-semibold text-slate-700">Chuyên viên hỗ trợ phụ trách</Label>
                 <Input
-                  placeholder="VD: Phạm Tuấn Vũ"
+                  placeholder="Phạm Tuấn Vũ"
                   value={assignedTo}
                   onChange={(e) => setAssignedTo(e.target.value)}
-                  className="h-9 text-xs"
+                  className="h-9 text-xs border-slate-200 mt-1"
                 />
               </div>
             </div>
 
-            <DialogFooter className="pt-4 border-t border-slate-100 flex items-center justify-end gap-2">
+            <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-100">
               <Button
                 type="button"
                 variant="outline"
-                size="sm"
                 onClick={() => setIsModalOpen(false)}
-                className="h-9 text-xs font-semibold px-4"
+                className="text-xs border-slate-200 h-9"
               >
                 Hủy bỏ
               </Button>
               <Button
                 type="submit"
-                size="sm"
                 disabled={isSubmitting}
-                className="h-9 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-5 gap-1.5"
+                className="text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white gap-1.5 shadow-xs h-9"
               >
-                {isSubmitting ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  <Save className="w-3.5 h-3.5" />
-                )}
-                <span>{editingTicket ? 'Lưu Thay đổi' : 'Tạo Phiếu'}</span>
+                {isSubmitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+                <span>{editingTicket ? 'Lưu Thay Đổi' : 'Tạo Phiếu Hỗ Trợ'}</span>
               </Button>
-            </DialogFooter>
+            </div>
           </form>
         </DialogContent>
       </Dialog>

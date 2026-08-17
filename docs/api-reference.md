@@ -3218,6 +3218,673 @@ Response: `204 No Content`
 | `409` | `ORDER_NUMBER_ALREADY_EXISTS` | Order number is already taken in the tenant |
 | `409` | `ORDER_VERSION_CONFLICT` | Optimistic concurrency version mismatch |
 
+## Sales Contract Management
+
+Sales Contract endpoints manage customer contracts, framework agreements, NDA agreements, and subscription terms across their entire lifecycle (`DRAFT`, `IN_REVIEW`, `APPROVED`, `SENT_FOR_SIGNATURE`, `ACTIVE`, `EXPIRED`, `TERMINATED`, `CANCELLED`).
+
+### Authorization
+
+All contract endpoints require:
+- Header: `Authorization: Bearer <token>`
+- Permissions:
+  - `sales_contract.read` for `GET` endpoints
+  - `sales_contract.write` for `POST`, `PUT`, `DELETE` endpoints, approvals, review, and termination
+  - `sales_contract.sign` for `POST /api/contracts/{id}/sign`
+
+### Endpoints
+
+#### 1. Create Contract
+
+```http
+POST /api/contracts
+Content-Type: application/json
+```
+
+Request Body:
+```json
+{
+  "contractNumber": "CTR-2026-0001",
+  "accountId": "20000000-0000-0000-0000-000000000001",
+  "contactId": "30000000-0000-0000-0000-000000000001",
+  "opportunityId": "40000000-0000-0000-0000-000000000001",
+  "quoteId": "50000000-0000-0000-0000-000000000001",
+  "orderId": null,
+  "ownerUserId": "10000000-0000-0000-0000-000000000001",
+  "contractType": "CUSTOMER",
+  "currencyCode": "VND",
+  "contractValue": 250000000.0,
+  "effectiveFrom": "2026-08-15",
+  "effectiveTo": "2027-08-14",
+  "autoRenew": true,
+  "renewalNoticeDays": 30,
+  "documentReference": "DOC-CTR-2026-0001.pdf",
+  "termsSnapshot": "{\"sla\": \"99.9%\", \"paymentMethod\": \"BankTransfer\"}"
+}
+```
+
+Response: `201 Created`
+```json
+{
+  "id": "90000000-0000-0000-0000-000000000001",
+  "contractNumber": "CTR-2026-0001",
+  "accountId": "20000000-0000-0000-0000-000000000001",
+  "contactId": "30000000-0000-0000-0000-000000000001",
+  "opportunityId": "40000000-0000-0000-0000-000000000001",
+  "quoteId": "50000000-0000-0000-0000-000000000001",
+  "orderId": null,
+  "ownerUserId": "10000000-0000-0000-0000-000000000001",
+  "contractType": "CUSTOMER",
+  "status": "DRAFT",
+  "currencyCode": "VND",
+  "contractValue": 250000000.0,
+  "effectiveFrom": "2026-08-15",
+  "effectiveTo": "2027-08-14",
+  "autoRenew": true,
+  "renewalNoticeDays": 30,
+  "signedAt": null,
+  "terminatedAt": null,
+  "terminationReason": null,
+  "documentReference": "DOC-CTR-2026-0001.pdf",
+  "termsSnapshot": "{\"sla\": \"99.9%\", \"paymentMethod\": \"BankTransfer\"}",
+  "createdBy": "10000000-0000-0000-0000-000000000001",
+  "createdAt": "2026-08-14T15:45:00Z",
+  "updatedBy": "10000000-0000-0000-0000-000000000001",
+  "updatedAt": "2026-08-14T15:45:00Z",
+  "version": 1
+}
+```
+
+#### 2. Get Contract by ID
+
+```http
+GET /api/contracts/{id}
+```
+
+Response: `200 OK`
+
+#### 3. Search / Filter Contracts
+
+```http
+GET /api/contracts?q=CTR&accountId=20000000-0000-0000-0000-000000000001&status=ACTIVE&contractType=CUSTOMER&page=0&size=20
+```
+
+Response: `200 OK`
+```json
+{
+  "content": [
+    {
+      "id": "90000000-0000-0000-0000-000000000001",
+      "contractNumber": "CTR-2026-0001",
+      "accountId": "20000000-0000-0000-0000-000000000001",
+      "accountName": "Tập đoàn Vingroup",
+      "contactId": "30000000-0000-0000-0000-000000000001",
+      "contactName": "Nguyễn Văn A",
+      "contractType": "CUSTOMER",
+      "status": "ACTIVE",
+      "currencyCode": "VND",
+      "contractValue": 250000000.0,
+      "effectiveFrom": "2026-08-15",
+      "effectiveTo": "2027-08-14",
+      "autoRenew": true,
+      "signedAt": "2026-08-14T15:50:00Z",
+      "updatedAt": "2026-08-14T15:50:00Z",
+      "version": 4
+    }
+  ],
+  "page": 0,
+  "size": 20,
+  "totalElements": 1,
+  "totalPages": 1
+}
+```
+
+#### 4. Update Contract
+
+```http
+PUT /api/contracts/{id}
+Content-Type: application/json
+```
+
+Request Body:
+```json
+{
+  "version": 1,
+  "accountId": "20000000-0000-0000-0000-000000000001",
+  "contactId": "30000000-0000-0000-0000-000000000001",
+  "opportunityId": "40000000-0000-0000-0000-000000000001",
+  "quoteId": "50000000-0000-0000-0000-000000000001",
+  "orderId": null,
+  "ownerUserId": "10000000-0000-0000-0000-000000000001",
+  "contractType": "CUSTOMER",
+  "currencyCode": "VND",
+  "contractValue": 260000000.0,
+  "effectiveFrom": "2026-08-15",
+  "effectiveTo": "2027-08-14",
+  "autoRenew": true,
+  "renewalNoticeDays": 30,
+  "documentReference": "DOC-CTR-2026-0001-REV1.pdf",
+  "termsSnapshot": "{}"
+}
+```
+
+Response: `200 OK`
+
+#### 5. Submit Contract for Review
+
+```http
+POST /api/contracts/{id}/submit-review
+If-Match: "1"
+```
+
+Response: `200 OK` (Status updated to `IN_REVIEW`)
+
+#### 6. Approve Contract
+
+```http
+POST /api/contracts/{id}/approve
+If-Match: "2"
+```
+
+Response: `200 OK` (Status updated to `APPROVED`)
+
+#### 7. Send Contract for Signature
+
+```http
+POST /api/contracts/{id}/send-signature
+If-Match: "3"
+```
+
+Response: `200 OK` (Status updated to `SENT_FOR_SIGNATURE`)
+
+#### 8. Sign Contract (Activate)
+
+```http
+POST /api/contracts/{id}/sign
+Content-Type: application/json
+```
+
+Request Body:
+```json
+{
+  "version": 4,
+  "signedAt": "2026-08-14T15:50:00Z"
+}
+```
+
+Response: `200 OK` (Status updated to `ACTIVE`)
+
+#### 9. Terminate Contract
+
+```http
+POST /api/contracts/{id}/terminate
+Content-Type: application/json
+```
+
+Request Body:
+```json
+{
+  "version": 5,
+  "terminationReason": "Mutual contract conclusion and settlement"
+}
+```
+
+Response: `200 OK` (Status updated to `TERMINATED`)
+
+#### 10. Delete Contract (Draft Only)
+
+```http
+DELETE /api/contracts/{id}
+If-Match: "1"
+```
+
+Response: `204 No Content`
+
+### Contract Error Codes
+
+| Status | Error Code | Reason |
+| --- | --- | --- |
+| `400` | `INVALID_PAYLOAD` | Validation violation on request payload fields |
+| `401` | `AUTHENTICATION_REQUIRED` | The Bearer token is missing or invalid |
+| `403` | `ACCESS_DENIED` | Missing `sales_contract.read`/`write`/`sign` permission |
+| `404` | `CONTRACT_NOT_FOUND` | Contract ID does not exist |
+| `404` | `CONTRACT_ACCOUNT_INVALID` | Associated Account ID does not exist |
+| `409` | `CONTRACT_NUMBER_ALREADY_EXISTS` | Contract number is already in use |
+| `409` | `INVALID_CONTRACT_STATUS_TRANSITION` | Illegal contract lifecycle status transition |
+| `409` | `CONTRACT_ALREADY_SIGNED` | Contract has already been signed |
+| `409` | `CONTRACT_NOT_ACTIVE` | Operation requires contract to be in ACTIVE status |
+| `409` | `CONTRACT_VERSION_CONFLICT` | Optimistic concurrency version mismatch |
+
+## Catalog Management (Products, Categories, Price Books)
+
+The Catalog module manages master data for product categories, products/services, and standard/custom price books with multi-currency and tiered quantity pricing.
+
+### Authorization
+
+All catalog endpoints require:
+- Header: `Authorization: Bearer <token>`
+- Permissions:
+  - `sales_catalog.read` for `GET` endpoints
+  - `sales_catalog.write` for `POST`, `PUT`, `DELETE` endpoints
+
+---
+
+### Category Endpoints (`/api/categories`)
+
+#### 1. Create Category
+
+```http
+POST /api/categories
+Content-Type: application/json
+```
+
+Request Body:
+```json
+{
+  "categoryCode": "SOFTWARE_SAAS",
+  "name": "SaaS Cloud Solutions",
+  "parentCategoryId": null,
+  "description": "Enterprise cloud subscription packages",
+  "isActive": true
+}
+```
+
+Response: `201 Created`
+```json
+{
+  "id": "80000000-0000-0000-0000-000000000001",
+  "categoryCode": "SOFTWARE_SAAS",
+  "name": "SaaS Cloud Solutions",
+  "parentCategoryId": null,
+  "description": "Enterprise cloud subscription packages",
+  "isActive": true,
+  "createdBy": "10000000-0000-0000-0000-000000000001",
+  "createdAt": "2026-08-14T15:30:00Z",
+  "updatedBy": "10000000-0000-0000-0000-000000000001",
+  "updatedAt": "2026-08-14T15:30:00Z",
+  "version": 1
+}
+```
+
+#### 2. Get Category by ID
+
+```http
+GET /api/categories/{id}
+```
+
+Response: `200 OK`
+
+#### 3. List Categories
+
+```http
+GET /api/categories
+```
+
+Response: `200 OK`
+```json
+[
+  {
+    "id": "80000000-0000-0000-0000-000000000001",
+    "categoryCode": "SOFTWARE_SAAS",
+    "name": "SaaS Cloud Solutions",
+    "parentCategoryId": null,
+    "description": "Enterprise cloud subscription packages",
+    "isActive": true,
+    "productsCount": 12,
+    "updatedAt": "2026-08-14T15:30:00Z",
+    "version": 1
+  }
+]
+```
+
+#### 4. Update Category
+
+```http
+PUT /api/categories/{id}
+Content-Type: application/json
+```
+
+Request Body:
+```json
+{
+  "version": 1,
+  "name": "Enterprise SaaS Cloud Solutions",
+  "parentCategoryId": null,
+  "description": "Updated description",
+  "isActive": true
+}
+```
+
+Response: `200 OK`
+
+#### 5. Delete Category
+
+```http
+DELETE /api/categories/{id}
+If-Match: "1"
+```
+
+Response: `204 No Content`
+
+---
+
+### Product Endpoints (`/api/products`)
+
+#### 1. Create Product
+
+```http
+POST /api/products
+Content-Type: application/json
+```
+
+Request Body:
+```json
+{
+  "sku": "PROD-CRM-ENT-001",
+  "name": "CRM Enterprise Edition (Annual)",
+  "description": "Full access for up to 100 enterprise users",
+  "categoryId": "80000000-0000-0000-0000-000000000001",
+  "productType": "SUBSCRIPTION",
+  "unitOfMeasure": "YR",
+  "taxCategory": "STANDARD_VAT",
+  "standardCost": 12000000.0,
+  "costCurrencyCode": "VND",
+  "isActive": true,
+  "metadata": "{\"tier\": \"enterprise\", \"support\": \"24/7\"}"
+}
+```
+
+Response: `201 Created`
+```json
+{
+  "id": "81000000-0000-0000-0000-000000000001",
+  "sku": "PROD-CRM-ENT-001",
+  "name": "CRM Enterprise Edition (Annual)",
+  "description": "Full access for up to 100 enterprise users",
+  "categoryId": "80000000-0000-0000-0000-000000000001",
+  "productType": "SUBSCRIPTION",
+  "unitOfMeasure": "YR",
+  "taxCategory": "STANDARD_VAT",
+  "standardCost": 12000000.0,
+  "costCurrencyCode": "VND",
+  "isActive": true,
+  "metadata": "{\"tier\": \"enterprise\", \"support\": \"24/7\"}",
+  "createdBy": "10000000-0000-0000-0000-000000000001",
+  "createdAt": "2026-08-14T15:30:00Z",
+  "updatedBy": "10000000-0000-0000-0000-000000000001",
+  "updatedAt": "2026-08-14T15:30:00Z",
+  "version": 1
+}
+```
+
+#### 2. Get Product by ID
+
+```http
+GET /api/products/{id}
+```
+
+Response: `200 OK`
+
+#### 3. Search / Filter Products
+
+```http
+GET /api/products?q=CRM&categoryId=80000000-0000-0000-0000-000000000001&productType=SUBSCRIPTION&isActive=true&page=0&size=20
+```
+
+Response: `200 OK`
+```json
+{
+  "content": [
+    {
+      "id": "81000000-0000-0000-0000-000000000001",
+      "sku": "PROD-CRM-ENT-001",
+      "name": "CRM Enterprise Edition (Annual)",
+      "categoryId": "80000000-0000-0000-0000-000000000001",
+      "categoryName": "SaaS Cloud Solutions",
+      "productType": "SUBSCRIPTION",
+      "unitOfMeasure": "YR",
+      "standardCost": 12000000.0,
+      "costCurrencyCode": "VND",
+      "isActive": true,
+      "updatedAt": "2026-08-14T15:30:00Z",
+      "version": 1
+    }
+  ],
+  "page": 0,
+  "size": 20,
+  "totalElements": 1,
+  "totalPages": 1
+}
+```
+
+#### 4. Update Product
+
+```http
+PUT /api/products/{id}
+Content-Type: application/json
+```
+
+Request Body:
+```json
+{
+  "version": 1,
+  "name": "CRM Enterprise Edition (Annual) v2",
+  "description": "Full access with dedicated account manager",
+  "categoryId": "80000000-0000-0000-0000-000000000001",
+  "productType": "SUBSCRIPTION",
+  "unitOfMeasure": "YR",
+  "taxCategory": "STANDARD_VAT",
+  "standardCost": 13000000.0,
+  "costCurrencyCode": "VND",
+  "isActive": true,
+  "metadata": "{}"
+}
+```
+
+Response: `200 OK`
+
+#### 5. Delete Product (Soft Delete)
+
+```http
+DELETE /api/products/{id}
+If-Match: "1"
+```
+
+Response: `204 No Content`
+
+---
+
+### Price Book Endpoints (`/api/price-books`)
+
+#### 1. Create Price Book
+
+```http
+POST /api/price-books
+Content-Type: application/json
+```
+
+Request Body:
+```json
+{
+  "priceBookCode": "PB-VN-2026",
+  "name": "Bảng Giá Chuẩn Toàn Quốc 2026",
+  "currencyCode": "VND",
+  "validFrom": "2026-01-01",
+  "validTo": "2026-12-31",
+  "isDefault": true,
+  "isActive": true
+}
+```
+
+Response: `201 Created`
+```json
+{
+  "id": "82000000-0000-0000-0000-000000000001",
+  "priceBookCode": "PB-VN-2026",
+  "name": "Bảng Giá Chuẩn Toàn Quốc 2026",
+  "currencyCode": "VND",
+  "validFrom": "2026-01-01",
+  "validTo": "2026-12-31",
+  "isDefault": true,
+  "isActive": true,
+  "items": [],
+  "createdBy": "10000000-0000-0000-0000-000000000001",
+  "createdAt": "2026-08-14T15:30:00Z",
+  "updatedBy": "10000000-0000-0000-0000-000000000001",
+  "updatedAt": "2026-08-14T15:30:00Z",
+  "version": 1
+}
+```
+
+#### 2. Get Price Book by ID
+
+```http
+GET /api/price-books/{id}
+```
+
+Response: `200 OK`
+```json
+{
+  "id": "82000000-0000-0000-0000-000000000001",
+  "priceBookCode": "PB-VN-2026",
+  "name": "Bảng Giá Chuẩn Toàn Quốc 2026",
+  "currencyCode": "VND",
+  "validFrom": "2026-01-01",
+  "validTo": "2026-12-31",
+  "isDefault": true,
+  "isActive": true,
+  "items": [
+    {
+      "id": "83000000-0000-0000-0000-000000000001",
+      "priceBookId": "82000000-0000-0000-0000-000000000001",
+      "productId": "81000000-0000-0000-0000-000000000001",
+      "productSku": "PROD-CRM-ENT-001",
+      "productName": "CRM Enterprise Edition (Annual)",
+      "unitPrice": 24000000.0,
+      "minimumQuantity": 1,
+      "validFrom": "2026-01-01",
+      "validTo": "2026-12-31",
+      "createdBy": "10000000-0000-0000-0000-000000000001",
+      "createdAt": "2026-08-14T15:30:00Z",
+      "updatedBy": "10000000-0000-0000-0000-000000000001",
+      "updatedAt": "2026-08-14T15:30:00Z",
+      "version": 1
+    }
+  ],
+  "createdBy": "10000000-0000-0000-0000-000000000001",
+  "createdAt": "2026-08-14T15:30:00Z",
+  "updatedBy": "10000000-0000-0000-0000-000000000001",
+  "updatedAt": "2026-08-14T15:30:00Z",
+  "version": 1
+}
+```
+
+#### 3. List Price Books
+
+```http
+GET /api/price-books
+```
+
+Response: `200 OK`
+```json
+[
+  {
+    "id": "82000000-0000-0000-0000-000000000001",
+    "priceBookCode": "PB-VN-2026",
+    "name": "Bảng Giá Chuẩn Toàn Quốc 2026",
+    "currencyCode": "VND",
+    "validFrom": "2026-01-01",
+    "validTo": "2026-12-31",
+    "isDefault": true,
+    "isActive": true,
+    "itemsCount": 45,
+    "updatedAt": "2026-08-14T15:30:00Z",
+    "version": 1
+  }
+]
+```
+
+#### 4. Update Price Book
+
+```http
+PUT /api/price-books/{id}
+Content-Type: application/json
+```
+
+Request Body:
+```json
+{
+  "version": 1,
+  "name": "Bảng Giá Chuẩn Toàn Quốc 2026 - Cập nhật",
+  "currencyCode": "VND",
+  "validFrom": "2026-01-01",
+  "validTo": "2026-12-31",
+  "isDefault": true,
+  "isActive": true
+}
+```
+
+Response: `200 OK`
+
+#### 5. Add Price Book Item
+
+```http
+POST /api/price-books/{id}/items
+Content-Type: application/json
+```
+
+Request Body:
+```json
+{
+  "productId": "81000000-0000-0000-0000-000000000001",
+  "unitPrice": 22000000.0,
+  "minimumQuantity": 10,
+  "validFrom": "2026-01-01",
+  "validTo": "2026-12-31"
+}
+```
+
+Response: `201 Created`
+
+#### 6. Remove Price Book Item
+
+```http
+DELETE /api/price-books/{id}/items/{itemId}
+```
+
+Response: `204 No Content`
+
+#### 7. Delete Price Book
+
+```http
+DELETE /api/price-books/{id}
+If-Match: "1"
+```
+
+Response: `204 No Content`
+
+---
+
+### Catalog Error Codes
+
+| Status | Error Code | Reason |
+| --- | --- | --- |
+| `400` | `INVALID_PAYLOAD` | Validation violation on request payload fields |
+| `401` | `AUTHENTICATION_REQUIRED` | The Bearer token is missing or invalid |
+| `403` | `ACCESS_DENIED` | Missing `sales_catalog.read`/`write` permission |
+| `404` | `CATEGORY_NOT_FOUND` | Category ID does not exist |
+| `404` | `PARENT_CATEGORY_NOT_FOUND` | Parent Category ID does not exist |
+| `404` | `PRODUCT_NOT_FOUND` | Product ID does not exist |
+| `404` | `PRICE_BOOK_NOT_FOUND` | Price Book ID does not exist |
+| `404` | `PRICE_BOOK_ITEM_NOT_FOUND` | Price Book Item ID does not exist |
+| `409` | `CATEGORY_CODE_ALREADY_EXISTS` | Category code is already in use |
+| `409` | `PRODUCT_SKU_ALREADY_EXISTS` | Product SKU is already in use |
+| `409` | `PRICE_BOOK_CODE_ALREADY_EXISTS` | Price Book code is already in use |
+| `409` | `DUPLICATE_PRICE_BOOK_ITEM` | Product already has a matching pricing tier in this price book |
+| `409` | `CYCLIC_CATEGORY_HIERARCHY` | Category cannot reference itself as parent |
+| `409` | `CATEGORY_VERSION_CONFLICT` | Optimistic concurrency conflict on category update/delete |
+| `409` | `PRODUCT_VERSION_CONFLICT` | Optimistic concurrency conflict on product update/delete |
+| `409` | `PRICE_BOOK_VERSION_CONFLICT` | Optimistic concurrency conflict on price book update/delete |
+
 ## Audit & Compliance Management
 
 Audit endpoints provide read-only access to immutable system change logs (`audit_audit_events`) and data access tracking logs (`audit_data_access_events`) for regulatory compliance (GDPR, SOC2, ISO 27001).
@@ -3472,6 +4139,1311 @@ Response: `204 No Content`
 | `404` | `ACTIVITY_NOT_FOUND` | Activity ID does not exist or is outside data scope |
 | `404` | `ACTIVITY_OWNER_INVALID` | Assigned user or team does not exist or is inactive |
 | `409` | `ACTIVITY_VERSION_CONFLICT` | Optimistic concurrency version mismatch |
+
+## Sales Contract Management
+
+Sales Contract endpoints manage commercial agreements, formal client contracts, contract versions, signing workflows, and contract lifecycles.
+
+### Authorization
+
+All contract endpoints require:
+- Header: `Authorization: Bearer <token>`
+- Permissions:
+  - `sales_contract.read` for `GET` endpoints
+  - `sales_contract.write` for `POST` (create), `PUT` (update), `DELETE` endpoints
+  - `sales_contract.sign` for `POST /api/contracts/{id}/sign`
+
+### Contract Status Lifecycle
+
+```mermaid
+stateDiagram-v2
+    [*] --> DRAFT
+    DRAFT --> IN_REVIEW: Submit for Review
+    IN_REVIEW --> APPROVED: Approve
+    IN_REVIEW --> REJECTED: Reject
+    REJECTED --> DRAFT: Revise
+    APPROVED --> OUT_FOR_SIGNATURE: Send for Signature
+    OUT_FOR_SIGNATURE --> SIGNED: Sign
+    SIGNED --> ACTIVE: Activate
+    ACTIVE --> EXPIRED: Expire
+    ACTIVE --> TERMINATED: Terminate
+    DRAFT --> CANCELLED: Cancel
+    IN_REVIEW --> CANCELLED: Cancel
+```
+
+### Endpoints
+
+#### 1. Create Contract
+
+```http
+POST /api/contracts
+Content-Type: application/json
+```
+
+Request Body:
+```json
+{
+  "contractNumber": "CTR-2026-001",
+  "name": "Hợp Đồng Dịch Vụ Phần Mềm CRM Enterprise",
+  "contractType": "ENTERPRISE",
+  "accountId": "20000000-0000-0000-0000-000000000001",
+  "opportunityId": "40000000-0000-0000-0000-000000000001",
+  "quoteId": "50000000-0000-0000-0000-000000000001",
+  "signatoryContactId": "30000000-0000-0000-0000-000000000001",
+  "startDate": "2026-09-01",
+  "endDate": "2027-08-31",
+  "totalValue": 250000000.0,
+  "currencyCode": "VND",
+  "paymentTerms": "Thanh toán 50% khi ký hợp đồng, 50% sau khi nghiệm thu UAT",
+  "billingFrequency": "ANNUAL",
+  "autoRenew": true,
+  "renewalNoticeDays": 30,
+  "description": "Cung cấp bản quyền sử dụng và triển khai CRM Enterprise 100 người dùng"
+}
+```
+
+Response: `201 Created`
+```json
+{
+  "id": "85000000-0000-0000-0000-000000000001",
+  "contractNumber": "CTR-2026-001",
+  "name": "Hợp Đồng Dịch Vụ Phần Mềm CRM Enterprise",
+  "contractType": "ENTERPRISE",
+  "status": "DRAFT",
+  "accountId": "20000000-0000-0000-0000-000000000001",
+  "opportunityId": "40000000-0000-0000-0000-000000000001",
+  "quoteId": "50000000-0000-0000-0000-000000000001",
+  "signatoryContactId": "30000000-0000-0000-0000-000000000001",
+  "startDate": "2026-09-01",
+  "endDate": "2027-08-31",
+  "totalValue": 250000000.0,
+  "currencyCode": "VND",
+  "paymentTerms": "Thanh toán 50% khi ký hợp đồng, 50% sau khi nghiệm thu UAT",
+  "billingFrequency": "ANNUAL",
+  "autoRenew": true,
+  "renewalNoticeDays": 30,
+  "signedDate": null,
+  "signedByContactId": null,
+  "internalSignedByUserId": null,
+  "description": "Cung cấp bản quyền sử dụng và triển khai CRM Enterprise 100 người dùng",
+  "createdBy": "10000000-0000-0000-0000-000000000001",
+  "createdAt": "2026-08-14T15:40:00Z",
+  "updatedBy": "10000000-0000-0000-0000-000000000001",
+  "updatedAt": "2026-08-14T15:40:00Z",
+  "version": 1
+}
+```
+
+#### 2. Get Contract by ID
+
+```http
+GET /api/contracts/{id}
+```
+
+Response: `200 OK`
+
+#### 3. Search / Filter Contracts
+
+```http
+GET /api/contracts?q=CTR&status=DRAFT&accountId=20000000-0000-0000-0000-000000000001&page=0&size=20
+```
+
+Response: `200 OK`
+```json
+{
+  "content": [
+    {
+      "id": "85000000-0000-0000-0000-000000000001",
+      "contractNumber": "CTR-2026-001",
+      "name": "Hợp Đồng Dịch Vụ Phần Mềm CRM Enterprise",
+      "contractType": "ENTERPRISE",
+      "status": "DRAFT",
+      "accountId": "20000000-0000-0000-0000-000000000001",
+      "accountName": "Tập đoàn Vingroup",
+      "totalValue": 250000000.0,
+      "currencyCode": "VND",
+      "startDate": "2026-09-01",
+      "endDate": "2027-08-31",
+      "signedDate": null,
+      "updatedAt": "2026-08-14T15:40:00Z",
+      "version": 1
+    }
+  ],
+  "page": 0,
+  "size": 20,
+  "totalElements": 1,
+  "totalPages": 1
+}
+```
+
+#### 4. Update Contract
+
+```http
+PUT /api/contracts/{id}
+Content-Type: application/json
+```
+
+Request Body:
+```json
+{
+  "version": 1,
+  "name": "Hợp Đồng Dịch Vụ Phần Mềm CRM Enterprise (Đã chỉnh sửa)",
+  "contractType": "ENTERPRISE",
+  "accountId": "20000000-0000-0000-0000-000000000001",
+  "opportunityId": "40000000-0000-0000-0000-000000000001",
+  "quoteId": "50000000-0000-0000-0000-000000000001",
+  "signatoryContactId": "30000000-0000-0000-0000-000000000001",
+  "startDate": "2026-09-01",
+  "endDate": "2027-08-31",
+  "totalValue": 260000000.0,
+  "currencyCode": "VND",
+  "paymentTerms": "Thanh toán 100% khi ký kết",
+  "billingFrequency": "ANNUAL",
+  "autoRenew": true,
+  "renewalNoticeDays": 30,
+  "description": "Điều chỉnh giá trị gói dịch vụ"
+}
+```
+
+Response: `200 OK`
+
+#### 5. Submit Contract for Review
+
+```http
+POST /api/contracts/{id}/submit-review
+If-Match: "1"
+```
+
+Response: `200 OK`
+
+#### 6. Approve Contract
+
+```http
+POST /api/contracts/{id}/approve
+If-Match: "2"
+```
+
+Response: `200 OK`
+
+#### 7. Send Contract for Signature
+
+```http
+POST /api/contracts/{id}/send-signature
+If-Match: "3"
+```
+
+Response: `200 OK`
+
+#### 8. Sign Contract
+
+```http
+POST /api/contracts/{id}/sign
+Content-Type: application/json
+```
+
+Request Body:
+```json
+{
+  "version": 4,
+  "signedDate": "2026-08-20",
+  "signedByContactId": "30000000-0000-0000-0000-000000000001",
+  "internalSignedByUserId": "10000000-0000-0000-0000-000000000001"
+}
+```
+
+Response: `200 OK`
+
+#### 9. Terminate Contract
+
+```http
+POST /api/contracts/{id}/terminate
+Content-Type: application/json
+```
+
+Request Body:
+```json
+{
+  "version": 5,
+  "terminationReason": "Hai bên thỏa thuận thanh lý hợp đồng trước thời hạn"
+}
+```
+
+Response: `200 OK`
+
+#### 10. Delete Contract (Draft/Cancelled only)
+
+```http
+DELETE /api/contracts/{id}
+If-Match: "1"
+```
+
+Response: `204 No Content`
+
+### Contract Error Codes
+
+| Status | Error Code | Reason |
+| --- | --- | --- |
+| `400` | `INVALID_PAYLOAD` | Validation violation on request fields |
+| `401` | `AUTHENTICATION_REQUIRED` | Missing or invalid Bearer token |
+| `403` | `ACCESS_DENIED` | Missing `sales_contract.read`, `write`, or `sign` permission |
+| `404` | `CONTRACT_NOT_FOUND` | Contract ID does not exist |
+| `409` | `CONTRACT_NUMBER_ALREADY_EXISTS` | Contract number is already registered |
+| `409` | `INVALID_CONTRACT_STATUS_TRANSITION` | Attempted invalid lifecycle state change |
+| `409` | `CONTRACT_VERSION_CONFLICT` | Optimistic concurrency conflict |
+
+---
+
+## Customer Service Management
+
+The Customer Service module provides end-to-end case management, ticket categorization, SLA target tracking, internal & customer comments, technician assignment, and customer satisfaction (CSAT) measurement.
+
+### Authorization
+
+All customer service endpoints require:
+- Header: `Authorization: Bearer <token>`
+- Permissions:
+  - `service_ticket.read` for all `GET` endpoints
+  - `service_ticket.write` for `POST`, `PUT`, `DELETE`, assignment, resolution, CSAT closure
+
+### Ticket Status Lifecycle
+
+```mermaid
+stateDiagram-v2
+    [*] --> NEW
+    NEW --> OPEN: Assign to Agent / Team
+    OPEN --> WAITING_CUSTOMER: Awaiting Customer Reply
+    WAITING_CUSTOMER --> OPEN: Customer Responded
+    OPEN --> PENDING: Pending Internal Investigation
+    PENDING --> OPEN: Internal Investigation Done
+    OPEN --> RESOLVED: Issue Fixed & Resolved
+    RESOLVED --> CLOSED: Customer Confirmed / CSAT Rated
+    RESOLVED --> OPEN: Customer Reopened
+    CLOSED --> OPEN: Reopened by Support Lead
+    NEW --> CANCELLED: Ticket Cancelled / Duplicate
+    OPEN --> CANCELLED: Ticket Cancelled / Invalid
+```
+
+### Ticket Categories Endpoints (`/api/service/categories`)
+
+#### 1. Create Ticket Category
+
+```http
+POST /api/service/categories
+Content-Type: application/json
+```
+
+Request Body:
+```json
+{
+  "categoryCode": "TECH_SUPPORT",
+  "name": "Hỗ trợ Kỹ thuật & Sự cố Hệ thống",
+  "parentCategoryId": null,
+  "defaultTeamId": "60000000-0000-0000-0000-000000000001",
+  "description": "Các yêu cầu về lỗi kết nối, tính năng phần mềm, API",
+  "isActive": true
+}
+```
+
+Response: `201 Created`
+```json
+{
+  "id": "86000000-0000-0000-0000-000000000001",
+  "categoryCode": "TECH_SUPPORT",
+  "name": "Hỗ trợ Kỹ thuật & Sự cố Hệ thống",
+  "parentCategoryId": null,
+  "defaultTeamId": "60000000-0000-0000-0000-000000000001",
+  "description": "Các yêu cầu về lỗi kết nối, tính năng phần mềm, API",
+  "isActive": true,
+  "createdBy": "10000000-0000-0000-0000-000000000001",
+  "createdAt": "2026-08-14T16:00:00Z",
+  "updatedBy": "10000000-0000-0000-0000-000000000001",
+  "updatedAt": "2026-08-14T16:00:00Z",
+  "version": 1
+}
+```
+
+#### 2. Get Ticket Category by ID
+
+```http
+GET /api/service/categories/{id}
+```
+
+Response: `200 OK`
+
+#### 3. List All Ticket Categories
+
+```http
+GET /api/service/categories
+```
+
+Response: `200 OK`
+```json
+[
+  {
+    "id": "86000000-0000-0000-0000-000000000001",
+    "categoryCode": "TECH_SUPPORT",
+    "name": "Hỗ trợ Kỹ thuật & Sự cố Hệ thống",
+    "parentCategoryId": null,
+    "defaultTeamId": "60000000-0000-0000-0000-000000000001",
+    "defaultTeamName": "Tier 2 Technical Support Team",
+    "description": "Các yêu cầu về lỗi kết nối, tính năng phần mềm, API",
+    "isActive": true,
+    "ticketsCount": 12,
+    "updatedAt": "2026-08-14T16:00:00Z",
+    "version": 1
+  }
+]
+```
+
+#### 4. Update Ticket Category
+
+```http
+PUT /api/service/categories/{id}
+Content-Type: application/json
+```
+
+Request Body:
+```json
+{
+  "version": 1,
+  "name": "Hỗ trợ Kỹ thuật & Cloud Infrastructure",
+  "parentCategoryId": null,
+  "defaultTeamId": "60000000-0000-0000-0000-000000000001",
+  "description": "Bao gồm cả hạ tầng đám mây và database",
+  "isActive": true
+}
+```
+
+Response: `200 OK`
+
+#### 5. Delete Ticket Category
+
+```http
+DELETE /api/service/categories/{id}
+If-Match: "1"
+```
+
+Response: `204 No Content`
+
+---
+
+### Ticket Endpoints (`/api/service/tickets`)
+
+#### 1. Create Ticket
+
+```http
+POST /api/service/tickets
+Content-Type: application/json
+```
+
+Request Body:
+```json
+{
+  "ticketNumber": "TCK-2026-00089",
+  "accountId": "20000000-0000-0000-0000-000000000001",
+  "contactId": "30000000-0000-0000-0000-000000000001",
+  "subject": "Không xuất được báo cáo doanh thu quý 2 sang file Excel",
+  "description": "Khi bấm nút Export Excel tại màn hình Báo cáo Doanh thu, hệ thống xoay tròn và báo lỗi 504 Gateway Timeout.",
+  "channel": "WEB",
+  "categoryId": "86000000-0000-0000-0000-000000000001",
+  "priority": "HIGH",
+  "severity": "S2",
+  "assignedUserId": null,
+  "assignedTeamId": "60000000-0000-0000-0000-000000000001",
+  "ownerUserId": "10000000-0000-0000-0000-000000000001",
+  "slaPolicyId": null,
+  "externalReference": "JIRA-4821"
+}
+```
+
+Response: `201 Created`
+```json
+{
+  "id": "87000000-0000-0000-0000-000000000001",
+  "ticketNumber": "TCK-2026-00089",
+  "accountId": "20000000-0000-0000-0000-000000000001",
+  "contactId": "30000000-0000-0000-0000-000000000001",
+  "subject": "Không xuất được báo cáo doanh thu quý 2 sang file Excel",
+  "description": "Khi bấm nút Export Excel tại màn hình Báo cáo Doanh thu, hệ thống xoay tròn và báo lỗi 504 Gateway Timeout.",
+  "channel": "WEB",
+  "categoryId": "86000000-0000-0000-0000-000000000001",
+  "priority": "HIGH",
+  "severity": "S2",
+  "status": "NEW",
+  "assignedUserId": null,
+  "assignedTeamId": "60000000-0000-0000-0000-000000000001",
+  "ownerUserId": "10000000-0000-0000-0000-000000000001",
+  "slaPolicyId": null,
+  "externalReference": "JIRA-4821",
+  "firstResponseDueAt": "2026-08-14T20:00:00Z",
+  "resolutionDueAt": "2026-08-15T16:00:00Z",
+  "firstRespondedAt": null,
+  "resolvedAt": null,
+  "closedAt": null,
+  "satisfactionScore": null,
+  "satisfactionComment": null,
+  "comments": [],
+  "createdBy": "10000000-0000-0000-0000-000000000001",
+  "createdAt": "2026-08-14T16:00:00Z",
+  "updatedBy": "10000000-0000-0000-0000-000000000001",
+  "updatedAt": "2026-08-14T16:00:00Z",
+  "version": 1
+}
+```
+
+#### 2. Get Ticket by ID (Includes Comments Timeline)
+
+```http
+GET /api/service/tickets/{id}
+```
+
+Response: `200 OK`
+
+#### 3. Search / Filter Tickets
+
+```http
+GET /api/service/tickets?q=báo+cáo&status=NEW&priority=HIGH&page=0&size=20
+```
+
+Response: `200 OK`
+```json
+{
+  "content": [
+    {
+      "id": "87000000-0000-0000-0000-000000000001",
+      "ticketNumber": "TCK-2026-00089",
+      "accountId": "20000000-0000-0000-0000-000000000001",
+      "accountName": "Tập đoàn Vingroup",
+      "contactId": "30000000-0000-0000-0000-000000000001",
+      "contactName": "Nguyễn Văn A",
+      "subject": "Không xuất được báo cáo doanh thu quý 2 sang file Excel",
+      "channel": "WEB",
+      "categoryId": "86000000-0000-0000-0000-000000000001",
+      "categoryName": "Hỗ trợ Kỹ thuật & Sự cố Hệ thống",
+      "priority": "HIGH",
+      "severity": "S2",
+      "status": "NEW",
+      "assignedUserId": null,
+      "assignedUserName": null,
+      "assignedTeamId": "60000000-0000-0000-0000-000000000001",
+      "assignedTeamName": "Tier 2 Technical Support Team",
+      "firstResponseDueAt": "2026-08-14T20:00:00Z",
+      "resolutionDueAt": "2026-08-15T16:00:00Z",
+      "resolvedAt": null,
+      "closedAt": null,
+      "commentsCount": 0,
+      "updatedAt": "2026-08-14T16:00:00Z",
+      "version": 1
+    }
+  ],
+  "page": 0,
+  "size": 20,
+  "totalElements": 1,
+  "totalPages": 1
+}
+```
+
+#### 4. Update Ticket
+
+```http
+PUT /api/service/tickets/{id}
+Content-Type: application/json
+```
+
+Request Body:
+```json
+{
+  "version": 1,
+  "accountId": "20000000-0000-0000-0000-000000000001",
+  "contactId": "30000000-0000-0000-0000-000000000001",
+  "subject": "Không xuất được báo cáo doanh thu quý 2 sang file Excel (Khẩn)",
+  "description": "Bổ sung thông tin: Sự cố xảy ra trên tất cả tài khoản kế toán trưởng.",
+  "channel": "WEB",
+  "categoryId": "86000000-0000-0000-0000-000000000001",
+  "priority": "URGENT",
+  "severity": "S1",
+  "externalReference": "JIRA-4821"
+}
+```
+
+Response: `200 OK`
+
+#### 5. Assign Ticket
+
+```http
+POST /api/service/tickets/{id}/assign
+Content-Type: application/json
+```
+
+Request Body:
+```json
+{
+  "version": 2,
+  "assignedUserId": "10000000-0000-0000-0000-000000000002",
+  "assignedTeamId": "60000000-0000-0000-0000-000000000001"
+}
+```
+
+Response: `200 OK`
+
+#### 6. Resolve Ticket
+
+```http
+POST /api/service/tickets/{id}/resolve
+If-Match: "3"
+```
+
+Response: `200 OK`
+
+#### 7. Close Ticket with CSAT Rating
+
+```http
+POST /api/service/tickets/{id}/close
+Content-Type: application/json
+```
+
+Request Body:
+```json
+{
+  "version": 4,
+  "satisfactionScore": 5,
+  "satisfactionComment": "Đội ngũ kỹ thuật hỗ trợ khắc phục sự cố rất nhanh và tận tâm!"
+}
+```
+
+Response: `200 OK`
+
+#### 8. Reopen Ticket
+
+```http
+POST /api/service/tickets/{id}/reopen
+If-Match: "5"
+```
+
+Response: `200 OK`
+
+#### 9. Add Ticket Comment / Discussion
+
+```http
+POST /api/service/tickets/{id}/comments
+Content-Type: application/json
+```
+
+Request Body:
+```json
+{
+  "authorUserId": "10000000-0000-0000-0000-000000000002",
+  "authorContactId": null,
+  "body": "Chúng tôi đã tối ưu lại query xuất báo cáo và hotfix trên production. Quý khách vui lòng thử xuất lại file.",
+  "visibility": "PUBLIC",
+  "channel": "WEB",
+  "externalMessageId": null
+}
+```
+
+Response: `201 Created`
+```json
+{
+  "id": "88000000-0000-0000-0000-000000000001",
+  "ticketId": "87000000-0000-0000-0000-000000000001",
+  "authorUserId": "10000000-0000-0000-0000-000000000002",
+  "authorUserName": "technician@company.com",
+  "authorContactId": null,
+  "authorContactName": null,
+  "body": "Chúng tôi đã tối ưu lại query xuất báo cáo và hotfix trên production. Quý khách vui lòng thử xuất lại file.",
+  "visibility": "PUBLIC",
+  "channel": "WEB",
+  "externalMessageId": null,
+  "createdBy": "10000000-0000-0000-0000-000000000002",
+  "createdAt": "2026-08-14T16:15:00Z",
+  "updatedBy": "10000000-0000-0000-0000-000000000002",
+  "updatedAt": "2026-08-14T16:15:00Z",
+  "version": 1
+}
+```
+
+#### 10. Delete Ticket Comment
+
+```http
+DELETE /api/service/tickets/{id}/comments/{commentId}
+```
+
+Response: `204 No Content`
+
+#### 11. Delete Ticket (Draft/Cancelled only)
+
+```http
+DELETE /api/service/tickets/{id}
+If-Match: "1"
+```
+
+Response: `204 No Content`
+
+### Customer Service Error Codes
+
+| Status | Error Code | Reason |
+| --- | --- | --- |
+| `400` | `INVALID_PAYLOAD` | Validation violation on request fields |
+| `401` | `AUTHENTICATION_REQUIRED` | Missing or invalid Bearer token |
+| `403` | `ACCESS_DENIED` | Missing `service_ticket.read` or `service_ticket.write` permission |
+| `404` | `TICKET_CATEGORY_NOT_FOUND` | Ticket Category ID does not exist |
+| `404` | `PARENT_CATEGORY_NOT_FOUND` | Parent Category ID does not exist |
+| `404` | `TICKET_NOT_FOUND` | Ticket ID does not exist |
+| `404` | `TICKET_COMMENT_NOT_FOUND` | Ticket Comment ID does not exist |
+| `409` | `TICKET_CATEGORY_CODE_ALREADY_EXISTS` | Ticket category code is already registered |
+| `409` | `CYCLIC_CATEGORY_HIERARCHY` | Category cannot reference itself as parent |
+| `409` | `TICKET_NUMBER_ALREADY_EXISTS` | Ticket number is already registered |
+| `409` | `TICKET_ACCOUNT_REQUIRED` | Either account ID or contact ID must be specified |
+| `409` | `INVALID_TICKET_STATUS_TRANSITION` | Attempted invalid lifecycle transition |
+| `409` | `SERVICE_VERSION_CONFLICT` | Optimistic concurrency conflict |
+
+## Marketing & Campaign Management
+
+Marketing & Campaign endpoints provide campaign planning, execution, multi-channel performance tracking, campaign membership (Leads & Contacts), engagement event tracking, and closed-loop ROI & revenue attribution.
+
+### Authorization
+
+All marketing endpoints require:
+- Header: `Authorization: Bearer <token>`
+- Permissions:
+  - `marketing_campaign.read` for `GET` endpoints
+  - `marketing_campaign.write` for `POST`, `PUT`, `DELETE` endpoints
+
+### Campaign Status Lifecycle
+
+```mermaid
+stateDiagram-v2
+    [*] --> PLANNED
+    PLANNED --> ACTIVE: Launch Campaign
+    ACTIVE --> PAUSED: Pause Campaign
+    PAUSED --> ACTIVE: Resume Campaign
+    ACTIVE --> COMPLETED: Campaign Finished
+    PAUSED --> COMPLETED: Campaign Finished
+    PLANNED --> CANCELLED: Cancel Campaign
+    ACTIVE --> CANCELLED: Cancel Campaign
+    PAUSED --> CANCELLED: Cancel Campaign
+```
+
+### Endpoints
+
+#### 1. Create Campaign
+
+```http
+POST /api/campaigns
+Content-Type: application/json
+```
+
+Request Body:
+```json
+{
+  "campaignCode": "CMP-2026-Q3-CLOUD",
+  "name": "Chiến dịch Chuyển Đổi Số Cloud Enterprise Q3/2026",
+  "campaignType": "EMAIL",
+  "ownerUserId": "10000000-0000-0000-0000-000000000001",
+  "startAt": "2026-09-01T00:00:00Z",
+  "endAt": "2026-09-30T23:59:59Z",
+  "budget": 50000000.0,
+  "currencyCode": "VND",
+  "expectedRevenue": 500000000.0,
+  "description": "Gửi chuỗi email cá nhân hóa và mời tham dự webinar chuyên đề CRM Cloud",
+  "utmSource": "newsletter",
+  "utmMedium": "email",
+  "utmCampaign": "cloud_q3_2026"
+}
+```
+
+Response: `201 Created`
+```json
+{
+  "id": "89000000-0000-0000-0000-000000000001",
+  "campaignCode": "CMP-2026-Q3-CLOUD",
+  "name": "Chiến dịch Chuyển Đổi Số Cloud Enterprise Q3/2026",
+  "campaignType": "EMAIL",
+  "status": "PLANNED",
+  "ownerUserId": "10000000-0000-0000-0000-000000000001",
+  "startAt": "2026-09-01T00:00:00Z",
+  "endAt": "2026-09-30T23:59:59Z",
+  "budget": 50000000.0,
+  "actualCost": 0.0,
+  "currencyCode": "VND",
+  "expectedRevenue": 500000000.0,
+  "description": "Gửi chuỗi email cá nhân hóa và mời tham dự webinar chuyên đề CRM Cloud",
+  "utmSource": "newsletter",
+  "utmMedium": "email",
+  "utmCampaign": "cloud_q3_2026",
+  "metrics": {
+    "totalMembers": 0,
+    "sentCount": 0,
+    "openedCount": 0,
+    "clickedCount": 0,
+    "respondedCount": 0,
+    "attendedCount": 0,
+    "responseRatePercent": 0.0,
+    "opportunitiesCount": 0,
+    "wonOpportunitiesCount": 0,
+    "totalOpportunityValue": 0.0,
+    "wonOpportunityValue": 0.0,
+    "roiPercent": 0.0
+  },
+  "createdBy": "10000000-0000-0000-0000-000000000001",
+  "createdAt": "2026-08-17T13:00:00Z",
+  "updatedBy": "10000000-0000-0000-0000-000000000001",
+  "updatedAt": "2026-08-17T13:00:00Z",
+  "version": 1
+}
+```
+
+#### 2. Get Campaign by ID (With Calculated Performance Metrics & ROI)
+
+```http
+GET /api/campaigns/{id}
+```
+
+Response: `200 OK`
+```json
+{
+  "id": "89000000-0000-0000-0000-000000000001",
+  "campaignCode": "CMP-2026-Q3-CLOUD",
+  "name": "Chiến dịch Chuyển Đổi Số Cloud Enterprise Q3/2026",
+  "campaignType": "EMAIL",
+  "status": "ACTIVE",
+  "ownerUserId": "10000000-0000-0000-0000-000000000001",
+  "startAt": "2026-09-01T00:00:00Z",
+  "endAt": "2026-09-30T23:59:59Z",
+  "budget": 50000000.0,
+  "actualCost": 45000000.0,
+  "currencyCode": "VND",
+  "expectedRevenue": 500000000.0,
+  "description": "Gửi chuỗi email cá nhân hóa và mời tham dự webinar chuyên đề CRM Cloud",
+  "utmSource": "newsletter",
+  "utmMedium": "email",
+  "utmCampaign": "cloud_q3_2026",
+  "metrics": {
+    "totalMembers": 250,
+    "sentCount": 250,
+    "openedCount": 180,
+    "clickedCount": 95,
+    "respondedCount": 42,
+    "attendedCount": 28,
+    "responseRatePercent": 28.0,
+    "opportunitiesCount": 8,
+    "wonOpportunitiesCount": 3,
+    "totalOpportunityValue": 650000000.0,
+    "wonOpportunityValue": 250000000.0,
+    "roiPercent": 455.56
+  },
+  "createdBy": "10000000-0000-0000-0000-000000000001",
+  "createdAt": "2026-08-17T13:00:00Z",
+  "updatedBy": "10000000-0000-0000-0000-000000000001",
+  "updatedAt": "2026-08-17T13:00:00Z",
+  "version": 1
+}
+```
+
+#### 3. Search / Filter Campaigns
+
+```http
+GET /api/campaigns?q=Cloud&campaignType=EMAIL&status=ACTIVE&page=0&size=20
+```
+
+Response: `200 OK`
+```json
+{
+  "content": [
+    {
+      "id": "89000000-0000-0000-0000-000000000001",
+      "campaignCode": "CMP-2026-Q3-CLOUD",
+      "name": "Chiến dịch Chuyển Đổi Số Cloud Enterprise Q3/2026",
+      "campaignType": "EMAIL",
+      "status": "ACTIVE",
+      "ownerUserId": "10000000-0000-0000-0000-000000000001",
+      "ownerUserName": "marketing.lead@company.com",
+      "startAt": "2026-09-01T00:00:00Z",
+      "endAt": "2026-09-30T23:59:59Z",
+      "budget": 50000000.0,
+      "actualCost": 45000000.0,
+      "currencyCode": "VND",
+      "expectedRevenue": 500000000.0,
+      "membersCount": 250,
+      "respondedCount": 70,
+      "wonRevenue": 250000000.0,
+      "updatedAt": "2026-08-17T13:00:00Z",
+      "version": 1
+    }
+  ],
+  "page": 0,
+  "size": 20,
+  "totalElements": 1,
+  "totalPages": 1
+}
+```
+
+#### 4. Update Campaign
+
+```http
+PUT /api/campaigns/{id}
+Content-Type: application/json
+```
+
+Request Body:
+```json
+{
+  "version": 1,
+  "name": "Chiến dịch Chuyển Đổi Số Cloud Enterprise Q3/2026 (Mở rộng)",
+  "campaignType": "EMAIL",
+  "status": "ACTIVE",
+  "ownerUserId": "10000000-0000-0000-0000-000000000001",
+  "startAt": "2026-09-01T00:00:00Z",
+  "endAt": "2026-10-15T23:59:59Z",
+  "budget": 60000000.0,
+  "actualCost": 52000000.0,
+  "expectedRevenue": 600000000.0,
+  "currencyCode": "VND",
+  "description": "Gia hạn thêm 2 tuần và mở rộng đối tượng",
+  "utmSource": "newsletter",
+  "utmMedium": "email",
+  "utmCampaign": "cloud_q3_2026"
+}
+```
+
+Response: `200 OK`
+
+#### 5. Delete Campaign (Soft Delete)
+
+```http
+DELETE /api/campaigns/{id}
+If-Match: "1"
+```
+
+Response: `204 No Content`
+
+---
+
+### Campaign Members Endpoints (`/api/campaigns/{id}/members`)
+
+#### 1. Add Member to Campaign (Lead or Contact)
+
+```http
+POST /api/campaigns/{id}/members
+Content-Type: application/json
+```
+
+Request Body (for Lead):
+```json
+{
+  "leadId": "40000000-0000-0000-0000-000000000001",
+  "contactId": null,
+  "memberStatus": "SENT",
+  "sourceDetail": "Nhập danh sách từ hội thảo Tech Expo 2026",
+  "metadata": "{\"email_batch\": \"batch_01\"}"
+}
+```
+
+Response: `201 Created`
+```json
+{
+  "id": "89500000-0000-0000-0000-000000000001",
+  "campaignId": "89000000-0000-0000-0000-000000000001",
+  "leadId": "40000000-0000-0000-0000-000000000001",
+  "leadName": "Trần Thị B",
+  "leadCompany": "Công ty TNHH Giải Pháp Số",
+  "leadEmail": "tran.b@solution.vn",
+  "contactId": null,
+  "contactName": null,
+  "contactEmail": null,
+  "memberStatus": "SENT",
+  "sourceDetail": "Nhập danh sách từ hội thảo Tech Expo 2026",
+  "firstRespondedAt": null,
+  "lastEngagedAt": null,
+  "metadata": "{\"email_batch\": \"batch_01\"}",
+  "createdBy": "10000000-0000-0000-0000-000000000001",
+  "createdAt": "2026-08-17T13:10:00Z",
+  "updatedBy": "10000000-0000-0000-0000-000000000001",
+  "updatedAt": "2026-08-17T13:10:00Z",
+  "version": 1
+}
+```
+
+#### 2. List Campaign Members
+
+```http
+GET /api/campaigns/{id}/members?page=0&size=20
+```
+
+Response: `200 OK`
+```json
+{
+  "content": [
+    {
+      "id": "89500000-0000-0000-0000-000000000001",
+      "campaignId": "89000000-0000-0000-0000-000000000001",
+      "leadId": "40000000-0000-0000-0000-000000000001",
+      "leadName": "Trần Thị B",
+      "leadCompany": "Công ty TNHH Giải Pháp Số",
+      "leadEmail": "tran.b@solution.vn",
+      "contactId": null,
+      "contactName": null,
+      "contactEmail": null,
+      "memberStatus": "RESPONDED",
+      "sourceDetail": "Nhập danh sách từ hội thảo Tech Expo 2026",
+      "firstRespondedAt": "2026-08-17T13:15:00Z",
+      "lastEngagedAt": "2026-08-17T13:15:00Z",
+      "metadata": "{\"email_batch\": \"batch_01\"}",
+      "createdBy": "10000000-0000-0000-0000-000000000001",
+      "createdAt": "2026-08-17T13:10:00Z",
+      "updatedBy": "10000000-0000-0000-0000-000000000001",
+      "updatedAt": "2026-08-17T13:15:00Z",
+      "version": 2
+    }
+  ],
+  "page": 0,
+  "size": 20,
+  "totalElements": 1,
+  "totalPages": 1
+}
+```
+
+#### 3. Update Campaign Member Status
+
+```http
+PUT /api/campaigns/{id}/members/{memberId}
+Content-Type: application/json
+```
+
+Request Body:
+```json
+{
+  "version": 1,
+  "memberStatus": "RESPONDED",
+  "sourceDetail": "Khách hàng đã click link đăng ký demo và điền form liên hệ",
+  "metadata": "{\"form_id\": \"demo_form_01\"}"
+}
+```
+
+Response: `200 OK`
+
+#### 4. Remove Member from Campaign
+
+```http
+DELETE /api/campaigns/{id}/members/{memberId}
+```
+
+Response: `204 No Content`
+
+### Marketing Error Codes
+
+| Status | Error Code | Reason |
+| --- | --- | --- |
+| `400` | `INVALID_PAYLOAD` | Validation violation on request fields |
+| `401` | `AUTHENTICATION_REQUIRED` | Missing or invalid Bearer token |
+| `403` | `ACCESS_DENIED` | Missing `marketing_campaign.read` or `marketing_campaign.write` permission |
+| `404` | `CAMPAIGN_NOT_FOUND` | Campaign ID does not exist |
+| `404` | `CAMPAIGN_MEMBER_NOT_FOUND` | Campaign member ID does not exist |
+| `404` | `LEAD_NOT_FOUND` | Lead ID does not exist |
+| `404` | `CONTACT_NOT_FOUND` | Contact ID does not exist |
+| `409` | `CAMPAIGN_CODE_ALREADY_EXISTS` | Campaign code is already registered |
+| `409` | `CAMPAIGN_MEMBER_ALREADY_EXISTS` | Lead or Contact is already a member of this campaign |
+| `409` | `INVALID_CAMPAIGN_DATES` | End date cannot be before start date |
+| `409` | `INVALID_CAMPAIGN_MEMBER_TARGET` | Exactly one of leadId or contactId must be provided |
+| `409` | `CAMPAIGN_VERSION_CONFLICT` | Optimistic concurrency conflict |
+
+## Automation & Integration Management
+
+Integration endpoints manage Webhook Subscriptions, Outbox Events monitoring, Webhook Delivery logs with manual retry capabilities, and 2-way External ID Mappings between CRM entities and external systems (ERP, Salesforce, HubSpot, Billing APIs).
+
+### Authorization
+
+All integration endpoints require:
+- Header: `Authorization: Bearer <token>`
+- Permissions:
+  - `integration.read` for `GET` endpoints
+  - `integration.manage` for `POST`, `PUT`, `DELETE`, webhook pings and retry deliveries
+
+### Endpoints
+
+#### 1. Create Webhook Subscription
+
+```http
+POST /api/integration/webhooks
+Content-Type: application/json
+```
+
+Request Body:
+```json
+{
+  "name": "ERP Order & Customer Sync Webhook",
+  "endpointUrl": "https://erp.company.vn/api/crm/webhook-receiver",
+  "eventTypes": [
+    "crm_account.created",
+    "crm_account.updated",
+    "sales_order.created",
+    "sales_order.fulfilled"
+  ],
+  "secretReference": "vault://keys/webhook-secret-01",
+  "signatureAlgorithm": "HMAC_SHA256",
+  "customHeaders": "{\"X-ERP-API-Key\": \"secret-erp-key\"}",
+  "timeoutSeconds": 15,
+  "maxRetries": 5
+}
+```
+
+Response: `201 Created`
+```json
+{
+  "id": "91000000-0000-0000-0000-000000000001",
+  "name": "ERP Order & Customer Sync Webhook",
+  "endpointUrl": "https://erp.company.vn/api/crm/webhook-receiver",
+  "eventTypes": [
+    "crm_account.created",
+    "crm_account.updated",
+    "sales_order.created",
+    "sales_order.fulfilled"
+  ],
+  "secretReference": "vault://keys/webhook-secret-01",
+  "signatureAlgorithm": "HMAC_SHA256",
+  "customHeaders": "{\"X-ERP-API-Key\": \"secret-erp-key\"}",
+  "timeoutSeconds": 15,
+  "maxRetries": 5,
+  "status": "ACTIVE",
+  "lastSuccessAt": null,
+  "lastFailureAt": null,
+  "createdBy": "10000000-0000-0000-0000-000000000001",
+  "createdAt": "2026-08-17T13:20:00Z",
+  "updatedBy": "10000000-0000-0000-0000-000000000001",
+  "updatedAt": "2026-08-17T13:20:00Z",
+  "version": 1
+}
+```
+
+#### 2. Get Webhook Subscription by ID
+
+```http
+GET /api/integration/webhooks/{id}
+```
+
+Response: `200 OK`
+
+#### 3. List All Webhook Subscriptions
+
+```http
+GET /api/integration/webhooks
+```
+
+Response: `200 OK`
+```json
+[
+  {
+    "id": "91000000-0000-0000-0000-000000000001",
+    "name": "ERP Order & Customer Sync Webhook",
+    "endpointUrl": "https://erp.company.vn/api/crm/webhook-receiver",
+    "eventTypes": [
+      "crm_account.created",
+      "crm_account.updated",
+      "sales_order.created",
+      "sales_order.fulfilled"
+    ],
+    "signatureAlgorithm": "HMAC_SHA256",
+    "status": "ACTIVE",
+    "lastSuccessAt": "2026-08-17T13:25:00Z",
+    "lastFailureAt": null,
+    "totalDeliveriesCount": 142,
+    "updatedAt": "2026-08-17T13:20:00Z",
+    "version": 1
+  }
+]
+```
+
+#### 4. Update Webhook Subscription
+
+```http
+PUT /api/integration/webhooks/{id}
+Content-Type: application/json
+```
+
+Request Body:
+```json
+{
+  "version": 1,
+  "name": "ERP Order & Customer Sync Webhook (Updated)",
+  "endpointUrl": "https://erp.company.vn/api/v2/crm/webhook-receiver",
+  "eventTypes": [
+    "crm_account.created",
+    "sales_order.created"
+  ],
+  "secretReference": "vault://keys/webhook-secret-01",
+  "signatureAlgorithm": "HMAC_SHA256",
+  "customHeaders": "{\"X-ERP-API-Key\": \"secret-erp-key\"}",
+  "timeoutSeconds": 20,
+  "maxRetries": 8,
+  "status": "ACTIVE"
+}
+```
+
+Response: `200 OK`
+
+#### 5. Ping / Test Webhook Subscription
+
+```http
+POST /api/integration/webhooks/{id}/ping
+```
+
+Response: `200 OK`
+```json
+{
+  "id": "92000000-0000-0000-0000-000000000001",
+  "subscriptionId": "91000000-0000-0000-0000-000000000001",
+  "outboxEventId": null,
+  "eventType": "webhook.ping",
+  "attemptNumber": 1,
+  "requestHeaders": "{\"User-Agent\": \"CRM-Webhook-Worker/1.0\", \"X-CRM-Event\": \"webhook.ping\"}",
+  "responseStatus": 200,
+  "responseHeaders": "{\"Content-Type\": \"application/json\"}",
+  "responseBodyExcerpt": "{\"status\": \"pong\", \"message\": \"Webhook endpoint successfully verified\"}",
+  "status": "SUCCEEDED",
+  "nextAttemptAt": null,
+  "startedAt": "2026-08-17T13:22:00Z",
+  "completedAt": "2026-08-17T13:22:00.042Z",
+  "durationMs": 42,
+  "errorMessage": null,
+  "createdAt": "2026-08-17T13:22:00Z"
+}
+```
+
+#### 6. List Webhook Deliveries
+
+```http
+GET /api/integration/webhooks/{id}/deliveries?page=0&size=20
+```
+
+Response: `200 OK`
+
+#### 7. Retry Failed Webhook Delivery
+
+```http
+POST /api/integration/webhooks/{id}/deliveries/{deliveryId}/retry
+```
+
+Response: `200 OK`
+
+#### 8. Delete Webhook Subscription
+
+```http
+DELETE /api/integration/webhooks/{id}
+If-Match: "1"
+```
+
+Response: `204 No Content`
+
+---
+
+### External ID Mappings (`/api/integration/mappings`)
+
+#### 1. Create External ID Mapping
+
+```http
+POST /api/integration/mappings
+Content-Type: application/json
+```
+
+Request Body:
+```json
+{
+  "integrationKey": "SAP_ERP_PROD",
+  "entityType": "ACCOUNT",
+  "internalEntityId": "20000000-0000-0000-0000-000000000001",
+  "externalEntityId": "SAP-CUST-889920",
+  "externalVersion": "rev-4",
+  "metadata": "{\"company_code\": \"VN01\", \"sales_org\": \"1000\"}"
+}
+```
+
+Response: `201 Created`
+```json
+{
+  "id": "93000000-0000-0000-0000-000000000001",
+  "integrationKey": "SAP_ERP_PROD",
+  "entityType": "ACCOUNT",
+  "internalEntityId": "20000000-0000-0000-0000-000000000001",
+  "externalEntityId": "SAP-CUST-889920",
+  "externalVersion": "rev-4",
+  "lastSyncedAt": "2026-08-17T13:23:00Z",
+  "metadata": "{\"company_code\": \"VN01\", \"sales_org\": \"1000\"}",
+  "createdBy": "10000000-0000-0000-0000-000000000001",
+  "createdAt": "2026-08-17T13:23:00Z",
+  "updatedBy": "10000000-0000-0000-0000-000000000001",
+  "updatedAt": "2026-08-17T13:23:00Z",
+  "version": 1
+}
+```
+
+#### 2. Find External Mapping
+
+```http
+GET /api/integration/mappings?integrationKey=SAP_ERP_PROD&entityType=ACCOUNT&externalEntityId=SAP-CUST-889920
+```
+
+Response: `200 OK`
+
+#### 3. Delete External Mapping
+
+```http
+DELETE /api/integration/mappings/{id}
+```
+
+Response: `204 No Content`
+
+---
+
+### Outbox Events Monitoring (`/api/integration/outbox`)
+
+#### 1. Search / Monitor Outbox Queue
+
+```http
+GET /api/integration/outbox?aggregateType=ACCOUNT&status=PENDING&page=0&size=20
+```
+
+Response: `200 OK`
+```json
+{
+  "content": [
+    {
+      "id": "94000000-0000-0000-0000-000000000001",
+      "aggregateType": "ACCOUNT",
+      "aggregateId": "20000000-0000-0000-0000-000000000001",
+      "eventType": "crm_account.created",
+      "eventVersion": 1,
+      "payload": "{\"accountId\": \"20000000-0000-0000-0000-000000000001\", \"accountName\": \"Tập đoàn Vingroup\"}",
+      "status": "PUBLISHED",
+      "availableAt": "2026-08-17T13:20:00Z",
+      "publishedAt": "2026-08-17T13:20:01Z",
+      "retryCount": 0,
+      "lastError": null,
+      "createdAt": "2026-08-17T13:20:00Z"
+    }
+  ],
+  "page": 0,
+  "size": 20,
+  "totalElements": 1,
+  "totalPages": 1
+}
+```
+
+### Integration Error Codes
+
+| Status | Error Code | Reason |
+| --- | --- | --- |
+| `400` | `INVALID_PAYLOAD` | Validation violation on request fields |
+| `401` | `AUTHENTICATION_REQUIRED` | Missing or invalid Bearer token |
+| `403` | `ACCESS_DENIED` | Missing `integration.read` or `integration.manage` permission |
+| `404` | `WEBHOOK_SUBSCRIPTION_NOT_FOUND` | Webhook subscription ID does not exist |
+| `404` | `WEBHOOK_DELIVERY_NOT_FOUND` | Webhook delivery log record does not exist |
+| `404` | `EXTERNAL_MAPPING_NOT_FOUND` | External ID mapping record does not exist |
+| `409` | `EXTERNAL_MAPPING_ALREADY_EXISTS` | An ID mapping for this entity and key already exists |
+| `409` | `INVALID_WEBHOOK_URL` | Endpoint URL must start with http:// or https:// |
+| `409` | `INVALID_EVENT_TYPES` | Event types list cannot be empty |
+| `409` | `INTEGRATION_VERSION_CONFLICT` | Optimistic concurrency version mismatch |
+
+---
 
 ## OAuth2 Login
 

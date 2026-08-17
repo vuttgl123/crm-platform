@@ -13,6 +13,7 @@ import com.crm.customer.contact.domain.ContactOwner;
 import com.crm.foundation.mapping.CrmMapperConfig;
 import com.crm.sharedkernel.application.PageQuery;
 import com.crm.sharedkernel.application.PageResult;
+import com.crm.sharedkernel.domain.ActorId;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
@@ -30,20 +31,28 @@ public interface ContactWebMapper {
 
 	ContactSummaryResponse toSummaryResponse(ContactSummary summary);
 
+	default UUID map(ActorId value) {
+		return value == null ? null : value.value();
+	}
+
+	default ActorId map(UUID value) {
+		return value == null ? null : new ActorId(value);
+	}
+
+	default UUID map(ContactId value) {
+		return value == null ? null : value.value();
+	}
+
 	default ContactId toContactId(UUID value) {
 		return value == null ? null : new ContactId(value);
 	}
 
+	default UUID map(AccountId value) {
+		return value == null ? null : value.value();
+	}
+
 	default AccountId toAccountId(UUID value) {
 		return value == null ? null : new AccountId(value);
-	}
-
-	default UUID fromContactId(ContactId value) {
-		return value == null ? null : value.value();
-	}
-
-	default UUID fromAccountId(AccountId value) {
-		return value == null ? null : value.value();
 	}
 
 	default ContactOwner toContactOwner(CreateContactRequest.Owner value) {

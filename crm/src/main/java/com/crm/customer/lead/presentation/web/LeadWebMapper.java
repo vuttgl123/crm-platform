@@ -14,6 +14,7 @@ import com.crm.customer.lead.domain.LeadOwner;
 import com.crm.foundation.mapping.CrmMapperConfig;
 import com.crm.sharedkernel.application.PageQuery;
 import com.crm.sharedkernel.application.PageResult;
+import com.crm.sharedkernel.domain.ActorId;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
@@ -36,12 +37,20 @@ public interface LeadWebMapper {
 
 	LeadSummaryResponse toSummaryResponse(LeadSummary summary);
 
-	default LeadId toLeadId(UUID value) {
-		return value == null ? null : new LeadId(value);
+	default UUID map(ActorId value) {
+		return value == null ? null : value.value();
 	}
 
-	default UUID fromLeadId(LeadId value) {
+	default ActorId map(UUID value) {
+		return value == null ? null : new ActorId(value);
+	}
+
+	default UUID map(LeadId value) {
 		return value == null ? null : value.value();
+	}
+
+	default LeadId toLeadId(UUID value) {
+		return value == null ? null : new LeadId(value);
 	}
 
 	default LeadOwner toLeadOwner(CreateLeadRequest.Owner value) {

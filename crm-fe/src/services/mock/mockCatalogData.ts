@@ -94,6 +94,12 @@ export const mockCatalogApi = {
     return newItem;
   },
 
+  updateProduct: async (id: string, data: Partial<ProductItem>) => {
+    productsStore = productsStore.map((p) => (p.id === id ? { ...p, ...data } : p));
+    const found = productsStore.find((p) => p.id === id);
+    return found!;
+  },
+
   deleteProduct: async (id: string) => {
     productsStore = productsStore.filter((p) => p.id !== id);
     return true;

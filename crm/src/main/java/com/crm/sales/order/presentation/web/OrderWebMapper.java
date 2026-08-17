@@ -14,6 +14,7 @@ import com.crm.sales.order.domain.OrderAmounts;
 import com.crm.sales.order.domain.OrderId;
 import com.crm.sharedkernel.application.PageQuery;
 import com.crm.sharedkernel.application.PageResult;
+import com.crm.sharedkernel.domain.ActorId;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
@@ -40,12 +41,20 @@ public interface OrderWebMapper {
 
 	OrderSummaryResponse toSummaryResponse(OrderSummary summary);
 
-	default OrderId toOrderId(UUID value) {
-		return value == null ? null : new OrderId(value);
+	default UUID map(ActorId value) {
+		return value == null ? null : value.value();
 	}
 
-	default UUID fromOrderId(OrderId value) {
+	default ActorId map(UUID value) {
+		return value == null ? null : new ActorId(value);
+	}
+
+	default UUID map(OrderId value) {
 		return value == null ? null : value.value();
+	}
+
+	default OrderId toOrderId(UUID value) {
+		return value == null ? null : new OrderId(value);
 	}
 
 	default OrderAmounts toAmounts(CreateOrderRequest.Amounts value) {
@@ -72,6 +81,10 @@ public interface OrderWebMapper {
 
 	default OrderSummaryResponse.Amounts toSummaryResponseAmounts(OrderAmounts value) {
 		if (value == null) return null;
+		return QuoteSummaryAmounts(value);
+	}
+
+	private OrderSummaryResponse.Amounts QuoteSummaryAmounts(OrderAmounts value) {
 		return new OrderSummaryResponse.Amounts(
 				value.currencyCode(), value.subtotal(),
 				value.discountTotal(), value.taxTotal(),

@@ -13,6 +13,7 @@ import com.crm.customer.account.domain.AnnualRevenue;
 import com.crm.foundation.mapping.CrmMapperConfig;
 import com.crm.sharedkernel.application.PageQuery;
 import com.crm.sharedkernel.application.PageResult;
+import com.crm.sharedkernel.domain.ActorId;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
@@ -28,6 +29,18 @@ public interface AccountWebMapper {
 	AccountResponse toResponse(AccountDetails details);
 
 	AccountSummaryResponse toSummaryResponse(AccountSummary summary);
+
+	default UUID map(ActorId value) {
+		return value == null ? null : value.value();
+	}
+
+	default ActorId map(UUID value) {
+		return value == null ? null : new ActorId(value);
+	}
+
+	default UUID map(AccountId value) {
+		return value == null ? null : value.value();
+	}
 
 	default AccountId toAccountId(UUID value) {
 		return value == null ? null : new AccountId(value);

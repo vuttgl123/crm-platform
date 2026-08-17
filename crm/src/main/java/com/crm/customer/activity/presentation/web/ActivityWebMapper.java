@@ -13,6 +13,7 @@ import com.crm.customer.activity.domain.ActivityOwner;
 import com.crm.foundation.mapping.CrmMapperConfig;
 import com.crm.sharedkernel.application.PageQuery;
 import com.crm.sharedkernel.application.PageResult;
+import com.crm.sharedkernel.domain.ActorId;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
@@ -35,12 +36,20 @@ public interface ActivityWebMapper {
 
 	ActivitySummaryResponse toSummaryResponse(ActivitySummary summary);
 
-	default ActivityId toActivityId(UUID value) {
-		return value == null ? null : new ActivityId(value);
+	default UUID map(ActorId value) {
+		return value == null ? null : value.value();
 	}
 
-	default UUID fromActivityId(ActivityId value) {
+	default ActorId map(UUID value) {
+		return value == null ? null : new ActorId(value);
+	}
+
+	default UUID map(ActivityId value) {
 		return value == null ? null : value.value();
+	}
+
+	default ActivityId toActivityId(UUID value) {
+		return value == null ? null : new ActivityId(value);
 	}
 
 	default ActivityOwner toOwner(CreateActivityRequest.Owner value) {

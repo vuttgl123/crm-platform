@@ -1,26 +1,28 @@
 package com.crm.audit.domain;
 
-import com.crm.sharedkernel.domain.ErrorCode;
+import com.crm.sharedkernel.domain.exception.ErrorCode;
 
 public enum AuditErrorCode implements ErrorCode {
 
-	AUDIT_EVENT_NOT_FOUND("audit.event_not_found"),
-	DATA_ACCESS_EVENT_NOT_FOUND("audit.data_access_event_not_found");
+	AUDIT_EVENT_NOT_FOUND("AUDIT_EVENT_NOT_FOUND", "audit.event_not_found"),
+	DATA_ACCESS_EVENT_NOT_FOUND("DATA_ACCESS_EVENT_NOT_FOUND", "audit.data_access_event_not_found");
 
-	private final String key;
+	private final String value;
+	private final String messageKey;
 
-	AuditErrorCode(String key) {
-		this.key = key;
+	AuditErrorCode(String value, String messageKey) {
+		this.value = value;
+		this.messageKey = messageKey;
 	}
 
 	@Override
-	public String key() {
-		return key;
+	public String value() {
+		return value;
 	}
 
 	@Override
-	public String code() {
-		return name();
+	public String messageKey() {
+		return messageKey;
 	}
 
 }

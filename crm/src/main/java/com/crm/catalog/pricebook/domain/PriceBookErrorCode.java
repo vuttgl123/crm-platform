@@ -1,0 +1,23 @@
+package com.crm.catalog.pricebook.domain;
+
+public enum PriceBookErrorCode {
+
+	PRICE_BOOK_NOT_FOUND("PRICE_BOOK_NOT_FOUND"),
+	PRICE_BOOK_CODE_ALREADY_EXISTS("PRICE_BOOK_CODE_ALREADY_EXISTS"),
+	PRICE_BOOK_ITEM_NOT_FOUND("PRICE_BOOK_ITEM_NOT_FOUND"),
+	DUPLICATE_PRICE_BOOK_ITEM("DUPLICATE_PRICE_BOOK_ITEM"),
+	INVALID_PRICE_RANGE("INVALID_PRICE_RANGE"),
+	PRODUCT_NOT_FOUND("PRODUCT_NOT_FOUND"),
+	PRICE_BOOK_VERSION_CONFLICT("PRICE_BOOK_VERSION_CONFLICT");
+
+	private final String code;
+
+	PriceBookErrorCode(String code) {
+		this.code = code;
+	}
+
+	public String code() {
+		return code;
+	}
+
+}

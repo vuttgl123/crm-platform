@@ -13,6 +13,7 @@ import com.crm.customer.opportunity.domain.OpportunityOwner;
 import com.crm.foundation.mapping.CrmMapperConfig;
 import com.crm.sharedkernel.application.PageQuery;
 import com.crm.sharedkernel.application.PageResult;
+import com.crm.sharedkernel.domain.ActorId;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
@@ -30,12 +31,20 @@ public interface OpportunityWebMapper {
 
 	OpportunitySummaryResponse toSummaryResponse(OpportunitySummary summary);
 
-	default OpportunityId toOpportunityId(UUID value) {
-		return value == null ? null : new OpportunityId(value);
+	default UUID map(ActorId value) {
+		return value == null ? null : value.value();
 	}
 
-	default UUID fromOpportunityId(OpportunityId value) {
+	default ActorId map(UUID value) {
+		return value == null ? null : new ActorId(value);
+	}
+
+	default UUID map(OpportunityId value) {
 		return value == null ? null : value.value();
+	}
+
+	default OpportunityId toOpportunityId(UUID value) {
+		return value == null ? null : new OpportunityId(value);
 	}
 
 	default OpportunityOwner toOpportunityOwner(CreateOpportunityRequest.Owner value) {

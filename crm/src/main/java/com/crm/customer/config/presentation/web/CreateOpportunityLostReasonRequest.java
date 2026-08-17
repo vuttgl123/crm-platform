@@ -1,0 +1,19 @@
+package com.crm.customer.config.presentation.web;
+
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
+
+public record CreateOpportunityLostReasonRequest(
+		@NotBlank(message = "Reason code must not be blank")
+		@Pattern(regexp = "^[A-Za-z0-9_]{2,50}$", message = "Reason code must be 2-50 characters alphanumeric or underscore")
+		String reasonCode,
+
+		@NotBlank(message = "Reason name must not be blank")
+		@Size(max = 100, message = "Reason name must not exceed 100 characters")
+		String name,
+
+		@Size(max = 500, message = "Description must not exceed 500 characters")
+		String description
+) {
+}

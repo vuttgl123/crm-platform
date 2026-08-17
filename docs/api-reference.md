@@ -5443,6 +5443,1601 @@ Response: `200 OK`
 | `409` | `INVALID_EVENT_TYPES` | Event types list cannot be empty |
 | `409` | `INTEGRATION_VERSION_CONFLICT` | Optimistic concurrency version mismatch |
 
+## Data Privacy & Compliance Management
+
+Privacy endpoints enforce GDPR, PDPA, and Decree 13 compliance across Consent Tracking, Retention Policies, Data Subject Requests (DSR - Right to Access, Rectify, Erase, Restrict, Port, Object), and Legal Hold preservation.
+
+### Authorization
+
+All privacy endpoints require:
+- Header: `Authorization: Bearer <token>`
+- Permissions:
+  - `privacy_consent.read` for `GET` endpoints
+  - `privacy_consent.write` for capturing/withdrawing consents, managing retention policies, updating DSR status, and managing legal holds
+
+### Endpoints
+
+#### 1. Capture Consent
+
+```http
+POST /api/privacy/consents
+Content-Type: application/json
+```
+
+Request Body:
+```json
+{
+  "contactId": "30000000-0000-0000-0000-000000000001",
+  "channel": "EMAIL",
+  "purpose": "MARKETING_NEWSLETTER",
+  "lawfulBasis": "CONSENT",
+  "consentStatus": "GRANTED",
+  "policyVersion": "v2.1-2026",
+  "source": "Landing Page Subscription Form",
+  "proofReference": "doc://optin/consent_form_signed_01.pdf",
+  "effectiveFrom": "2026-08-17T13:30:00Z",
+  "expiresAt": "2027-08-17T13:30:00Z",
+  "metadata": "{\"ip_address\": \"113.161.45.12\", \"user_agent\": \"Mozilla/5.0\"}"
+}
+```
+
+Response: `201 Created`
+```json
+{
+  "id": "95000000-0000-0000-0000-000000000001",
+  "accountId": null,
+  "contactId": "30000000-0000-0000-0000-000000000001",
+  "leadId": null,
+  "channel": "EMAIL",
+  "purpose": "MARKETING_NEWSLETTER",
+  "lawfulBasis": "CONSENT",
+  "consentStatus": "GRANTED",
+  "policyVersion": "v2.1-2026",
+  "source": "Landing Page Subscription Form",
+  "proofReference": "doc://optin/consent_form_signed_01.pdf",
+  "capturedAt": "2026-08-17T13:30:00Z",
+  "effectiveFrom": "2026-08-17T13:30:00Z",
+  "expiresAt": "2027-08-17T13:30:00Z",
+  "withdrawnAt": null,
+  "recordedBy": "10000000-0000-0000-0000-000000000001",
+  "metadata": "{\"ip_address\": \"113.161.45.12\", \"user_agent\": \"Mozilla/5.0\"}",
+  "createdAt": "2026-08-17T13:30:00Z"
+}
+```
+
+#### 2. Withdraw Consent
+
+```http
+POST /api/privacy/consents/{id}/withdraw
+```
+
+Response: `200 OK`
+
+#### 3. Find Consents by Target
+
+```http
+GET /api/privacy/consents?contactId=30000000-0000-0000-0000-000000000001
+```
+
+Response: `200 OK`
+
+---
+
+### Retention Policies (`/api/privacy/retention-policies`)
+
+#### 1. Create Retention Policy
+
+```http
+POST /api/privacy/retention-policies
+Content-Type: application/json
+```
+
+Request Body:
+```json
+{
+  "entityType": "ACTIVITY",
+  "purpose": "CUSTOMER_COMMUNICATION_LOGS",
+  "retentionDays": 730,
+  "actionOnExpiry": "ANONYMIZE",
+  "legalBasis": "Decree 13 / GDPR Article 5(1)(e) Storage Limitation"
+}
+```
+
+Response: `201 Created`
+
+#### 2. List All Retention Policies
+
+```http
+GET /api/privacy/retention-policies
+```
+
+Response: `200 OK`
+
+#### 3. Update Retention Policy
+
+```http
+PUT /api/privacy/retention-policies/{id}
+Content-Type: application/json
+```
+
+Request Body:
+```json
+{
+  "version": 1,
+  "retentionDays": 1095,
+  "actionOnExpiry": "ARCHIVE",
+  "legalBasis": "Decree 13 / GDPR Article 5(1)(e)",
+  "active": true
+}
+```
+
+Response: `200 OK`
+
+#### 4. Delete Retention Policy
+
+```http
+DELETE /api/privacy/retention-policies/{id}
+If-Match: "1"
+```
+
+Response: `204 No Content`
+
+---
+
+### Data Subject Requests (`/api/privacy/dsr`)
+
+#### 1. Create DSR Request
+
+```http
+POST /api/privacy/dsr
+Content-Type: application/json
+```
+
+Request Body:
+```json
+{
+  "requestNumber": "DSR-2026-0001",
+  "requestType": "ERASURE",
+  "contactId": "30000000-0000-0000-0000-000000000001",
+  "requesterEmail": "nguyenvana@company.com",
+  "dueAt": "2026-09-16T13:30:00Z",
+  "assignedUserId": "10000000-0000-0000-0000-000000000001",
+  "verificationReference": "Citizen ID verified via KYC portal: KYC-99882"
+}
+```
+
+Response: `201 Created`
+```json
+{
+  "id": "96000000-0000-0000-0000-000000000001",
+  "requestNumber": "DSR-2026-0001",
+  "requestType": "ERASURE",
+  "accountId": null,
+  "contactId": "30000000-0000-0000-0000-000000000001",
+  "leadId": null,
+  "requesterEmail": "nguyenvana@company.com",
+  "status": "RECEIVED",
+  "receivedAt": "2026-08-17T13:30:00Z",
+  "dueAt": "2026-09-16T13:30:00Z",
+  "completedAt": null,
+  "assignedUserId": "10000000-0000-0000-0000-000000000001",
+  "verificationReference": "Citizen ID verified via KYC portal: KYC-99882",
+  "resolutionSummary": null,
+  "rejectionReason": null,
+  "createdBy": "10000000-0000-0000-0000-000000000001",
+  "createdAt": "2026-08-17T13:30:00Z",
+  "updatedBy": "10000000-0000-0000-0000-000000000001",
+  "updatedAt": "2026-08-17T13:30:00Z",
+  "version": 1
+}
+```
+
+#### 2. Search DSR Requests
+
+```http
+GET /api/privacy/dsr?status=RECEIVED&page=0&size=20
+```
+
+Response: `200 OK`
+
+#### 3. Update DSR Status
+
+```http
+PUT /api/privacy/dsr/{id}/status
+Content-Type: application/json
+```
+
+Request Body:
+```json
+{
+  "version": 1,
+  "status": "COMPLETED",
+  "assignedUserId": "10000000-0000-0000-0000-000000000001",
+  "verificationReference": "Citizen ID verified via KYC portal: KYC-99882",
+  "resolutionSummary": "All marketing consents withdrawn and PII data anonymized as requested.",
+  "rejectionReason": null
+}
+```
+
+Response: `200 OK`
+
+---
+
+### Legal Holds (`/api/privacy/legal-holds`)
+
+#### 1. Create Legal Hold
+
+```http
+POST /api/privacy/legal-holds
+Content-Type: application/json
+```
+
+Request Body:
+```json
+{
+  "holdCode": "LH-2026-AUDIT-01",
+  "name": "Thanh tra Thuế & Hợp đồng Q3/2026",
+  "entityType": "CONTRACT",
+  "entityId": null,
+  "scopeFilter": "{\"fiscal_year\": 2026, \"status\": \"ACTIVE\"}",
+  "reason": "Yêu cầu lưu trữ tài liệu phục vụ thanh tra thuế định kỳ, nghiêm cấm xóa hoặc ẩn dữ liệu"
+}
+```
+
+Response: `201 Created`
+
+#### 2. List Legal Holds
+
+```http
+GET /api/privacy/legal-holds
+```
+
+Response: `200 OK`
+
+#### 3. Release Legal Hold
+
+```http
+POST /api/privacy/legal-holds/{id}/release
+```
+
+Response: `200 OK`
+
+---
+
+### Privacy Error Codes
+
+| Status | Error Code | Reason |
+| --- | --- | --- |
+| `400` | `INVALID_PAYLOAD` | Validation violation on request fields |
+| `401` | `AUTHENTICATION_REQUIRED` | Missing or invalid Bearer token |
+| `403` | `ACCESS_DENIED` | Missing `privacy_consent.read` or `privacy_consent.write` permission |
+| `404` | `CONSENT_NOT_FOUND` | Consent record ID does not exist |
+| `404` | `RETENTION_POLICY_NOT_FOUND` | Retention policy ID does not exist |
+| `404` | `DSR_NOT_FOUND` | Data Subject Request ID does not exist |
+| `404` | `LEGAL_HOLD_NOT_FOUND` | Legal hold record ID does not exist |
+| `409` | `INVALID_CONSENT_TARGET` | Exactly one of accountId, contactId, or leadId must be provided |
+| `409` | `CONSENT_ALREADY_WITHDRAWN` | Consent is already in WITHDRAWN state |
+| `409` | `RETENTION_POLICY_ALREADY_EXISTS` | A policy for this entityType and purpose already exists |
+| `409` | `DSR_NUMBER_ALREADY_EXISTS` | DSR request number is already registered |
+| `409` | `LEGAL_HOLD_CODE_ALREADY_EXISTS` | Legal hold code is already registered |
+| `409` | `LEGAL_HOLD_ALREADY_RELEASED` | Legal hold has already been released |
+| `409` | `PRIVACY_VERSION_CONFLICT` | Optimistic concurrency version mismatch |
+
+## Team & Hierarchy Management
+
+Team endpoints manage organizational structures, multi-level parent-child team hierarchies, team memberships (with primary team designation), and role-based data scoping (`OWN`, `TEAM`, `TEAM_TREE`, `TENANT`).
+
+### Authorization
+
+All team endpoints require:
+- Header: `Authorization: Bearer <token>`
+- Permissions:
+  - `platform_team.read` for viewing teams and members
+  - `platform_team.manage` for creating, updating, deleting teams, and managing team members
+  - `platform_role.read` for viewing role data scopes
+  - `platform_role.manage` for creating and deleting role data scopes
+
+### Endpoints
+
+#### 1. Create Team
+
+```http
+POST /api/platform/teams
+Content-Type: application/json
+```
+
+Request Body:
+```json
+{
+  "name": "Phòng Kinh Doanh Miền Bắc",
+  "description": "Phòng phụ trách toàn bộ hoạt động bán hàng khu vực Hà Nội và các tỉnh phía Bắc",
+  "parentTeamId": "71000000-0000-0000-0000-000000000001",
+  "managerUserId": "10000000-0000-0000-0000-000000000001"
+}
+```
+
+Response: `201 Created`
+```json
+{
+  "id": "72000000-0000-0000-0000-000000000001",
+  "name": "Phòng Kinh Doanh Miền Bắc",
+  "description": "Phòng phụ trách toàn bộ hoạt động bán hàng khu vực Hà Nội và các tỉnh phía Bắc",
+  "parentTeamId": "71000000-0000-0000-0000-000000000001",
+  "managerUserId": "10000000-0000-0000-0000-000000000001",
+  "status": "ACTIVE",
+  "members": [],
+  "createdBy": "10000000-0000-0000-0000-000000000001",
+  "createdAt": "2026-08-17T13:40:00Z",
+  "updatedBy": "10000000-0000-0000-0000-000000000001",
+  "updatedAt": "2026-08-17T13:40:00Z",
+  "version": 1
+}
+```
+
+#### 2. Get Team Details (with Members)
+
+```http
+GET /api/platform/teams/{id}
+```
+
+Response: `200 OK`
+
+#### 3. List All Teams
+
+```http
+GET /api/platform/teams
+```
+
+Response: `200 OK`
+```json
+[
+  {
+    "id": "72000000-0000-0000-0000-000000000001",
+    "name": "Phòng Kinh Doanh Miền Bắc",
+    "description": "Phòng phụ trách khu vực Hà Nội và miền Bắc",
+    "parentTeamId": "71000000-0000-0000-0000-000000000001",
+    "parentTeamName": "Khối Kinh Doanh Toàn Quốc",
+    "managerUserId": "10000000-0000-0000-0000-000000000001",
+    "status": "ACTIVE",
+    "activeMembersCount": 12,
+    "updatedAt": "2026-08-17T13:40:00Z",
+    "version": 1
+  }
+]
+```
+
+#### 4. Update Team
+
+```http
+PUT /api/platform/teams/{id}
+Content-Type: application/json
+```
+
+Request Body:
+```json
+{
+  "version": 1,
+  "name": "Phòng Kinh Doanh Miền Bắc & Đông Bắc",
+  "description": "Mở rộng phụ trách thêm các tỉnh Đông Bắc Bộ",
+  "parentTeamId": "71000000-0000-0000-0000-000000000001",
+  "managerUserId": "10000000-0000-0000-0000-000000000002",
+  "status": "ACTIVE"
+}
+```
+
+Response: `200 OK`
+
+#### 5. Delete Team (Soft Delete)
+
+```http
+DELETE /api/platform/teams/{id}
+If-Match: "1"
+```
+
+Response: `204 No Content`
+
+#### 6. Add Team Member
+
+```http
+POST /api/platform/teams/{id}/members
+Content-Type: application/json
+```
+
+Request Body:
+```json
+{
+  "userId": "10000000-0000-0000-0000-000000000003",
+  "memberRole": "SENIOR_SALES",
+  "primary": true
+}
+```
+
+Response: `201 Created`
+
+#### 7. Set Primary Team for Member
+
+```http
+POST /api/platform/teams/{id}/members/{userId}/primary
+```
+
+Response: `200 OK`
+
+#### 8. Remove Member from Team
+
+```http
+DELETE /api/platform/teams/{id}/members/{userId}
+```
+
+Response: `204 No Content`
+
+---
+
+### Role Data Scoping (`/api/platform/roles/{roleId}/scopes`)
+
+#### 1. Add Data Scope to Role
+
+```http
+POST /api/platform/roles/{roleId}/scopes
+Content-Type: application/json
+```
+
+Request Body:
+```json
+{
+  "entityType": "OPPORTUNITY",
+  "scopeType": "TEAM_TREE",
+  "teamId": "72000000-0000-0000-0000-000000000001"
+}
+```
+
+Response: `201 Created`
+```json
+{
+  "id": "73000000-0000-0000-0000-000000000001",
+  "roleId": "80000000-0000-0000-0000-000000000001",
+  "entityType": "OPPORTUNITY",
+  "scopeType": "TEAM_TREE",
+  "teamId": "72000000-0000-0000-0000-000000000001",
+  "teamName": "Phòng Kinh Doanh Miền Bắc",
+  "createdAt": "2026-08-17T13:40:00Z",
+  "createdBy": "10000000-0000-0000-0000-000000000001"
+}
+```
+
+#### 2. List Data Scopes for Role
+
+```http
+GET /api/platform/roles/{roleId}/scopes
+```
+
+Response: `200 OK`
+
+#### 3. Delete Data Scope from Role
+
+```http
+DELETE /api/platform/roles/{roleId}/scopes/{scopeId}
+```
+
+Response: `204 No Content`
+
+---
+
+### Team Error Codes
+
+| Status | Error Code | Reason |
+| --- | --- | --- |
+| `400` | `INVALID_PAYLOAD` | Validation violation on request fields |
+| `401` | `AUTHENTICATION_REQUIRED` | Missing or invalid Bearer token |
+| `403` | `ACCESS_DENIED` | Missing `platform_team.read`, `platform_team.manage`, `platform_role.read`, or `platform_role.manage` permission |
+| `404` | `TEAM_NOT_FOUND` | Team ID does not exist |
+| `404` | `TEAM_MEMBER_NOT_FOUND` | Team member record does not exist |
+| `404` | `DATA_SCOPE_NOT_FOUND` | Data scope record ID does not exist |
+| `409` | `TEAM_NAME_ALREADY_EXISTS` | A team with this name already exists in the tenant |
+| `409` | `TEAM_CIRCULAR_PARENT_REFERENCE` | A team cannot set itself or child as its parent |
+| `409` | `TEAM_MEMBER_ALREADY_EXISTS` | User is already a member of this team |
+| `409` | `INVALID_DATA_SCOPE_CONFIGURATION` | Scope type requirements violated (e.g., TEAM requires teamId, OWN/TENANT forbid teamId) |
+| `409` | `TEAM_VERSION_CONFLICT` | Optimistic concurrency version mismatch |
+
+## Batch Data Import & Ingestion Management
+
+Import Job endpoints allow batch uploading and ingestion of external CSV, XLSX, API, and Connector data into CRM entities (`ACCOUNT`, `CONTACT`, `LEAD`, `PRODUCT`, `PRICE_BOOK_ENTRY`, etc.) with column mapping, real-time progress tracking, failure diagnostics, and error reporting.
+
+### Authorization
+
+All import job endpoints require:
+- Header: `Authorization: Bearer <token>`
+- Permissions:
+  - `integration.read` for viewing job status, details, and searching jobs
+  - `integration.manage` for creating, starting, updating progress, completing, failing, and cancelling jobs
+
+### Endpoints
+
+#### 1. Create Import Job
+
+```http
+POST /api/integration/import-jobs
+Content-Type: application/json
+```
+
+Request Body:
+```json
+{
+  "jobType": "ACCOUNT_IMPORT",
+  "sourceType": "CSV",
+  "sourceReference": "s3://crm-imports/tenants/01000000-0000-0000-0000-000000000001/accounts_20260817.csv",
+  "targetEntityType": "ACCOUNT",
+  "totalRows": 5000,
+  "mappingConfig": {
+    "columns": {
+      "Tên Khách Hàng": "name",
+      "Mã Số Thuế": "taxCode",
+      "Email Doanh Nghiệp": "email",
+      "Số Điện Thoại": "phoneNumber",
+      "Địa Chỉ Trụ Sở": "address"
+    },
+    "duplicateStrategy": "SKIP"
+  }
+}
+```
+
+Response: `201 Created`
+```json
+{
+  "id": "74000000-0000-0000-0000-000000000001",
+  "jobType": "ACCOUNT_IMPORT",
+  "sourceType": "CSV",
+  "sourceReference": "s3://crm-imports/tenants/01000000-0000-0000-0000-000000000001/accounts_20260817.csv",
+  "targetEntityType": "ACCOUNT",
+  "status": "PENDING",
+  "totalRows": 5000,
+  "processedRows": 0,
+  "successRows": 0,
+  "errorRows": 0,
+  "mappingConfig": {
+    "columns": {
+      "Tên Khách Hàng": "name",
+      "Mã Số Thuế": "taxCode",
+      "Email Doanh Nghiệp": "email",
+      "Số Điện Thoại": "phoneNumber",
+      "Địa Chỉ Trụ Sở": "address"
+    },
+    "duplicateStrategy": "SKIP"
+  },
+  "errorReportReference": null,
+  "startedAt": null,
+  "completedAt": null,
+  "requestedBy": "10000000-0000-0000-0000-000000000001",
+  "createdBy": "10000000-0000-0000-0000-000000000001",
+  "createdAt": "2026-08-17T13:45:00Z",
+  "updatedBy": "10000000-0000-0000-0000-000000000001",
+  "updatedAt": "2026-08-17T13:45:00Z",
+  "version": 1
+}
+```
+
+#### 2. Get Import Job Details
+
+```http
+GET /api/integration/import-jobs/{id}
+```
+
+Response: `200 OK`
+
+#### 3. Search & List Import Jobs
+
+```http
+GET /api/integration/import-jobs?status=RUNNING&targetEntityType=ACCOUNT&page=0&size=20
+```
+
+Response: `200 OK`
+```json
+{
+  "items": [
+    {
+      "id": "74000000-0000-0000-0000-000000000001",
+      "jobType": "ACCOUNT_IMPORT",
+      "sourceType": "CSV",
+      "targetEntityType": "ACCOUNT",
+      "status": "RUNNING",
+      "totalRows": 5000,
+      "processedRows": 2500,
+      "successRows": 2480,
+      "errorRows": 20,
+      "startedAt": "2026-08-17T13:45:10Z",
+      "completedAt": null,
+      "requestedBy": "10000000-0000-0000-0000-000000000001",
+      "createdAt": "2026-08-17T13:45:00Z",
+      "version": 2
+    }
+  ],
+  "page": 0,
+  "size": 20,
+  "totalElements": 1,
+  "totalPages": 1
+}
+```
+
+#### 4. Start Import Job
+
+```http
+POST /api/integration/import-jobs/{id}/start
+Content-Type: application/json
+```
+
+Request Body:
+```json
+{
+  "version": 1
+}
+```
+
+Response: `200 OK`
+
+#### 5. Update Progress (Batch Worker)
+
+```http
+POST /api/integration/import-jobs/{id}/progress
+Content-Type: application/json
+```
+
+Request Body:
+```json
+{
+  "version": 2,
+  "processedRows": 3000,
+  "successRows": 2970,
+  "errorRows": 30
+}
+```
+
+Response: `200 OK`
+
+#### 6. Complete Import Job
+
+```http
+POST /api/integration/import-jobs/{id}/complete
+Content-Type: application/json
+```
+
+Request Body:
+```json
+{
+  "version": 3,
+  "processedRows": 5000,
+  "successRows": 4950,
+  "errorRows": 50,
+  "errorReportReference": "s3://crm-imports/tenants/01000000-0000-0000-0000-000000000001/errors_74000000.csv"
+}
+```
+
+Response: `200 OK`
+
+#### 7. Mark Job as Failed
+
+```http
+POST /api/integration/import-jobs/{id}/fail
+Content-Type: application/json
+```
+
+Request Body:
+```json
+{
+  "version": 2,
+  "errorReportReference": "s3://crm-imports/tenants/01000000-0000-0000-0000-000000000001/fatal_error_74000000.log"
+}
+```
+
+Response: `200 OK`
+
+#### 8. Cancel Import Job
+
+```http
+POST /api/integration/import-jobs/{id}/cancel
+Content-Type: application/json
+```
+
+Request Body:
+```json
+{
+  "version": 2
+}
+```
+
+Response: `200 OK`
+
+---
+
+### Import Job Error Codes
+
+| Status | Error Code | Reason |
+| --- | --- | --- |
+| `400` | `INVALID_PAYLOAD` | Validation violation on request fields |
+| `401` | `AUTHENTICATION_REQUIRED` | Missing or invalid Bearer token |
+| `403` | `ACCESS_DENIED` | Missing `integration.read` or `integration.manage` permission |
+| `404` | `IMPORT_JOB_NOT_FOUND` | Import job ID does not exist |
+| `409` | `INVALID_IMPORT_STATUS_TRANSITION` | Cannot perform state transition from current status |
+| `409` | `IMPORT_JOB_CANNOT_BE_CANCELLED` | Job has already reached a final status (COMPLETED, FAILED) |
+| `409` | `IMPORT_VERSION_CONFLICT` | Optimistic concurrency version mismatch |
+
+## CRM Notes & Global Tags Management
+
+CRM Notes allow team members to append rich internal notes to Accounts, Contacts, Leads, Opportunities, Activities, and Tickets with customizable visibility scopes (`PRIVATE`, `TEAM`, `TENANT`). Global Tags provide a multi-entity categorization taxonomy with color-coding.
+
+### Authorization
+
+- **Notes Endpoints**: Require `Authorization: Bearer <token>` and `crm.account.read` (or entity-specific read permissions).
+- **Tags Endpoints**:
+  - Viewing tags/assignments: `crm.account.read`
+  - Creating/updating tags or assigning/removing tags: `crm.account.write`
+
+---
+
+### CRM Notes Endpoints (`/api/crm/notes`)
+
+#### 1. Create Note
+
+```http
+POST /api/crm/notes
+Content-Type: application/json
+```
+
+Request Body:
+```json
+{
+  "title": "Ghi chú cuộc họp thẩm định nhu cầu triển khai ERP",
+  "body": "Khách hàng dự kiến bắt đầu quý 4/2026. Ngân sách đã được phê duyệt khoảng 2 tỷ VNĐ.",
+  "visibility": "TEAM",
+  "opportunityId": "50000000-0000-0000-0000-000000000001"
+}
+```
+
+Response: `201 Created`
+```json
+{
+  "id": "75000000-0000-0000-0000-000000000001",
+  "title": "Ghi chú cuộc họp thẩm định nhu cầu triển khai ERP",
+  "body": "Khách hàng dự kiến bắt đầu quý 4/2026. Ngân sách đã được phê duyệt khoảng 2 tỷ VNĐ.",
+  "visibility": "TEAM",
+  "ownerUserId": "10000000-0000-0000-0000-000000000001",
+  "accountId": null,
+  "contactId": null,
+  "leadId": null,
+  "opportunityId": "50000000-0000-0000-0000-000000000001",
+  "activityId": null,
+  "ticketId": null,
+  "createdBy": "10000000-0000-0000-0000-000000000001",
+  "createdAt": "2026-08-17T13:50:00Z",
+  "updatedBy": "10000000-0000-0000-0000-000000000001",
+  "updatedAt": "2026-08-17T13:50:00Z",
+  "version": 1
+}
+```
+
+#### 2. Get Note Details
+
+```http
+GET /api/crm/notes/{id}
+```
+
+Response: `200 OK`
+
+#### 3. List Notes by Target Entity
+
+```http
+GET /api/crm/notes?opportunityId=50000000-0000-0000-0000-000000000001
+```
+
+Response: `200 OK`
+```json
+[
+  {
+    "id": "75000000-0000-0000-0000-000000000001",
+    "title": "Ghi chú cuộc họp thẩm định",
+    "bodyPreview": "Khách hàng dự kiến bắt đầu quý 4/2026...",
+    "visibility": "TEAM",
+    "ownerUserId": "10000000-0000-0000-0000-000000000001",
+    "ownerDisplayName": "Nguyễn Văn A",
+    "opportunityId": "50000000-0000-0000-0000-000000000001",
+    "createdAt": "2026-08-17T13:50:00Z",
+    "updatedAt": "2026-08-17T13:50:00Z",
+    "version": 1
+  }
+]
+```
+
+#### 4. Update Note
+
+```http
+PUT /api/crm/notes/{id}
+Content-Type: application/json
+```
+
+Request Body:
+```json
+{
+  "version": 1,
+  "title": "Ghi chú cuộc họp thẩm định nhu cầu triển khai ERP (Cập nhật)",
+  "body": "Khách hàng đã ký phê duyệt kế hoạch triển khai.",
+  "visibility": "TENANT"
+}
+```
+
+Response: `200 OK`
+
+#### 5. Delete Note (Soft Delete)
+
+```http
+DELETE /api/crm/notes/{id}
+If-Match: "1"
+```
+
+Response: `204 No Content`
+
+---
+
+### Global Tags Endpoints (`/api/crm/tags`)
+
+#### 1. Create Tag
+
+```http
+POST /api/crm/tags
+Content-Type: application/json
+```
+
+Request Body:
+```json
+{
+  "tagKey": "VIP_CLIENT",
+  "name": "Khách Hàng Trọng Điểm VIP",
+  "description": "Nhóm khách hàng có doanh thu hàng năm trên 10 tỷ VNĐ",
+  "colorHex": "#8B5CF6"
+}
+```
+
+Response: `201 Created`
+```json
+{
+  "id": "76000000-0000-0000-0000-000000000001",
+  "tagKey": "vip_client",
+  "name": "Khách Hàng Trọng Điểm VIP",
+  "description": "Nhóm khách hàng có doanh thu hàng năm trên 10 tỷ VNĐ",
+  "colorHex": "#8B5CF6",
+  "active": true,
+  "createdBy": "10000000-0000-0000-0000-000000000001",
+  "createdAt": "2026-08-17T13:50:00Z",
+  "updatedBy": "10000000-0000-0000-0000-000000000001",
+  "updatedAt": "2026-08-17T13:50:00Z",
+  "version": 1
+}
+```
+
+#### 2. Get Tag Details
+
+```http
+GET /api/crm/tags/{id}
+```
+
+Response: `200 OK`
+
+#### 3. List All Tags
+
+```http
+GET /api/crm/tags
+```
+
+Response: `200 OK`
+
+#### 4. Update Tag
+
+```http
+PUT /api/crm/tags/{id}
+Content-Type: application/json
+```
+
+Request Body:
+```json
+{
+  "version": 1,
+  "name": "Khách Hàng VIP Toàn Quốc",
+  "description": "Doanh thu > 10 tỷ VNĐ / năm",
+  "colorHex": "#7C3AED",
+  "active": true
+}
+```
+
+Response: `200 OK`
+
+#### 5. Assign Tag to Entity
+
+```http
+POST /api/crm/tags/assign
+Content-Type: application/json
+```
+
+Request Body:
+```json
+{
+  "tagId": "76000000-0000-0000-0000-000000000001",
+  "accountId": "20000000-0000-0000-0000-000000000001"
+}
+```
+
+Response: `201 Created`
+```json
+{
+  "id": "77000000-0000-0000-0000-000000000001",
+  "tagId": "76000000-0000-0000-0000-000000000001",
+  "tagKey": "vip_client",
+  "tagName": "Khách Hàng VIP Toàn Quốc",
+  "tagColorHex": "#7C3AED",
+  "accountId": "20000000-0000-0000-0000-000000000001",
+  "contactId": null,
+  "leadId": null,
+  "opportunityId": null,
+  "activityId": null,
+  "ticketId": null,
+  "createdAt": "2026-08-17T13:50:00Z",
+  "createdBy": "10000000-0000-0000-0000-000000000001"
+}
+```
+
+#### 6. Remove Tag Assignment from Entity
+
+```http
+DELETE /api/crm/tags/assign/{entityTagId}
+```
+
+Response: `204 No Content`
+
+#### 7. List Tags Assigned to an Entity
+
+```http
+GET /api/crm/tags/entity?accountId=20000000-0000-0000-0000-000000000001
+```
+
+Response: `200 OK`
+
+---
+
+### Notes & Tags Error Codes
+
+| Status | Error Code | Reason |
+| --- | --- | --- |
+| `400` | `INVALID_PAYLOAD` | Validation violation on request fields |
+| `401` | `AUTHENTICATION_REQUIRED` | Missing or invalid Bearer token |
+| `403` | `ACCESS_DENIED` | Missing `crm.account.read` or `crm.account.write` permission |
+| `404` | `NOTE_NOT_FOUND` | Note ID does not exist |
+| `404` | `TAG_NOT_FOUND` | Tag ID does not exist |
+| `404` | `ENTITY_TAG_NOT_FOUND` | Tag assignment ID does not exist |
+| `409` | `INVALID_NOTE_TARGET` | Exactly one target entity (accountId, contactId, leadId, opportunityId, activityId, ticketId) must be specified |
+| `409` | `INVALID_TAG_TARGET` | Exactly one target entity must be specified for tag assignment |
+| `409` | `TAG_KEY_ALREADY_EXISTS` | A tag with this key already exists in the tenant |
+| `409` | `TAG_ALREADY_ASSIGNED` | This tag is already assigned to the target entity |
+| `409` | `NOTE_VERSION_CONFLICT` | Optimistic concurrency version mismatch on Note |
+| `409` | `TAG_VERSION_CONFLICT` | Optimistic concurrency version mismatch on Tag |
+
+## Dynamic Custom Fields Management
+
+Dynamic Custom Fields allow tenants to dynamically extend CRM entities (`ACCOUNT`, `CONTACT`, `LEAD`, `OPPORTUNITY`, `ACTIVITY`, `TICKET`, `PRODUCT`) with custom data fields without schema alterations. Supported data types include `TEXT`, `LONG_TEXT`, `INTEGER`, `DECIMAL`, `BOOLEAN`, `DATE`, `DATETIME`, `EMAIL`, `PHONE`, `URL`, `SELECT`, `MULTI_SELECT`, and `JSON`.
+
+### Authorization
+
+- **Custom Field Definitions**:
+  - Viewing definitions: `Authorization: Bearer <token>` and `crm.account.read`
+  - Creating/updating definitions: `crm.account.write`
+- **Custom Field Values**:
+  - Viewing values: `crm.account.read`
+  - Setting/updating values: `crm.account.write`
+
+---
+
+### Custom Field Definition Endpoints (`/api/crm/custom-fields/definitions`)
+
+#### 1. Create Custom Field Definition
+
+```http
+POST /api/crm/custom-fields/definitions
+Content-Type: application/json
+```
+
+Request Body:
+```json
+{
+  "entityType": "ACCOUNT",
+  "fieldKey": "tax_registration_date",
+  "displayName": "Ngày Đăng Ký Thuế Doanh Nghiệp",
+  "dataType": "DATE",
+  "description": "Ngày chính thức cấp mã số thuế của doanh nghiệp",
+  "validationRulesJson": "{\"minDate\": \"1990-01-01\"}",
+  "optionValuesJson": "[]",
+  "required": false,
+  "searchable": true,
+  "sensitive": false,
+  "displayOrder": 10
+}
+```
+
+Response: `201 Created`
+```json
+{
+  "id": "78000000-0000-0000-0000-000000000001",
+  "entityType": "ACCOUNT",
+  "fieldKey": "tax_registration_date",
+  "displayName": "Ngày Đăng Ký Thuế Doanh Nghiệp",
+  "dataType": "DATE",
+  "description": "Ngày chính thức cấp mã số thuế của doanh nghiệp",
+  "validationRulesJson": "{\"minDate\": \"1990-01-01\"}",
+  "optionValuesJson": "[]",
+  "required": false,
+  "searchable": true,
+  "sensitive": false,
+  "active": true,
+  "displayOrder": 10,
+  "createdBy": "10000000-0000-0000-0000-000000000001",
+  "createdAt": "2026-08-17T13:55:00Z",
+  "updatedBy": "10000000-0000-0000-0000-000000000001",
+  "updatedAt": "2026-08-17T13:55:00Z",
+  "version": 1
+}
+```
+
+#### 2. Get Custom Field Definition
+
+```http
+GET /api/crm/custom-fields/definitions/{id}
+```
+
+Response: `200 OK`
+
+#### 3. List Custom Field Definitions
+
+```http
+GET /api/crm/custom-fields/definitions?entityType=ACCOUNT&active=true
+```
+
+Response: `200 OK`
+```json
+[
+  {
+    "id": "78000000-0000-0000-0000-000000000001",
+    "entityType": "ACCOUNT",
+    "fieldKey": "tax_registration_date",
+    "displayName": "Ngày Đăng Ký Thuế Doanh Nghiệp",
+    "dataType": "DATE",
+    "description": "Ngày chính thức cấp mã số thuế của doanh nghiệp",
+    "validationRulesJson": "{\"minDate\": \"1990-01-01\"}",
+    "optionValuesJson": "[]",
+    "required": false,
+    "searchable": true,
+    "sensitive": false,
+    "active": true,
+    "displayOrder": 10,
+    "createdAt": "2026-08-17T13:55:00Z",
+    "updatedAt": "2026-08-17T13:55:00Z",
+    "version": 1
+  }
+]
+```
+
+#### 4. Update Custom Field Definition
+
+```http
+PUT /api/crm/custom-fields/definitions/{id}
+Content-Type: application/json
+```
+
+Request Body:
+```json
+{
+  "version": 1,
+  "displayName": "Ngày Đăng Ký Thuế Doanh Nghiệp (Cập nhật)",
+  "description": "Ngày cơ quan thuế cấp giấy chứng nhận",
+  "validationRulesJson": "{\"minDate\": \"1980-01-01\"}",
+  "optionValuesJson": "[]",
+  "required": true,
+  "searchable": true,
+  "sensitive": false,
+  "active": true,
+  "displayOrder": 5
+}
+```
+
+Response: `200 OK`
+
+---
+
+### Custom Field Values Endpoints (`/api/crm/custom-fields/values`)
+
+#### 1. Get Entity Custom Field Values
+
+```http
+GET /api/crm/custom-fields/values?entityType=ACCOUNT&entityId=20000000-0000-0000-0000-000000000001
+```
+
+Response: `200 OK`
+```json
+{
+  "entityType": "ACCOUNT",
+  "entityId": "20000000-0000-0000-0000-000000000001",
+  "fields": [
+    {
+      "id": "79000000-0000-0000-0000-000000000001",
+      "definitionId": "78000000-0000-0000-0000-000000000001",
+      "fieldKey": "tax_registration_date",
+      "displayName": "Ngày Đăng Ký Thuế Doanh Nghiệp",
+      "dataType": "DATE",
+      "entityType": "ACCOUNT",
+      "entityId": "20000000-0000-0000-0000-000000000001",
+      "valueJson": "\"2021-05-15\"",
+      "searchText": "2021-05-15",
+      "updatedAt": "2026-08-17T13:55:00Z",
+      "updatedBy": "10000000-0000-0000-0000-000000000001",
+      "version": 1
+    }
+  ]
+}
+```
+
+#### 2. Set/Upsert Entity Custom Field Values
+
+```http
+PUT /api/crm/custom-fields/values
+Content-Type: application/json
+```
+
+Request Body:
+```json
+{
+  "entityType": "ACCOUNT",
+  "entityId": "20000000-0000-0000-0000-000000000001",
+  "fieldValues": [
+    {
+      "fieldKey": "tax_registration_date",
+      "valueJson": "\"2021-05-15\""
+    },
+    {
+      "definitionId": "78000000-0000-0000-0000-000000000002",
+      "valueJson": "[\"HANOI\", \"DANANG\"]"
+    }
+  ]
+}
+```
+
+Response: `200 OK`
+```json
+{
+  "entityType": "ACCOUNT",
+  "entityId": "20000000-0000-0000-0000-000000000001",
+  "fields": [
+    {
+      "id": "79000000-0000-0000-0000-000000000001",
+      "definitionId": "78000000-0000-0000-0000-000000000001",
+      "fieldKey": "tax_registration_date",
+      "displayName": "Ngày Đăng Ký Thuế Doanh Nghiệp",
+      "dataType": "DATE",
+      "entityType": "ACCOUNT",
+      "entityId": "20000000-0000-0000-0000-000000000001",
+      "valueJson": "\"2021-05-15\"",
+      "searchText": "2021-05-15",
+      "updatedAt": "2026-08-17T13:55:00Z",
+      "updatedBy": "10000000-0000-0000-0000-000000000001",
+      "version": 1
+    }
+  ]
+}
+```
+
+---
+
+### Custom Fields Error Codes
+
+| Status | Error Code | Reason |
+| --- | --- | --- |
+| `400` | `INVALID_PAYLOAD` | Validation violation on request fields |
+| `401` | `AUTHENTICATION_REQUIRED` | Missing or invalid Bearer token |
+| `403` | `ACCESS_DENIED` | Missing `crm.account.read` or `crm.account.write` permission |
+| `404` | `CUSTOM_FIELD_DEFINITION_NOT_FOUND` | Custom field definition ID or key does not exist |
+| `409` | `CUSTOM_FIELD_KEY_ALREADY_EXISTS` | A field with this key already exists on the target entity type |
+| `409` | `CUSTOM_FIELD_VERSION_CONFLICT` | Optimistic concurrency version mismatch on field definition |
+
+## CRM Sales Pipelines & Stages Management
+
+Sales Pipelines allow organizations to define multiple sales processes (`SALES`, `RENEWAL`, `PARTNERSHIP`, `CUSTOM`) with structured stages, default win probabilities, and forecast categories (`OMITTED`, `PIPELINE`, `BEST_CASE`, `COMMIT`, `CLOSED`).
+
+### Authorization
+
+- **Pipelines Endpoints**:
+  - Viewing pipelines/stages: `Authorization: Bearer <token>` and `crm.opportunity.read`
+  - Creating/updating/deleting pipelines or stages: `crm.opportunity.write`
+
+---
+
+### Pipeline Endpoints (`/api/crm/pipelines`)
+
+#### 1. Create Pipeline
+
+```http
+POST /api/crm/pipelines
+Content-Type: application/json
+```
+
+Request Body:
+```json
+{
+  "pipelineCode": "ENTERPRISE_SALES",
+  "name": "Quy Trình Bán Hàng Khách Hàng Doanh Nghiệp Lớn",
+  "pipelineType": "SALES",
+  "defaultPipeline": true
+}
+```
+
+Response: `201 Created`
+```json
+{
+  "id": "80000000-0000-0000-0000-000000000001",
+  "pipelineCode": "ENTERPRISE_SALES",
+  "name": "Quy Trình Bán Hàng Khách Hàng Doanh Nghiệp Lớn",
+  "pipelineType": "SALES",
+  "defaultPipeline": true,
+  "active": true,
+  "stages": [],
+  "createdBy": "10000000-0000-0000-0000-000000000001",
+  "createdAt": "2026-08-17T14:00:00Z",
+  "updatedBy": "10000000-0000-0000-0000-000000000001",
+  "updatedAt": "2026-08-17T14:00:00Z",
+  "version": 1
+}
+```
+
+#### 2. Get Pipeline Details with Stages
+
+```http
+GET /api/crm/pipelines/{id}
+```
+
+Response: `200 OK`
+```json
+{
+  "id": "80000000-0000-0000-0000-000000000001",
+  "pipelineCode": "ENTERPRISE_SALES",
+  "name": "Quy Trình Bán Hàng Khách Hàng Doanh Nghiệp Lớn",
+  "pipelineType": "SALES",
+  "defaultPipeline": true,
+  "active": true,
+  "stages": [
+    {
+      "id": "81000000-0000-0000-0000-000000000001",
+      "pipelineId": "80000000-0000-0000-0000-000000000001",
+      "stageCode": "DISCOVERY",
+      "name": "Thẩm định nhu cầu",
+      "displayOrder": 1,
+      "defaultProbability": 20.00,
+      "stageCategory": "OPEN",
+      "forecastCategory": "PIPELINE",
+      "active": true,
+      "createdBy": "10000000-0000-0000-0000-000000000001",
+      "createdAt": "2026-08-17T14:00:00Z",
+      "updatedBy": "10000000-0000-0000-0000-000000000001",
+      "updatedAt": "2026-08-17T14:00:00Z",
+      "version": 1
+    }
+  ],
+  "createdAt": "2026-08-17T14:00:00Z",
+  "updatedAt": "2026-08-17T14:00:00Z",
+  "version": 1
+}
+```
+
+#### 3. List All Pipelines
+
+```http
+GET /api/crm/pipelines
+```
+
+Response: `200 OK`
+```json
+[
+  {
+    "id": "80000000-0000-0000-0000-000000000001",
+    "pipelineCode": "ENTERPRISE_SALES",
+    "name": "Quy Trình Bán Hàng Khách Hàng Doanh Nghiệp Lớn",
+    "pipelineType": "SALES",
+    "defaultPipeline": true,
+    "active": true,
+    "stageCount": 5,
+    "createdAt": "2026-08-17T14:00:00Z",
+    "updatedAt": "2026-08-17T14:00:00Z",
+    "version": 1
+  }
+]
+```
+
+#### 4. Update Pipeline
+
+```http
+PUT /api/crm/pipelines/{id}
+Content-Type: application/json
+```
+
+Request Body:
+```json
+{
+  "version": 1,
+  "name": "Quy Trình Bán Hàng Doanh Nghiệp Lớn & FDI",
+  "pipelineType": "SALES",
+  "defaultPipeline": true,
+  "active": true
+}
+```
+
+Response: `200 OK`
+
+#### 5. Add Stage to Pipeline
+
+```http
+POST /api/crm/pipelines/{id}/stages
+Content-Type: application/json
+```
+
+Request Body:
+```json
+{
+  "stageCode": "PROPOSAL",
+  "name": "Gửi Báo Giá & Đề Xuất Kỹ Thuật",
+  "displayOrder": 2,
+  "defaultProbability": 40.00,
+  "stageCategory": "OPEN",
+  "forecastCategory": "PIPELINE"
+}
+```
+
+Response: `201 Created`
+
+#### 6. Update Stage
+
+```http
+PUT /api/crm/pipelines/{id}/stages/{stageId}
+Content-Type: application/json
+```
+
+Request Body:
+```json
+{
+  "version": 1,
+  "name": "Gửi Báo Giá & Bảo Vệ Phương Án Kỹ Thuật",
+  "displayOrder": 2,
+  "defaultProbability": 50.00,
+  "stageCategory": "OPEN",
+  "forecastCategory": "BEST_CASE",
+  "active": true
+}
+```
+
+Response: `200 OK`
+
+#### 7. Delete Stage
+
+```http
+DELETE /api/crm/pipelines/{id}/stages/{stageId}
+```
+
+Response: `204 No Content`
+
+---
+
+## CRM Sales Configuration Master Data
+
+Sales Configuration Master Data provides manageable lookups for Lead Sources (`crm.lead_sources`), Lead Statuses (`crm.lead_statuses`), and Opportunity Lost Reasons (`crm.opportunity_lost_reasons`).
+
+### Authorization
+
+- **Lead Sources & Statuses**:
+  - Viewing: `crm.lead.read`
+  - Managing: `crm.lead.write`
+- **Opportunity Lost Reasons**:
+  - Viewing: `crm.opportunity.read`
+  - Managing: `crm.opportunity.write`
+
+---
+
+### Lead Sources Endpoints (`/api/crm/config/lead-sources`)
+
+#### 1. Create Lead Source
+
+```http
+POST /api/crm/config/lead-sources
+Content-Type: application/json
+```
+
+Request Body:
+```json
+{
+  "sourceCode": "GOOGLE_SEARCH_ADS",
+  "name": "Quảng cáo Google Search",
+  "description": "Nguồn khách hàng từ chiến dịch tìm kiếm từ khóa Google Ads"
+}
+```
+
+Response: `201 Created`
+
+#### 2. Get Lead Source
+
+```http
+GET /api/crm/config/lead-sources/{id}
+```
+
+Response: `200 OK`
+
+#### 3. List All Lead Sources
+
+```http
+GET /api/crm/config/lead-sources
+```
+
+Response: `200 OK`
+
+#### 4. Update Lead Source
+
+```http
+PUT /api/crm/config/lead-sources/{id}
+Content-Type: application/json
+```
+
+Request Body:
+```json
+{
+  "version": 1,
+  "name": "Quảng cáo Google Ads & YouTube",
+  "description": "Chiến dịch quảng cáo toàn diện Google",
+  "active": true
+}
+```
+
+Response: `200 OK`
+
+---
+
+### Lead Statuses Endpoints (`/api/crm/config/lead-statuses`)
+
+#### 1. Create Lead Status
+
+```http
+POST /api/crm/config/lead-statuses
+Content-Type: application/json
+```
+
+Request Body:
+```json
+{
+  "statusCode": "CONTACTED",
+  "name": "Đã Liên Hệ Lần Đầu",
+  "statusCategory": "OPEN",
+  "displayOrder": 2,
+  "defaultStatus": false,
+  "terminal": false
+}
+```
+
+Response: `201 Created`
+
+#### 2. Get Lead Status
+
+```http
+GET /api/crm/config/lead-statuses/{id}
+```
+
+Response: `200 OK`
+
+#### 3. List All Lead Statuses
+
+```http
+GET /api/crm/config/lead-statuses
+```
+
+Response: `200 OK`
+
+#### 4. Update Lead Status
+
+```http
+PUT /api/crm/config/lead-statuses/{id}
+Content-Type: application/json
+```
+
+Request Body:
+```json
+{
+  "version": 1,
+  "name": "Đã Tiếp Cận & Khảo Sát",
+  "statusCategory": "OPEN",
+  "displayOrder": 2,
+  "defaultStatus": false,
+  "terminal": false,
+  "active": true
+}
+```
+
+Response: `200 OK`
+
+---
+
+### Opportunity Lost Reasons Endpoints (`/api/crm/config/lost-reasons`)
+
+#### 1. Create Lost Reason
+
+```http
+POST /api/crm/config/lost-reasons
+Content-Type: application/json
+```
+
+Request Body:
+```json
+{
+  "reasonCode": "BUDGET_CONSTRAINTS",
+  "name": "Vượt Quá Ngân Sách Khách Hàng",
+  "description": "Khách hàng không đủ ngân sách trong năm tài chính này"
+}
+```
+
+Response: `201 Created`
+
+#### 2. Get Lost Reason
+
+```http
+GET /api/crm/config/lost-reasons/{id}
+```
+
+Response: `200 OK`
+
+#### 3. List All Lost Reasons
+
+```http
+GET /api/crm/config/lost-reasons
+```
+
+Response: `200 OK`
+
+#### 4. Update Lost Reason
+
+```http
+PUT /api/crm/config/lost-reasons/{id}
+Content-Type: application/json
+```
+
+Request Body:
+```json
+{
+  "version": 1,
+  "name": "Cắt Giảm Hoặc Hoãn Ngân Sách Dự Án",
+  "description": "Ban lãnh đạo cắt giảm ngân sách đầu tư CNTT",
+  "active": true
+}
+```
+
+Response: `200 OK`
+
+---
+
+### Pipelines & Sales Config Error Codes
+
+| Status | Error Code | Reason |
+| --- | --- | --- |
+| `400` | `INVALID_PAYLOAD` | Validation violation on request fields |
+| `401` | `AUTHENTICATION_REQUIRED` | Missing or invalid Bearer token |
+| `403` | `ACCESS_DENIED` | Missing `crm.opportunity.read/write` or `crm.lead.read/write` permission |
+| `404` | `PIPELINE_NOT_FOUND` | Pipeline ID does not exist |
+| `404` | `PIPELINE_STAGE_NOT_FOUND` | Pipeline stage ID does not exist |
+| `404` | `LEAD_SOURCE_NOT_FOUND` | Lead source ID does not exist |
+| `404` | `LEAD_STATUS_NOT_FOUND` | Lead status ID does not exist |
+| `404` | `LOST_REASON_NOT_FOUND` | Opportunity lost reason ID does not exist |
+| `409` | `PIPELINE_CODE_ALREADY_EXISTS` | A pipeline with this code already exists |
+| `409` | `STAGE_CODE_ALREADY_EXISTS` | A stage with this code already exists in the pipeline |
+| `409` | `LEAD_SOURCE_CODE_ALREADY_EXISTS` | A lead source with this code already exists |
+| `409` | `LEAD_STATUS_CODE_ALREADY_EXISTS` | A lead status with this code already exists |
+| `409` | `LOST_REASON_CODE_ALREADY_EXISTS` | A lost reason with this code already exists |
+| `409` | `PIPELINE_VERSION_CONFLICT` | Optimistic concurrency version mismatch on Pipeline |
+| `409` | `PIPELINE_STAGE_VERSION_CONFLICT` | Optimistic concurrency version mismatch on Pipeline Stage |
+| `409` | `CONFIG_VERSION_CONFLICT` | Optimistic concurrency version mismatch on Sales Configuration |
+
 ---
 
 ## OAuth2 Login

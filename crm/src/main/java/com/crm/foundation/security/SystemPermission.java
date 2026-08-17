@@ -36,7 +36,9 @@ public enum SystemPermission {
 	PLATFORM_MEMBERSHIP_APPROVE("platform_membership.approve"),
 	PLATFORM_ROLE_READ("platform_role.read"),
 	PLATFORM_ROLE_ASSIGN("platform_role.assign"),
-	PLATFORM_ROLE_MANAGE("platform_role.manage");
+	PLATFORM_ROLE_MANAGE("platform_role.manage"),
+	PLATFORM_TEAM_READ("platform_team.read"),
+	PLATFORM_TEAM_MANAGE("platform_team.manage");
 
 	private final String code;
 

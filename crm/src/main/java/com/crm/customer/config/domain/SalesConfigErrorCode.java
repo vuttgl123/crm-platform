@@ -1,0 +1,23 @@
+package com.crm.customer.config.domain;
+
+public enum SalesConfigErrorCode {
+
+	LEAD_SOURCE_NOT_FOUND("LEAD_SOURCE_NOT_FOUND"),
+	LEAD_SOURCE_CODE_ALREADY_EXISTS("LEAD_SOURCE_CODE_ALREADY_EXISTS"),
+	LEAD_STATUS_NOT_FOUND("LEAD_STATUS_NOT_FOUND"),
+	LEAD_STATUS_CODE_ALREADY_EXISTS("LEAD_STATUS_CODE_ALREADY_EXISTS"),
+	LOST_REASON_NOT_FOUND("LOST_REASON_NOT_FOUND"),
+	LOST_REASON_CODE_ALREADY_EXISTS("LOST_REASON_CODE_ALREADY_EXISTS"),
+	CONFIG_VERSION_CONFLICT("CONFIG_VERSION_CONFLICT");
+
+	private final String code;
+
+	SalesConfigErrorCode(String code) {
+		this.code = code;
+	}
+
+	public String code() {
+		return code;
+	}
+
+}

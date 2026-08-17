@@ -1,0 +1,22 @@
+package com.crm.customer.pipeline.domain;
+
+public enum PipelineErrorCode {
+
+	PIPELINE_NOT_FOUND("PIPELINE_NOT_FOUND"),
+	PIPELINE_CODE_ALREADY_EXISTS("PIPELINE_CODE_ALREADY_EXISTS"),
+	PIPELINE_STAGE_NOT_FOUND("PIPELINE_STAGE_NOT_FOUND"),
+	STAGE_CODE_ALREADY_EXISTS("STAGE_CODE_ALREADY_EXISTS"),
+	PIPELINE_VERSION_CONFLICT("PIPELINE_VERSION_CONFLICT"),
+	PIPELINE_STAGE_VERSION_CONFLICT("PIPELINE_STAGE_VERSION_CONFLICT");
+
+	private final String code;
+
+	PipelineErrorCode(String code) {
+		this.code = code;
+	}
+
+	public String code() {
+		return code;
+	}
+
+}

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import {
   Search,
@@ -9,9 +9,14 @@ import {
   User,
   Sliders,
   Building2,
+  CheckCheck,
+  Sparkles,
+  AlertTriangle,
+  Clock,
 } from 'lucide-react';
 import { useAuth } from '@/core/session/useAuth';
 import { useTranslation } from 'react-i18next';
+import { notificationApi, NotificationItem } from '@/services/api/notificationApi';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,6 +41,49 @@ export const Header: React.FC<HeaderProps> = ({
   const location = useLocation();
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
+
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [unreadCount, setUnreadCount] = useState<number>(0);
+
+  const fetchNotifications = async () => {
+    try {
+      const [list, countRes] = await Promise.all([
+        notificationApi.list(),
+        notificationApi.getUnreadCount(),
+      ]);
+      setNotifications(list);
+      setUnreadCount(countRes.unreadCount);
+    } catch {
+      // Graceful fallback
+    }
+  };
+
+  useEffect(() => {
+    fetchNotifications();
+  }, []);
+
+  const handleMarkAllRead = async () => {
+    try {
+      await notificationApi.markAllAsRead();
+      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+      setUnreadCount(0);
+    } catch {
+      // ignore
+    }
+  };
+
+  const handleNotificationClick = async (notif: NotificationItem) => {
+    if (!notif.isRead) {
+      await notificationApi.markAsRead(notif.id);
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === notif.id ? { ...n, isRead: true } : n))
+      );
+      setUnreadCount((prev) => Math.max(0, prev - 1));
+    }
+    if (notif.actionUrl) {
+      navigate(notif.actionUrl);
+    }
+  };
 
   // Generate breadcrumb path labels
   const pathSegments = location.pathname.split('/').filter(Boolean);
@@ -153,27 +201,95 @@ export const Header: React.FC<HeaderProps> = ({
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className="h-8 w-8 relative text-slate-600">
                     <Bell className="w-4 h-4" />
+                    {unreadCount > 0 && (
+                      <span className="absolute top-1 right-1 w-2 h-2 bg-rose-500 rounded-full ring-2 ring-white animate-pulse" />
+                    )}
                   </Button>
                 </DropdownMenuTrigger>
               </TooltipTrigger>
               <TooltipContent>Thông báo hệ thống</TooltipContent>
             </Tooltip>
 
-            <DropdownMenuContent align="end" className="w-80 p-0 text-xs shadow-lg border-slate-200">
-              <div className="p-3 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-                <span className="font-bold text-slate-900">Thông báo Hệ thống</span>
-                <Badge variant="outline" className="bg-slate-100 text-slate-600 border-slate-200 text-[10px]">
-                  0 mới
-                </Badge>
+            <DropdownMenuContent align="end" className="w-88 p-0 text-xs shadow-xl border-slate-200 rounded-xl overflow-hidden font-sans">
+              <div className="p-3 border-b border-slate-100 flex items-center justify-between bg-slate-50/80">
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-slate-900">Thông báo Hệ thống</span>
+                  {unreadCount > 0 ? (
+                    <Badge className="bg-rose-50 text-rose-700 border-rose-200 text-[10px] font-bold px-1.5 py-0">
+                      {unreadCount} mới
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="bg-slate-100 text-slate-600 border-slate-200 text-[10px]">
+                      0 mới
+                    </Badge>
+                  )}
+                </div>
+                {unreadCount > 0 && (
+                  <button
+                    onClick={handleMarkAllRead}
+                    className="text-[11px] text-blue-600 hover:text-blue-700 font-semibold flex items-center gap-1"
+                  >
+                    <CheckCheck className="w-3 h-3" />
+                    <span>Đọc tất cả</span>
+                  </button>
+                )}
               </div>
 
-              <div className="p-6 text-center">
-                <div className="w-10 h-10 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-2">
-                  <Bell className="w-5 h-5 opacity-60" />
+              {notifications.length === 0 ? (
+                <div className="p-6 text-center">
+                  <div className="w-10 h-10 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-2">
+                    <Bell className="w-5 h-5 opacity-60" />
+                  </div>
+                  <p className="text-xs font-semibold text-slate-700">Không có thông báo mới</p>
+                  <p className="text-[11px] text-slate-400 mt-0.5">Bạn đã xem hết tất cả thông báo và cập nhật trong hệ thống.</p>
                 </div>
-                <p className="text-xs font-semibold text-slate-700">Không có thông báo mới</p>
-                <p className="text-[11px] text-slate-400 mt-0.5">Bạn đã xem hết tất cả thông báo và cập nhật trong hệ thống.</p>
-              </div>
+              ) : (
+                <div className="max-h-80 overflow-y-auto divide-y divide-slate-100">
+                  {notifications.map((n) => (
+                    <div
+                      key={n.id}
+                      onClick={() => handleNotificationClick(n)}
+                      className={`p-3 hover:bg-slate-50 cursor-pointer transition-colors flex items-start gap-2.5 ${
+                        !n.isRead ? 'bg-blue-50/30' : ''
+                      }`}
+                    >
+                      <div className="mt-0.5 shrink-0">
+                        {n.priority === 'URGENT' || n.category === 'SLA_BREACH' ? (
+                          <div className="w-7 h-7 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center">
+                            <AlertTriangle className="w-3.5 h-3.5" />
+                          </div>
+                        ) : n.category === 'DEAL_WON' ? (
+                          <div className="w-7 h-7 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center">
+                            <Sparkles className="w-3.5 h-3.5" />
+                          </div>
+                        ) : (
+                          <div className="w-7 h-7 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center">
+                            <Bell className="w-3.5 h-3.5" />
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-1">
+                          <h4 className={`text-xs truncate ${!n.isRead ? 'font-bold text-slate-900' : 'font-medium text-slate-700'}`}>
+                            {n.title}
+                          </h4>
+                          {!n.isRead && (
+                            <span className="w-1.5 h-1.5 rounded-full bg-blue-600 shrink-0" />
+                          )}
+                        </div>
+                        <p className="text-[11px] text-slate-600 line-clamp-2 mt-0.5 leading-relaxed">
+                          {n.message}
+                        </p>
+                        <div className="flex items-center gap-1 text-[10px] text-slate-400 mt-1 font-mono">
+                          <Clock className="w-2.5 h-2.5" />
+                          <span>{n.createdAt}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
 

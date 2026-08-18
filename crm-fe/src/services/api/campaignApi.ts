@@ -49,6 +49,108 @@ export const CAMPAIGN_TYPE_CONFIG: Record<CampaignType, { label: string; classNa
   DIRECT_MAIL: { label: 'Thư ngỏ / Tài liệu trực tiếp', className: 'bg-slate-100 text-slate-700 border-slate-200' },
 };
 
+export interface DripStepDto {
+  stepOrder: number;
+  stepType: 'EMAIL' | 'SMS' | 'CREATE_TASK' | 'NOTIFICATION';
+  name: string;
+  delayDays: number;
+  templateSubject?: string;
+  templateBody?: string;
+  actionTarget?: string;
+}
+
+export interface DripCampaignSummary {
+  id: string;
+  name: string;
+  description: string;
+  triggerEvent: string;
+  targetAudience: string;
+  status: 'ACTIVE' | 'PAUSED' | 'ARCHIVED';
+  totalEnrolled: number;
+  activeSubscribers: number;
+  completedSubscribers: number;
+  stepCount: number;
+  steps?: DripStepDto[];
+  createdAt: string;
+}
+
+export interface DripStepAnalytics {
+  stepOrder: number;
+  stepName: string;
+  stepType: string;
+  sentCount: number;
+  openCount: number;
+  clickCount: number;
+  openRatePercent: number;
+  clickRatePercent: number;
+  conversionRatePercent: number;
+}
+
+export interface DripCampaignAnalyticsResponse {
+  campaignId: string;
+  campaignName: string;
+  totalEnrolled: number;
+  overallConversionRate: number;
+  stepAnalytics: DripStepAnalytics[];
+}
+
+export interface MarketingTemplateSummary {
+  id: string;
+  name: string;
+  channel: 'EMAIL' | 'SMS' | 'ZALO_ZNS' | 'IN_APP';
+  category: 'WELCOME' | 'NURTURE' | 'PROMOTION' | 'RE_ENGAGEMENT' | 'EVENT';
+  subject?: string;
+  content: string;
+  variables: string[];
+  status: 'ACTIVE' | 'DRAFT' | 'ARCHIVED';
+  usageCount: number;
+  updatedAt: string;
+}
+
+export interface MarketingRoiSummary {
+  totalBudget: number;
+  totalActualSpend: number;
+  totalExpectedRevenue: number;
+  totalWonRevenue: number;
+  totalPipelineValue: number;
+  overallRoiPercent: number;
+  totalCampaignsCount: number;
+  activeCampaignsCount: number;
+  totalLeadsGenerated: number;
+  totalOpportunitiesCreated: number;
+  totalDealsWon: number;
+  costPerLead: number;
+  customerAcquisitionCost: number;
+}
+
+export interface ChannelPerformance {
+  channelType: string;
+  channelNameVi: string;
+  campaignsCount: number;
+  spend: number;
+  leadsCount: number;
+  conversionsCount: number;
+  wonRevenue: number;
+  roiPercent: number;
+  costPerLead: number;
+}
+
+export interface MarketingFunnelStage {
+  stageOrder: number;
+  stageKey: string;
+  stageNameVi: string;
+  count: number;
+  totalValue: number;
+  conversionRateFromPrevious: number;
+  dropoffRate: number;
+}
+
+export interface MarketingAnalyticsResponse {
+  summary: MarketingRoiSummary;
+  channelPerformances: ChannelPerformance[];
+  funnelStages: MarketingFunnelStage[];
+}
+
 export const campaignApi = {
   list: async (params?: {
     search?: string;
@@ -113,12 +215,13 @@ export const campaignApi = {
     description?: string;
   }): Promise<CampaignItem> => {
     const payload = {
+      campaignCode: `CAMP-${Date.now().toString().slice(-6)}`,
       name: data.name,
-      type: data.type,
+      campaignType: data.type,
       budget: data.budgetAmount !== undefined ? data.budgetAmount : (data.budget || 0),
       expectedRevenue: data.expectedRevenue || 0,
-      startDate: data.startDate,
-      endDate: data.endDate,
+      startAt: data.startDate ? `${data.startDate}T00:00:00Z` : null,
+      endAt: data.endDate ? `${data.endDate}T23:59:59Z` : null,
       description: data.description,
     };
     return apiFetch<CampaignItem>('/marketing/campaigns', {
@@ -134,14 +237,13 @@ export const campaignApi = {
     const payload = {
       version: data.version || 1,
       name: data.name,
-      type: data.type,
+      campaignType: data.type,
       budget: data.budgetAmount !== undefined ? data.budgetAmount : (data.budget || 0),
       actualCost: data.actualCost || 0,
       expectedRevenue: data.expectedRevenue || 0,
-      startDate: data.startDate,
-      endDate: data.endDate,
+      startAt: data.startDate ? `${data.startDate}T00:00:00Z` : null,
+      endAt: data.endDate ? `${data.endDate}T23:59:59Z` : null,
       description: data.description,
-      active: data.active !== undefined ? data.active : true,
     };
     return apiFetch<CampaignItem>(`/marketing/campaigns/${id}`, {
       method: 'PUT',
@@ -163,5 +265,139 @@ export const campaignApi = {
         'If-Match': `"${version}"`,
       },
     });
+  },
+};
+
+export const dripApi = {
+  list: async (): Promise<DripCampaignSummary[]> => {
+    return apiFetch<DripCampaignSummary[]>('/marketing/drip-campaigns');
+  },
+
+  get: async (id: string): Promise<DripCampaignSummary> => {
+    return apiFetch<DripCampaignSummary>(`/marketing/drip-campaigns/${id}`);
+  },
+
+  create: async (data: {
+    name: string;
+    description: string;
+    triggerEvent: string;
+    targetAudience: string;
+    steps?: DripStepDto[];
+  }): Promise<DripCampaignSummary> => {
+    return apiFetch<DripCampaignSummary>('/marketing/drip-campaigns', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  updateStatus: async (id: string, status: string): Promise<DripCampaignSummary> => {
+    return apiFetch<DripCampaignSummary>(`/marketing/drip-campaigns/${id}/status`, {
+      method: 'PUT',
+      body: JSON.stringify({ status }),
+    });
+  },
+
+  delete: async (id: string): Promise<void> => {
+    return apiFetch<void>(`/marketing/drip-campaigns/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
+  enroll: async (id: string, subscriber: {
+    subscriberType: string;
+    subscriberName: string;
+    email?: string;
+    phone?: string;
+  }): Promise<boolean> => {
+    return apiFetch<boolean>(`/marketing/drip-campaigns/${id}/enroll`, {
+      method: 'POST',
+      body: JSON.stringify(subscriber),
+    });
+  },
+
+  getAnalytics: async (id: string): Promise<DripCampaignAnalyticsResponse> => {
+    return apiFetch<DripCampaignAnalyticsResponse>(`/marketing/drip-campaigns/${id}/analytics`);
+  },
+};
+
+export const marketingTemplateApi = {
+  list: async (params?: { channel?: string; category?: string }): Promise<MarketingTemplateSummary[]> => {
+    const query = new URLSearchParams();
+    if (params?.channel && params.channel !== 'ALL') query.set('channel', params.channel);
+    if (params?.category && params.category !== 'ALL') query.set('category', params.category);
+    const qs = query.toString() ? `?${query.toString()}` : '';
+    return apiFetch<MarketingTemplateSummary[]>(`/marketing/templates${qs}`);
+  },
+
+  get: async (id: string): Promise<MarketingTemplateSummary> => {
+    return apiFetch<MarketingTemplateSummary>(`/marketing/templates/${id}`);
+  },
+
+  create: async (data: {
+    name: string;
+    channel: string;
+    category?: string;
+    subject?: string;
+    content: string;
+    variables?: string[];
+    status?: string;
+  }): Promise<MarketingTemplateSummary> => {
+    return apiFetch<MarketingTemplateSummary>('/marketing/templates', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  update: async (
+    id: string,
+    data: {
+      name: string;
+      channel: string;
+      category?: string;
+      subject?: string;
+      content: string;
+      variables?: string[];
+      status?: string;
+    }
+  ): Promise<MarketingTemplateSummary> => {
+    return apiFetch<MarketingTemplateSummary>(`/marketing/templates/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
+  delete: async (id: string): Promise<void> => {
+    return apiFetch<void>(`/marketing/templates/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
+  preview: async (data: {
+    subject?: string;
+    content: string;
+    sampleData?: Record<string, string>;
+  }): Promise<{ renderedSubject?: string; renderedContent: string }> => {
+    return apiFetch<{ renderedSubject?: string; renderedContent: string }>('/marketing/templates/preview', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+};
+
+export const marketingAnalyticsApi = {
+  getFull: async (): Promise<MarketingAnalyticsResponse> => {
+    return apiFetch<MarketingAnalyticsResponse>('/marketing/analytics');
+  },
+
+  getRoiSummary: async (): Promise<MarketingRoiSummary> => {
+    return apiFetch<MarketingRoiSummary>('/marketing/analytics/roi-summary');
+  },
+
+  getChannels: async (): Promise<ChannelPerformance[]> => {
+    return apiFetch<ChannelPerformance[]>('/marketing/analytics/channels');
+  },
+
+  getFunnel: async (): Promise<MarketingFunnelStage[]> => {
+    return apiFetch<MarketingFunnelStage[]>('/marketing/analytics/funnel');
   },
 };

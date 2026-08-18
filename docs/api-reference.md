@@ -7439,6 +7439,766 @@ Content-Type: application/json
 true
 ```
 
+## Drip Marketing Automation API
+
+### Create Drip Campaign
+
+```http
+POST /api/marketing/drip-campaigns
+```
+
+Required permission: `marketing_campaign.write`.
+
+#### Request Headers
+```http
+Authorization: Bearer <access-token>
+X-Tenant-ID: <tenant-id>
+Content-Type: application/json
+```
+
+#### Request Body
+```json
+{
+  "name": "Chuỗi Nuôi dưỡng Khách hàng Tiềm năng Mới",
+  "description": "Kịch bản tự động gửi email giới thiệu, case study và nhắc gọi tư vấn",
+  "triggerEvent": "LEAD_CREATED",
+  "targetAudience": "ALL_LEADS",
+  "steps": [
+    {
+      "stepOrder": 1,
+      "stepType": "EMAIL",
+      "name": "Email Chào mừng & Hồ sơ Năng lực",
+      "delayDays": 0,
+      "templateSubject": "Chào mừng bạn đến với SmartCRM",
+      "templateBody": "Cảm ơn quý khách đã quan tâm...",
+      "actionTarget": ""
+    }
+  ]
+}
+```
+
+#### Response `200 OK`
+```json
+{
+  "id": "77000000-0000-0000-0000-000000000001",
+  "name": "Chuỗi Nuôi dưỡng Khách hàng Tiềm năng Mới",
+  "description": "Kịch bản tự động gửi email giới thiệu, case study và nhắc gọi tư vấn",
+  "triggerEvent": "LEAD_CREATED",
+  "targetAudience": "ALL_LEADS",
+  "status": "ACTIVE",
+  "totalEnrolled": 1,
+  "activeSubscribers": 1,
+  "completedSubscribers": 0,
+  "stepCount": 1,
+  "createdAt": "2026-08-17 10:00:00"
+}
+```
+
+### List Drip Campaigns
+
+```http
+GET /api/marketing/drip-campaigns
+```
+
+Required permission: `marketing_campaign.read`.
+
+#### Response `200 OK`
+```json
+[
+  {
+    "id": "77000000-0000-0000-0000-000000000001",
+    "name": "Chuỗi Nuôi dưỡng Khách hàng Tiềm năng Mới",
+    "description": "Kịch bản tự động gửi email giới thiệu, case study và nhắc gọi tư vấn",
+    "triggerEvent": "LEAD_CREATED",
+    "targetAudience": "ALL_LEADS",
+    "status": "ACTIVE",
+    "totalEnrolled": 128,
+    "activeSubscribers": 42,
+    "completedSubscribers": 86,
+    "stepCount": 4,
+    "createdAt": "2026-08-10 09:00:00"
+  }
+]
+```
+
+### Get Drip Campaign Step Analytics
+
+```http
+GET /api/marketing/drip-campaigns/{id}/analytics
+```
+
+Required permission: `marketing_campaign.read`.
+
+#### Response `200 OK`
+```json
+{
+  "campaignId": "77000000-0000-0000-0000-000000000001",
+  "campaignName": "Chuỗi Nuôi dưỡng Khách hàng Tiềm năng Mới",
+  "totalEnrolled": 128,
+  "overallConversionRate": 32.8,
+  "stepAnalytics": [
+    {
+      "stepOrder": 1,
+      "stepName": "Email Chào mừng & Hồ sơ Năng lực",
+      "stepType": "EMAIL",
+      "sentCount": 128,
+      "openCount": 112,
+      "clickCount": 68,
+      "openRatePercent": 87.5,
+      "clickRatePercent": 53.1,
+      "conversionRatePercent": 53.1
+    }
+  ]
+}
+```
+
+## Webhook Dispatcher API
+
+### Create Webhook Subscription
+
+```http
+POST /api/integration/webhooks
+```
+
+Required permission: `integration_external.write`.
+
+#### Request Headers
+```http
+Authorization: Bearer <access-token>
+X-Tenant-ID: <tenant-id>
+Content-Type: application/json
+```
+
+#### Request Body
+```json
+{
+  "name": "Đồng bộ Hợp đồng sang Kế toán MISA",
+  "targetUrl": "https://api.misa.vn/crm-hook/v1/contracts",
+  "secretToken": "whsec_misa_live_998877",
+  "events": ["contract.signed", "deal.won"]
+}
+```
+
+#### Response `200 OK`
+```json
+{
+  "id": "88000000-0000-0000-0000-000000000001",
+  "name": "Đồng bộ Hợp đồng sang Kế toán MISA",
+  "targetUrl": "https://api.misa.vn/crm-hook/v1/contracts",
+  "secretToken": "whsec_misa_live_998877",
+  "events": ["contract.signed", "deal.won"],
+  "status": "ACTIVE",
+  "successCount": 0,
+  "failureCount": 0,
+  "lastTriggeredAt": null,
+  "createdAt": "2026-08-17 11:00:00"
+}
+```
+
+### List Webhook Subscriptions
+
+```http
+GET /api/integration/webhooks
+```
+
+Required permission: `integration_external.read`.
+
+#### Response `200 OK`
+```json
+[
+  {
+    "id": "88000000-0000-0000-0000-000000000001",
+    "name": "Đồng bộ Hợp đồng sang Kế toán MISA",
+    "targetUrl": "https://api.misa.vn/crm-hook/v1/contracts",
+    "secretToken": "whsec_misa_live_998877",
+    "events": ["contract.signed", "deal.won"],
+    "status": "ACTIVE",
+    "successCount": 342,
+    "failureCount": 1,
+    "lastTriggeredAt": "2026-08-17 09:15:00",
+    "createdAt": "2026-08-01 08:00:00"
+  }
+]
+```
+
+### Test Webhook Dispatch
+
+```http
+POST /api/integration/webhooks/{id}/test
+```
+
+Required permission: `integration_external.write`.
+
+#### Response `200 OK`
+```json
+{
+  "success": true,
+  "httpStatusCode": 200,
+  "executionTimeMs": 142,
+  "responseMessage": "Webhook ping payload dispatched and received HTTP 200 OK successfully."
+}
+```
+
+### Get Webhook Delivery Logs
+
+```http
+GET /api/integration/webhooks/{id}/logs
+```
+
+Required permission: `integration_external.read`.
+
+#### Response `200 OK`
+```json
+[
+  {
+    "id": "99000000-0000-0000-0000-000000000001",
+    "webhookId": "88000000-0000-0000-0000-000000000001",
+    "event": "contract.signed",
+    "httpStatusCode": 200,
+    "executionTimeMs": 128,
+    "requestPayload": "{\"event\":\"contract.signed\",\"contractNumber\":\"HD-2026-0042\",\"amount\":450000000}",
+    "responseBody": "{\"status\":\"ACCEPTED\",\"transactionId\":\"TX-889911\"}",
+    "status": "SUCCESS",
+    "triggeredAt": "2026-08-17 10:15:22"
+  }
+]
+```
+
+## Sales Commission & Incentive API
+
+### List Sales Commissions
+
+```http
+GET /api/sales/commissions?period=2026-08
+```
+
+Required permission: `sales_order.read`.
+
+#### Response `200 OK`
+```json
+[
+  {
+    "id": "66000000-0000-0000-0000-000000000001",
+    "salesRepName": "Phạm Tuấn Vũ",
+    "period": "2026-08",
+    "totalClosedRevenue": 450000000.0,
+    "targetQuota": 400000000.0,
+    "quotaAttainmentPercent": 112.5,
+    "baseCommissionPercent": 12.0,
+    "baseCommissionAmount": 54000000.0,
+    "kickerBonusAmount": 1000000.0,
+    "totalPayoutAmount": 55000000.0,
+    "status": "APPROVED",
+    "approvedBy": "Giám đốc Kinh doanh",
+    "calculatedAt": "2026-08-16 17:00:00"
+  }
+]
+```
+
+### Calculate Sales Commission
+
+```http
+POST /api/sales/commissions/calculate
+```
+
+Required permission: `sales_order.write`.
+
+#### Request Headers
+```http
+Authorization: Bearer <access-token>
+X-Tenant-ID: <tenant-id>
+Content-Type: application/json
+```
+
+#### Request Body
+```json
+{
+  "period": "2026-08",
+  "salesRepName": "Nguyễn Văn An",
+  "targetQuota": 300000000.0
+}
+```
+
+#### Response `200 OK`
+```json
+{
+  "id": "66000000-0000-0000-0000-000000000003",
+  "salesRepName": "Nguyễn Văn An",
+  "period": "2026-08",
+  "totalClosedRevenue": 350000000.0,
+  "targetQuota": 300000000.0,
+  "quotaAttainmentPercent": 116.6,
+  "baseCommissionPercent": 12.0,
+  "baseCommissionAmount": 42000000.0,
+  "kickerBonusAmount": 1000000.0,
+  "totalPayoutAmount": 43000000.0,
+  "status": "PENDING_APPROVAL",
+  "approvedBy": null,
+  "calculatedAt": "2026-08-17 11:30:00"
+}
+```
+
+### Approve Sales Commission
+
+```http
+PUT /api/sales/commissions/{id}/approve
+```
+
+Required permission: `sales_order.write`.
+
+#### Response `200 OK`
+```json
+true
+```
+
+## In-App Notification Center API
+
+### List User Notifications
+
+```http
+GET /api/notifications?unreadOnly=false
+```
+
+Requires authenticated user session.
+
+#### Response `200 OK`
+```json
+[
+  {
+    "id": "55000000-0000-0000-0000-000000000001",
+    "title": "Khách hàng Tiềm năng Mới được Phân bổ",
+    "message": "Bạn vừa được hệ thống Lead Routing phân bổ Lead 'Công ty Cổ phần Bách Hóa Xanh'.",
+    "category": "LEAD_ASSIGNED",
+    "priority": "HIGH",
+    "isRead": false,
+    "actionUrl": "/app/leads",
+    "createdAt": "2026-08-17 11:15:00"
+  },
+  {
+    "id": "55000000-0000-0000-0000-000000000002",
+    "title": "⚠️ Cảnh báo SLA Sắp Hết hạn",
+    "message": "Yêu cầu hỗ trợ TK-2026-0089 sắp vi phạm SLA cam kết trong vòng 2 giờ tới!",
+    "category": "SLA_BREACH",
+    "priority": "URGENT",
+    "isRead": false,
+    "actionUrl": "/app/service/tickets",
+    "createdAt": "2026-08-17 10:45:00"
+  }
+]
+```
+
+### Get Unread Notification Count
+
+```http
+GET /api/notifications/unread-count
+```
+
+Requires authenticated user session.
+
+#### Response `200 OK`
+```json
+{
+  "unreadCount": 3
+}
+```
+
+### Mark Notification as Read
+
+```http
+PUT /api/notifications/{id}/read
+```
+
+Requires authenticated user session.
+
+#### Response `200 OK`
+```json
+true
+```
+
+### Mark All Notifications as Read
+
+```http
+PUT /api/notifications/read-all
+```
+
+Requires authenticated user session.
+
+#### Response `200 OK`
+```json
+true
+```
+
+## Marketing & Campaign Automation APIs
+
+### Marketing Campaigns
+
+#### Create Campaign
+
+```http
+POST /api/campaigns
+POST /api/marketing/campaigns
+```
+
+Required permission: `marketing_campaign.write`
+
+##### Request Body
+```json
+{
+  "campaignCode": "CAMP-2026-001",
+  "name": "Hội thảo Chuyển đổi số Doanh nghiệp B2B 2026",
+  "campaignType": "WEBINAR",
+  "ownerUserId": "11111111-1111-1111-1111-111111111111",
+  "startAt": "2026-08-01T00:00:00Z",
+  "endAt": "2026-08-25T23:59:59Z",
+  "budget": 50000000,
+  "currencyCode": "VND",
+  "expectedRevenue": 850000000,
+  "description": "Webinar chiến lược dành cho khách hàng doanh nghiệp",
+  "utmSource": "facebook",
+  "utmMedium": "cpc",
+  "utmCampaign": "b2b_digital_transformation"
+}
+```
+
+##### Response `201 Created`
+```json
+{
+  "id": "77000000-0000-0000-0000-000000000001",
+  "campaignCode": "CAMP-2026-001",
+  "name": "Hội thảo Chuyển đổi số Doanh nghiệp B2B 2026",
+  "campaignType": "WEBINAR",
+  "status": "ACTIVE",
+  "ownerUserId": "11111111-1111-1111-1111-111111111111",
+  "startAt": "2026-08-01T00:00:00Z",
+  "endAt": "2026-08-25T23:59:59Z",
+  "budget": 50000000,
+  "actualCost": 35000000,
+  "currencyCode": "VND",
+  "expectedRevenue": 850000000,
+  "description": "Webinar chiến lược dành cho khách hàng doanh nghiệp",
+  "version": 1
+}
+```
+
+#### List Campaigns (Search)
+
+```http
+GET /api/campaigns?q={search}&campaignType={type}&status={status}&page=0&size=20
+GET /api/marketing/campaigns?q={search}&campaignType={type}&status={status}&page=0&size=20
+```
+
+Required permission: `marketing_campaign.read`
+
+##### Response `200 OK`
+```json
+{
+  "items": [
+    {
+      "id": "77000000-0000-0000-0000-000000000001",
+      "campaignCode": "CAMP-2026-001",
+      "name": "Hội thảo Chuyển đổi số Doanh nghiệp B2B 2026",
+      "campaignType": "WEBINAR",
+      "status": "ACTIVE",
+      "budget": 50000000,
+      "actualCost": 35000000,
+      "expectedRevenue": 850000000,
+      "version": 1
+    }
+  ],
+  "pageNumber": 0,
+  "pageSize": 20,
+  "totalElements": 1,
+  "totalPages": 1
+}
+```
+
+---
+
+### Marketing Automation & Drip Sequences
+
+#### List Drip Campaigns
+
+```http
+GET /api/marketing/drip-campaigns
+```
+
+Required permission: `marketing_campaign.read`
+
+##### Response `200 OK`
+```json
+[
+  {
+    "id": "77000000-0000-0000-0000-000000000001",
+    "name": "Chuỗi Nuôi dưỡng Khách hàng Tiềm năng Mới (New Lead Welcome Sequence)",
+    "description": "Tự động gửi email giới thiệu hệ sinh thái, sau 2 ngày gửi SMS Demo và tạo lịch gọi tư vấn.",
+    "triggerEvent": "LEAD_CREATED",
+    "targetAudience": "ALL_LEADS",
+    "status": "ACTIVE",
+    "totalEnrolled": 128,
+    "activeSubscribers": 42,
+    "completedSubscribers": 86,
+    "stepCount": 4,
+    "createdAt": "2026-08-10 09:00:00"
+  }
+]
+```
+
+#### Create Drip Campaign
+
+```http
+POST /api/marketing/drip-campaigns
+```
+
+Required permission: `marketing_campaign.write`
+
+##### Request Body
+```json
+{
+  "name": "Chuỗi Tái Kích hoạt Khách hàng Tiềm năng Tạm dừng",
+  "description": "Kịch bản gửi ưu đãi kích hoạt lại sau 30 ngày",
+  "triggerEvent": "DEAL_LOST",
+  "targetAudience": "LOST_LEADS",
+  "steps": [
+    {
+      "stepOrder": 1,
+      "stepType": "EMAIL",
+      "name": "Khảo sát Lý do Chưa phù hợp",
+      "delayDays": 7,
+      "templateSubject": "Khảo sát trải nghiệm tư vấn"
+    },
+    {
+      "stepOrder": 2,
+      "stepType": "SMS",
+      "name": "Gửi Voucher Ưu đãi 15%",
+      "delayDays": 21
+    }
+  ]
+}
+```
+
+##### Response `201 Created`
+```json
+{
+  "id": "77000000-0000-0000-0000-000000000099",
+  "name": "Chuỗi Tái Kích hoạt Khách hàng Tiềm năng Tạm dừng",
+  "description": "Kịch bản gửi ưu đãi kích hoạt lại sau 30 ngày",
+  "triggerEvent": "DEAL_LOST",
+  "targetAudience": "LOST_LEADS",
+  "status": "ACTIVE",
+  "totalEnrolled": 1,
+  "activeSubscribers": 1,
+  "completedSubscribers": 0,
+  "stepCount": 2,
+  "createdAt": "2026-08-18 10:00:00"
+}
+```
+
+#### Enroll Lead into Drip Sequence
+
+```http
+POST /api/marketing/drip-campaigns/{id}/enroll
+```
+
+Required permission: `marketing_campaign.write`
+
+##### Request Body
+```json
+{
+  "subscriberType": "LEAD",
+  "subscriberName": "Vũ Văn Minh",
+  "email": "minh.vu@techcorp.vn",
+  "phone": "0912345678"
+}
+```
+
+##### Response `200 OK`
+```json
+true
+```
+
+#### Get Drip Step Analytics Funnel
+
+```http
+GET /api/marketing/drip-campaigns/{id}/analytics
+```
+
+Required permission: `marketing_campaign.read`
+
+##### Response `200 OK`
+```json
+{
+  "campaignId": "77000000-0000-0000-0000-000000000001",
+  "campaignName": "Chuỗi Nuôi dưỡng Khách hàng Tiềm năng Mới",
+  "totalEnrolled": 128,
+  "overallConversionRate": 53.1,
+  "stepAnalytics": [
+    {
+      "stepOrder": 1,
+      "stepName": "Email Chào mừng & Hồ sơ Năng lực Doanh nghiệp",
+      "stepType": "EMAIL",
+      "sentCount": 128,
+      "openCount": 112,
+      "clickCount": 68,
+      "openRatePercent": 87.5,
+      "clickRatePercent": 60.7,
+      "conversionRatePercent": 53.1
+    }
+  ]
+}
+```
+
+---
+
+### Marketing Content Templates
+
+#### List Templates
+
+```http
+GET /api/marketing/templates?channel={channel}&category={category}
+```
+
+Required permission: `marketing_campaign.read`
+
+##### Response `200 OK`
+```json
+[
+  {
+    "id": "88000000-0000-0000-0000-000000000001",
+    "name": "Email Chào mừng Lead Mới (Welcome Sequence)",
+    "channel": "EMAIL",
+    "category": "WELCOME",
+    "subject": "Chào mừng {{lead.name}} đến với Hệ sinh thái Giải pháp Doanh nghiệp",
+    "content": "Kính gửi Anh/Chị {{lead.name}},\n\nCảm ơn {{lead.name}} từ công ty {{lead.company}}...",
+    "variables": ["lead.name", "lead.company", "consultant.name", "consultant.phone"],
+    "status": "ACTIVE",
+    "usageCount": 186,
+    "updatedAt": "2026-08-15 08:30:00"
+  }
+]
+```
+
+#### Create Template
+
+```http
+POST /api/marketing/templates
+```
+
+Required permission: `marketing_campaign.write`
+
+##### Request Body
+```json
+{
+  "name": "SMS Nhắc Lịch Trải nghiệm Demo",
+  "channel": "SMS",
+  "category": "NURTURE",
+  "content": "CRM: Chào {{lead.name}}, lịch demo phần mềm diễn ra lúc 14h hôm nay.",
+  "status": "ACTIVE"
+}
+```
+
+##### Response `201 Created`
+```json
+{
+  "id": "88000000-0000-0000-0000-000000000004",
+  "name": "SMS Nhắc Lịch Trải nghiệm Demo",
+  "channel": "SMS",
+  "category": "NURTURE",
+  "content": "CRM: Chào {{lead.name}}, lịch demo phần mềm diễn ra lúc 14h hôm nay.",
+  "variables": ["lead.name"],
+  "status": "ACTIVE",
+  "usageCount": 0,
+  "updatedAt": "2026-08-18 10:00:00"
+}
+```
+
+#### Live Preview Template
+
+```http
+POST /api/marketing/templates/preview
+```
+
+Required permission: `marketing_campaign.read`
+
+##### Request Body
+```json
+{
+  "subject": "Chào mừng {{lead.name}} từ công ty {{lead.company}}",
+  "content": "Kính chào {{lead.name}}, mã ưu đãi của bạn là {{promo.code}}.",
+  "sampleData": {
+    "lead.name": "Nguyễn Văn Tuấn",
+    "lead.company": "Tập đoàn FPT",
+    "promo.code": "VIP2026"
+  }
+}
+```
+
+##### Response `200 OK`
+```json
+{
+  "renderedSubject": "Chào mừng Nguyễn Văn Tuấn từ công ty Tập đoàn FPT",
+  "renderedContent": "Kính chào Nguyễn Văn Tuấn, mã ưu đãi của bạn là VIP2026."
+}
+```
+
+---
+
+### Marketing Analytics & Attribution
+
+#### Get Full Marketing Analytics
+
+```http
+GET /api/marketing/analytics
+```
+
+Required permission: `marketing_campaign.read`
+
+##### Response `200 OK`
+```json
+{
+  "summary": {
+    "totalBudget": 345000000,
+    "totalActualSpend": 75000000,
+    "totalExpectedRevenue": 5750000000,
+    "totalWonRevenue": 1280000000,
+    "totalPipelineValue": 3450000000,
+    "overallRoiPercent": 1606.67,
+    "totalCampaignsCount": 4,
+    "activeCampaignsCount": 2,
+    "totalLeadsGenerated": 285,
+    "totalOpportunitiesCreated": 82,
+    "totalDealsWon": 37,
+    "costPerLead": 263158,
+    "customerAcquisitionCost": 2027027
+  },
+  "channelPerformances": [
+    {
+      "channelType": "WEBINAR",
+      "channelNameVi": "Hội thảo Trực tuyến (Webinar)",
+      "campaignsCount": 1,
+      "spend": 35000000,
+      "leadsCount": 142,
+      "conversionsCount": 18,
+      "wonRevenue": 550000000,
+      "roiPercent": 1471.43,
+      "costPerLead": 246479
+    }
+  ],
+  "funnelStages": [
+    {
+      "stageOrder": 1,
+      "stageKey": "IMPRESSIONS",
+      "stageNameVi": "Lượt tiếp cận / Impression",
+      "count": 48500,
+      "totalValue": 0,
+      "conversionRateFromPrevious": 100.0,
+      "dropoffRate": 0.0
+    }
+  ]
+}
+```
+
+---
+
 ## Maintenance Rules
 
 Every API addition, modification, or removal must update this file in the same

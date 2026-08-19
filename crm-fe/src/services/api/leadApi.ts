@@ -1,4 +1,5 @@
 import { apiFetch } from './apiClient';
+import type { PageResult } from './accountApi';
 
 export type LeadRating = 'HOT' | 'WARM' | 'COLD';
 export type LeadOwnerType = 'USER' | 'TEAM';
@@ -150,15 +151,6 @@ export interface LeadSearchParams {
   status?: string;
 }
 
-export interface PageResult<T> {
-  items: T[];
-  page: number;
-  size: number;
-  totalElements: number;
-  totalPages: number;
-  content?: T[];
-}
-
 export const LEAD_SOURCE_CONFIG: Record<string, { label: string; className: string }> = {
   WEBSITE: { label: 'Website / Landing Page', className: 'bg-blue-50 text-blue-700 border-blue-200' },
   EVENT: { label: 'Sự kiện / Hội thảo', className: 'bg-purple-50 text-purple-700 border-purple-200' },
@@ -229,7 +221,7 @@ export const leadApi = {
     if (q) query.append('q', q);
     if (params.statusId && params.statusId !== 'ALL') query.append('statusId', params.statusId);
     if (params.sourceId && params.sourceId !== 'ALL') query.append('sourceId', params.sourceId);
-    if (params.rating && params.rating !== 'ALL') query.append('rating', params.rating);
+    if (params.rating && (params.rating as string) !== 'ALL') query.append('rating', params.rating);
     if (params.ownerType) query.append('ownerType', params.ownerType);
     if (params.ownerId) query.append('ownerId', params.ownerId);
     if (params.converted !== undefined) query.append('converted', String(params.converted));

@@ -9,6 +9,10 @@ public record QuoteId(UUID value) {
 		Objects.requireNonNull(value, "Quote ID value must not be null");
 	}
 
+	public static QuoteId from(UUID value) {
+		return new QuoteId(value);
+	}
+
 	public static QuoteId from(String value) {
 		Objects.requireNonNull(value, "Quote ID string must not be null");
 		return new QuoteId(UUID.fromString(value));

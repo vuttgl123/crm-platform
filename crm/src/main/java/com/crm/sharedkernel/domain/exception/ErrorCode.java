@@ -6,4 +6,11 @@ public interface ErrorCode {
 
 	String messageKey();
 
+	static ErrorCode of(String code) {
+		return new SimpleErrorCode(code, code != null ? code.toLowerCase().replace('_', '.') : "error.unknown");
+	}
+
+	record SimpleErrorCode(String value, String messageKey) implements ErrorCode {
+	}
+
 }

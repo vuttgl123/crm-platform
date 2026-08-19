@@ -54,8 +54,8 @@ import {
   RefreshCw,
   Edit,
   Trash2,
-  Calendar,
   DollarSign,
+  Loader2,
   Users,
   BarChart2,
   TrendingUp,
@@ -71,9 +71,7 @@ import {
   Play,
   Pause,
   Layers,
-  Send,
   Sliders,
-  FileText,
   UserPlus,
   Share2,
   Percent,
@@ -151,7 +149,7 @@ export const CampaignsPage: React.FC = () => {
 
   // Preview Template Modal
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
-  const [previewRendered, setPreviewRendered] = useState<{ subject?: string; content: string } | null>(null);
+  const [previewRendered, setPreviewRendered] = useState<{ renderedSubject?: string; renderedContent?: string; subject?: string; content?: string } | null>(null);
   const [previewSampleName, setPreviewSampleName] = useState('Nguyễn Văn Tuấn');
   const [previewSampleCompany, setPreviewSampleCompany] = useState('Tập đoàn Công nghệ FPT');
 
@@ -956,6 +954,38 @@ export const CampaignsPage: React.FC = () => {
                   </TableBody>
                 </Table>
               )}
+
+              {/* Pagination */}
+              <div className="flex items-center justify-between p-4 border-t border-slate-100 text-xs text-slate-500">
+                <div>
+                  Hiển thị <span className="font-bold text-slate-800">{campaigns.length}</span> / <span className="font-bold text-slate-800">{totalElements}</span> chiến dịch
+                </div>
+                {totalPages > 1 && (
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={page === 0}
+                      onClick={() => setPage((p) => Math.max(0, p - 1))}
+                      className="h-7 text-xs"
+                    >
+                      Trang trước
+                    </Button>
+                    <span className="text-xs font-mono">
+                      {page + 1} / {totalPages}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={page >= totalPages - 1}
+                      onClick={() => setPage((p) => p + 1)}
+                      className="h-7 text-xs"
+                    >
+                      Trang sau
+                    </Button>
+                  </div>
+                )}
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -1136,8 +1166,14 @@ export const CampaignsPage: React.FC = () => {
           </div>
 
           {/* Templates Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {templates.map((tpl) => (
+          {loadingTemplates ? (
+            <div className="py-12 text-center text-slate-400">
+              <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto" />
+              <p className="text-xs mt-2 font-medium">Đang tải danh sách mẫu nội dung...</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {templates.map((tpl) => (
               <Card key={tpl.id} className="border-slate-200 bg-white shadow-2xs flex flex-col justify-between hover:border-blue-300 transition-all">
                 <CardHeader className="pb-3 border-b border-slate-100">
                   <div className="flex items-center justify-between">
@@ -1207,7 +1243,8 @@ export const CampaignsPage: React.FC = () => {
                 </div>
               </Card>
             ))}
-          </div>
+            </div>
+          )}
         </TabsContent>
       </Tabs>
 
@@ -1762,20 +1799,28 @@ export const CampaignsPage: React.FC = () => {
           <div className="space-y-4 pt-2">
             <div className="grid grid-cols-2 gap-2 bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-xs">
               <div>
-                <span className="text-[10px] font-bold uppercase text-slate-400">Tên khách hàng:</span>
-                <p className="font-semibold text-slate-800">{previewSampleName}</p>
+                <span className="text-[10px] font-bold uppercase text-slate-500">Tên khách hàng mẫu:</span>
+                <Input
+                  value={previewSampleName}
+                  onChange={(e) => setPreviewSampleName(e.target.value)}
+                  className="h-7 text-xs bg-white mt-1 border-slate-200"
+                />
               </div>
               <div>
-                <span className="text-[10px] font-bold uppercase text-slate-400">Công ty:</span>
-                <p className="font-semibold text-slate-800">{previewSampleCompany}</p>
+                <span className="text-[10px] font-bold uppercase text-slate-500">Công ty mẫu:</span>
+                <Input
+                  value={previewSampleCompany}
+                  onChange={(e) => setPreviewSampleCompany(e.target.value)}
+                  className="h-7 text-xs bg-white mt-1 border-slate-200"
+                />
               </div>
             </div>
 
-            {previewRendered?.renderedSubject && (
+            {(previewRendered?.renderedSubject || previewRendered?.subject) && (
               <div className="space-y-1">
                 <span className="text-xs font-bold text-slate-600">Tiêu đề gửi đi:</span>
                 <div className="p-2.5 bg-blue-50 rounded-lg border border-blue-200 text-xs font-bold text-blue-900">
-                  {previewRendered.renderedSubject}
+                  {previewRendered?.renderedSubject || previewRendered?.subject}
                 </div>
               </div>
             )}
@@ -1783,7 +1828,7 @@ export const CampaignsPage: React.FC = () => {
             <div className="space-y-1">
               <span className="text-xs font-bold text-slate-600">Nội dung hiển thị cho người nhận:</span>
               <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-2xs text-xs text-slate-800 whitespace-pre-line leading-relaxed font-sans">
-                {previewRendered?.renderedContent}
+                {previewRendered?.renderedContent || previewRendered?.content}
               </div>
             </div>
           </div>

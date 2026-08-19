@@ -75,22 +75,30 @@ export const Sidebar: React.FC = () => {
   const { i18n } = useTranslation();
   const isVi = !i18n.language || i18n.language.startsWith('vi');
 
+  const tenantName = session?.tenant?.display_name || 'Tập đoàn IPA';
+  const roleName = session?.activeRole?.name || (session?.membership?.is_tenant_admin ? 'Quản trị viên' : 'Thành viên');
+
   return (
-    <aside className="w-64 h-screen sticky top-0 bg-white border-r border-slate-200 flex flex-col shrink-0 font-sans shadow-2xs">
-      {/* Brand Header */}
-      <div className="h-14 flex items-center px-4 border-b border-slate-200 shrink-0">
-        <NavLink to="/app/overview" className="flex items-center gap-2.5 font-bold text-slate-900">
-          <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white text-sm font-black tracking-wider shadow-xs shrink-0">
-            VUM
+    <aside className="w-64 h-screen sticky top-0 bg-[#FAFBFC] border-r border-slate-200 flex flex-col shrink-0 font-sans z-20 select-none">
+      {/* Jira Workspace / Project Header */}
+      <div className="h-13 flex items-center px-3.5 border-b border-slate-200 shrink-0 bg-white">
+        <NavLink to="/app/overview" className="flex items-center gap-2.5 w-full group">
+          <div className="w-7 h-7 rounded-[4px] bg-[#0C66E4] flex items-center justify-center text-white text-[11px] font-bold tracking-wider shrink-0 shadow-none">
+            IPA
           </div>
-          <span className="text-base font-bold tracking-tight text-slate-900 truncate">
-            VUM <span className="text-blue-600 text-xs font-bold uppercase ml-0.5">CRM</span>
-          </span>
+          <div className="flex-1 min-w-0">
+            <div className="text-[13px] font-semibold text-slate-900 truncate group-hover:text-[#0C66E4] transition-colors leading-tight">
+              {tenantName}
+            </div>
+            <div className="text-[11px] text-slate-500 font-normal truncate mt-0.5">
+              Hệ thống CRM Doanh nghiệp
+            </div>
+          </div>
         </NavLink>
       </div>
 
-      {/* Navigation Groups - Fixed & Clean */}
-      <div className="flex-1 overflow-y-auto px-3 py-3 space-y-4">
+      {/* Navigation Groups */}
+      <div className="flex-1 overflow-y-auto px-2 py-3 space-y-3.5 custom-scrollbar">
         {NAVIGATION_GROUPS.map((group) => {
           const visibleItems = group.items.filter((item) => canAccessRoute(item, session));
           if (visibleItems.length === 0) return null;
@@ -98,9 +106,9 @@ export const Sidebar: React.FC = () => {
           const groupTitle = isVi ? group.titleVi : group.titleEn;
 
           return (
-            <div key={group.id} className="space-y-1">
+            <div key={group.id} className="space-y-0.5">
               {/* Group Section Heading */}
-              <div className="px-3 pt-2 pb-1 text-[11px] font-bold uppercase tracking-wider text-slate-400 select-none">
+              <div className="px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-slate-400">
                 {groupTitle}
               </div>
 
@@ -115,10 +123,10 @@ export const Sidebar: React.FC = () => {
                       key={item.id}
                       to={item.path}
                       className={({ isActive }) =>
-                        `flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold transition-all group ${
+                        `flex items-center gap-2.5 px-2.5 py-1.5 rounded-[4px] text-[13px] font-medium transition-colors group ${
                           isActive
-                            ? 'bg-blue-600 text-white shadow-xs font-bold'
-                            : 'text-slate-600 hover:bg-slate-100/80 hover:text-slate-900'
+                            ? 'bg-[#E9F2FF] text-[#0C66E4] font-semibold'
+                            : 'text-slate-700 hover:bg-slate-200/50 hover:text-slate-900'
                         }`
                       }
                     >
@@ -126,8 +134,9 @@ export const Sidebar: React.FC = () => {
                         <>
                           <Icon
                             className={`w-4 h-4 shrink-0 transition-colors ${
-                              isActive ? 'text-white' : 'text-slate-400 group-hover:text-slate-600'
+                              isActive ? 'text-[#0C66E4]' : 'text-slate-400 group-hover:text-slate-600'
                             }`}
+                            strokeWidth={isActive ? 2.2 : 1.8}
                           />
                           <span className="truncate">{itemTitle}</span>
                         </>
@@ -141,11 +150,14 @@ export const Sidebar: React.FC = () => {
         })}
       </div>
 
-      {/* Footer Info */}
-      <div className="p-3 border-t border-slate-200 bg-slate-50/70 text-xs text-slate-500 shrink-0">
+      {/* Workspace Footer Info */}
+      <div className="px-3.5 py-2.5 border-t border-slate-200 bg-white text-xs text-slate-500 shrink-0">
         <div className="flex items-center justify-between text-[11px] font-medium text-slate-500">
-          <span>VUM CRM v1.0</span>
-          <span className="px-1.5 py-0.2 rounded bg-blue-100 text-blue-700 font-bold text-[10px]">Active</span>
+          <span className="text-slate-400 font-mono text-[10px]">{roleName}</span>
+          <span className="inline-flex items-center gap-1 text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-200 font-bold px-1.5 py-0.5 rounded-[3px]">
+            <span className="w-1 h-1 rounded-full bg-emerald-500" />
+            Online
+          </span>
         </div>
       </div>
     </aside>

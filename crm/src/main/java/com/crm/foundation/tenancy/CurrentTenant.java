@@ -12,4 +12,8 @@ public interface CurrentTenant {
 		return tenantId().orElseThrow(MissingTenantContextException::new);
 	}
 
+	default TenantId require() {
+		return requireTenantId();
+	}
+
 }

@@ -1,4 +1,5 @@
 import { apiFetch } from './apiClient';
+import type { PageResult } from './accountApi';
 
 export type AuditAction = 'INSERT' | 'UPDATE' | 'DELETE';
 export type ActorType = 'USER' | 'SYSTEM' | 'INTEGRATION' | 'SUPPORT';
@@ -107,14 +108,6 @@ export interface DataAccessEventSearchParams {
   to?: string;
   page?: number;
   size?: number;
-}
-
-export interface PageResult<T> {
-  items: T[];
-  page: number;
-  size: number;
-  totalElements: number;
-  totalPages: number;
 }
 
 export const auditApi = {

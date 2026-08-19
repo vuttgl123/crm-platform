@@ -12,14 +12,9 @@ import {
   CheckCircle2,
   AlertCircle,
   RefreshCw,
-  Clock,
-  HelpCircle,
   ShieldAlert,
-  Sparkles,
   Zap,
-  TrendingUp,
 } from 'lucide-react';
-import { toast } from 'sonner';
 
 interface CustomerHealthWidgetProps {
   accountId: string;
@@ -108,7 +103,9 @@ export const CustomerHealthWidget: React.FC<CustomerHealthWidgetProps> = ({
             <h3 className="font-bold text-xs text-slate-900 leading-tight">
               Điểm Sức khỏe & Nguy cơ Rời bỏ (Customer Health Score)
             </h3>
-            <p className="text-[10px] text-slate-500">Đánh giá thời gian thực từ 4 trụ cột dữ liệu CRM</p>
+            <p className="text-[10px] text-slate-500">
+              {accountName ? `Đánh giá cho ${accountName} từ 4 trụ cột dữ liệu CRM` : 'Đánh giá thời gian thực từ 4 trụ cột dữ liệu CRM'}
+            </p>
           </div>
         </div>
 

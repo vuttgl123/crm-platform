@@ -143,9 +143,6 @@ export const QuotesPage: React.FC = () => {
     }
 
     const tAmount = parseFloat(totalAmount);
-    const dPercent = parseFloat(discountPercent) || 0;
-    const fAmount = tAmount * (1 - dPercent / 100);
-
     setIsSubmitting(true);
     try {
       if (editingQuote) {
@@ -420,12 +417,12 @@ export const QuotesPage: React.FC = () => {
 
                       {/* Cột 4: Chiết khấu */}
                       <TableCell className="font-mono text-slate-600 text-[11px]">
-                        {quote.discountPercent > 0 ? (
+                        {(quote.discountAmount || 0) > 0 ? (
                           <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px] font-bold">
-                            -{quote.discountPercent}%
+                            -{quote.discountAmount?.toLocaleString('vi-VN')} ₫
                           </Badge>
                         ) : (
-                          '0%'
+                          '0 ₫'
                         )}
                       </TableCell>
 
@@ -438,7 +435,7 @@ export const QuotesPage: React.FC = () => {
 
                       {/* Cột 6: Hiệu lực */}
                       <TableCell className="font-mono text-slate-600 text-[11px]">
-                        {new Date(quote.validUntil).toLocaleDateString('vi-VN')}
+                        {quote.validUntil ? new Date(quote.validUntil).toLocaleDateString('vi-VN') : '-'}
                       </TableCell>
 
                       {/* Cột 7: Thao tác */}
@@ -468,7 +465,7 @@ export const QuotesPage: React.FC = () => {
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => handleDelete(quote.id, quote.title)}
+                            onClick={() => handleDelete(quote.id, quote.title || quote.quoteNumber)}
                             className="h-7 w-7 text-slate-600 hover:text-red-600 hover:bg-red-50"
                             title="Xóa báo giá"
                           >
@@ -690,23 +687,23 @@ export const QuotesPage: React.FC = () => {
           }}
           documentType="QUOTE"
           documentNumber={previewQuote.quoteNumber}
-          documentDate={new Date(previewQuote.createdAt).toLocaleDateString('vi-VN')}
-          validUntilDate={new Date(previewQuote.validUntil).toLocaleDateString('vi-VN')}
-          clientName={previewQuote.accountName}
-          clientRepresentative={previewQuote.contactName}
+          documentDate={previewQuote.createdAt ? new Date(previewQuote.createdAt).toLocaleDateString('vi-VN') : new Date().toLocaleDateString('vi-VN')}
+          validUntilDate={previewQuote.validUntil ? new Date(previewQuote.validUntil).toLocaleDateString('vi-VN') : undefined}
+          clientName={previewQuote.accountName || ''}
+          clientRepresentative={previewQuote.contactName || ''}
           items={[
             {
-              name: previewQuote.title,
+              name: previewQuote.title || previewQuote.quoteNumber,
               quantity: 1,
               unit: 'Gói',
               unitPrice: previewQuote.totalAmount,
-              discountAmount: (previewQuote.totalAmount * (previewQuote.discountPercent || 0)) / 100,
-              totalAmount: previewQuote.totalAmount,
+              discountAmount: previewQuote.discountAmount || 0,
+              totalAmount: previewQuote.totalAmount - (previewQuote.discountAmount || 0),
             },
           ]}
           subtotal={previewQuote.totalAmount}
-          discountTotal={(previewQuote.totalAmount * (previewQuote.discountPercent || 0)) / 100}
-          grandTotal={previewQuote.totalAmount}
+          discountTotal={previewQuote.discountAmount || 0}
+          grandTotal={previewQuote.totalAmount - (previewQuote.discountAmount || 0)}
         />
       )}
     </div>

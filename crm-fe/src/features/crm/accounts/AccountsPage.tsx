@@ -18,27 +18,23 @@ import {
 } from '@/config/crmStatusConfig';
 import {
   Building2,
-  Search,
+  Building,
   Plus,
-  RefreshCw,
   Eye,
   Trash2,
-  Building,
   Loader2,
   ChevronDown,
   ChevronRight,
-  ChevronLeft,
-  ChevronsLeft,
-  ChevronsRight,
-  X,
-  RotateCcw,
-  Users,
   ShieldAlert,
-  CornerDownRight,
   GitMerge,
+  CornerDownRight,
+  Users,
 } from 'lucide-react';
 import { SmartMergeModal } from '@/features/crm/deduplication/SmartMergeModal';
-import { Card, CardContent } from '@/components/ui/card';
+import { StandardPageHeader } from '@/components/common/StandardPageHeader';
+import { StandardFilterBar, ViewTabItem } from '@/components/common/StandardFilterBar';
+import { StandardPagination } from '@/components/common/StandardPagination';
+import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -79,9 +75,9 @@ export const AccountsPage: React.FC = () => {
   const [ownerFilter, setOwnerFilter] = useState<string>('ALL');
   const [dncOnly, setDncOnly] = useState(false);
 
-  // Pagination State: Max 3 Parent Corporations per Page
+  // Pagination State: 10 Parent Corporations per Page
   const [currentPage, setCurrentPage] = useState(1);
-  const PARENT_PER_PAGE = 3;
+  const PARENT_PER_PAGE = 10;
 
   // Collapsed Nodes State (by default empty set = all tree nodes expanded)
   const [collapsedNodeIds, setCollapsedNodeIds] = useState<Set<string>>(new Set());
@@ -96,6 +92,19 @@ export const AccountsPage: React.FC = () => {
       }
       return next;
     });
+  };
+
+  const toggleCollapseAll = () => {
+    if (collapsedNodeIds.size > 0) {
+      setCollapsedNodeIds(new Set());
+    } else {
+      const allParentIds = new Set(
+        accounts
+          .filter((a) => accounts.some((c) => c.parentAccountId === a.id))
+          .map((a) => a.id)
+      );
+      setCollapsedNodeIds(allParentIds);
+    }
   };
 
   // Modal State
@@ -165,7 +174,8 @@ export const AccountsPage: React.FC = () => {
         lifecycleStage: selectedStage !== 'ALL' ? (selectedStage as AccountLifecycleStage) : undefined,
       });
 
-      setAccounts(res.items || []);
+      const rawItems: any[] = Array.isArray(res) ? res : res?.items || (res as any)?.content || [];
+      setAccounts(rawItems);
     } catch {
       setAccounts([]);
       toast.error('Không thể kết nối đến Backend hoặc chưa có dữ liệu khách hàng.');
@@ -288,8 +298,6 @@ export const AccountsPage: React.FC = () => {
 
   // Statistics Summary Counters
   const totalCount = accounts.length;
-  const parentCount = accounts.filter((a) => !a.parentAccountId || !accounts.some((p) => p.id === a.parentAccountId)).length;
-  const childCount = totalCount - parentCount;
   const customerCount = accounts.filter((a) => a.lifecycleStage === 'CUSTOMER').length;
 
   // Root Parent Accounts for Pagination (Max 3 Parents per Page)
@@ -322,76 +330,87 @@ export const AccountsPage: React.FC = () => {
     return (
       <React.Fragment key={acc.id}>
         <TableRow
-          className={`transition-colors ${
+          className={`transition-colors border-b border-[#EBECF0] ${
             isParentRoot
-              ? 'bg-white hover:bg-slate-50/90 font-medium border-t-2 border-slate-200'
-              : 'bg-blue-50/20 hover:bg-blue-50/60 border-l-4 border-l-blue-500'
+              ? 'bg-white hover:bg-[#F1F2F4] font-medium'
+              : 'bg-[#FAFBFC] hover:bg-[#F1F2F4]'
           }`}
         >
-          {/* Column 1: Mã Khách hàng & Nút Đóng/Mở Node đặt ngay cạnh Mã KH */}
-          <TableCell className="font-mono text-xs font-bold">
-            <div className="flex items-center gap-1.5 font-mono" style={{ paddingLeft: `${level * 1.5}rem` }}>
-              {/* Toggle Expand/Collapse Button in Customer Code Column */}
+          {/* Column 1: Mã Khách hàng & Nút Đóng/Mở Node */}
+          <TableCell className="font-mono text-xs py-2 px-3">
+            <div className="flex items-center gap-1.5 font-mono" style={{ paddingLeft: `${level * 1.25}rem` }}>
+              {level > 0 && (
+                <div className="w-3 h-[1px] bg-[#DFE1E6] mr-0.5 shrink-0" />
+              )}
+
+              {/* Toggle Expand/Collapse Button */}
               {hasChildren ? (
                 <button
                   type="button"
                   onClick={() => toggleCollapse(acc.id)}
-                  className="p-1 hover:bg-blue-100 rounded transition-colors text-blue-700 flex items-center justify-center shrink-0"
+                  className="p-0.5 hover:bg-slate-200 rounded-[2px] transition-colors text-slate-600 flex items-center justify-center shrink-0"
                   title={isCollapsed ? 'Mở rộng các đơn vị trực thuộc' : 'Thu gọn các đơn vị trực thuộc'}
                 >
                   {isCollapsed ? (
-                    <ChevronRight className="w-3.5 h-3.5 text-slate-600 font-bold" />
+                    <ChevronRight className="w-3.5 h-3.5 text-slate-500 font-bold" />
                   ) : (
-                    <ChevronDown className="w-3.5 h-3.5 text-blue-600 font-bold" />
+                    <ChevronDown className="w-3.5 h-3.5 text-[#0C66E4] font-bold" />
                   )}
                 </button>
               ) : (
-                level > 0 && <span className="w-4 inline-block" />
+                level === 0 && <span className="w-3.5 inline-block" />
               )}
 
-              <span className={isParentRoot ? 'text-blue-700 font-bold' : 'text-slate-700 font-semibold'}>
+              <span className={isParentRoot ? 'text-[#0C66E4] font-bold' : 'text-slate-700 font-medium'}>
                 {acc.accountNumber}
               </span>
             </div>
           </TableCell>
 
-          {/* Column 2: Tên Khách hàng */}
-          <TableCell>
+          {/* Column 2: Tên Khách hàng & Avatar */}
+          <TableCell className="py-2 px-3">
             <div className="flex items-center gap-2">
-              <div>
-                <div className="font-bold text-slate-900 text-xs flex items-center gap-2 flex-wrap">
-                  <Link to={`/app/crm/accounts/${acc.id}`} className="hover:text-blue-600 hover:underline transition-colors">
+              <div className={`w-6 h-6 rounded-[3px] flex items-center justify-center font-bold text-[11px] shrink-0 border ${
+                isParentRoot 
+                  ? 'bg-[#E9F2FF] text-[#0C66E4] border-[#C0D9FF]' 
+                  : 'bg-slate-100 text-slate-600 border-slate-200'
+              }`}>
+                {acc.displayName.charAt(0).toUpperCase()}
+              </div>
+              <div className="min-w-0">
+                <div className="font-semibold text-slate-900 text-xs flex items-center gap-1.5 flex-wrap">
+                  <Link to={`/app/crm/accounts/${acc.id}`} className="hover:text-[#0C66E4] hover:underline transition-colors font-semibold truncate max-w-xs">
                     {acc.displayName}
                   </Link>
                   {isParentRoot && renderRootAccountBadge()}
                   {hasChildren && renderChildCountBadge(childAccounts.length)}
                 </div>
                 {acc.legalName && (
-                  <div className="text-[11px] text-slate-500 mt-0.5">{acc.legalName}</div>
+                  <div className="text-[11px] text-slate-400 truncate max-w-xs">{acc.legalName}</div>
                 )}
               </div>
             </div>
           </TableCell>
 
           {/* Column 3: Loại hình */}
-          <TableCell>{getAccountTypeBadge(acc.accountType)}</TableCell>
+          <TableCell className="py-2 px-3">{getAccountTypeBadge(acc.accountType)}</TableCell>
 
           {/* Column 4: Vòng đời */}
-          <TableCell>{getLifecycleStageBadge(acc.lifecycleStage)}</TableCell>
+          <TableCell className="py-2 px-3">{getLifecycleStageBadge(acc.lifecycleStage)}</TableCell>
 
           {/* Column 5: Cập nhật cuối */}
-          <TableCell className="text-slate-500 font-mono text-[11px]">
+          <TableCell className="py-2 px-3 text-slate-500 font-mono text-[11px]">
             {new Date(acc.updatedAt).toLocaleTimeString('vi-VN')} {new Date(acc.updatedAt).toLocaleDateString('vi-VN')}
           </TableCell>
 
           {/* Column 6: Thao tác */}
-          <TableCell className="text-right pr-4">
+          <TableCell className="py-2 px-3 text-right pr-4">
             <div className="flex items-center justify-end gap-1">
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => handleCreateChildAccount(acc.id)}
-                className="h-7 w-7 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                className="h-7 w-7 rounded-[3px] text-slate-600 hover:text-emerald-700 hover:bg-emerald-50"
                 title={`Thêm đơn vị trực thuộc ${acc.displayName}`}
               >
                 <Plus className="w-3.5 h-3.5" />
@@ -400,7 +419,7 @@ export const AccountsPage: React.FC = () => {
                 variant="ghost"
                 size="icon"
                 onClick={() => handleViewDetail(acc.id)}
-                className="h-7 w-7 text-slate-600 hover:text-blue-600 hover:bg-blue-50"
+                className="h-7 w-7 rounded-[3px] text-slate-600 hover:text-[#0C66E4] hover:bg-[#E9F2FF]"
                 title="Xem chi tiết"
               >
                 <Eye className="w-3.5 h-3.5" />
@@ -409,7 +428,7 @@ export const AccountsPage: React.FC = () => {
                 variant="ghost"
                 size="icon"
                 onClick={() => handleDeleteAccount(acc.id, acc.version, acc.displayName)}
-                className="h-7 w-7 text-slate-600 hover:text-red-600 hover:bg-red-50"
+                className="h-7 w-7 rounded-[3px] text-slate-600 hover:text-red-600 hover:bg-red-50"
                 title="Xóa khách hàng"
               >
                 <Trash2 className="w-3.5 h-3.5" />
@@ -432,229 +451,201 @@ export const AccountsPage: React.FC = () => {
     (ownerFilter !== 'ALL' ? 1 : 0) +
     (dncOnly ? 1 : 0);
 
+  // View Tabs Config
+  const viewTabs: ViewTabItem[] = useMemo(() => [
+    { id: 'ALL', label: 'Tất cả', count: totalCount },
+    ...(session?.user ? [{ id: 'MY_OWN', label: 'Của tôi' }] : []),
+    { id: 'CUSTOMER', label: 'Khách hàng', count: customerCount, dotColor: 'bg-emerald-500' },
+    { id: 'PROSPECT', label: 'Tiềm năng', dotColor: 'bg-purple-500' },
+  ], [totalCount, customerCount, session]);
+
+  const currentActiveTab = ownerFilter === 'MY_OWN' ? 'MY_OWN' : selectedStage === 'CUSTOMER' ? 'CUSTOMER' : selectedStage === 'PROSPECT' ? 'PROSPECT' : 'ALL';
+
+  const handleTabChange = (tabId: string) => {
+    if (tabId === 'MY_OWN') {
+      setOwnerFilter('MY_OWN');
+      setSelectedStage('ALL');
+    } else if (tabId === 'CUSTOMER') {
+      setOwnerFilter('ALL');
+      setSelectedStage('CUSTOMER');
+    } else if (tabId === 'PROSPECT') {
+      setOwnerFilter('ALL');
+      setSelectedStage('PROSPECT');
+    } else {
+      setOwnerFilter('ALL');
+      setSelectedStage('ALL');
+    }
+  };
+
   return (
-    <div className="space-y-5 pb-12 font-sans w-full">
-      {/* ── Page Header ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-bold text-slate-900 flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shadow-sm shrink-0">
-              <Building2 className="w-4.5 h-4.5 text-white" />
-            </div>
-            Quản lý Khách hàng &amp; Tổ chức
-          </h1>
-          <p className="text-xs text-slate-500 mt-1 ml-10.5">
-            Cơ cấu liên kết theo mô hình Cây phân cấp Doanh nghiệp &amp; Đơn vị trực thuộc
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2 shrink-0">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={fetchAccounts}
-            disabled={loading}
-            className="text-xs gap-1.5 border-slate-200 h-8"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-            <span>Làm mới</span>
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setIsMergeModalOpen(true)}
-            className="text-xs font-semibold border-slate-200 bg-white hover:bg-slate-50 text-slate-700 gap-1.5 shadow-2xs h-8"
-          >
-            <GitMerge className="w-3.5 h-3.5 text-blue-600" />
-            <span>Quét trùng lặp &amp; Gộp</span>
-          </Button>
-          <Button
-            size="sm"
-            onClick={() => { resetForm(); setIsCreateOpen(true); }}
-            className="text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white gap-1.5 shadow-xs h-8"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Thêm Khách hàng Mới</span>
-          </Button>
-        </div>
-      </div>
-
-      {/* ── Quick Stat Cards ── */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="bg-white rounded-xl border border-slate-200 px-4 py-3 flex items-center gap-3 shadow-xs hover:shadow-sm transition-shadow">
-          <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
-            <Building className="w-4.5 h-4.5 text-blue-600" />
-          </div>
-          <div>
-            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Tổng Khách hàng</div>
-            <div className="text-lg font-black text-slate-900 leading-tight">{totalCount}</div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl border border-indigo-100 px-4 py-3 flex items-center gap-3 shadow-xs hover:shadow-sm transition-shadow">
-          <div className="w-9 h-9 rounded-lg bg-indigo-50 flex items-center justify-center shrink-0">
-            <Building2 className="w-4.5 h-4.5 text-indigo-600" />
-          </div>
-          <div>
-            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Cấp cao nhất</div>
-            <div className="text-lg font-black text-indigo-700 leading-tight">{parentCount}</div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl border border-emerald-100 px-4 py-3 flex items-center gap-3 shadow-xs hover:shadow-sm transition-shadow">
-          <div className="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center shrink-0">
-            <CornerDownRight className="w-4.5 h-4.5 text-emerald-600" />
-          </div>
-          <div>
-            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Đơn vị trực thuộc</div>
-            <div className="text-lg font-black text-emerald-700 leading-tight">{childCount}</div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl border border-purple-100 px-4 py-3 flex items-center gap-3 shadow-xs hover:shadow-sm transition-shadow">
-          <div className="w-9 h-9 rounded-lg bg-purple-50 flex items-center justify-center shrink-0">
-            <Users className="w-4.5 h-4.5 text-purple-600" />
-          </div>
-          <div>
-            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Khách hàng chính thức</div>
-            <div className="text-lg font-black text-purple-700 leading-tight">{customerCount}</div>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Filter & Search Bar ── */}
-      <Card className="shadow-xs border-slate-200 w-full">
-        <CardContent className="py-3 px-4">
-          <div className="flex flex-col md:flex-row items-center gap-2.5">
-            {/* Search Input */}
-            <div className="relative w-full md:w-[280px] shrink-0">
-              <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400" />
-              <Input
-                placeholder="Tìm theo Mã KH, Tên thương hiệu, Pháp lý..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-8 pr-8 text-xs h-9 border-slate-200"
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery('')}
-                  className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
+    <div className="space-y-4 pb-12 font-sans w-full">
+      {/* Standard Page Header */}
+      <StandardPageHeader
+        title="Quản lý Khách hàng Doanh nghiệp"
+        subtitle="Cơ cấu liên kết theo mô hình Cây phân cấp Doanh nghiệp mẹ - Công ty con, thông tin pháp lý & người phụ trách"
+        badgeCount={totalCount}
+        badgeLabel="đối tượng"
+        actions={
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={toggleCollapseAll}
+              className="text-xs font-medium text-slate-700 bg-white border-slate-200 hover:bg-slate-50 gap-1.5 h-8 rounded-[3px]"
+              title={collapsedNodeIds.size > 0 ? 'Mở rộng tất cả cây phân cấp' : 'Thu gọn tất cả cây phân cấp'}
+            >
+              {collapsedNodeIds.size > 0 ? (
+                <>
+                  <ChevronDown className="w-3.5 h-3.5 text-slate-500" />
+                  <span>Mở rộng tất cả</span>
+                </>
+              ) : (
+                <>
+                  <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
+                  <span>Thu gọn tất cả</span>
+                </>
               )}
+            </Button>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsMergeModalOpen(true)}
+              className="text-xs font-medium text-slate-700 bg-white border-slate-200 hover:bg-slate-50 gap-1.5 h-8 rounded-[3px]"
+            >
+              <GitMerge className="w-3.5 h-3.5 text-indigo-500" />
+              <span>Quét trùng lặp</span>
+            </Button>
+
+            <Button
+              size="sm"
+              onClick={() => { resetForm(); setIsCreateOpen(true); }}
+              className="text-xs font-semibold bg-[#0C66E4] hover:bg-[#0052CC] text-white gap-1.5 shadow-none h-8 rounded-[3px]"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Thêm Khách hàng</span>
+            </Button>
+          </>
+        }
+      />
+
+      {/* Standard Filter & Search Bar */}
+      <StandardFilterBar
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        searchPlaceholder="Tìm kiếm theo Mã KH, Tên, Pháp lý..."
+        viewTabs={viewTabs}
+        activeTab={currentActiveTab}
+        onTabChange={handleTabChange}
+        activeFiltersCount={activeFiltersCount}
+        onResetFilters={handleResetFilters}
+        filterControls={
+          <>
+            {/* Filter 1: Người phụ trách */}
+            <SearchableSelect
+              options={[
+                { value: 'ALL', label: 'Tất cả người phụ trách' },
+                ...(session?.user ? [{ value: 'MY_OWN', label: 'Chỉ Khách hàng của tôi' }] : []),
+                ...teamMembers.map((m) => ({
+                  value: m.id,
+                  label: m.name,
+                })),
+              ]}
+              value={ownerFilter}
+              onValueChange={setOwnerFilter}
+              placeholder="Tất cả người phụ trách"
+              searchPlaceholder="Tìm người phụ trách..."
+              className="w-[175px] h-8 rounded-[3px] text-xs"
+            />
+
+            {/* Filter 2: Loại hình */}
+            <SearchableSelect
+              options={[
+                { value: 'ALL', label: 'Tất cả loại hình' },
+                { value: 'ORGANIZATION', label: 'Doanh nghiệp' },
+                { value: 'PERSON', label: 'Cá nhân' },
+                { value: 'PARTNER', label: 'Đối tác' },
+                { value: 'RESELLER', label: 'Đại lý' },
+                { value: 'SUPPLIER', label: 'Nhà cung cấp' },
+              ]}
+              value={selectedType}
+              onValueChange={setSelectedType}
+              placeholder="Loại hình"
+              searchPlaceholder="Tìm loại hình..."
+              className="w-[135px] h-8 rounded-[3px] text-xs"
+            />
+
+            {/* Filter 3: Vòng đời */}
+            <SearchableSelect
+              options={[
+                { value: 'ALL', label: 'Tất cả vòng đời' },
+                { value: 'PROSPECT', label: 'Tiềm năng', badge: 'Mới' },
+                { value: 'QUALIFIED', label: 'Đạt chuẩn', badge: 'Chuẩn' },
+                { value: 'CUSTOMER', label: 'Khách hàng chính thức', badge: 'Active' },
+                { value: 'INACTIVE', label: 'Ngừng hoạt động', badge: 'Tạm dừng' },
+                { value: 'CHURNED', label: 'Rời bỏ', badge: 'Mất' },
+              ]}
+              value={selectedStage}
+              onValueChange={setSelectedStage}
+              placeholder="Vòng đời"
+              searchPlaceholder="Tìm vòng đời..."
+              className="w-[145px] h-8 rounded-[3px] text-xs"
+            />
+
+            {/* Filter 4: DNC */}
+            <div className="flex items-center space-x-1.5 px-2.5 bg-white rounded-[3px] border border-slate-200 h-8">
+              <Checkbox
+                id="filterDnc"
+                checked={dncOnly}
+                onCheckedChange={(c) => setDncOnly(Boolean(c))}
+              />
+              <Label htmlFor="filterDnc" className="text-xs font-medium cursor-pointer text-slate-700 flex items-center gap-1">
+                <ShieldAlert className="w-3.5 h-3.5 text-amber-500" />
+                <span>DNC</span>
+              </Label>
             </div>
-
-            {/* Filter Dropdowns */}
-            <div className="flex items-center gap-2 w-full md:w-auto flex-wrap">
-              {/* Filter 1: Người phụ trách */}
-              <SearchableSelect
-                options={[
-                  { value: 'ALL', label: 'Tất cả người phụ trách' },
-                  ...(session?.user ? [{ value: 'MY_OWN', label: 'Chỉ Khách hàng của tôi' }] : []),
-                  ...teamMembers.map((m) => ({
-                    value: m.id,
-                    label: m.name,
-                  })),
-                ]}
-                value={ownerFilter}
-                onValueChange={setOwnerFilter}
-                placeholder="Tất cả người phụ trách"
-                searchPlaceholder="Tìm người phụ trách..."
-                className="w-[190px]"
-              />
-
-              {/* Filter 2: Loại hình */}
-              <SearchableSelect
-                options={[
-                  { value: 'ALL', label: 'Tất cả loại hình' },
-                  { value: 'ORGANIZATION', label: 'Doanh nghiệp' },
-                  { value: 'PERSON', label: 'Cá nhân' },
-                  { value: 'PARTNER', label: 'Đối tác' },
-                  { value: 'RESELLER', label: 'Đại lý' },
-                  { value: 'SUPPLIER', label: 'Nhà cung cấp' },
-                ]}
-                value={selectedType}
-                onValueChange={setSelectedType}
-                placeholder="Loại hình"
-                searchPlaceholder="Tìm loại hình..."
-                className="w-[155px]"
-              />
-
-              {/* Filter 3: Vòng đời */}
-              <SearchableSelect
-                options={[
-                  { value: 'ALL', label: 'Tất cả vòng đời' },
-                  { value: 'PROSPECT', label: 'Tiềm năng', badge: 'Mới' },
-                  { value: 'QUALIFIED', label: 'Đạt chuẩn', badge: 'Chuẩn' },
-                  { value: 'CUSTOMER', label: 'Khách hàng chính thức', badge: 'Active' },
-                  { value: 'INACTIVE', label: 'Ngừng hoạt động', badge: 'Tạm dừng' },
-                  { value: 'CHURNED', label: 'Rời bỏ', badge: 'Mất' },
-                ]}
-                value={selectedStage}
-                onValueChange={setSelectedStage}
-                placeholder="Vòng đời kinh doanh"
-                searchPlaceholder="Tìm vòng đời..."
-                className="w-[170px]"
-              />
-
-              {/* Filter 4: DNC */}
-              <div className="flex items-center space-x-1.5 px-3 py-1.5 bg-slate-50 rounded border border-slate-200 h-9">
-                <Checkbox
-                  id="filterDnc"
-                  checked={dncOnly}
-                  onCheckedChange={(c) => setDncOnly(Boolean(c))}
-                />
-                <Label htmlFor="filterDnc" className="text-xs font-semibold cursor-pointer text-slate-700 flex items-center gap-1">
-                  <ShieldAlert className="w-3.5 h-3.5 text-amber-500" />
-                  <span>DNC</span>
-                </Label>
-              </div>
-
-              {/* Reset Button */}
-              {activeFiltersCount > 0 && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleResetFilters}
-                  className="h-9 px-2 text-xs text-slate-500 hover:text-red-600 gap-1"
-                >
-                  <RotateCcw className="w-3.5 h-3.5" />
-                  <span>Đặt lại ({activeFiltersCount})</span>
-                </Button>
-              )}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
+          </>
+        }
+      />
 
       {/* Main Accounts Multi-Level Tree Hierarchy Table */}
-      <Card className="shadow-xs border-slate-200 w-full overflow-hidden">
+      <Card className="border border-slate-200 rounded-[4px] w-full overflow-hidden bg-white shadow-none">
         <Table>
-          <TableHeader className="bg-slate-50/90">
-            <TableRow className="text-xs">
-              <TableHead className="font-bold text-slate-900 w-48">Mã Khách hàng</TableHead>
-              <TableHead className="font-bold text-slate-900">Tên Khách hàng & Cấu trúc Phân cấp</TableHead>
-              <TableHead className="font-bold text-slate-900">Loại hình</TableHead>
-              <TableHead className="font-bold text-slate-900">Vòng đời Kinh doanh</TableHead>
-              <TableHead className="font-bold text-slate-900">Cập nhật cuối</TableHead>
-              <TableHead className="font-bold text-slate-900 text-right pr-4">Thao tác</TableHead>
+          <TableHeader className="bg-[#F7F8F9] border-b border-slate-200">
+            <TableRow className="hover:bg-[#F7F8F9]">
+              <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-slate-600 w-44 py-2.5 px-3">Mã Khách hàng</TableHead>
+              <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-slate-600 py-2.5 px-3">Tên Khách hàng & Cấu trúc Phân cấp</TableHead>
+              <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-slate-600 py-2.5 px-3">Loại hình</TableHead>
+              <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-slate-600 py-2.5 px-3">Vòng đời Kinh doanh</TableHead>
+              <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-slate-600 py-2.5 px-3">Cập nhật cuối</TableHead>
+              <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-slate-600 text-right pr-4 py-2.5">Thao tác</TableHead>
             </TableRow>
           </TableHeader>
 
           <TableBody className="text-xs">
             {loading ? (
               <TableRow>
-                <TableCell colSpan={6} className="h-36 text-center text-slate-500">
-                  <Loader2 className="w-5 h-5 animate-spin mx-auto text-blue-600 mb-2" />
-                  <span>Đang tải danh sách khách hàng từ Backend...</span>
+                <TableCell colSpan={6} className="h-44 text-center text-slate-500">
+                  <Loader2 className="w-5 h-5 animate-spin mx-auto text-[#0C66E4] mb-2" />
+                  <span className="text-xs">Đang tải danh sách khách hàng...</span>
                 </TableCell>
               </TableRow>
             ) : paginatedRootParents.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="h-36 text-center text-slate-500">
-                  Không tìm thấy dữ liệu khách hàng nào phù hợp với bộ lọc.
+                <TableCell colSpan={6} className="h-44 text-center">
+                  <div className="flex flex-col items-center justify-center py-6 text-slate-400">
+                    <Building2 className="w-8 h-8 text-slate-300 mb-2" />
+                    <div className="font-semibold text-slate-700 text-xs">Không tìm thấy khách hàng nào</div>
+                    <p className="text-[11px] text-slate-400 mt-0.5">Hãy thử thay đổi điều kiện lọc hoặc tạo mới khách hàng.</p>
+                    <Button
+                      size="sm"
+                      onClick={() => { resetForm(); setIsCreateOpen(true); }}
+                      className="mt-3 text-xs bg-[#0C66E4] hover:bg-[#0052CC] text-white rounded-[3px] h-7 px-2.5"
+                    >
+                      <Plus className="w-3 h-3 mr-1" />
+                      Tạo khách hàng mới
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             ) : (
@@ -664,72 +655,15 @@ export const AccountsPage: React.FC = () => {
         </Table>
 
         {/* Pagination Controls Bar */}
-        {!loading && rootParentAccounts.length > 0 && (
-          <div className="px-4 py-3 bg-slate-50/80 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
-            <div className="text-slate-600">
-              Hiển thị <strong className="text-slate-900 font-bold">{paginatedRootParents.length}</strong> / <strong className="text-slate-900 font-bold">{rootParentAccounts.length}</strong> Khách hàng Cấp cao nhất (Trang <strong className="text-blue-700">{currentPage}</strong> / {totalPages})
-            </div>
-
-            <div className="flex items-center gap-1.5">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage(1)}
-                disabled={currentPage === 1}
-                className="h-8 px-2 text-xs border-slate-200"
-                title="Trang đầu"
-              >
-                <ChevronsLeft className="w-3.5 h-3.5" />
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-                disabled={currentPage === 1}
-                className="h-8 px-2.5 text-xs border-slate-200 gap-1"
-              >
-                <ChevronLeft className="w-3.5 h-3.5" />
-                <span>Trước</span>
-              </Button>
-
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
-                <Button
-                  key={pageNum}
-                  variant={pageNum === currentPage ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setCurrentPage(pageNum)}
-                  className={`h-8 w-8 text-xs font-bold ${
-                    pageNum === currentPage
-                      ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-xs'
-                      : 'border-slate-200 text-slate-700 hover:bg-slate-100'
-                  }`}
-                >
-                  {pageNum}
-                </Button>
-              ))}
-
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
-                disabled={currentPage === totalPages}
-                className="h-8 px-2.5 text-xs border-slate-200 gap-1"
-              >
-                <span>Sau</span>
-                <ChevronRight className="w-3.5 h-3.5" />
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage(totalPages)}
-                disabled={currentPage === totalPages}
-                className="h-8 px-2 text-xs border-slate-200"
-                title="Trang cuối"
-              >
-                <ChevronsRight className="w-3.5 h-3.5" />
-              </Button>
-            </div>
-          </div>
+        {!loading && (
+          <StandardPagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalElements={rootParentAccounts.length}
+            pageSize={PARENT_PER_PAGE}
+            onPageChange={setCurrentPage}
+            itemLabel="doanh nghiệp mẹ"
+          />
         )}
       </Card>
 

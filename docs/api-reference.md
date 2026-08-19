@@ -8199,6 +8199,46 @@ Required permission: `marketing_campaign.read`
 
 ---
 
+## Webhook Dispatcher
+
+### List Webhooks
+```http
+GET /api/integration/dispatcher/webhooks
+Authorization: Bearer <access-token>
+X-Tenant-ID: 22222222-2222-2222-2222-222222222222
+```
+
+### Create Webhook
+```http
+POST /api/integration/dispatcher/webhooks
+Authorization: Bearer <access-token>
+X-Tenant-ID: 22222222-2222-2222-2222-222222222222
+Content-Type: application/json
+
+{
+  "name": "ERP Sync Webhook",
+  "targetUrl": "https://api.example.com/webhooks/crm",
+  "secretToken": "whsec_abcdef123456",
+  "events": ["crm_lead.created", "crm_deal.won"]
+}
+```
+
+### Test Webhook
+```http
+POST /api/integration/dispatcher/webhooks/{id}/test
+Authorization: Bearer <access-token>
+X-Tenant-ID: 22222222-2222-2222-2222-222222222222
+```
+
+### Get Delivery Logs
+```http
+GET /api/integration/dispatcher/webhooks/{id}/logs
+Authorization: Bearer <access-token>
+X-Tenant-ID: 22222222-2222-2222-2222-222222222222
+```
+
+---
+
 ## Maintenance Rules
 
 Every API addition, modification, or removal must update this file in the same

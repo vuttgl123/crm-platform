@@ -327,6 +327,21 @@ public class Lead {
 		this.version++;
 	}
 
+	public void reassign(LeadOwner newOwner, ActorId actorId, Instant now) {
+		this.owner = newOwner;
+		this.updatedAt = Objects.requireNonNull(now, "now must not be null");
+		this.updatedBy = actorId;
+		this.version++;
+	}
+
+	public String phone() {
+		return phoneE164;
+	}
+
+	public LeadEstimatedValue estimatedRevenue() {
+		return estimatedValue;
+	}
+
 	public void delete(ActorId actorId, Instant now, long expectedVersion) {
 		checkVersion(expectedVersion);
 		this.deletedAt = Objects.requireNonNull(now, "now must not be null");

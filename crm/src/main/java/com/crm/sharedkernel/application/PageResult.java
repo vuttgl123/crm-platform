@@ -2,6 +2,7 @@ package com.crm.sharedkernel.application;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Function;
 
 public record PageResult<T>(
 		List<T> items,
@@ -29,6 +30,16 @@ public record PageResult<T>(
 				: ((totalElements - 1) / query.size()) + 1;
 		return new PageResult<>(items, query.page(), query.size(), totalElements,
 				Math.toIntExact(pageCount));
+	}
+
+	public static <T> PageResult<T> of(List<T> items, long totalElements, PageQuery query) {
+		return of(items, query, totalElements);
+	}
+
+	public <R> PageResult<R> map(Function<? super T, R> mapper) {
+		Objects.requireNonNull(mapper, "mapper must not be null");
+		List<R> mappedItems = items.stream().map(mapper).toList();
+		return new PageResult<>(mappedItems, page, size, totalElements, totalPages);
 	}
 
 	public boolean first() {

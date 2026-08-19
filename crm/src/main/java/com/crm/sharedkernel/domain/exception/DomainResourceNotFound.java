@@ -6,4 +6,8 @@ public final class DomainResourceNotFound extends DomainException {
 		super(errorCode, messageArguments);
 	}
 
+	public DomainResourceNotFound(String errorCode, Object... messageArguments) {
+		super(errorCode, messageArguments);
+	}
+
 }

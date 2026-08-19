@@ -9,6 +9,10 @@ public record ContactId(UUID value) {
 		Objects.requireNonNull(value, "value must not be null");
 	}
 
+	public static ContactId from(UUID value) {
+		return new ContactId(value);
+	}
+
 	public static ContactId from(String value) {
 		return new ContactId(UUID.fromString(Objects.requireNonNull(value,
 				"value must not be null")));

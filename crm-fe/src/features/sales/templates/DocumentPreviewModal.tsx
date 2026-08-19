@@ -1,14 +1,10 @@
 import React, { useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import {
   Printer,
-  Download,
   X,
-  Building2,
   FileText,
   FileCheck,
-  CheckCircle2,
 } from 'lucide-react';
 import { formatVietnameseReading } from '@/components/ui/BusinessNumberInput';
 
@@ -249,9 +245,15 @@ export const DocumentPreviewModal: React.FC<DocumentPreviewModalProps> = ({
             {/* Terms & Conditions */}
             <div className="space-y-1 pt-2 border-t border-slate-200 text-[11px] text-slate-600">
               <div className="font-bold text-slate-800 uppercase text-[10px]">Điều khoản thương mại & Bảo hành:</div>
-              <p>1. Báo giá / Hợp đồng đã bao gồm chi phí bản quyền sử dụng phần mềm và hỗ trợ kỹ thuật 24/7 trong 12 tháng.</p>
-              <p>2. Phương thức thanh toán: Chuyển khoản ngân hàng 100% trong vòng 15 ngày kể từ ngày nghiệm thu bàn giao.</p>
-              <p>3. Mọi tranh chấp phát sinh sẽ được giải quyết trên tinh thần thương lượng và tuân thủ Pháp luật Việt Nam.</p>
+              {terms ? (
+                <p className="whitespace-pre-line">{terms}</p>
+              ) : (
+                <>
+                  <p>1. Báo giá / Hợp đồng đã bao gồm chi phí bản quyền sử dụng phần mềm và hỗ trợ kỹ thuật 24/7 trong 12 tháng.</p>
+                  <p>2. Phương thức thanh toán: Chuyển khoản ngân hàng 100% trong vòng 15 ngày kể từ ngày nghiệm thu bàn giao.</p>
+                  <p>3. Mọi tranh chấp phát sinh sẽ được giải quyết trên tinh thần thương lượng và tuân thủ Pháp luật Việt Nam.</p>
+                </>
+              )}
             </div>
 
             {/* Signatures */}

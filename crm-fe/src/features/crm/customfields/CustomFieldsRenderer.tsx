@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   customFieldApi,
   CustomFieldDefinitionItem,
-  CustomFieldValueItem,
 } from '@/services/api/customFieldApi';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,9 +12,6 @@ import {
   Sliders,
   Save,
   Loader2,
-  Check,
-  AlertCircle,
-  HelpCircle,
 } from 'lucide-react';
 import { toast } from 'sonner';
 

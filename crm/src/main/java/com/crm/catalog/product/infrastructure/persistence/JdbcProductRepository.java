@@ -129,7 +129,7 @@ public class JdbcProductRepository implements ProductRepository {
 				.query(ProductJdbcMapper::mapSummary)
 				.list();
 
-		return PageResult.of(content, total, page);
+		return PageResult.of(content, page, total);
 	}
 
 	@Override

@@ -32,22 +32,18 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from 'sonner';
+import { StandardPageHeader } from '@/components/common/StandardPageHeader';
+import { StandardFilterBar, ViewTabItem } from '@/components/common/StandardFilterBar';
+import { StandardPagination } from '@/components/common/StandardPagination';
 import {
   TrendingUp,
   Kanban,
   List,
-  Search,
   Plus,
   RefreshCw,
   Edit,
   Trash2,
   Loader2,
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
-  X,
-  RotateCcw,
   DollarSign,
   Building2,
   Trophy,
@@ -235,195 +231,134 @@ export const OpportunitiesPage: React.FC = () => {
   };
 
   // KPI Metrics
-  const totalPipelineAmount = opportunities.reduce((sum, opp) => sum + (opp.amount || 0), 0);
   const closedWonList = opportunities.filter((o) => o.stage === 'CLOSED_WON');
-  const closedWonAmount = closedWonList.reduce((sum, opp) => sum + (opp.amount || 0), 0);
   const inProgressCount = opportunities.filter((o) => o.stage !== 'CLOSED_WON' && o.stage !== 'CLOSED_LOST').length;
 
   const activeFiltersCount =
     (searchQuery ? 1 : 0) +
     (selectedStage !== 'ALL' ? 1 : 0);
 
+  // View Tabs Config
+  const viewTabs: ViewTabItem[] = [
+    { id: 'ALL', label: 'Tất cả', count: totalElements },
+    { id: 'IN_PROGRESS', label: 'Đang đàm phán', count: inProgressCount, icon: Target, dotColor: 'bg-purple-500' },
+    { id: 'CLOSED_WON', label: 'Thành công (Won)', count: closedWonList.length, icon: Trophy, dotColor: 'bg-emerald-500' },
+  ];
+
+  const currentActiveTab = selectedStage === 'CLOSED_WON' ? 'CLOSED_WON' : 'ALL';
+
+  const handleTabChange = (tabId: string) => {
+    if (tabId === 'CLOSED_WON') {
+      setSelectedStage('CLOSED_WON');
+    } else {
+      setSelectedStage('ALL');
+    }
+    setPage(0);
+  };
+
   return (
-    <div className="space-y-5 pb-12 font-sans w-full">
-      {/* ── Page Header ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-bold text-slate-900 flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shadow-xs shrink-0">
-              <TrendingUp className="w-4.5 h-4.5 text-white" />
+    <div className="space-y-4 pb-12 font-sans w-full">
+      {/* Standard Page Header */}
+      <StandardPageHeader
+        title="Quản lý Cơ hội Bán hàng"
+        subtitle="Theo dõi phễu đường ống bán hàng (Pipeline), xác suất chốt hợp đồng & giá trị dự báo doanh thu"
+        badgeCount={totalElements}
+        badgeLabel="cơ hội"
+        actions={
+          <>
+            <div className="flex items-center bg-slate-100 p-0.5 rounded-[3px] border border-slate-200">
+              <button
+                onClick={() => setViewMode('TABLE')}
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-[2px] text-xs font-semibold transition-all ${
+                  viewMode === 'TABLE'
+                    ? 'bg-white text-[#0C66E4] shadow-none font-bold'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <List className="w-3.5 h-3.5" />
+                <span>Bảng</span>
+              </button>
+              <button
+                onClick={() => setViewMode('KANBAN')}
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-[2px] text-xs font-semibold transition-all ${
+                  viewMode === 'KANBAN'
+                    ? 'bg-white text-[#0C66E4] shadow-none font-bold'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <Kanban className="w-3.5 h-3.5" />
+                <span>Kanban</span>
+              </button>
             </div>
-            Quản lý Cơ hội Bán hàng (Opportunities)
-          </h1>
-          <p className="text-xs text-slate-500 mt-1 ml-10.5">
-            Theo dõi đường ống phễu bán hàng (Pipeline), xác suất chốt hợp đồng và dự báo doanh số
-          </p>
-        </div>
 
-        <div className="flex items-center gap-2 shrink-0">
-          <div className="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200">
-            <button
-              onClick={() => setViewMode('TABLE')}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold transition-all ${
-                viewMode === 'TABLE'
-                  ? 'bg-white text-blue-600 shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={fetchOpportunities}
+              disabled={loading}
+              className="text-xs font-medium text-slate-700 bg-white border-slate-200 hover:bg-slate-50 gap-1.5 h-8 rounded-[3px]"
             >
-              <List className="w-3.5 h-3.5" />
-              <span>Bảng</span>
-            </button>
-            <button
-              onClick={() => setViewMode('KANBAN')}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold transition-all ${
-                viewMode === 'KANBAN'
-                  ? 'bg-white text-blue-600 shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+              <span>Làm mới</span>
+            </Button>
+
+            <Button
+              size="sm"
+              onClick={handleOpenCreate}
+              className="text-xs font-semibold bg-[#0C66E4] hover:bg-[#0052CC] text-white gap-1.5 shadow-none h-8 rounded-[3px]"
             >
-              <Kanban className="w-3.5 h-3.5" />
-              <span>Kanban</span>
-            </button>
-          </div>
+              <Plus className="w-3.5 h-3.5" />
+              <span>Thêm Cơ hội</span>
+            </Button>
+          </>
+        }
+      />
 
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={fetchOpportunities}
-            disabled={loading}
-            className="text-xs gap-1.5 border-slate-200 h-8"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-            <span>Làm mới</span>
-          </Button>
-
-          <Button
-            size="sm"
-            onClick={handleOpenCreate}
-            className="text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white gap-1.5 shadow-xs h-8"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Thêm Cơ hội Mới</span>
-          </Button>
-        </div>
-      </div>
-
-      {/* ── Quick Stat Cards ── */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="bg-white rounded-xl border border-slate-200 px-4 py-3 flex items-center gap-3 shadow-xs hover:shadow-sm transition-shadow">
-          <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
-            <TrendingUp className="w-4.5 h-4.5 text-blue-600" />
-          </div>
-          <div>
-            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Tổng Cơ hội</div>
-            <div className="text-lg font-black text-slate-900 leading-tight">{totalElements}</div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl border border-indigo-100 px-4 py-3 flex items-center gap-3 shadow-xs hover:shadow-sm transition-shadow">
-          <div className="w-9 h-9 rounded-lg bg-indigo-50 flex items-center justify-center shrink-0">
-            <DollarSign className="w-4.5 h-4.5 text-indigo-600" />
-          </div>
-          <div>
-            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Giá trị Pipeline</div>
-            <div className="text-lg font-black text-indigo-700 leading-tight">
-              {(totalPipelineAmount / 1_000_000).toFixed(0)} Tr ₫
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl border border-emerald-100 px-4 py-3 flex items-center gap-3 shadow-xs hover:shadow-sm transition-shadow">
-          <div className="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center shrink-0">
-            <Trophy className="w-4.5 h-4.5 text-emerald-600" />
-          </div>
-          <div>
-            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Doanh số Đã chốt</div>
-            <div className="text-lg font-black text-emerald-700 leading-tight">
-              {(closedWonAmount / 1_000_000).toFixed(0)} Tr ₫
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl border border-purple-100 px-4 py-3 flex items-center gap-3 shadow-xs hover:shadow-sm transition-shadow">
-          <div className="w-9 h-9 rounded-lg bg-purple-50 flex items-center justify-center shrink-0">
-            <Target className="w-4.5 h-4.5 text-purple-600" />
-          </div>
-          <div>
-            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Đang triển khai</div>
-            <div className="text-lg font-black text-purple-700 leading-tight">{inProgressCount}</div>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Search & Filter Toolbar ── */}
+      {/* Standard Filter & Search Bar */}
       {viewMode === 'TABLE' && (
-        <Card className="p-3.5 bg-white border border-slate-200 rounded-xl shadow-xs space-y-3">
-          <div className="flex flex-col md:flex-row gap-2.5 items-stretch md:items-center justify-between">
-            <div className="relative flex-1">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-              <Input
-                placeholder="Tìm kiếm theo tên cơ hội, doanh nghiệp, người phụ trách..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 pr-8 text-xs h-8.5 bg-slate-50/60 focus:bg-white border-slate-200 rounded-lg"
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery('')}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              )}
+        <StandardFilterBar
+          searchQuery={searchQuery}
+          onSearchChange={(val) => { setSearchQuery(val); setPage(0); }}
+          searchPlaceholder="Tìm kiếm cơ hội, doanh nghiệp, phụ trách..."
+          viewTabs={viewTabs}
+          activeTab={currentActiveTab}
+          onTabChange={handleTabChange}
+          activeFiltersCount={activeFiltersCount}
+          onResetFilters={handleResetFilters}
+          filterControls={
+            <div className="w-48">
+              <Select value={selectedStage} onValueChange={(val) => { setSelectedStage(val); setPage(0); }}>
+                <SelectTrigger className="h-8 text-xs bg-white border-slate-200 rounded-[3px]">
+                  <SelectValue placeholder="Giai đoạn phễu" />
+                </SelectTrigger>
+                <SelectContent className="rounded-[3px]">
+                  <SelectItem value="ALL">Tất cả giai đoạn</SelectItem>
+                  {PIPELINE_STAGES.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.title} ({s.defaultProb}%)
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="w-48">
-                <Select value={selectedStage} onValueChange={(val) => { setSelectedStage(val); setPage(0); }}>
-                  <SelectTrigger className="h-8.5 text-xs bg-slate-50/60 border-slate-200 rounded-lg">
-                    <SelectValue placeholder="Giai đoạn phễu" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="ALL">Tất cả giai đoạn</SelectItem>
-                    {PIPELINE_STAGES.map((s) => (
-                      <SelectItem key={s.id} value={s.id}>
-                        {s.title} ({s.defaultProb}%)
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {activeFiltersCount > 0 && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleResetFilters}
-                  className="text-xs text-slate-500 hover:text-slate-800 gap-1 h-8.5 px-2"
-                >
-                  <RotateCcw className="w-3 h-3" />
-                  <span>Đặt lại ({activeFiltersCount})</span>
-                </Button>
-              )}
-            </div>
-          </div>
-        </Card>
+          }
+        />
       )}
 
       {/* ── Main View: Table vs Kanban ── */}
       {viewMode === 'TABLE' ? (
-        <Card className="overflow-hidden border border-slate-200 rounded-xl bg-white shadow-xs">
+        <Card className="overflow-hidden border border-slate-200 rounded-[4px] bg-white shadow-none">
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow className="bg-slate-50/80 hover:bg-slate-50/80 border-b border-slate-200">
-                  <TableHead className="text-[11px] font-bold text-slate-600 uppercase tracking-wider py-3 pl-4">Tên Cơ hội &amp; Mã số</TableHead>
-                  <TableHead className="text-[11px] font-bold text-slate-600 uppercase tracking-wider py-3">Doanh nghiệp</TableHead>
-                  <TableHead className="text-[11px] font-bold text-slate-600 uppercase tracking-wider py-3">Giai đoạn Phễu</TableHead>
-                  <TableHead className="text-[11px] font-bold text-slate-600 uppercase tracking-wider py-3">Giá trị Hợp đồng</TableHead>
-                  <TableHead className="text-[11px] font-bold text-slate-600 uppercase tracking-wider py-3">Xác suất</TableHead>
-                  <TableHead className="text-[11px] font-bold text-slate-600 uppercase tracking-wider py-3">Dự kiến chốt</TableHead>
-                  <TableHead className="text-[11px] font-bold text-slate-600 uppercase tracking-wider py-3 text-right pr-4">Thao tác</TableHead>
+                <TableRow className="bg-[#F7F8F9] border-b border-slate-200 hover:bg-[#F7F8F9]">
+                  <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Tên Cơ hội &amp; Mã số</TableHead>
+                  <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Doanh nghiệp</TableHead>
+                  <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Giai đoạn Phễu</TableHead>
+                  <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Giá trị Hợp đồng</TableHead>
+                  <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Xác suất</TableHead>
+                  <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Dự kiến chốt</TableHead>
+                  <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3 text-right pr-4">Thao tác</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -450,25 +385,25 @@ export const OpportunitiesPage: React.FC = () => {
                   </TableRow>
                 ) : (
                   opportunities.map((opp) => (
-                    <TableRow key={opp.id} className="hover:bg-slate-50/80 transition-colors border-b border-slate-100 text-xs">
+                    <TableRow key={opp.id} className="hover:bg-[#F1F2F4] transition-colors border-b border-[#EBECF0] text-xs">
                       {/* Cột 1: Tên cơ hội */}
-                      <TableCell className="pl-4 py-3">
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-xs">
-                            <DollarSign className="w-4 h-4" />
+                      <TableCell className="py-2 px-3">
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-[3px] bg-[#E9F2FF] text-[#0C66E4] border border-[#C0D9FF] font-bold text-xs flex items-center justify-center shrink-0">
+                            <DollarSign className="w-3.5 h-3.5" />
                           </div>
                           <div>
-                            <div className="font-bold text-slate-900">{opp.dealName}</div>
-                            <div className="text-[11px] text-slate-400 mt-0.5 font-mono">{opp.id.toUpperCase()}</div>
+                            <div className="font-semibold text-slate-900">{opp.dealName}</div>
+                            <div className="text-[11px] text-slate-400 font-mono">{opp.id.toUpperCase()}</div>
                           </div>
                         </div>
                       </TableCell>
 
                       {/* Cột 2: Khách hàng */}
-                      <TableCell>
+                      <TableCell className="py-2 px-3">
                         <div>
-                          <div className="font-semibold text-slate-800 flex items-center gap-1">
-                            <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                          <div className="font-medium text-slate-800 flex items-center gap-1">
+                            <Building2 className="w-3 h-3 text-slate-400 shrink-0" />
                             <span>{opp.accountName}</span>
                           </div>
                           {opp.contactName && (
@@ -478,23 +413,23 @@ export const OpportunitiesPage: React.FC = () => {
                       </TableCell>
 
                       {/* Cột 3: Giai đoạn */}
-                      <TableCell>
+                      <TableCell className="py-2 px-3">
                         {renderOpportunityStageBadge(opp.stage)}
                       </TableCell>
 
                       {/* Cột 4: Giá trị */}
-                      <TableCell>
-                        <div className="font-bold text-slate-900 font-mono text-xs">
+                      <TableCell className="py-2 px-3">
+                        <div className="font-semibold text-slate-900 font-mono text-xs">
                           {opp.amount.toLocaleString('vi-VN')} ₫
                         </div>
                       </TableCell>
 
                       {/* Cột 5: Xác suất */}
-                      <TableCell>
+                      <TableCell className="py-2 px-3">
                         <div className="flex items-center gap-1.5">
-                          <div className="w-12 bg-slate-100 rounded-full h-2 overflow-hidden border border-slate-200">
+                          <div className="w-12 bg-slate-100 rounded-full h-1.5 overflow-hidden border border-slate-200">
                             <div
-                              className="bg-blue-600 h-full rounded-full transition-all"
+                              className="bg-[#0C66E4] h-full rounded-full transition-all"
                               style={{ width: `${opp.probability}%` }}
                             />
                           </div>
@@ -503,18 +438,18 @@ export const OpportunitiesPage: React.FC = () => {
                       </TableCell>
 
                       {/* Cột 6: Dự kiến chốt */}
-                      <TableCell className="text-slate-600 font-mono text-[11px]">
+                      <TableCell className="py-2 px-3 text-slate-600 font-mono text-[11px]">
                         {new Date(opp.expectedCloseDate).toLocaleDateString('vi-VN')}
                       </TableCell>
 
                       {/* Cột 7: Thao tác */}
-                      <TableCell className="text-right pr-4">
+                      <TableCell className="py-2 px-3 text-right pr-4">
                         <div className="flex items-center justify-end gap-1">
                           <Button
                             variant="ghost"
                             size="icon"
                             onClick={() => handleOpenEdit(opp)}
-                            className="h-7 w-7 text-slate-600 hover:text-blue-600 hover:bg-blue-50"
+                            className="h-7 w-7 rounded-[3px] text-slate-600 hover:text-[#0C66E4] hover:bg-[#E9F2FF]"
                             title="Chỉnh sửa cơ hội"
                           >
                             <Edit className="w-3.5 h-3.5" />
@@ -523,7 +458,7 @@ export const OpportunitiesPage: React.FC = () => {
                             variant="ghost"
                             size="icon"
                             onClick={() => handleDelete(opp.id, opp.dealName)}
-                            className="h-7 w-7 text-slate-600 hover:text-red-600 hover:bg-red-50"
+                            className="h-7 w-7 rounded-[3px] text-slate-600 hover:text-red-600 hover:bg-red-50"
                             title="Xóa cơ hội"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -537,56 +472,16 @@ export const OpportunitiesPage: React.FC = () => {
             </Table>
           </div>
 
-          {/* ── Pagination Bar ── */}
-          {!loading && opportunities.length > 0 && (
-            <div className="px-4 py-3 bg-slate-50/50 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
-              <div>
-                Hiển thị <span className="font-bold text-slate-800">{page * pageSize + 1}</span> -{' '}
-                <span className="font-bold text-slate-800">{Math.min((page + 1) * pageSize, totalElements)}</span> trong tổng số{' '}
-                <span className="font-bold text-slate-800">{totalElements}</span> cơ hội
-              </div>
-              <div className="flex items-center gap-1.5">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-7 w-7 border-slate-200"
-                  onClick={() => setPage(0)}
-                  disabled={page === 0}
-                >
-                  <ChevronsLeft className="w-3.5 h-3.5" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-7 w-7 border-slate-200"
-                  onClick={() => setPage((p) => Math.max(p - 1, 0))}
-                  disabled={page === 0}
-                >
-                  <ChevronLeft className="w-3.5 h-3.5" />
-                </Button>
-                <div className="px-2 font-medium text-slate-700">
-                  Trang {page + 1} / {Math.max(totalPages, 1)}
-                </div>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-7 w-7 border-slate-200"
-                  onClick={() => setPage((p) => p + 1)}
-                  disabled={page >= totalPages - 1}
-                >
-                  <ChevronRight className="w-3.5 h-3.5" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-7 w-7 border-slate-200"
-                  onClick={() => setPage(totalPages - 1)}
-                  disabled={page >= totalPages - 1}
-                >
-                  <ChevronsRight className="w-3.5 h-3.5" />
-                </Button>
-              </div>
-            </div>
+          {/* ── Standard Pagination Bar ── */}
+          {!loading && (
+            <StandardPagination
+              currentPage={page + 1}
+              totalPages={Math.max(totalPages, 1)}
+              totalElements={totalElements}
+              pageSize={pageSize}
+              onPageChange={(p) => setPage(p - 1)}
+              itemLabel="cơ hội"
+            />
           )}
         </Card>
       ) : (

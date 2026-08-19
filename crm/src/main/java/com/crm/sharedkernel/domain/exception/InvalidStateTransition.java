@@ -6,4 +6,8 @@ public final class InvalidStateTransition extends DomainException {
 		super(errorCode, messageArguments);
 	}
 
+	public InvalidStateTransition(String errorCode, Object... messageArguments) {
+		super(errorCode, messageArguments);
+	}
+
 }

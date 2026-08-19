@@ -74,7 +74,7 @@ export const OrdersPage: React.FC = () => {
   const [totalAmount, setTotalAmount] = useState('');
   const [paidAmount, setPaidAmount] = useState('');
   const [status, setStatus] = useState<OrderStatus>('PROCESSING');
-  const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>('PARTIAL');
+  const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>('PARTIALLY_PAID');
   const [orderDate, setOrderDate] = useState('');
   const [deliveryDate, setDeliveryDate] = useState('');
   const [assignedTo, setAssignedTo] = useState('Phạm Tuấn Vũ');
@@ -190,9 +190,9 @@ export const OrdersPage: React.FC = () => {
 
   // KPI Metrics
   const totalRevenue = orders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
-  const totalCollected = orders.reduce((sum, o) => sum + (o.paidAmount || 0), 0);
-  const deliveredCount = orders.filter((o) => o.status === 'DELIVERED').length;
-  const processingCount = orders.filter((o) => o.status === 'PROCESSING' || o.status === 'PENDING').length;
+  const totalCollected = orders.filter(o => o.paymentStatus === 'PAID').reduce((sum, o) => sum + (o.totalAmount || 0), 0);
+  const deliveredCount = orders.filter((o) => o.status === 'FULFILLED').length;
+  const processingCount = orders.filter((o) => o.status === 'PROCESSING' || o.status === 'CONFIRMED').length;
 
   const activeFiltersCount =
     (searchQuery ? 1 : 0) +
@@ -404,7 +404,9 @@ export const OrdersPage: React.FC = () => {
                           </div>
                           <div>
                             <div className="font-bold text-slate-900 font-mono">{order.orderNumber}</div>
-                            <div className="text-[11px] text-slate-400 mt-0.5">{order.orderDate}</div>
+                            <div className="text-[11px] text-slate-400 mt-0.5">
+                              {order.createdAt ? new Date(order.createdAt).toLocaleDateString('vi-VN') : '-'}
+                            </div>
                           </div>
                         </div>
                       </TableCell>
@@ -426,7 +428,7 @@ export const OrdersPage: React.FC = () => {
 
                       {/* Cột 4: Đã trả */}
                       <TableCell className="font-mono text-slate-700 text-[11px]">
-                        {order.paidAmount.toLocaleString('vi-VN')} ₫
+                        {order.paymentStatus === 'PAID' ? order.totalAmount.toLocaleString('vi-VN') : '0'} ₫
                       </TableCell>
 
                       {/* Cột 5: Trạng thái thanh toán */}

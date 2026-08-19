@@ -41,26 +41,26 @@ export interface TestWebhookResult {
 
 export const webhookApi = {
   async list(): Promise<WebhookSubscription[]> {
-    return apiFetch<WebhookSubscription[]>('/integration/webhooks', {
+    return apiFetch<WebhookSubscription[]>('/integration/dispatcher/webhooks', {
       method: 'GET',
     });
   },
 
   async create(payload: CreateWebhookPayload): Promise<WebhookSubscription> {
-    return apiFetch<WebhookSubscription>('/integration/webhooks', {
+    return apiFetch<WebhookSubscription>('/integration/dispatcher/webhooks', {
       method: 'POST',
       body: JSON.stringify(payload),
     });
   },
 
   async test(id: string): Promise<TestWebhookResult> {
-    return apiFetch<TestWebhookResult>(`/integration/webhooks/${id}/test`, {
+    return apiFetch<TestWebhookResult>(`/integration/dispatcher/webhooks/${id}/test`, {
       method: 'POST',
     });
   },
 
   async getLogs(id: string): Promise<WebhookDeliveryLog[]> {
-    return apiFetch<WebhookDeliveryLog[]>(`/integration/webhooks/${id}/logs`, {
+    return apiFetch<WebhookDeliveryLog[]>(`/integration/dispatcher/webhooks/${id}/logs`, {
       method: 'GET',
     });
   },

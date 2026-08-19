@@ -121,7 +121,7 @@ export const TeamsPage: React.FC = () => {
     }
   };
 
-  const totalMembers = teams.reduce((sum, t) => sum + t.membersCount, 0);
+  const totalMembers = teams.reduce((sum, t) => sum + (t.membersCount || 0), 0);
 
   return (
     <div className="space-y-5 pb-12 font-sans w-full">

@@ -92,7 +92,7 @@ export const CategoriesPage: React.FC = () => {
     }
   };
 
-  const totalProducts = categories.reduce((sum, c) => sum + c.productsCount, 0);
+  const totalProducts = categories.reduce((sum, c) => sum + (c.productsCount || 0), 0);
 
   return (
     <div className="space-y-6">

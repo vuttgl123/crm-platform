@@ -385,7 +385,7 @@ export const ContractsPage: React.FC = () => {
 
                       <TableCell className="py-3.5">
                         <span className="text-xs font-bold text-blue-700 block">
-                          {c.contractValue.toLocaleString('vi-VN')} ₫
+                          {(c.contractValue || 0).toLocaleString('vi-VN')} ₫
                         </span>
                         <span className="text-[11px] text-slate-400">Phụ trách: {c.assignedTo}</span>
                       </TableCell>
@@ -662,21 +662,21 @@ export const ContractsPage: React.FC = () => {
           }}
           documentType="CONTRACT"
           documentNumber={previewContract.contractNumber}
-          documentDate={previewContract.startDate}
-          validUntilDate={previewContract.endDate}
-          clientName={previewContract.accountName}
-          clientRepresentative={previewContract.signedByCustomer}
+          documentDate={previewContract.startDate || new Date().toLocaleDateString('vi-VN')}
+          validUntilDate={previewContract.endDate || undefined}
+          clientName={previewContract.accountName || ''}
+          clientRepresentative={previewContract.signedByCustomer || ''}
           items={[
             {
-              name: previewContract.title,
+              name: previewContract.title || previewContract.contractNumber,
               quantity: 1,
               unit: 'Hợp đồng',
-              unitPrice: previewContract.contractValue,
-              totalAmount: previewContract.contractValue,
+              unitPrice: previewContract.contractValue || 0,
+              totalAmount: previewContract.contractValue || 0,
             },
           ]}
-          subtotal={previewContract.contractValue}
-          grandTotal={previewContract.contractValue}
+          subtotal={previewContract.contractValue || 0}
+          grandTotal={previewContract.contractValue || 0}
         />
       )}
     </div>

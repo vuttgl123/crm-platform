@@ -6,4 +6,8 @@ public final class BusinessRuleViolation extends DomainException {
 		super(errorCode, messageArguments);
 	}
 
+	public BusinessRuleViolation(String errorCode, Object... messageArguments) {
+		super(errorCode, messageArguments);
+	}
+
 }

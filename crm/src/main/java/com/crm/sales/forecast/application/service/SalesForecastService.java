@@ -36,8 +36,8 @@ public class SalesForecastService {
 	}
 
 	public SalesForecastSummary getForecastSummary(String period) {
-		TenantId tenantId = currentTenant.require();
-		authorizer.requireAny(currentActor.get(), SystemPermission.CRM_OPPORTUNITY_READ, SystemPermission.SALES_ORDER_READ);
+		TenantId tenantId = currentTenant.requireTenantId();
+		authorizer.requireAny(SystemPermission.CRM_OPPORTUNITY_READ, SystemPermission.SALES_ORDER_READ);
 
 		double closedWonAmount = 0.0;
 		double commitAmount = 0.0;

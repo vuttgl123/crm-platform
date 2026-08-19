@@ -78,7 +78,7 @@ export const DataAccessPage: React.FC = () => {
   // KPI Metrics
   const totalExports = dataAccess.filter((d) => d.accessType === 'EXPORT').length;
   const totalViews = dataAccess.filter((d) => d.accessType === 'READ').length;
-  const totalRecordsCount = dataAccess.reduce((sum, d) => sum + (d.recordsCount || 0), 0);
+  const totalRecordsCount = dataAccess.reduce((sum, d) => sum + (((d as any).recordsCount ?? d.recordCount) || 0), 0);
 
   const activeFiltersCount =
     (searchQuery ? 1 : 0) +
@@ -282,7 +282,7 @@ export const DataAccessPage: React.FC = () => {
 
                     {/* Cột 4: Số lượng bản ghi */}
                     <TableCell className="font-mono text-slate-800 font-bold text-[11px]">
-                      {d.recordsCount.toLocaleString('vi-VN')} Bản ghi
+                      {(((d as any).recordsCount ?? d.recordCount) || 0).toLocaleString('vi-VN')} Bản ghi
                     </TableCell>
 
                     {/* Cột 5: Lý do */}

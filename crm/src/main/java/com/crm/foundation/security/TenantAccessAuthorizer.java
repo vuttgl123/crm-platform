@@ -27,4 +27,28 @@ public final class TenantAccessAuthorizer {
 		return new AuthorizedDataAccess(permission, entityType, scopes);
 	}
 
+	public void requirePermission(SystemPermission permission) {
+		permissionChecker.requirePermission(permission);
+	}
+
+	public boolean hasPermission(SystemPermission permission) {
+		return permissionChecker.hasPermission(permission);
+	}
+
+	public void requireAny(SystemPermission... permissions) {
+		if (permissions == null || permissions.length == 0) {
+			return;
+		}
+		for (SystemPermission permission : permissions) {
+			if (permissionChecker.hasPermission(permission)) {
+				return;
+			}
+		}
+		permissionChecker.requirePermission(permissions[0]);
+	}
+
+	public void requireAny(com.crm.sharedkernel.domain.ActorId actorId, SystemPermission... permissions) {
+		requireAny(permissions);
+	}
+
 }

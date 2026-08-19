@@ -5,7 +5,6 @@ import {
 } from '@/services/api/contactApi';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -31,26 +30,20 @@ import {
 } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { QuickCallLogModal } from '@/features/crm/call/QuickCallLogModal';
+import { StandardPageHeader } from '@/components/common/StandardPageHeader';
+import { StandardFilterBar, ViewTabItem } from '@/components/common/StandardFilterBar';
+import { StandardPagination } from '@/components/common/StandardPagination';
 import {
   Users,
-  UserCheck,
   Building2,
   Phone,
   Mail,
-  Search,
   Plus,
   RefreshCw,
   Edit,
   Trash2,
   Star,
   Loader2,
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
-  X,
-  RotateCcw,
-  UserX,
   PhoneCall,
 } from 'lucide-react';
 
@@ -143,8 +136,8 @@ export const ContactsPage: React.FC = () => {
     setEditingContact(contact);
     setFullName(contact.fullName);
     setSalutation(contact.salutation || 'MR');
-    setJobTitle(contact.jobTitle);
-    setDepartment(contact.department);
+    setJobTitle(contact.jobTitle || '');
+    setDepartment(contact.department || '');
     setAccountName(contact.accountName || '');
     setEmail(contact.email || '');
     setPhone(contact.phone || '');
@@ -216,7 +209,6 @@ export const ContactsPage: React.FC = () => {
   // KPI Metrics
   const activeCount = contacts.filter((c) => c.status === 'ACTIVE').length;
   const primaryCount = contacts.filter((c) => c.isPrimaryContact).length;
-  const inactiveCount = contacts.filter((c) => c.status === 'INACTIVE').length;
 
   const activeFiltersCount =
     (searchQuery ? 1 : 0) +
@@ -224,116 +216,81 @@ export const ContactsPage: React.FC = () => {
     (selectedDepartment !== 'ALL' ? 1 : 0) +
     (primaryOnly ? 1 : 0);
 
+  // View Tabs Config
+  const viewTabs: ViewTabItem[] = [
+    { id: 'ALL', label: 'Tất cả', count: totalElements },
+    { id: 'ACTIVE', label: 'Đang hoạt động', count: activeCount, dotColor: 'bg-emerald-500' },
+    { id: 'PRIMARY', label: 'Đại diện chính', count: primaryCount, icon: Star },
+  ];
+
+  const currentActiveTab = primaryOnly ? 'PRIMARY' : selectedStatus === 'ACTIVE' ? 'ACTIVE' : 'ALL';
+
+  const handleTabChange = (tabId: string) => {
+    if (tabId === 'PRIMARY') {
+      setPrimaryOnly(true);
+      setSelectedStatus('ALL');
+    } else if (tabId === 'ACTIVE') {
+      setPrimaryOnly(false);
+      setSelectedStatus('ACTIVE');
+    } else {
+      setPrimaryOnly(false);
+      setSelectedStatus('ALL');
+    }
+    setPage(0);
+  };
+
   return (
-    <div className="space-y-5 pb-12 font-sans w-full">
-      {/* ── Page Header ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-bold text-slate-900 flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shadow-xs shrink-0">
-              <Users className="w-4.5 h-4.5 text-white" />
-            </div>
-            Quản lý Người liên hệ (Contacts)
-          </h1>
-          <p className="text-xs text-slate-500 mt-1 ml-10.5">
-            Quản lý thông tin danh thiếp, chức danh và kênh liên lạc của các nhân sự đối tác
-          </p>
-        </div>
+    <div className="space-y-4 pb-12 font-sans w-full">
+      {/* Standard Page Header */}
+      <StandardPageHeader
+        title="Quản lý Người liên hệ"
+        subtitle="Quản lý danh thiếp, thông tin liên lạc, chức vụ & người đại diện chính của doanh nghiệp đối tác"
+        icon={Users}
+        badgeCount={totalElements}
+        badgeLabel="nhân sự"
+        actions={
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={fetchContacts}
+              disabled={loading}
+              className="text-xs font-medium text-slate-700 bg-white border-slate-200 hover:bg-slate-50 gap-1.5 h-8 rounded-[3px]"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+              <span>Làm mới</span>
+            </Button>
 
-        <div className="flex items-center gap-2 shrink-0">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={fetchContacts}
-            disabled={loading}
-            className="text-xs gap-1.5 border-slate-200 h-8"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-            <span>Làm mới</span>
-          </Button>
+            <Button
+              size="sm"
+              onClick={handleOpenCreate}
+              className="text-xs font-semibold bg-[#0C66E4] hover:bg-[#0052CC] text-white gap-1.5 shadow-none h-8 rounded-[3px]"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Thêm Liên hệ</span>
+            </Button>
+          </>
+        }
+      />
 
-          <Button
-            size="sm"
-            onClick={handleOpenCreate}
-            className="text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white gap-1.5 shadow-xs h-8"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Thêm Người liên hệ Mới</span>
-          </Button>
-        </div>
-      </div>
-
-      {/* ── Quick Stat Cards ── */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="bg-white rounded-xl border border-slate-200 px-4 py-3 flex items-center gap-3 shadow-xs hover:shadow-sm transition-shadow">
-          <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
-            <Users className="w-4.5 h-4.5 text-blue-600" />
-          </div>
-          <div>
-            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Tổng Người liên hệ</div>
-            <div className="text-lg font-black text-slate-900 leading-tight">{totalElements}</div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl border border-emerald-100 px-4 py-3 flex items-center gap-3 shadow-xs hover:shadow-sm transition-shadow">
-          <div className="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center shrink-0">
-            <UserCheck className="w-4.5 h-4.5 text-emerald-600" />
-          </div>
-          <div>
-            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Đang hoạt động</div>
-            <div className="text-lg font-black text-emerald-700 leading-tight">{activeCount}</div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl border border-purple-100 px-4 py-3 flex items-center gap-3 shadow-xs hover:shadow-sm transition-shadow">
-          <div className="w-9 h-9 rounded-lg bg-purple-50 flex items-center justify-center shrink-0">
-            <Star className="w-4.5 h-4.5 text-purple-600" />
-          </div>
-          <div>
-            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Đại diện chính</div>
-            <div className="text-lg font-black text-purple-700 leading-tight">{primaryCount}</div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl border border-amber-100 px-4 py-3 flex items-center gap-3 shadow-xs hover:shadow-sm transition-shadow">
-          <div className="w-9 h-9 rounded-lg bg-amber-50 flex items-center justify-center shrink-0">
-            <UserX className="w-4.5 h-4.5 text-amber-600" />
-          </div>
-          <div>
-            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Ngừng hoạt động</div>
-            <div className="text-lg font-black text-amber-700 leading-tight">{inactiveCount}</div>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Search & Filter Toolbar ── */}
-      <Card className="p-3.5 bg-white border border-slate-200 rounded-xl shadow-xs space-y-3">
-        <div className="flex flex-col md:flex-row gap-2.5 items-stretch md:items-center justify-between">
-          <div className="relative flex-1">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-            <Input
-              placeholder="Tìm kiếm theo họ tên, email, điện thoại, chức vụ..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 pr-8 text-xs h-8.5 bg-slate-50/60 focus:bg-white border-slate-200 rounded-lg"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
+      {/* Standard Filter & Search Bar */}
+      <StandardFilterBar
+        searchQuery={searchQuery}
+        onSearchChange={(val) => { setSearchQuery(val); setPage(0); }}
+        searchPlaceholder="Tìm kiếm theo họ tên, email, điện thoại..."
+        viewTabs={viewTabs}
+        activeTab={currentActiveTab}
+        onTabChange={handleTabChange}
+        activeFiltersCount={activeFiltersCount}
+        onResetFilters={handleResetFilters}
+        filterControls={
+          <>
             <div className="w-36">
               <Select value={selectedStatus} onValueChange={(val) => { setSelectedStatus(val); setPage(0); }}>
-                <SelectTrigger className="h-8.5 text-xs bg-slate-50/60 border-slate-200 rounded-lg">
+                <SelectTrigger className="h-8 text-xs bg-white border-slate-200 rounded-[3px]">
                   <SelectValue placeholder="Trạng thái" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="rounded-[3px]">
                   <SelectItem value="ALL">Tất cả trạng thái</SelectItem>
                   <SelectItem value="ACTIVE">Đang hoạt động</SelectItem>
                   <SelectItem value="INACTIVE">Ngừng hoạt động</SelectItem>
@@ -341,12 +298,12 @@ export const ContactsPage: React.FC = () => {
               </Select>
             </div>
 
-            <div className="w-36">
+            <div className="w-40">
               <Select value={selectedDepartment} onValueChange={(val) => { setSelectedDepartment(val); setPage(0); }}>
-                <SelectTrigger className="h-8.5 text-xs bg-slate-50/60 border-slate-200 rounded-lg">
+                <SelectTrigger className="h-8 text-xs bg-white border-slate-200 rounded-[3px]">
                   <SelectValue placeholder="Phòng ban" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="rounded-[3px]">
                   <SelectItem value="ALL">Tất cả phòng ban</SelectItem>
                   <SelectItem value="Ban Giám Đốc">Ban Giám Đốc</SelectItem>
                   <SelectItem value="Phòng Công Nghệ (IT)">Phòng Công Nghệ</SelectItem>
@@ -356,45 +313,22 @@ export const ContactsPage: React.FC = () => {
                 </SelectContent>
               </Select>
             </div>
-
-            <div className="flex items-center gap-2 px-2.5 py-1.5 bg-slate-50/80 border border-slate-200 rounded-lg h-8.5">
-              <Checkbox
-                id="filter-primary-contact"
-                checked={primaryOnly}
-                onCheckedChange={(checked) => setPrimaryOnly(!!checked)}
-              />
-              <label htmlFor="filter-primary-contact" className="text-xs text-slate-700 cursor-pointer font-medium select-none">
-                Đại diện chính
-              </label>
-            </div>
-
-            {activeFiltersCount > 0 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleResetFilters}
-                className="text-xs text-slate-500 hover:text-slate-800 gap-1 h-8.5 px-2"
-              >
-                <RotateCcw className="w-3 h-3" />
-                <span>Đặt lại ({activeFiltersCount})</span>
-              </Button>
-            )}
-          </div>
-        </div>
-      </Card>
+          </>
+        }
+      />
 
       {/* ── Contacts Table ── */}
-      <Card className="overflow-hidden border border-slate-200 rounded-xl bg-white shadow-xs">
+      <Card className="overflow-hidden border border-slate-200 rounded-[4px] bg-white shadow-none">
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
-              <TableRow className="bg-slate-50/80 hover:bg-slate-50/80 border-b border-slate-200">
-                <TableHead className="text-[11px] font-bold text-slate-600 uppercase tracking-wider py-3 pl-4">Họ &amp; Tên Người liên hệ</TableHead>
-                <TableHead className="text-[11px] font-bold text-slate-600 uppercase tracking-wider py-3">Thuộc Doanh nghiệp</TableHead>
-                <TableHead className="text-[11px] font-bold text-slate-600 uppercase tracking-wider py-3">Chức vụ &amp; Phòng ban</TableHead>
-                <TableHead className="text-[11px] font-bold text-slate-600 uppercase tracking-wider py-3">Kênh Liên lạc</TableHead>
-                <TableHead className="text-[11px] font-bold text-slate-600 uppercase tracking-wider py-3">Trạng thái</TableHead>
-                <TableHead className="text-[11px] font-bold text-slate-600 uppercase tracking-wider py-3 text-right pr-4">Thao tác</TableHead>
+              <TableRow className="bg-[#F7F8F9] border-b border-slate-200 hover:bg-[#F7F8F9]">
+                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Họ &amp; Tên Người liên hệ</TableHead>
+                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Thuộc Doanh nghiệp</TableHead>
+                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Chức vụ &amp; Phòng ban</TableHead>
+                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Kênh Liên lạc</TableHead>
+                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Trạng thái</TableHead>
+                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3 text-right pr-4">Thao tác</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -421,30 +355,30 @@ export const ContactsPage: React.FC = () => {
                 </TableRow>
               ) : (
                 contacts.map((contact) => (
-                  <TableRow key={contact.id} className="hover:bg-slate-50/80 transition-colors border-b border-slate-100 text-xs">
+                  <TableRow key={contact.id} className="hover:bg-[#F1F2F4] transition-colors border-b border-[#EBECF0] text-xs">
                     {/* Cột 1: Tên */}
-                    <TableCell className="pl-4 py-3">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-xs">
+                    <TableCell className="py-2 px-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-[3px] bg-[#E9F2FF] text-[#0C66E4] border border-[#C0D9FF] font-bold text-xs flex items-center justify-center shrink-0">
                           {contact.fullName.charAt(0)}
                         </div>
                         <div>
-                          <div className="font-bold text-slate-900 flex items-center gap-1.5">
+                          <div className="font-semibold text-slate-900 flex items-center gap-1.5">
                             <span>{contact.fullName}</span>
                             {contact.isPrimaryContact && (
-                              <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200 text-[10px] px-1.5 py-0 font-bold gap-0.5">
-                                <Star className="w-2.5 h-2.5 fill-purple-600 text-purple-600" />
+                              <span className="bg-[#EAE6FF] text-[#403294] text-[10px] px-1 py-0.2 rounded-[2px] font-bold inline-flex items-center gap-0.5">
+                                <Star className="w-2.5 h-2.5 fill-[#403294] text-[#403294]" />
                                 Chính
-                              </Badge>
+                              </span>
                             )}
                           </div>
-                          <div className="text-[11px] text-slate-400 mt-0.5 font-mono">{contact.id.toUpperCase()}</div>
+                          <div className="text-[11px] text-slate-400 font-mono">{contact.id.toUpperCase()}</div>
                         </div>
                       </div>
                     </TableCell>
 
                     {/* Cột 2: Doanh nghiệp */}
-                    <TableCell>
+                    <TableCell className="py-2 px-3">
                       <div className="flex items-center gap-1.5 text-slate-800 font-medium">
                         <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                         <span>{contact.accountName}</span>
@@ -452,15 +386,15 @@ export const ContactsPage: React.FC = () => {
                     </TableCell>
 
                     {/* Cột 3: Chức vụ & Phòng ban */}
-                    <TableCell>
+                    <TableCell className="py-2 px-3">
                       <div>
-                        <div className="font-semibold text-slate-800">{contact.jobTitle || 'Chuyên viên'}</div>
+                        <div className="font-medium text-slate-800">{contact.jobTitle || 'Chuyên viên'}</div>
                         <div className="text-[11px] text-slate-500">{contact.department || 'Phòng Kinh Doanh'}</div>
                       </div>
                     </TableCell>
 
                     {/* Cột 4: Kênh liên lạc */}
-                    <TableCell>
+                    <TableCell className="py-2 px-3">
                       <div className="space-y-0.5">
                         <div className="flex items-center gap-1.5 text-slate-600">
                           <Mail className="w-3 h-3 text-slate-400 shrink-0" />
@@ -474,20 +408,20 @@ export const ContactsPage: React.FC = () => {
                     </TableCell>
 
                     {/* Cột 5: Trạng thái */}
-                    <TableCell>
+                    <TableCell className="py-2 px-3">
                       {contact.status === 'ACTIVE' ? (
-                        <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 font-bold text-[11px]">
+                        <span className="bg-[#E3FCEF] text-[#006644] font-bold rounded-[3px] text-[11px] uppercase tracking-wider px-1.5 py-0.5">
                           Hoạt động
-                        </Badge>
+                        </span>
                       ) : (
-                        <Badge className="bg-amber-50 text-amber-700 border-amber-200 font-semibold text-[11px]">
+                        <span className="bg-[#FFFAE6] text-[#974F0C] font-bold rounded-[3px] text-[11px] uppercase tracking-wider px-1.5 py-0.5">
                           Ngừng hoạt động
-                        </Badge>
+                        </span>
                       )}
                     </TableCell>
 
                     {/* Cột 6: Thao tác */}
-                    <TableCell className="text-right pr-4">
+                    <TableCell className="py-2 px-3 text-right pr-4">
                       <div className="flex items-center justify-end gap-1">
                         <Button
                           variant="ghost"
@@ -496,7 +430,7 @@ export const ContactsPage: React.FC = () => {
                             setCallingContact(contact);
                             setIsCallModalOpen(true);
                           }}
-                          className="h-7 w-7 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                          className="h-7 w-7 rounded-[3px] text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
                           title="Gọi nhanh & Ghi nhận nhật ký cuộc gọi"
                         >
                           <PhoneCall className="w-3.5 h-3.5" />
@@ -505,8 +439,8 @@ export const ContactsPage: React.FC = () => {
                           variant="ghost"
                           size="icon"
                           onClick={() => handleOpenEdit(contact)}
-                          className="h-7 w-7 text-slate-600 hover:text-blue-600 hover:bg-blue-50"
-                          title="Chỉnh sửa thông tin"
+                          className="h-7 w-7 rounded-[3px] text-slate-600 hover:text-[#0C66E4] hover:bg-[#E9F2FF]"
+                          title="Chỉnh sửa liên hệ"
                         >
                           <Edit className="w-3.5 h-3.5" />
                         </Button>
@@ -514,8 +448,8 @@ export const ContactsPage: React.FC = () => {
                           variant="ghost"
                           size="icon"
                           onClick={() => handleDelete(contact.id, contact.fullName)}
-                          className="h-7 w-7 text-slate-600 hover:text-red-600 hover:bg-red-50"
-                          title="Xóa người liên hệ"
+                          className="h-7 w-7 rounded-[3px] text-slate-600 hover:text-red-600 hover:bg-red-50"
+                          title="Xóa liên hệ"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </Button>
@@ -529,55 +463,16 @@ export const ContactsPage: React.FC = () => {
         </div>
 
         {/* ── Pagination Bar ── */}
-        {!loading && contacts.length > 0 && (
-          <div className="px-4 py-3 bg-slate-50/50 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
-            <div>
-              Hiển thị <span className="font-bold text-slate-800">{page * pageSize + 1}</span> -{' '}
-              <span className="font-bold text-slate-800">{Math.min((page + 1) * pageSize, totalElements)}</span> trong tổng số{' '}
-              <span className="font-bold text-slate-800">{totalElements}</span> người liên hệ
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-7 w-7 border-slate-200"
-                onClick={() => setPage(0)}
-                disabled={page === 0}
-              >
-                <ChevronsLeft className="w-3.5 h-3.5" />
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-7 w-7 border-slate-200"
-                onClick={() => setPage((p) => Math.max(p - 1, 0))}
-                disabled={page === 0}
-              >
-                <ChevronLeft className="w-3.5 h-3.5" />
-              </Button>
-              <div className="px-2 font-medium text-slate-700">
-                Trang {page + 1} / {Math.max(totalPages, 1)}
-              </div>
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-7 w-7 border-slate-200"
-                onClick={() => setPage((p) => p + 1)}
-                disabled={page >= totalPages - 1}
-              >
-                <ChevronRight className="w-3.5 h-3.5" />
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-7 w-7 border-slate-200"
-                onClick={() => setPage(totalPages - 1)}
-                disabled={page >= totalPages - 1}
-              >
-                <ChevronsRight className="w-3.5 h-3.5" />
-              </Button>
-            </div>
-          </div>
+        {/* ── Standard Pagination Bar ── */}
+        {!loading && (
+          <StandardPagination
+            currentPage={page + 1}
+            totalPages={Math.max(totalPages, 1)}
+            totalElements={totalElements}
+            pageSize={pageSize}
+            onPageChange={(p) => setPage(p - 1)}
+            itemLabel="người liên hệ"
+          />
         )}
       </Card>
 
@@ -756,7 +651,7 @@ export const ContactsPage: React.FC = () => {
             setCallingContact(null);
           }}
           targetName={callingContact.fullName}
-          targetPhone={callingContact.phone}
+          targetPhone={callingContact.phone || ''}
           entityType="CONTACT"
           entityId={callingContact.id}
           onCallLogged={fetchContacts}

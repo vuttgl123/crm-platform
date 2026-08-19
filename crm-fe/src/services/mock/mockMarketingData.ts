@@ -5,21 +5,14 @@ import {
   CAMPAIGN_STATUS_CONFIG,
   CAMPAIGN_TYPE_CONFIG,
   DripCampaignSummary,
-  DripCampaignAnalyticsResponse,
   MarketingTemplateSummary,
-  MarketingAnalyticsResponse,
-  MarketingRoiSummary,
-  ChannelPerformance,
-  MarketingFunnelStage,
 } from '../api/campaignApi';
 
 export {
-  CampaignStatus,
-  CampaignType,
   CAMPAIGN_STATUS_CONFIG,
   CAMPAIGN_TYPE_CONFIG,
 };
-export type { CampaignItem };
+export type { CampaignItem, CampaignStatus, CampaignType, DripCampaignSummary, MarketingTemplateSummary };
 
 export const INITIAL_MOCK_CAMPAIGNS: CampaignItem[] = [
   {
@@ -185,8 +178,6 @@ export const INITIAL_MOCK_TEMPLATES: MarketingTemplateSummary[] = [
 ];
 
 let campaignsStore = [...INITIAL_MOCK_CAMPAIGNS];
-let dripStore = [...INITIAL_MOCK_DRIP_CAMPAIGNS];
-let templateStore = [...INITIAL_MOCK_TEMPLATES];
 
 export const mockMarketingApi = {
   list: async (params?: { search?: string; status?: string; type?: string; page?: number; size?: number }) => {

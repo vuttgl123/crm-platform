@@ -15,27 +15,27 @@ export interface StatusBadgeConfig {
 export const LifecycleStageConfigMap: Record<AccountLifecycleStage, StatusBadgeConfig> = {
   PROSPECT: {
     label: 'Tiềm năng',
-    className: 'bg-purple-50 text-purple-700 border-purple-200 font-bold',
+    className: 'bg-[#EAE6FF] text-[#403294] border-0 font-bold rounded-[3px] text-[11px] uppercase tracking-wider px-1.5 py-0.5',
     priorityLevel: 3,
   },
   QUALIFIED: {
     label: 'Đạt chuẩn',
-    className: 'bg-blue-50 text-blue-700 border-blue-200 font-bold',
+    className: 'bg-[#DEEBFF] text-[#0747A6] border-0 font-bold rounded-[3px] text-[11px] uppercase tracking-wider px-1.5 py-0.5',
     priorityLevel: 2,
   },
   CUSTOMER: {
     label: 'Khách hàng chính thức',
-    className: 'bg-emerald-50 text-emerald-700 border-emerald-200 font-bold',
+    className: 'bg-[#E3FCEF] text-[#006644] border-0 font-bold rounded-[3px] text-[11px] uppercase tracking-wider px-1.5 py-0.5',
     priorityLevel: 1,
   },
   INACTIVE: {
     label: 'Ngừng hoạt động',
-    className: 'bg-amber-50 text-amber-700 border-amber-200 font-semibold',
+    className: 'bg-[#FFFAE6] text-[#974F0C] border-0 font-bold rounded-[3px] text-[11px] uppercase tracking-wider px-1.5 py-0.5',
     priorityLevel: 4,
   },
   CHURNED: {
     label: 'Rời bỏ',
-    className: 'bg-rose-50 text-rose-700 border-rose-200 font-semibold',
+    className: 'bg-[#FFEBE6] text-[#DE350B] border-0 font-bold rounded-[3px] text-[11px] uppercase tracking-wider px-1.5 py-0.5',
     priorityLevel: 5,
   },
 };
@@ -43,50 +43,50 @@ export const LifecycleStageConfigMap: Record<AccountLifecycleStage, StatusBadgeC
 export const AccountTypeConfigMap: Record<AccountType, { label: string; className: string }> = {
   ORGANIZATION: {
     label: 'Doanh nghiệp',
-    className: 'bg-blue-50 text-blue-700 border-blue-200 font-bold',
+    className: 'bg-[#DEEBFF] text-[#0747A6] border-0 font-bold rounded-[3px] text-[11px] uppercase tracking-wider px-1.5 py-0.5',
   },
   PERSON: {
     label: 'Cá nhân',
-    className: 'bg-slate-100 text-slate-600 border-slate-300 font-semibold',
+    className: 'bg-[#EBECF0] text-[#42526E] border-0 font-semibold rounded-[3px] text-[11px] uppercase tracking-wider px-1.5 py-0.5',
   },
   PARTNER: {
     label: 'Đối tác chiến lược',
-    className: 'bg-emerald-50 text-emerald-700 border-emerald-200 font-bold',
+    className: 'bg-[#E3FCEF] text-[#006644] border-0 font-bold rounded-[3px] text-[11px] uppercase tracking-wider px-1.5 py-0.5',
   },
   RESELLER: {
     label: 'Đại lý ủy quyền',
-    className: 'bg-amber-50 text-amber-700 border-amber-200 font-bold',
+    className: 'bg-[#FFFAE6] text-[#974F0C] border-0 font-bold rounded-[3px] text-[11px] uppercase tracking-wider px-1.5 py-0.5',
   },
   SUPPLIER: {
     label: 'Nhà cung cấp',
-    className: 'bg-orange-50 text-orange-700 border-orange-200 font-semibold',
+    className: 'bg-[#FFEBE6] text-[#DE350B] border-0 font-bold rounded-[3px] text-[11px] uppercase tracking-wider px-1.5 py-0.5',
   },
 };
 
 export const LeadStatusConfigMap: Record<string, StatusBadgeConfig> = {
   NEW: {
     label: 'Mới tiếp nhận',
-    className: 'bg-purple-50 text-purple-700 border-purple-200 font-bold',
+    className: 'bg-[#EAE6FF] text-[#403294] border-0 font-bold rounded-[3px] text-[11px] uppercase tracking-wider px-1.5 py-0.5',
     priorityLevel: 1,
   },
   CONTACTED: {
     label: 'Đã liên hệ',
-    className: 'bg-blue-50 text-blue-700 border-blue-200 font-bold',
+    className: 'bg-[#DEEBFF] text-[#0747A6] border-0 font-bold rounded-[3px] text-[11px] uppercase tracking-wider px-1.5 py-0.5',
     priorityLevel: 2,
   },
   QUALIFIED: {
-    label: 'Đạt chuẩn tiềm năng',
-    className: 'bg-emerald-50 text-emerald-700 border-emerald-200 font-bold',
+    label: 'Đạt chuẩn',
+    className: 'bg-[#E3FCEF] text-[#006644] border-0 font-bold rounded-[3px] text-[11px] uppercase tracking-wider px-1.5 py-0.5',
     priorityLevel: 3,
   },
   CONVERTED: {
     label: 'Đã chuyển đổi',
-    className: 'bg-indigo-50 text-indigo-700 border-indigo-200 font-bold',
+    className: 'bg-[#EAE6FF] text-[#403294] border-0 font-bold rounded-[3px] text-[11px] uppercase tracking-wider px-1.5 py-0.5',
     priorityLevel: 4,
   },
   UNQUALIFIED: {
     label: 'Không tiềm năng',
-    className: 'bg-rose-50 text-rose-700 border-rose-200 font-semibold',
+    className: 'bg-[#FFEBE6] text-[#DE350B] border-0 font-semibold rounded-[3px] text-[11px] uppercase tracking-wider px-1.5 py-0.5',
     priorityLevel: 5,
   },
 };
@@ -94,32 +94,32 @@ export const LeadStatusConfigMap: Record<string, StatusBadgeConfig> = {
 export const OpportunityStageConfigMap: Record<string, StatusBadgeConfig> = {
   PROSPECTING: {
     label: 'Khám phá nhu cầu',
-    className: 'bg-purple-50 text-purple-700 border-purple-200 font-bold',
+    className: 'bg-[#EAE6FF] text-[#403294] border-0 font-bold rounded-[3px] text-[11px] uppercase tracking-wider px-1.5 py-0.5',
     priorityLevel: 1,
   },
   QUALIFICATION: {
     label: 'Đánh giá giải pháp',
-    className: 'bg-blue-50 text-blue-700 border-blue-200 font-bold',
+    className: 'bg-[#DEEBFF] text-[#0747A6] border-0 font-bold rounded-[3px] text-[11px] uppercase tracking-wider px-1.5 py-0.5',
     priorityLevel: 2,
   },
   PROPOSAL: {
     label: 'Báo giá & Đề xuất',
-    className: 'bg-sky-50 text-sky-700 border-sky-200 font-bold',
+    className: 'bg-[#DEEBFF] text-[#0747A6] border-0 font-bold rounded-[3px] text-[11px] uppercase tracking-wider px-1.5 py-0.5',
     priorityLevel: 3,
   },
   NEGOTIATION: {
     label: 'Đàm phán hợp đồng',
-    className: 'bg-amber-50 text-amber-700 border-amber-200 font-bold',
+    className: 'bg-[#FFFAE6] text-[#974F0C] border-0 font-bold rounded-[3px] text-[11px] uppercase tracking-wider px-1.5 py-0.5',
     priorityLevel: 4,
   },
   CLOSED_WON: {
     label: 'Chốt thành công',
-    className: 'bg-emerald-50 text-emerald-700 border-emerald-200 font-bold',
+    className: 'bg-[#E3FCEF] text-[#006644] border-0 font-bold rounded-[3px] text-[11px] uppercase tracking-wider px-1.5 py-0.5',
     priorityLevel: 5,
   },
   CLOSED_LOST: {
     label: 'Thất bại',
-    className: 'bg-rose-50 text-rose-700 border-rose-200 font-semibold',
+    className: 'bg-[#FFEBE6] text-[#DE350B] border-0 font-semibold rounded-[3px] text-[11px] uppercase tracking-wider px-1.5 py-0.5',
     priorityLevel: 6,
   },
 };
@@ -127,17 +127,17 @@ export const OpportunityStageConfigMap: Record<string, StatusBadgeConfig> = {
 export const PriorityConfigMap: Record<string, StatusBadgeConfig> = {
   HIGH: {
     label: 'Ưu tiên Cao',
-    className: 'bg-rose-50 text-rose-700 border-rose-200 font-bold',
+    className: 'bg-[#FFEBE6] text-[#DE350B] border-0 font-bold rounded-[3px] text-[11px] uppercase tracking-wider px-1.5 py-0.5',
     priorityLevel: 1,
   },
   MEDIUM: {
     label: 'Trung bình',
-    className: 'bg-amber-50 text-amber-700 border-amber-200 font-semibold',
+    className: 'bg-[#FFFAE6] text-[#974F0C] border-0 font-semibold rounded-[3px] text-[11px] uppercase tracking-wider px-1.5 py-0.5',
     priorityLevel: 2,
   },
   LOW: {
     label: 'Thấp',
-    className: 'bg-slate-100 text-slate-600 border-slate-200 font-normal',
+    className: 'bg-[#EBECF0] text-[#42526E] border-0 font-medium rounded-[3px] text-[11px] uppercase tracking-wider px-1.5 py-0.5',
     priorityLevel: 3,
   },
 };
@@ -147,9 +147,22 @@ export const renderLifecycleStageBadge = (stage?: AccountLifecycleStage) => {
   if (!stage) return null;
   const config = LifecycleStageConfigMap[stage];
   if (!config) return <Badge variant="outline">{stage}</Badge>;
+
+  const dotColor =
+    stage === 'CUSTOMER'
+      ? 'bg-emerald-500'
+      : stage === 'QUALIFIED'
+      ? 'bg-blue-500'
+      : stage === 'PROSPECT'
+      ? 'bg-purple-500'
+      : stage === 'INACTIVE'
+      ? 'bg-amber-500'
+      : 'bg-rose-500';
+
   return (
-    <Badge variant="outline" className={config.className}>
-      {config.label}
+    <Badge variant="outline" className={`${config.className} inline-flex items-center gap-1.5 px-2 py-0.5 text-[11px] shadow-2xs`}>
+      <span className={`w-1.5 h-1.5 rounded-full ${dotColor} shrink-0`} />
+      <span>{config.label}</span>
     </Badge>
   );
 };

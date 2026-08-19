@@ -29,6 +29,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class LeadScoringService {
 
+	private static final String ENTITY_TYPE = "lead";
+
 	private final LeadRepository leadRepository;
 	private final CurrentTenant currentTenant;
 	private final CurrentActor currentActor;
@@ -56,10 +58,10 @@ public class LeadScoringService {
 		Objects.requireNonNull(id, "id must not be null");
 		TenantId tenantId = currentTenant.requireTenantId();
 		ActorId actorId = currentActor.requireActorId();
-		AuthorizedDataAccess access = authorizer.requirePermission(SystemPermission.CRM_LEAD_READ);
+		AuthorizedDataAccess access = authorizer.authorize(SystemPermission.CRM_LEAD_READ, ENTITY_TYPE);
 
 		Lead lead = leadRepository.findById(tenantId, id, actorId, access)
-				.orElseThrow(() -> new DomainResourceNotFound(LeadErrorCode.LEAD_NOT_FOUND.code()));
+				.orElseThrow(() -> new DomainResourceNotFound(LeadErrorCode.LEAD_NOT_FOUND));
 
 		int score = 0;
 		List<String> factors = new ArrayList<>();
@@ -129,10 +131,10 @@ public class LeadScoringService {
 		Objects.requireNonNull(id, "id must not be null");
 		TenantId tenantId = currentTenant.requireTenantId();
 		ActorId actorId = currentActor.requireActorId();
-		AuthorizedDataAccess access = authorizer.requirePermission(SystemPermission.CRM_LEAD_WRITE);
+		AuthorizedDataAccess access = authorizer.authorize(SystemPermission.CRM_LEAD_WRITE, ENTITY_TYPE);
 
 		Lead lead = leadRepository.findById(tenantId, id, actorId, access)
-				.orElseThrow(() -> new DomainResourceNotFound(LeadErrorCode.LEAD_NOT_FOUND.code()));
+				.orElseThrow(() -> new DomainResourceNotFound(LeadErrorCode.LEAD_NOT_FOUND));
 
 		// Round-robin user lookup from active tenant members
 		String nextUserId = jdbcClient.sql("""
@@ -147,9 +149,45 @@ public class LeadScoringService {
 
 		LeadOwner newOwner = new LeadOwner(AccountOwnerType.USER, UUID.fromString(nextUserId));
 		lead.reassign(newOwner, actorId, timeProvider.now());
-		leadRepository.update(lead);
+		leadRepository.save(lead);
 
-		return LeadDetails.from(lead);
+		return toDetails(lead);
+	}
+
+	private LeadDetails toDetails(Lead lead) {
+		return new LeadDetails(
+				lead.tenantId(),
+				lead.id(),
+				lead.leadNumber(),
+				lead.statusId(),
+				lead.sourceId(),
+				lead.owner(),
+				lead.rating(),
+				lead.accountName(),
+				lead.companyName(),
+				lead.honorific(),
+				lead.givenName(),
+				lead.familyName(),
+				lead.displayName(),
+				lead.email(),
+				lead.phoneE164(),
+				lead.jobTitle(),
+				lead.website(),
+				lead.countryCode(),
+				lead.preferredLanguageCode(),
+				lead.estimatedValue(),
+				lead.qualificationNotes(),
+				lead.disqualificationReason(),
+				lead.convertedAt(),
+				lead.convertedBy(),
+				lead.convertedAccountId(),
+				lead.convertedContactId(),
+				lead.convertedOpportunityId(),
+				lead.createdAt(),
+				lead.createdBy(),
+				lead.updatedAt(),
+				lead.updatedBy(),
+				lead.version());
 	}
 
 }

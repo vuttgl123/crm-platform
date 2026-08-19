@@ -12,4 +12,12 @@ public interface CurrentActor {
 		return actorId().orElseThrow(MissingActorContextException::new);
 	}
 
+	default ActorId require() {
+		return requireActorId();
+	}
+
+	default ActorId get() {
+		return requireActorId();
+	}
+
 }

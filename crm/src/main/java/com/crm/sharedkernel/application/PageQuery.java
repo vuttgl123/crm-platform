@@ -19,6 +19,14 @@ public record PageQuery(int page, int size) {
 		return new PageQuery(0, DEFAULT_SIZE);
 	}
 
+	public static PageQuery defaultPage() {
+		return new PageQuery(0, DEFAULT_SIZE);
+	}
+
+	public static PageQuery of(int page, int size) {
+		return new PageQuery(page, size);
+	}
+
 	public long offset() {
 		return Math.multiplyExact((long) page, size);
 	}

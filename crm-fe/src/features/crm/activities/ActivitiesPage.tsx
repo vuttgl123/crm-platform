@@ -63,12 +63,19 @@ const TYPE_ICON_MAP: Record<ActivityType, any> = {
   MEETING: Users,
   TASK: CheckSquare,
   EMAIL: Mail,
+  MESSAGE: Mail,
+  DEMO: CalendarCheck,
+  FOLLOW_UP: RotateCcw,
+  OTHER: CalendarCheck,
 };
 
 const STATUS_CONFIG: Record<ActivityStatus, { label: string; className: string }> = {
+  PLANNED: { label: 'Đã lên lịch', className: 'bg-blue-50 text-blue-700 border-blue-200 font-semibold' },
+  IN_PROGRESS: { label: 'Đang thực hiện', className: 'bg-indigo-50 text-indigo-700 border-indigo-200 font-semibold' },
   PENDING: { label: 'Chờ xử lý', className: 'bg-amber-50 text-amber-700 border-amber-200 font-semibold' },
   COMPLETED: { label: 'Hoàn thành', className: 'bg-emerald-50 text-emerald-700 border-emerald-200 font-bold' },
   CANCELLED: { label: 'Đã hủy', className: 'bg-rose-50 text-rose-700 border-rose-200 font-semibold' },
+  DEFERRED: { label: 'Tạm hoãn', className: 'bg-slate-100 text-slate-700 border-slate-200 font-semibold' },
 };
 
 export const ActivitiesPage: React.FC = () => {

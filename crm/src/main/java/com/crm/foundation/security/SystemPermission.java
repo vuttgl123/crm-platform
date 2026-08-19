@@ -31,6 +31,8 @@ public enum SystemPermission {
 	AUDIT_READ("audit_read"),
 	INTEGRATION_READ("integration.read"),
 	INTEGRATION_MANAGE("integration.manage"),
+	INTEGRATION_EXTERNAL_READ("integration_external.read"),
+	INTEGRATION_EXTERNAL_WRITE("integration_external.write"),
 	PLATFORM_USER_MANAGE("platform_user.manage"),
 	PLATFORM_MEMBERSHIP_READ("platform_membership.read"),
 	PLATFORM_MEMBERSHIP_APPROVE("platform_membership.approve"),

@@ -86,7 +86,7 @@ export const WebhooksPage: React.FC = () => {
                     </TableCell>
 
                     <TableCell className="py-3.5 font-mono text-[11px] text-slate-400">
-                      {w.secretKey.slice(0, 10)}••••••••
+                      {(w.secretKey || (w as any).secretToken || 'whsec_••••••••').slice(0, 10)}••••••••
                     </TableCell>
 
                     <TableCell className="py-3.5">

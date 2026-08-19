@@ -5,7 +5,6 @@ import {
 } from '@/services/api/catalogApi';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { EmptyState } from '@/components/common/EmptyState';
@@ -29,21 +28,16 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from 'sonner';
+import { StandardPageHeader } from '@/components/common/StandardPageHeader';
+import { StandardFilterBar, ViewTabItem } from '@/components/common/StandardFilterBar';
+import { StandardPagination } from '@/components/common/StandardPagination';
 import {
   Package,
-  Search,
   Plus,
   RefreshCw,
   Edit,
   Trash2,
   Loader2,
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
-  X,
-  RotateCcw,
-  DollarSign,
   Layers,
   CheckCircle2,
 } from 'lucide-react';
@@ -167,159 +161,103 @@ export const ProductsPage: React.FC = () => {
   // KPI Metrics
   const softwareCount = products.filter((p) => (p.categoryName || '').includes('Phần mềm')).length;
   const serviceCount = products.filter((p) => (p.categoryName || '').includes('Dịch vụ')).length;
-  const avgPrice = products.length > 0 ? products.reduce((sum, p) => sum + (p.unitPrice || 0), 0) / products.length : 0;
 
   const activeFiltersCount =
     (searchQuery ? 1 : 0) +
     (selectedCategory !== 'ALL' ? 1 : 0);
 
+  // View Tabs Config
+  const viewTabs: ViewTabItem[] = [
+    { id: 'ALL', label: 'Tất cả', count: totalElements },
+    { id: 'SOFTWARE', label: 'Bản quyền / SaaS', count: softwareCount, icon: Layers, dotColor: 'bg-indigo-500' },
+    { id: 'SERVICE', label: 'Dịch vụ triển khai', count: serviceCount, icon: CheckCircle2, dotColor: 'bg-emerald-500' },
+  ];
+
+  const currentActiveTab = selectedCategory === 'Bản quyền Phần mềm' ? 'SOFTWARE' : selectedCategory === 'Dịch vụ Triển khai & Đào tạo' ? 'SERVICE' : 'ALL';
+
+  const handleTabChange = (tabId: string) => {
+    if (tabId === 'SOFTWARE') {
+      setSelectedCategory('Bản quyền Phần mềm');
+    } else if (tabId === 'SERVICE') {
+      setSelectedCategory('Dịch vụ Triển khai & Đào tạo');
+    } else {
+      setSelectedCategory('ALL');
+    }
+    setPage(0);
+  };
+
   return (
-    <div className="space-y-5 pb-12 font-sans w-full">
-      {/* ── Page Header ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-bold text-slate-900 flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shadow-xs shrink-0">
-              <Package className="w-4.5 h-4.5 text-white" />
-            </div>
-            Quản lý Danh mục Sản phẩm &amp; Dịch vụ (Catalog)
-          </h1>
-          <p className="text-xs text-slate-500 mt-1 ml-10.5">
-            Quản lý danh sách SKU sản phẩm, gói giải pháp phần mềm và đơn giá niêm yết
-          </p>
-        </div>
+    <div className="space-y-4 pb-12 font-sans w-full">
+      {/* Standard Page Header */}
+      <StandardPageHeader
+        title="Quản lý Danh mục Sản phẩm & Dịch vụ"
+        subtitle="Quản lý danh mục mã SKU, các gói giải pháp bản quyền phần mềm SaaS & đơn giá niêm yết chuẩn"
+        badgeCount={totalElements}
+        badgeLabel="sản phẩm"
+        actions={
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={fetchProducts}
+              disabled={loading}
+              className="text-xs font-medium text-slate-700 bg-white border-slate-200 hover:bg-slate-50 gap-1.5 h-8 rounded-[3px]"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+              <span>Làm mới</span>
+            </Button>
 
-        <div className="flex items-center gap-2 shrink-0">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={fetchProducts}
-            disabled={loading}
-            className="text-xs gap-1.5 border-slate-200 h-8"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-            <span>Làm mới</span>
-          </Button>
+            <Button
+              size="sm"
+              onClick={handleOpenCreate}
+              className="text-xs font-semibold bg-[#0C66E4] hover:bg-[#0052CC] text-white gap-1.5 shadow-none h-8 rounded-[3px]"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Thêm Sản Phẩm</span>
+            </Button>
+          </>
+        }
+      />
 
-          <Button
-            size="sm"
-            onClick={handleOpenCreate}
-            className="text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white gap-1.5 shadow-xs h-8"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Thêm Sản Phẩm Mới</span>
-          </Button>
-        </div>
-      </div>
-
-      {/* ── Quick Stat Cards ── */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="bg-white rounded-xl border border-slate-200 px-4 py-3 flex items-center gap-3 shadow-xs hover:shadow-sm transition-shadow">
-          <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
-            <Package className="w-4.5 h-4.5 text-blue-600" />
+      {/* Standard Filter & Search Bar */}
+      <StandardFilterBar
+        searchQuery={searchQuery}
+        onSearchChange={(val) => { setSearchQuery(val); setPage(0); }}
+        searchPlaceholder="Tìm kiếm theo mã SKU, tên sản phẩm..."
+        viewTabs={viewTabs}
+        activeTab={currentActiveTab}
+        onTabChange={handleTabChange}
+        activeFiltersCount={activeFiltersCount}
+        onResetFilters={handleResetFilters}
+        filterControls={
+          <div className="w-52">
+            <Select value={selectedCategory} onValueChange={(val) => { setSelectedCategory(val); setPage(0); }}>
+              <SelectTrigger className="h-8 text-xs bg-white border-slate-200 rounded-[3px]">
+                <SelectValue placeholder="Nhóm sản phẩm" />
+              </SelectTrigger>
+              <SelectContent className="rounded-[3px]">
+                <SelectItem value="ALL">Tất cả nhóm</SelectItem>
+                <SelectItem value="Bản quyền Phần mềm">Bản quyền Phần mềm</SelectItem>
+                <SelectItem value="Dịch vụ Triển khai & Đào tạo">Dịch vụ Triển khai</SelectItem>
+                <SelectItem value="Phần cứng & Thiết bị">Phần cứng & Thiết bị</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-          <div>
-            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Tổng SKU Sản phẩm</div>
-            <div className="text-lg font-black text-slate-900 leading-tight">{totalElements}</div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl border border-indigo-100 px-4 py-3 flex items-center gap-3 shadow-xs hover:shadow-sm transition-shadow">
-          <div className="w-9 h-9 rounded-lg bg-indigo-50 flex items-center justify-center shrink-0">
-            <Layers className="w-4.5 h-4.5 text-indigo-600" />
-          </div>
-          <div>
-            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Gói Bản Quyền / SaaS</div>
-            <div className="text-lg font-black text-indigo-700 leading-tight">{softwareCount}</div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl border border-emerald-100 px-4 py-3 flex items-center gap-3 shadow-xs hover:shadow-sm transition-shadow">
-          <div className="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center shrink-0">
-            <CheckCircle2 className="w-4.5 h-4.5 text-emerald-600" />
-          </div>
-          <div>
-            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Gói Dịch Vụ Triển Khai</div>
-            <div className="text-lg font-black text-emerald-700 leading-tight">{serviceCount}</div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl border border-amber-100 px-4 py-3 flex items-center gap-3 shadow-xs hover:shadow-sm transition-shadow">
-          <div className="w-9 h-9 rounded-lg bg-amber-50 flex items-center justify-center shrink-0">
-            <DollarSign className="w-4.5 h-4.5 text-amber-600" />
-          </div>
-          <div>
-            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Đơn giá trung bình</div>
-            <div className="text-lg font-black text-amber-700 leading-tight">
-              {(avgPrice / 1_000_000).toFixed(1)} Tr ₫
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Search & Filter Toolbar ── */}
-      <Card className="p-3.5 bg-white border border-slate-200 rounded-xl shadow-xs space-y-3">
-        <div className="flex flex-col md:flex-row gap-2.5 items-stretch md:items-center justify-between">
-          <div className="relative flex-1">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-            <Input
-              placeholder="Tìm kiếm theo mã SKU, tên sản phẩm..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 pr-8 text-xs h-8.5 bg-slate-50/60 focus:bg-white border-slate-200 rounded-lg"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="w-48">
-              <Select value={selectedCategory} onValueChange={(val) => { setSelectedCategory(val); setPage(0); }}>
-                <SelectTrigger className="h-8.5 text-xs bg-slate-50/60 border-slate-200 rounded-lg">
-                  <SelectValue placeholder="Nhóm sản phẩm" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ALL">Tất cả nhóm</SelectItem>
-                  <SelectItem value="Bản quyền Phần mềm">Bản quyền Phần mềm</SelectItem>
-                  <SelectItem value="Dịch vụ Triển khai &amp; Đào tạo">Dịch vụ Triển khai</SelectItem>
-                  <SelectItem value="Phần cứng &amp; Thiết bị">Phần cứng &amp; Thiết bị</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {activeFiltersCount > 0 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleResetFilters}
-                className="text-xs text-slate-500 hover:text-slate-800 gap-1 h-8.5 px-2"
-              >
-                <RotateCcw className="w-3 h-3" />
-                <span>Đặt lại ({activeFiltersCount})</span>
-              </Button>
-            )}
-          </div>
-        </div>
-      </Card>
+        }
+      />
 
       {/* ── Products Table ── */}
-      <Card className="overflow-hidden border border-slate-200 rounded-xl bg-white shadow-xs">
+      <Card className="overflow-hidden border border-slate-200 rounded-[4px] bg-white shadow-none">
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
-              <TableRow className="bg-slate-50/80 hover:bg-slate-50/80 border-b border-slate-200">
-                <TableHead className="text-[11px] font-bold text-slate-600 uppercase tracking-wider py-3 pl-4">Mã SKU &amp; Tên Sản phẩm</TableHead>
-                <TableHead className="text-[11px] font-bold text-slate-600 uppercase tracking-wider py-3">Danh mục / Phân loại</TableHead>
-                <TableHead className="text-[11px] font-bold text-slate-600 uppercase tracking-wider py-3">Đơn vị tính</TableHead>
-                <TableHead className="text-[11px] font-bold text-slate-600 uppercase tracking-wider py-3">Đơn giá niêm yết</TableHead>
-                <TableHead className="text-[11px] font-bold text-slate-600 uppercase tracking-wider py-3">Trạng thái kinh doanh</TableHead>
-                <TableHead className="text-[11px] font-bold text-slate-600 uppercase tracking-wider py-3 text-right pr-4">Thao tác</TableHead>
+              <TableRow className="bg-[#F7F8F9] border-b border-slate-200 hover:bg-[#F7F8F9]">
+                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Mã SKU &amp; Tên Sản phẩm</TableHead>
+                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Danh mục / Phân loại</TableHead>
+                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Đơn vị tính</TableHead>
+                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Đơn giá niêm yết</TableHead>
+                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Trạng thái kinh doanh</TableHead>
+                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3 text-right pr-4">Thao tác</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -346,60 +284,60 @@ export const ProductsPage: React.FC = () => {
                 </TableRow>
               ) : (
                 products.map((product) => (
-                  <TableRow key={product.id} className="hover:bg-slate-50/80 transition-colors border-b border-slate-100 text-xs">
+                  <TableRow key={product.id} className="hover:bg-[#F1F2F4] transition-colors border-b border-[#EBECF0] text-xs">
                     {/* Cột 1: SKU & Tên */}
-                    <TableCell className="pl-4 py-3">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 border border-blue-100 shadow-2xs">
-                          <Package className="w-4 h-4" />
+                    <TableCell className="py-2 px-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-[3px] bg-[#E9F2FF] text-[#0C66E4] border border-[#C0D9FF] font-bold text-xs flex items-center justify-center shrink-0">
+                          <Package className="w-3.5 h-3.5" />
                         </div>
                         <div>
-                          <div className="font-bold text-slate-900">{product.name}</div>
-                          <div className="text-[11px] text-slate-400 mt-0.5 font-mono">{product.sku}</div>
+                          <div className="font-semibold text-slate-900">{product.name}</div>
+                          <div className="text-[11px] text-slate-400 font-mono">{product.sku}</div>
                         </div>
                       </div>
                     </TableCell>
 
                     {/* Cột 2: Danh mục */}
-                    <TableCell>
-                      <Badge variant="outline" className="bg-slate-50 text-slate-700 border-slate-200 text-[10px]">
+                    <TableCell className="py-2 px-3">
+                      <span className="bg-[#EBECF0] text-[#42526E] font-semibold text-[11px] uppercase tracking-wider px-1.5 py-0.5 rounded-[3px]">
                         {product.categoryName}
-                      </Badge>
+                      </span>
                     </TableCell>
 
                     {/* Cột 3: Đơn vị */}
-                    <TableCell className="text-slate-600 font-medium">
+                    <TableCell className="py-2 px-3 text-slate-600 font-medium">
                       {product.unit}
                     </TableCell>
 
                     {/* Cột 4: Đơn giá */}
-                    <TableCell>
-                      <div className="font-bold text-slate-900 font-mono text-xs">
-                        {product.unitPrice.toLocaleString('vi-VN')} ₫
+                    <TableCell className="py-2 px-3">
+                      <div className="font-semibold text-slate-900 font-mono text-xs">
+                        {(product.unitPrice || 0).toLocaleString('vi-VN')} ₫
                       </div>
                     </TableCell>
 
                     {/* Cột 5: Trạng thái */}
-                    <TableCell>
+                    <TableCell className="py-2 px-3">
                       {product.status === 'ACTIVE' ? (
-                        <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 font-bold text-[11px]">
+                        <span className="bg-[#E3FCEF] text-[#006644] font-bold rounded-[3px] text-[11px] uppercase tracking-wider px-1.5 py-0.5">
                           Đang kinh doanh
-                        </Badge>
+                        </span>
                       ) : (
-                        <Badge className="bg-slate-100 text-slate-700 border-slate-200 text-[11px]">
+                        <span className="bg-[#FFFAE6] text-[#974F0C] font-bold rounded-[3px] text-[11px] uppercase tracking-wider px-1.5 py-0.5">
                           Ngừng kinh doanh
-                        </Badge>
+                        </span>
                       )}
                     </TableCell>
 
                     {/* Cột 6: Thao tác */}
-                    <TableCell className="text-right pr-4">
+                    <TableCell className="py-2 px-3 text-right pr-4">
                       <div className="flex items-center justify-end gap-1">
                         <Button
                           variant="ghost"
                           size="icon"
                           onClick={() => handleOpenEdit(product)}
-                          className="h-7 w-7 text-slate-600 hover:text-blue-600 hover:bg-blue-50"
+                          className="h-7 w-7 rounded-[3px] text-slate-600 hover:text-[#0C66E4] hover:bg-[#E9F2FF]"
                           title="Chỉnh sửa sản phẩm"
                         >
                           <Edit className="w-3.5 h-3.5" />
@@ -408,7 +346,7 @@ export const ProductsPage: React.FC = () => {
                           variant="ghost"
                           size="icon"
                           onClick={() => handleDelete(product.id, product.name)}
-                          className="h-7 w-7 text-slate-600 hover:text-red-600 hover:bg-red-50"
+                          className="h-7 w-7 rounded-[3px] text-slate-600 hover:text-red-600 hover:bg-red-50"
                           title="Xóa sản phẩm"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -422,56 +360,16 @@ export const ProductsPage: React.FC = () => {
           </Table>
         </div>
 
-        {/* ── Pagination Bar ── */}
-        {!loading && products.length > 0 && (
-          <div className="px-4 py-3 bg-slate-50/50 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
-            <div>
-              Hiển thị <span className="font-bold text-slate-800">{page * pageSize + 1}</span> -{' '}
-              <span className="font-bold text-slate-800">{Math.min((page + 1) * pageSize, totalElements)}</span> trong tổng số{' '}
-              <span className="font-bold text-slate-800">{totalElements}</span> sản phẩm
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-7 w-7 border-slate-200"
-                onClick={() => setPage(0)}
-                disabled={page === 0}
-              >
-                <ChevronsLeft className="w-3.5 h-3.5" />
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-7 w-7 border-slate-200"
-                onClick={() => setPage((p) => Math.max(p - 1, 0))}
-                disabled={page === 0}
-              >
-                <ChevronLeft className="w-3.5 h-3.5" />
-              </Button>
-              <div className="px-2 font-medium text-slate-700">
-                Trang {page + 1} / {Math.max(totalPages, 1)}
-              </div>
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-7 w-7 border-slate-200"
-                onClick={() => setPage((p) => p + 1)}
-                disabled={page >= totalPages - 1}
-              >
-                <ChevronRight className="w-3.5 h-3.5" />
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-7 w-7 border-slate-200"
-                onClick={() => setPage(totalPages - 1)}
-                disabled={page >= totalPages - 1}
-              >
-                <ChevronsRight className="w-3.5 h-3.5" />
-              </Button>
-            </div>
-          </div>
+        {/* ── Standard Pagination Bar ── */}
+        {!loading && (
+          <StandardPagination
+            currentPage={page + 1}
+            totalPages={Math.max(totalPages, 1)}
+            totalElements={totalElements}
+            pageSize={pageSize}
+            onPageChange={(p) => setPage(p - 1)}
+            itemLabel="sản phẩm"
+          />
         )}
       </Card>
 

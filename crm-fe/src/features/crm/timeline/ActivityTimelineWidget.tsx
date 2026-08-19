@@ -22,7 +22,6 @@ import {
   Filter,
   MessageSquare,
   FileCheck,
-  ChevronDown,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -121,7 +120,7 @@ export const ActivityTimelineWidget: React.FC<ActivityTimelineWidgetProps> = ({
     return item.category === selectedCategory;
   });
 
-  const getEventIcon = (eventType: string, category: TimelineCategory) => {
+  const getEventIcon = (eventType: string, _category?: TimelineCategory) => {
     if (eventType.includes('CALL')) return <Phone className="w-3.5 h-3.5 text-emerald-600" />;
     if (eventType.includes('MEETING')) return <Users className="w-3.5 h-3.5 text-blue-600" />;
     if (eventType.includes('TASK')) return <CheckSquare className="w-3.5 h-3.5 text-purple-600" />;

@@ -16,13 +16,13 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-@RestController
-@RequestMapping("/api/integration/webhooks")
-public class WebhookController {
+@RestController("webhookDispatcherController")
+@RequestMapping("/api/integration/dispatcher/webhooks")
+public class WebhookDispatcherController {
 
 	private final WebhookDispatcherService webhookDispatcherService;
 
-	public WebhookController(WebhookDispatcherService webhookDispatcherService) {
+	public WebhookDispatcherController(WebhookDispatcherService webhookDispatcherService) {
 		this.webhookDispatcherService = webhookDispatcherService;
 	}
 

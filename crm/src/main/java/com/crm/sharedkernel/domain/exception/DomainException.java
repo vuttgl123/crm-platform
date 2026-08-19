@@ -19,6 +19,10 @@ public abstract class DomainException extends RuntimeException {
 				: messageArguments.clone();
 	}
 
+	protected DomainException(String errorCode, Object... messageArguments) {
+		this(ErrorCode.of(errorCode), messageArguments);
+	}
+
 	public final ErrorCode errorCode() {
 		return errorCode;
 	}

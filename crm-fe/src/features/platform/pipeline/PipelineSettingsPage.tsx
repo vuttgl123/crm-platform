@@ -2,8 +2,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   pipelineApi,
   PipelineItem,
-  PipelineStageItem,
-  PipelineType,
   StageCategory,
   ForecastCategory,
 } from '@/services/api/pipelineApi';
@@ -15,20 +13,11 @@ import { Badge } from '@/components/ui/badge';
 import {
   Workflow,
   Plus,
-  ArrowUp,
-  ArrowDown,
   Trash2,
-  Edit2,
   Check,
   RefreshCw,
-  Sparkles,
-  GitBranch,
-  ShieldAlert,
   Percent,
-  CheckCircle2,
   XCircle,
-  Clock,
-  Save,
   Loader2,
 } from 'lucide-react';
 import { toast } from 'sonner';

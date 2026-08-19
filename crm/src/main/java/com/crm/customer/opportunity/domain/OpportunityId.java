@@ -9,6 +9,10 @@ public record OpportunityId(UUID value) {
 		Objects.requireNonNull(value, "Opportunity ID value must not be null");
 	}
 
+	public static OpportunityId from(UUID value) {
+		return new OpportunityId(value);
+	}
+
 	public static OpportunityId from(String value) {
 		Objects.requireNonNull(value, "Opportunity ID string must not be null");
 		return new OpportunityId(UUID.fromString(value));

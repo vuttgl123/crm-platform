@@ -31,10 +31,6 @@ import {
   RefreshCw,
   Award,
   CheckCircle2,
-  AlertCircle,
-  HelpCircle,
-  BarChart3,
-  Users,
   Layers,
   ArrowUpRight,
 } from 'lucide-react';

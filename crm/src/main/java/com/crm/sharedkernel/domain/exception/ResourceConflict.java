@@ -6,4 +6,8 @@ public final class ResourceConflict extends DomainException {
 		super(errorCode, messageArguments);
 	}
 
+	public ResourceConflict(String errorCode, Object... messageArguments) {
+		super(errorCode, messageArguments);
+	}
+
 }

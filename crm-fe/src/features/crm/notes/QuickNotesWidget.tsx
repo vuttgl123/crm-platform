@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   noteApi,
-  NoteSummary,
-  CreateNoteRequest,
+  NoteItem,
+  NoteVisibility,
 } from '@/services/api/noteApi';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,13 +12,11 @@ import { Badge } from '@/components/ui/badge';
 import {
   MessageSquare,
   Plus,
-  Pin,
   Trash2,
   Lock,
   Globe,
   Loader2,
   Check,
-  Sparkles,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -37,7 +35,7 @@ export const QuickNotesWidget: React.FC<QuickNotesWidgetProps> = ({
   opportunityId,
   onNoteAdded,
 }) => {
-  const [notes, setNotes] = useState<NoteSummary[]>([]);
+  const [notes, setNotes] = useState<NoteItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showForm, setShowForm] = useState(false);
@@ -45,25 +43,30 @@ export const QuickNotesWidget: React.FC<QuickNotesWidgetProps> = ({
   // Form Fields
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
-  const [visibility, setVisibility] = useState<'PUBLIC' | 'PRIVATE' | 'TEAM_ONLY'>('PUBLIC');
+  const [visibility, setVisibility] = useState<NoteVisibility>('TEAM');
+
+  const targetType = accountId ? 'ACCOUNT' : contactId ? 'CONTACT' : leadId ? 'LEAD' : opportunityId ? 'OPPORTUNITY' : 'GENERAL';
+  const targetId = accountId || contactId || leadId || opportunityId || '';
 
   const fetchNotes = useCallback(async () => {
+    if (!targetId) {
+      setNotes([]);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
-      const data = await noteApi.list({
-        accountId,
-        contactId,
-        leadId,
-        opportunityId,
+      const res = await noteApi.search({
+        targetType,
+        targetId,
       });
-      setNotes(data || []);
+      setNotes(res.items || []);
     } catch {
-      // Fallback empty
       setNotes([]);
     } finally {
       setLoading(false);
     }
-  }, [accountId, contactId, leadId, opportunityId]);
+  }, [targetType, targetId]);
 
   useEffect(() => {
     fetchNotes();
@@ -79,13 +82,10 @@ export const QuickNotesWidget: React.FC<QuickNotesWidgetProps> = ({
     setIsSubmitting(true);
     try {
       await noteApi.create({
-        title,
-        body,
+        targetType,
+        targetId,
+        content: `**${title.trim()}**\n${body.trim()}`,
         visibility,
-        accountId,
-        contactId,
-        leadId,
-        opportunityId,
       });
       toast.success('Đã lưu ghi chú thành công!');
       setTitle('');
@@ -173,7 +173,7 @@ export const QuickNotesWidget: React.FC<QuickNotesWidgetProps> = ({
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => setVisibility(visibility === 'PUBLIC' ? 'PRIVATE' : 'PUBLIC')}
+                  onClick={() => setVisibility(visibility === 'TEAM' ? 'PRIVATE' : 'TEAM')}
                   className={`text-xs px-2.5 py-1 rounded-md border font-medium flex items-center gap-1.5 transition-all ${
                     visibility === 'PRIVATE'
                       ? 'bg-amber-50 text-amber-800 border-amber-200'
@@ -199,7 +199,11 @@ export const QuickNotesWidget: React.FC<QuickNotesWidgetProps> = ({
         )}
 
         {/* Notes List */}
-        {notes.length === 0 ? (
+        {loading ? (
+          <div className="py-6 text-center text-slate-400">
+            <Loader2 className="w-5 h-5 mx-auto animate-spin text-indigo-500" />
+          </div>
+        ) : notes.length === 0 ? (
           <div className="py-6 text-center text-slate-400 space-y-1">
             <MessageSquare className="w-6 h-6 mx-auto text-slate-300 stroke-1" />
             <p className="text-xs font-medium">Chưa có ghi chú nào cho mục này</p>
@@ -212,7 +216,9 @@ export const QuickNotesWidget: React.FC<QuickNotesWidgetProps> = ({
                 className="p-3 bg-white border border-slate-200/80 rounded-xl hover:border-indigo-200 hover:shadow-2xs transition-all space-y-1.5"
               >
                 <div className="flex items-center justify-between gap-2">
-                  <span className="font-bold text-xs text-slate-900 line-clamp-1">{note.title}</span>
+                  <span className="font-bold text-xs text-slate-900 line-clamp-1">
+                    {note.content.startsWith('**') ? note.content.split('\n')[0].replace(/\*\*/g, '') : 'Ghi chú'}
+                  </span>
                   <div className="flex items-center gap-1">
                     <span className="text-[10px] text-slate-400 font-mono">
                       {new Date(note.createdAt).toLocaleDateString('vi-VN')}
@@ -228,11 +234,11 @@ export const QuickNotesWidget: React.FC<QuickNotesWidgetProps> = ({
                 </div>
 
                 <p className="text-xs text-slate-600 leading-relaxed whitespace-pre-wrap">
-                  {note.bodyPreview || 'Chi tiết ghi chú...'}
+                  {note.content.startsWith('**') ? note.content.split('\n').slice(1).join('\n') : note.content}
                 </p>
 
                 <div className="flex items-center justify-between pt-1 border-t border-slate-50 text-[10px] text-slate-400">
-                  <span>Bởi: <strong className="text-slate-600">{note.ownerUserId || 'Người dùng'}</strong></span>
+                  <span>Bởi: <strong className="text-slate-600">{note.createdBy || 'Người dùng'}</strong></span>
                   <Badge variant="outline" className="text-[9px] px-1 py-0 border-slate-200">
                     {note.visibility === 'PRIVATE' ? 'Riêng tư' : 'Toàn đội'}
                   </Badge>

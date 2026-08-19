@@ -9,6 +9,10 @@ public record OrderId(UUID value) {
 		Objects.requireNonNull(value, "Order ID value must not be null");
 	}
 
+	public static OrderId from(UUID value) {
+		return new OrderId(value);
+	}
+
 	public static OrderId from(String value) {
 		Objects.requireNonNull(value, "Order ID string must not be null");
 		return new OrderId(UUID.fromString(value));

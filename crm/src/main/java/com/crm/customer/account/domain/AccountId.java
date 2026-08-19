@@ -9,6 +9,10 @@ public record AccountId(UUID value) {
 		Objects.requireNonNull(value, "value must not be null");
 	}
 
+	public static AccountId from(UUID value) {
+		return new AccountId(value);
+	}
+
 	public static AccountId from(String value) {
 		return new AccountId(UUID.fromString(Objects.requireNonNull(value,
 				"value must not be null")));

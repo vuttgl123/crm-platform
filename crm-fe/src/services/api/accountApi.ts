@@ -55,9 +55,11 @@ export interface AccountSummaryResponse {
 
 export interface PageResult<T> {
   items: T[];
+  content?: T[];
   page: number;
   size: number;
-  totalItems: number;
+  totalElements: number;
+  totalItems?: number;
   totalPages: number;
 }
 

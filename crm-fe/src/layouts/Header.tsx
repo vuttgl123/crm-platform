@@ -13,6 +13,10 @@ import {
   Sparkles,
   AlertTriangle,
   Clock,
+  Plus,
+  UserPlus,
+  Briefcase,
+  TrendingUp,
 } from 'lucide-react';
 import { useAuth } from '@/core/session/useAuth';
 import { useTranslation } from 'react-i18next';
@@ -109,14 +113,11 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <TooltipProvider>
-      <header className="h-14 bg-white border-b border-slate-200 sticky top-0 z-30 flex items-center justify-between px-4 sm:px-6">
+      <header className="h-13 bg-white border-b border-slate-200 sticky top-0 z-30 flex items-center justify-between px-4">
         {/* Left: Breadcrumbs Navigation */}
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-          {/* Breadcrumb */}
-
-          {/* Breadcrumb */}
-          <nav aria-label="Breadcrumb" className="hidden sm:flex items-center gap-1.5 text-xs text-slate-500">
-            <Link to="/app/overview" className="hover:text-blue-600 font-semibold transition-colors">
+          <nav aria-label="Breadcrumb" className="hidden sm:flex items-center gap-1.5 text-xs text-slate-500 font-medium">
+            <Link to="/app/overview" className="hover:text-[#0C66E4] font-semibold transition-colors text-slate-700">
               VUM CRM
             </Link>
             {pathSegments.map((segment, index) => {
@@ -129,9 +130,9 @@ export const Header: React.FC<HeaderProps> = ({
                 <React.Fragment key={path}>
                   <span className="text-slate-300">/</span>
                   {isLast ? (
-                    <span className="font-bold text-slate-900">{formatted}</span>
+                    <span className="font-semibold text-slate-900">{formatted}</span>
                   ) : (
-                    <Link to={path} className="hover:text-blue-600 transition-colors">
+                    <Link to={path} className="hover:text-[#0C66E4] transition-colors">
                       {formatted}
                     </Link>
                   )}
@@ -141,29 +142,64 @@ export const Header: React.FC<HeaderProps> = ({
           </nav>
         </div>
 
-        {/* Center: Expanded Long Command Palette Search Trigger */}
-        <div className="flex-1 max-w-2xl mx-4 sm:mx-8 hidden md:block">
+        {/* Center: Jira Quick Search Box */}
+        <div className="flex-1 max-w-md mx-4 hidden md:block">
           <button
             onClick={onOpenCommandPalette}
-            className="w-full flex items-center justify-between px-4 py-1.5 bg-slate-100/80 hover:bg-slate-200/70 border border-slate-200 rounded-lg text-xs text-slate-500 transition-colors shadow-2xs"
+            className="w-full flex items-center justify-between px-3 h-8 bg-slate-100/70 hover:bg-slate-100 border border-slate-200 rounded-[3px] text-xs text-slate-500 transition-colors"
           >
-            <span className="flex items-center gap-2.5">
-              <Search className="w-4 h-4 text-slate-400" />
-              <span>{t('common.searchPlaceholder', 'Tìm kiếm nhanh chức năng, khách hàng, hợp đồng, báo cáo (Ctrl+K)...')}</span>
+            <span className="flex items-center gap-2">
+              <Search className="w-3.5 h-3.5 text-slate-400" />
+              <span>{t('common.searchPlaceholder', 'Tìm kiếm nhanh (Ctrl+K)...')}</span>
             </span>
-            <kbd className="px-2 py-0.5 text-[10px] font-mono bg-white border border-slate-300 rounded text-slate-500 font-semibold">
+            <kbd className="px-1.5 py-0.5 text-[10px] font-mono bg-white border border-slate-200 rounded text-slate-400 font-medium">
               Ctrl+K
             </kbd>
           </button>
         </div>
 
-        {/* Right: Language Switcher, Notifications & User Avatar */}
-        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+        {/* Right: Quick Create, Language Switcher, Notifications & User Avatar */}
+        <div className="flex items-center gap-2 shrink-0">
+          {/* Quick Create Button (Jira Blue) */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                size="sm"
+                className="hidden sm:inline-flex items-center gap-1.5 h-8 px-3 bg-[#0C66E4] hover:bg-[#0052CC] text-white font-medium text-xs rounded-[3px] shadow-none"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Tạo mới</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48 text-xs rounded-[3px] border-slate-200">
+              <DropdownMenuLabel className="text-[11px] text-slate-400 font-semibold uppercase tracking-wider">
+                Tạo nhanh đối tượng
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => navigate('/app/crm/accounts')} className="gap-2 cursor-pointer">
+                <Building2 className="w-4 h-4 text-[#0C66E4]" />
+                <span>Khách hàng mới</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate('/app/crm/contacts')} className="gap-2 cursor-pointer">
+                <UserPlus className="w-4 h-4 text-emerald-600" />
+                <span>Liên hệ mới</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate('/app/crm/leads')} className="gap-2 cursor-pointer">
+                <TrendingUp className="w-4 h-4 text-purple-600" />
+                <span>Lead Tiềm năng</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate('/app/sales/deals')} className="gap-2 cursor-pointer">
+                <Briefcase className="w-4 h-4 text-amber-600" />
+                <span>Cơ hội bán hàng</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
           {/* Active Tenant / Organization Badge */}
           {session?.tenant?.display_name && (
-            <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 bg-slate-100/90 border border-slate-200 rounded-md text-xs font-semibold text-slate-800">
-              <Building2 className="w-3.5 h-3.5 text-blue-600" />
-              <span className="max-w-44 truncate">{session.tenant.display_name}</span>
+            <div className="hidden lg:flex items-center gap-1.5 px-2.5 h-8 bg-slate-50 border border-slate-200 rounded-[3px] text-xs font-medium text-slate-700">
+              <Building2 className="w-3.5 h-3.5 text-[#0C66E4]" />
+              <span className="max-w-40 truncate">{session.tenant.display_name}</span>
             </div>
           )}
 
@@ -172,7 +208,7 @@ export const Header: React.FC<HeaderProps> = ({
             variant="ghost"
             size="icon"
             onClick={onOpenCommandPalette}
-            className="md:hidden h-8 w-8 text-slate-500"
+            className="md:hidden h-8 w-8 text-slate-500 rounded-[3px]"
             aria-label="Open search"
           >
             <Search className="w-4 h-4" />
@@ -182,10 +218,10 @@ export const Header: React.FC<HeaderProps> = ({
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
-                variant="outline"
+                variant="ghost"
                 size="sm"
                 onClick={toggleLanguage}
-                className="h-8 px-2.5 text-xs gap-1.5 text-slate-700 bg-slate-50 hover:bg-slate-100 font-semibold border-slate-200"
+                className="h-8 px-2 text-xs gap-1 text-slate-600 hover:bg-slate-100 font-semibold rounded-[3px]"
               >
                 <Globe className="w-3.5 h-3.5 text-slate-500" />
                 <span>{i18n.language && i18n.language.startsWith('en') ? 'EN' : 'VIE'}</span>

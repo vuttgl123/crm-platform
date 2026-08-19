@@ -1,21 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { activityApi } from '@/services/api/activityApi';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
 } from '@/components/ui/dialog';
 import {
   Phone,
-  PhoneCall,
   PhoneOff,
   PhoneForwarded,
-  Clock,
   CheckCircle2,
   AlertCircle,
   Smile,
@@ -23,8 +17,6 @@ import {
   Frown,
   Save,
   Loader2,
-  User,
-  Building2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -52,8 +44,8 @@ export const QuickCallLogModal: React.FC<QuickCallLogModalProps> = ({
   onClose,
   targetName,
   targetPhone,
-  entityType,
-  entityId,
+  entityType: _entityType,
+  entityId: _entityId,
   onCallLogged,
 }) => {
   const [seconds, setSeconds] = useState(0);

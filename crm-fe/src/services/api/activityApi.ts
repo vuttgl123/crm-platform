@@ -131,15 +131,6 @@ export interface ActivitySearchRequest {
   size?: number;
 }
 
-export interface PageResult<T> {
-  items: T[];
-  content?: T[];
-  page: number;
-  size: number;
-  totalElements: number;
-  totalPages: number;
-}
-
 export const ACTIVITY_TYPE_CONFIG: Record<string, { label: string; icon: string; className: string }> = {
   CALL: { label: 'Cuộc gọi điện', icon: 'Phone', className: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
   MEETING: { label: 'Cuộc họp / Gặp gỡ', icon: 'Users', className: 'bg-blue-50 text-blue-700 border-blue-200' },

@@ -1,4 +1,5 @@
 import { apiFetch } from './apiClient';
+import type { PageResult } from './accountApi';
 
 export type OpportunityStage =
   | 'PROSPECTING'
@@ -147,15 +148,6 @@ export interface OpportunitySearchParams {
   ownerId?: string;
   page?: number;
   size?: number;
-}
-
-export interface PageResult<T> {
-  items: T[];
-  content?: T[];
-  page: number;
-  size: number;
-  totalElements: number;
-  totalPages: number;
 }
 
 export const PIPELINE_STAGES: { id: OpportunityStage; title: string; defaultProb: number; colorClass: string }[] = [

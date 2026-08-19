@@ -3,7 +3,6 @@ import { toast } from 'sonner';
 import {
   Shield,
   Plus,
-  Search,
   Lock,
   Trash2,
   Key,
@@ -21,24 +20,12 @@ import {
   Check,
   ChevronRight,
   ChevronLeft,
-  ChevronsLeft,
-  ChevronsRight,
-  X,
-  RotateCcw,
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from '@/components/ui/select';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import {
   Dialog,
@@ -66,6 +53,9 @@ import {
 } from '@/services/api/roleApi';
 import { DynamicForm } from '@/components/common/DynamicForm';
 import { EmptyState } from '@/components/common/EmptyState';
+import { StandardPageHeader } from '@/components/common/StandardPageHeader';
+import { StandardFilterBar } from '@/components/common/StandardFilterBar';
+import { StandardPagination } from '@/components/common/StandardPagination';
 import {
   createRoleFormSchema,
   editRoleFormSchema,
@@ -157,10 +147,16 @@ export const RolesPage: React.FC = () => {
         roleApi.getPermissions().catch(() => []),
       ]);
 
-      setRoles(fetchedRoles || []);
+      const roleList: RoleSummaryResponse[] = Array.isArray(fetchedRoles)
+        ? fetchedRoles
+        : (fetchedRoles as any)?.items || (fetchedRoles as any)?.content || [];
+      setRoles(roleList);
 
-      if (fetchedPerms && fetchedPerms.length > 0) {
-        setPermissions(fetchedPerms.map(mapPermissionResponse));
+      const permList: PermissionResponse[] = Array.isArray(fetchedPerms)
+        ? fetchedPerms
+        : (fetchedPerms as any)?.items || (fetchedPerms as any)?.content || [];
+      if (permList && permList.length > 0) {
+        setPermissions(permList.map(mapPermissionResponse));
       } else {
         setPermissions([]);
       }
@@ -432,19 +428,6 @@ export const RolesPage: React.FC = () => {
     }
   }, [currentPage, totalPages]);
 
-  const getVisiblePageNumbers = (current: number, total: number) => {
-    if (total <= 5) {
-      return Array.from({ length: total }, (_, i) => i + 1);
-    }
-    if (current <= 3) {
-      return [1, 2, 3, 4, 5];
-    }
-    if (current >= total - 2) {
-      return [total - 4, total - 3, total - 2, total - 1, total];
-    }
-    return [current - 2, current - 1, current, current + 1, current + 2];
-  };
-
   const filteredCatalogPermissions = permissions.filter((perm) => {
     const permCode = perm.permissionCode || '';
     const permDesc = perm.description || '';
@@ -479,185 +462,100 @@ export const RolesPage: React.FC = () => {
   const role2 = useMemo(() => roles.find((r) => r.id === compareRole2Id) || roles[1] || roles[0], [roles, compareRole2Id]);
 
   return (
-    <div className="space-y-5 pb-12 font-sans w-full">
-      {/* ── Page Header ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-bold text-slate-900 flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shadow-sm shrink-0">
-              <Shield className="w-4.5 h-4.5 text-white" />
-            </div>
-            Quản lý Vai trò &amp; Phân quyền
-          </h1>
-          <p className="text-xs text-slate-500 mt-1 ml-10.5">
-            Thiết lập ma trận phân quyền, cấp quyền chi tiết theo phân hệ và phạm vi dữ liệu cho tổ chức
-          </p>
-        </div>
+    <div className="space-y-4 pb-12 font-sans w-full">
+      {/* Standard Page Header */}
+      <StandardPageHeader
+        title="Quản trị Vai trò & Ma trận Phân quyền"
+        subtitle="Mô hình kiểm soát truy cập dựa trên vai trò (RBAC), phạm vi dữ liệu theo phòng ban & phân bổ quyền hệ thống"
+        badgeCount={roles.length}
+        badgeLabel="vai trò"
+        actions={
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={fetchRolesAndPermissions}
+              disabled={loading}
+              className="text-xs font-medium text-slate-700 bg-white border-slate-200 hover:bg-slate-50 gap-1.5 h-8 rounded-[3px]"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+              <span>Làm mới</span>
+            </Button>
 
-        <div className="flex items-center gap-2 shrink-0">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={fetchRolesAndPermissions}
-            disabled={loading}
-            className="text-xs gap-1.5 border-slate-200 h-8"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-            <span>Làm mới</span>
-          </Button>
-
-          <Button
-            size="sm"
-            onClick={handleOpenCreateModal}
-            className="text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white gap-1.5 shadow-xs h-8"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Thêm Vai trò Mới</span>
-          </Button>
-        </div>
-      </div>
-
-      {/* ── Quick Stat KPI Cards ── */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="bg-white rounded-xl border border-slate-200 px-4 py-3 flex items-center gap-3 shadow-xs hover:shadow-sm transition-shadow">
-          <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
-            <Layers className="w-4.5 h-4.5 text-blue-600" />
-          </div>
-          <div>
-            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Tổng số Vai trò</div>
-            <div className="text-lg font-black text-slate-900 leading-tight">{roles.length}</div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl border border-purple-100 px-4 py-3 flex items-center gap-3 shadow-xs hover:shadow-sm transition-shadow">
-          <div className="w-9 h-9 rounded-lg bg-purple-50 flex items-center justify-center shrink-0">
-            <Lock className="w-4.5 h-4.5 text-purple-600" />
-          </div>
-          <div>
-            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Vai trò Hệ thống</div>
-            <div className="text-lg font-black text-purple-700 leading-tight">
-              {roles.filter((r) => r.isSystem || r.system).length}
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl border border-emerald-100 px-4 py-3 flex items-center gap-3 shadow-xs hover:shadow-sm transition-shadow">
-          <div className="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center shrink-0">
-            <Sparkles className="w-4.5 h-4.5 text-emerald-600" />
-          </div>
-          <div>
-            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Vai trò Tùy chỉnh</div>
-            <div className="text-lg font-black text-emerald-700 leading-tight">
-              {roles.filter((r) => !r.isSystem && !r.system).length}
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl border border-amber-100 px-4 py-3 flex items-center gap-3 shadow-xs hover:shadow-sm transition-shadow">
-          <div className="w-9 h-9 rounded-lg bg-amber-50 flex items-center justify-center shrink-0">
-            <Key className="w-4.5 h-4.5 text-amber-600" />
-          </div>
-          <div>
-            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Danh mục Quyền</div>
-            <div className="text-lg font-black text-amber-700 leading-tight">{permissions.length}</div>
-          </div>
-        </div>
-      </div>
+            <Button
+              size="sm"
+              onClick={handleOpenCreateModal}
+              className="text-xs font-semibold bg-[#0C66E4] hover:bg-[#0052CC] text-white gap-1.5 shadow-none h-8 rounded-[3px]"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Thêm Vai trò</span>
+            </Button>
+          </>
+        }
+      />
 
       {/* ── Main Tabs Container ── */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="bg-slate-100 p-1 border border-slate-200">
-          <TabsTrigger value="roles" className="text-xs font-semibold gap-1.5">
-            <Layers className="w-3.5 h-3.5" />
-            <span>Vai trò Phân quyền ({roles.length})</span>
+        <TabsList className="bg-slate-100 p-0.5 border border-slate-200 rounded-[4px] h-9">
+          <TabsTrigger value="roles" className="text-xs font-semibold gap-2 rounded-[3px] data-[state=active]:bg-white data-[state=active]:text-[#0C66E4] data-[state=active]:shadow-none">
+            <Layers className="w-3.5 h-3.5 text-[#0C66E4]" />
+            <span>Danh sách Vai trò</span>
+            <span className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.2 rounded-full font-mono font-bold">
+              {roles.length}
+            </span>
           </TabsTrigger>
-          <TabsTrigger value="catalog" className="text-xs font-semibold gap-1.5">
-            <Key className="w-3.5 h-3.5" />
-            <span>Danh mục Quyền ({permissions.length})</span>
+          <TabsTrigger value="catalog" className="text-xs font-semibold gap-2 rounded-[3px] data-[state=active]:bg-white data-[state=active]:text-[#0C66E4] data-[state=active]:shadow-none">
+            <Key className="w-3.5 h-3.5 text-amber-600" />
+            <span>Danh mục Quyền Hệ thống</span>
+            <span className="text-[10px] bg-slate-200 text-slate-700 px-1.5 py-0.2 rounded-full font-mono">
+              {permissions.length}
+            </span>
           </TabsTrigger>
-          <TabsTrigger value="compare" className="text-xs font-semibold gap-1.5">
-            <BarChart2 className="w-3.5 h-3.5" />
+          <TabsTrigger value="compare" className="text-xs font-semibold gap-2 rounded-[3px] data-[state=active]:bg-white data-[state=active]:text-[#0C66E4] data-[state=active]:shadow-none">
+            <BarChart2 className="w-3.5 h-3.5 text-indigo-600" />
             <span>So sánh Ma trận Quyền</span>
           </TabsTrigger>
         </TabsList>
 
         {/* TAB 1: ROLES TABLE & LIST */}
-        <TabsContent value="roles" className="space-y-4">
+        <TabsContent value="roles" className="space-y-3">
           {/* ── Filter & Search Bar ── */}
-          <Card className="shadow-xs border-slate-200 w-full">
-            <CardContent className="py-3 px-4">
-              <div className="flex flex-col md:flex-row items-center gap-2.5">
-                {/* Search Input */}
-                <div className="relative w-full md:w-[280px] shrink-0">
-                  <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400" />
-                  <Input
-                    placeholder="Tìm theo mã hoặc tên vai trò..."
-                    value={searchQuery}
-                    onChange={(e) => {
-                      setSearchQuery(e.target.value);
-                      setCurrentPage(1);
-                    }}
-                    className="pl-8 pr-8 text-xs h-9 border-slate-200"
-                  />
-                  {searchQuery && (
-                    <button
-                      onClick={() => {
-                        setSearchQuery('');
-                        setCurrentPage(1);
-                      }}
-                      className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                </div>
-
-                {/* Filter Dropdowns */}
-                <div className="flex items-center gap-2 w-full md:w-auto flex-wrap">
-                  <SearchableSelect
-                    options={[
-                      { value: 'ALL', label: 'Tất cả loại vai trò' },
-                      { value: 'SYSTEM', label: 'Vai trò Hệ thống', badge: 'System' },
-                      { value: 'CUSTOM', label: 'Vai trò Tùy chỉnh', badge: 'Custom' },
-                    ]}
-                    value={roleTypeFilter}
-                    onValueChange={(val) => {
-                      setRoleTypeFilter(val);
-                      setCurrentPage(1);
-                    }}
-                    placeholder="Tất cả loại vai trò"
-                    searchPlaceholder="Tìm loại vai trò..."
-                    className="w-[180px]"
-                  />
-
-                  {/* Reset Button */}
-                  {activeRolesFiltersCount > 0 && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={handleResetRolesFilter}
-                      className="h-9 px-2 text-xs text-slate-500 hover:text-red-600 gap-1"
-                    >
-                      <RotateCcw className="w-3.5 h-3.5" />
-                      <span>Đặt lại ({activeRolesFiltersCount})</span>
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <StandardFilterBar
+            searchQuery={searchQuery}
+            onSearchChange={(val: string) => { setSearchQuery(val); setCurrentPage(1); }}
+            searchPlaceholder="Tìm theo mã hoặc tên vai trò..."
+            activeFiltersCount={activeRolesFiltersCount}
+            onResetFilters={handleResetRolesFilter}
+            filterControls={
+              <SearchableSelect
+                options={[
+                  { value: 'ALL', label: 'Tất cả loại vai trò' },
+                  { value: 'SYSTEM', label: 'Vai trò Hệ thống', badge: 'System' },
+                  { value: 'CUSTOM', label: 'Vai trò Tùy chỉnh', badge: 'Custom' },
+                ]}
+                value={roleTypeFilter}
+                onValueChange={(val: string) => {
+                  setRoleTypeFilter(val);
+                  setCurrentPage(1);
+                }}
+                placeholder="Tất cả loại vai trò"
+                searchPlaceholder="Tìm loại vai trò..."
+                className="w-[180px] h-8 rounded-[3px] text-xs"
+              />
+            }
+          />
 
           {/* Roles Table Card */}
-          <Card className="shadow-xs border-slate-200 w-full overflow-hidden">
+          <Card className="border border-slate-200 rounded-[4px] w-full overflow-hidden bg-white shadow-none">
             <Table>
-              <TableHeader className="bg-slate-50/90">
-                <TableRow className="text-xs">
-                  <TableHead className="font-bold text-slate-900">Mã Vai trò (Role Code)</TableHead>
-                  <TableHead className="font-bold text-slate-900">Tên Vai trò</TableHead>
-                  <TableHead className="font-bold text-slate-900">Mô tả Chức năng</TableHead>
-                  <TableHead className="font-bold text-slate-900">Số Quyền Gán</TableHead>
-                  <TableHead className="font-bold text-slate-900">Phân loại</TableHead>
-                  <TableHead className="font-bold text-slate-900 text-right pr-6">Thao tác</TableHead>
+              <TableHeader className="bg-[#F7F8F9] border-b border-slate-200">
+                <TableRow className="hover:bg-[#F7F8F9]">
+                  <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Mã Vai trò (Role Code)</TableHead>
+                  <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Tên Vai trò</TableHead>
+                  <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Mô tả Chức năng</TableHead>
+                  <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Số Quyền Gán</TableHead>
+                  <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Phân loại</TableHead>
+                  <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3 text-right pr-6">Thao tác</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody className="text-xs">
@@ -688,22 +586,31 @@ export const RolesPage: React.FC = () => {
                         {role.description || 'Chưa cập nhật mô tả'}
                       </TableCell>
                       <TableCell className="text-xs">
-                        <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 font-bold gap-1 text-[11px]">
-                          <Key className="w-3 h-3 text-blue-600" />
-                          {role.permissionCount} / {permissions.length} Quyền
-                        </Badge>
+                        <div className="flex items-center gap-2">
+                          <div className="w-16 h-1.5 rounded-full bg-slate-100 border border-slate-200 overflow-hidden shrink-0">
+                            <div
+                              className="h-full bg-blue-600 rounded-full"
+                              style={{
+                                width: `${Math.min(100, Math.round((role.permissionCount / Math.max(1, permissions.length)) * 100))}%`,
+                              }}
+                            />
+                          </div>
+                          <span className="text-[11px] font-mono font-bold text-slate-700">
+                            {role.permissionCount}/{permissions.length}
+                          </span>
+                        </div>
                       </TableCell>
                       <TableCell className="text-xs">
                         {isSys ? (
-                          <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200 font-semibold gap-1 text-[10px]">
-                            <Lock className="w-3 h-3 text-purple-600" />
+                          <span className="inline-flex items-center gap-1 bg-[#EAE6FF] text-[#403294] font-bold rounded-[3px] text-[11px] uppercase tracking-wider px-1.5 py-0.5">
+                            <Lock className="w-2.5 h-2.5 text-[#403294]" />
                             Hệ thống (System)
-                          </Badge>
+                          </span>
                         ) : (
-                          <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-300 font-semibold gap-1 text-[10px]">
-                            <Sparkles className="w-3 h-3 text-emerald-600" />
+                          <span className="inline-flex items-center gap-1 bg-[#E3FCEF] text-[#006644] font-bold rounded-[3px] text-[11px] uppercase tracking-wider px-1.5 py-0.5">
+                            <Sparkles className="w-2.5 h-2.5 text-[#006644]" />
                             Tùy chỉnh (Custom)
-                          </Badge>
+                          </span>
                         )}
                       </TableCell>
                       <TableCell className="text-right pr-6">
@@ -712,7 +619,7 @@ export const RolesPage: React.FC = () => {
                             variant="ghost"
                             size="icon"
                             onClick={() => handleOpenDetail(role)}
-                            className="h-7 w-7 text-slate-600 hover:text-blue-600 hover:bg-blue-50"
+                            className="h-7 w-7 rounded-[3px] text-slate-600 hover:text-[#0C66E4] hover:bg-[#E9F2FF]"
                             title="Xem chi tiết & Phân quyền"
                           >
                             <Eye className="w-3.5 h-3.5" />
@@ -722,7 +629,7 @@ export const RolesPage: React.FC = () => {
                             variant="ghost"
                             size="icon"
                             onClick={() => handleCloneRole(role)}
-                            className="h-7 w-7 text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+                            className="h-7 w-7 rounded-[3px] text-slate-600 hover:text-slate-900 hover:bg-[#EBECF0]"
                             title="Nhân bản Vai trò"
                           >
                             <Copy className="w-3.5 h-3.5" />
@@ -733,7 +640,7 @@ export const RolesPage: React.FC = () => {
                               variant="ghost"
                               size="icon"
                               onClick={() => handleDeleteRole(role)}
-                              className="h-7 w-7 text-slate-600 hover:text-red-600 hover:bg-red-50"
+                              className="h-7 w-7 rounded-[3px] text-slate-600 hover:text-red-600 hover:bg-red-50"
                               title="Xóa Vai trò"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
@@ -747,186 +654,75 @@ export const RolesPage: React.FC = () => {
               </TableBody>
             </Table>
 
-            {/* Pagination Controls Bar */}
-            {filteredRoles.length > 0 && (
-              <div className="px-4 py-3 bg-slate-50/80 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
-                <div className="flex items-center gap-4 text-slate-600">
-                  <span>
-                    Hiển thị <strong className="text-slate-900 font-bold">{Math.min((currentPage - 1) * pageSize + 1, filteredRoles.length)} - {Math.min(currentPage * pageSize, filteredRoles.length)}</strong> trên tổng số <strong className="text-slate-900 font-bold">{filteredRoles.length}</strong> vai trò
-                  </span>
-
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-slate-500">Số hàng:</span>
-                    <Select
-                      value={String(pageSize)}
-                      onValueChange={(v) => {
-                        setPageSize(Number(v));
-                        setCurrentPage(1);
-                      }}
-                    >
-                      <SelectTrigger className="h-7 w-16 text-xs bg-white border-slate-200">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="5">5</SelectItem>
-                        <SelectItem value="10">10</SelectItem>
-                        <SelectItem value="20">20</SelectItem>
-                        <SelectItem value="50">50</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-1">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage(1)}
-                    disabled={currentPage === 1}
-                    className="h-8 px-2 text-xs border-slate-200"
-                    title="Trang đầu"
-                  >
-                    <ChevronsLeft className="w-3.5 h-3.5" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-                    disabled={currentPage === 1}
-                    className="h-8 px-2 text-xs border-slate-200"
-                    title="Trang trước"
-                  >
-                    <ChevronLeft className="w-3.5 h-3.5" />
-                  </Button>
-
-                  {getVisiblePageNumbers(currentPage, totalPages).map((pageNum) => (
-                    <Button
-                      key={pageNum}
-                      variant={currentPage === pageNum ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => setCurrentPage(pageNum)}
-                      className={`h-8 w-8 text-xs font-semibold p-0 ${
-                        currentPage === pageNum
-                          ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                          : 'border-slate-200 text-slate-700 hover:bg-slate-100'
-                      }`}
-                    >
-                      {pageNum}
-                    </Button>
-                  ))}
-
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
-                    disabled={currentPage === totalPages}
-                    className="h-8 px-2 text-xs border-slate-200"
-                    title="Trang tiếp"
-                  >
-                    <ChevronRight className="w-3.5 h-3.5" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage(totalPages)}
-                    disabled={currentPage === totalPages}
-                    className="h-8 px-2 text-xs border-slate-200"
-                    title="Trang cuối"
-                  >
-                    <ChevronsRight className="w-3.5 h-3.5" />
-                  </Button>
-                </div>
-              </div>
-            )}
+            {/* Standard Pagination Controls Bar */}
+            <StandardPagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalElements={filteredRoles.length}
+              pageSize={pageSize}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={setPageSize}
+              itemLabel="vai trò"
+            />
           </Card>
         </TabsContent>
 
-        {/* TAB 2: SYSTEM PERMISSION CATALOG */}
-        <TabsContent value="catalog" className="space-y-4">
+        {/* TAB 2: SYSTEM PERMISSIONS CATALOG */}
+        <TabsContent value="catalog" className="space-y-3">
           {/* ── Filter & Search Bar ── */}
-          <Card className="shadow-xs border-slate-200 w-full">
-            <CardContent className="py-3 px-4">
-              <div className="flex flex-col md:flex-row items-center gap-2.5">
-                {/* Search Input */}
-                <div className="relative w-full md:w-[280px] shrink-0">
-                  <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400" />
-                  <Input
-                    placeholder="Tìm theo mã hoặc mô tả quyền..."
-                    value={permSearchQuery}
-                    onChange={(e) => setPermSearchQuery(e.target.value)}
-                    className="pl-8 pr-8 text-xs h-9 border-slate-200"
-                  />
-                  {permSearchQuery && (
-                    <button
-                      onClick={() => setPermSearchQuery('')}
-                      className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                </div>
+          <StandardFilterBar
+            searchQuery={permSearchQuery}
+            onSearchChange={(val: string) => setPermSearchQuery(val)}
+            searchPlaceholder="Tìm theo mã hoặc mô tả quyền..."
+            activeFiltersCount={activeCatalogFiltersCount}
+            onResetFilters={handleResetCatalogFilter}
+            filterControls={
+              <>
+                <SearchableSelect
+                  options={[
+                    { value: 'ALL', label: `Tất cả Phân hệ (${permissions.length})` },
+                    ...moduleList.map((m) => ({
+                      value: m.code,
+                      label: m.name,
+                      badge: `${m.count}`,
+                    })),
+                  ]}
+                  value={selectedModuleFilter}
+                  onValueChange={setSelectedModuleFilter}
+                  placeholder="Tất cả Phân hệ"
+                  searchPlaceholder="Tìm kiếm phân hệ..."
+                  className="w-[180px] h-8 rounded-[3px] text-xs"
+                />
 
-                {/* Filter Dropdowns */}
-                <div className="flex items-center gap-2 w-full md:w-auto flex-wrap">
-                  <SearchableSelect
-                    options={[
-                      { value: 'ALL', label: `Tất cả Phân hệ (${permissions.length})` },
-                      ...moduleList.map((m) => ({
-                        value: m.code,
-                        label: m.name,
-                        badge: `${m.count}`,
-                      })),
-                    ]}
-                    value={selectedModuleFilter}
-                    onValueChange={setSelectedModuleFilter}
-                    placeholder="Tất cả Phân hệ"
-                    searchPlaceholder="Tìm kiếm phân hệ..."
-                    className="w-[200px]"
-                  />
-
-                  <SearchableSelect
-                    options={[
-                      { value: 'ALL', label: 'Tất cả Mức Rủi ro' },
-                      { value: 'NORMAL', label: 'Bình thường (Normal)', badge: 'Normal' },
-                      { value: 'SENSITIVE', label: 'Nhạy cảm (Sensitive)', badge: 'Sensitive' },
-                      { value: 'PRIVILEGED', label: 'Đặc quyền (Privileged)', badge: 'Privileged' },
-                    ]}
-                    value={riskFilter}
-                    onValueChange={setRiskFilter}
-                    placeholder="Tất cả Mức Rủi ro"
-                    searchPlaceholder="Tìm mức rủi ro..."
-                    className="w-[180px]"
-                  />
-
-                  {/* Reset Button */}
-                  {activeCatalogFiltersCount > 0 && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={handleResetCatalogFilter}
-                      className="h-9 px-2 text-xs text-slate-500 hover:text-red-600 gap-1"
-                    >
-                      <RotateCcw className="w-3.5 h-3.5" />
-                      <span>Đặt lại ({activeCatalogFiltersCount})</span>
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+                <SearchableSelect
+                  options={[
+                    { value: 'ALL', label: 'Tất cả Mức Rủi ro' },
+                    { value: 'NORMAL', label: 'Bình thường (Normal)', badge: 'Normal' },
+                    { value: 'SENSITIVE', label: 'Nhạy cảm (Sensitive)', badge: 'Sensitive' },
+                    { value: 'PRIVILEGED', label: 'Đặc quyền (Privileged)', badge: 'Privileged' },
+                  ]}
+                  value={riskFilter}
+                  onValueChange={setRiskFilter}
+                  placeholder="Tất cả Mức Rủi ro"
+                  searchPlaceholder="Tìm mức rủi ro..."
+                  className="w-[160px] h-8 rounded-[3px] text-xs"
+                />
+              </>
+            }
+          />
 
           {/* Catalog Table Card */}
-          <Card className="shadow-xs border-slate-200 w-full overflow-hidden">
+          <Card className="border border-slate-200 rounded-[4px] w-full overflow-hidden bg-white shadow-none">
             <Table>
-                <TableHeader className="bg-slate-50/80">
-                  <TableRow>
-                    <TableHead className="text-xs font-bold text-slate-700">Mã Quyền (Permission Code)</TableHead>
-                    <TableHead className="text-xs font-bold text-slate-700">Phân hệ Chức năng</TableHead>
-                    <TableHead className="text-xs font-bold text-slate-700">Mô tả Phạm vi Thao tác</TableHead>
-                    <TableHead className="text-xs font-bold text-slate-700">Mức Rủi ro Bảo mật</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
+              <TableHeader className="bg-[#F7F8F9] border-b border-slate-200">
+                <TableRow className="hover:bg-[#F7F8F9]">
+                  <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Mã Quyền (Permission Code)</TableHead>
+                  <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Phân hệ Chức năng</TableHead>
+                  <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Mô tả Phạm vi Thao tác</TableHead>
+                  <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Mức Rủi ro Bảo mật</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                   {filteredCatalogPermissions.length === 0 && !loading && (
                     <TableRow>
                       <TableCell colSpan={4} className="p-6">
@@ -939,36 +735,36 @@ export const RolesPage: React.FC = () => {
                     </TableRow>
                   )}
                   {filteredCatalogPermissions.map((perm) => (
-                    <TableRow key={perm.permissionCode} className="hover:bg-slate-50/80 transition-colors">
-                      <TableCell className="text-xs font-mono font-bold text-blue-700">
+                    <TableRow key={perm.permissionCode} className="hover:bg-[#F1F2F4] border-b border-[#EBECF0] transition-colors">
+                      <TableCell className="text-xs font-mono font-bold text-[#0C66E4] py-2 px-3">
                         {perm.permissionCode}
                       </TableCell>
-                      <TableCell className="text-xs">
-                        <Badge variant="outline" className="bg-slate-100 text-slate-800 border-slate-200 font-medium">
+                      <TableCell className="text-xs py-2 px-3">
+                        <span className="bg-[#EBECF0] text-[#42526E] font-semibold text-[11px] uppercase tracking-wider px-1.5 py-0.5 rounded-[3px]">
                           {perm.moduleNameVi}
-                        </Badge>
+                        </span>
                       </TableCell>
-                      <TableCell className="text-xs text-slate-700 font-medium">
+                      <TableCell className="text-xs text-slate-700 font-normal py-2 px-3">
                         {perm.description}
                       </TableCell>
-                      <TableCell className="text-xs">
+                      <TableCell className="text-xs py-2 px-3">
                         {perm.riskLevel === 'PRIVILEGED' && (
-                          <Badge variant="outline" className="bg-rose-50 text-rose-700 border-rose-200 text-[10px] font-bold gap-1">
-                            <ShieldAlert className="w-3 h-3 text-rose-600" />
+                          <span className="inline-flex items-center gap-1 bg-[#FFEBE6] text-[#DE350B] text-[11px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-[3px]">
+                            <ShieldAlert className="w-2.5 h-2.5 text-[#DE350B]" />
                             Đặc quyền (Privileged)
-                          </Badge>
+                          </span>
                         )}
                         {perm.riskLevel === 'SENSITIVE' && (
-                          <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 text-[10px] font-bold gap-1">
-                            <ShieldCheck className="w-3 h-3 text-amber-600" />
+                          <span className="inline-flex items-center gap-1 bg-[#FFFAE6] text-[#974F0C] text-[11px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-[3px]">
+                            <ShieldCheck className="w-2.5 h-2.5 text-[#974F0C]" />
                             Nhạy cảm (Sensitive)
-                          </Badge>
+                          </span>
                         )}
                         {(!perm.riskLevel || perm.riskLevel === 'NORMAL') && (
-                          <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px] font-semibold gap-1">
-                            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                          <span className="inline-flex items-center gap-1 bg-[#E3FCEF] text-[#006644] text-[11px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-[3px]">
+                            <CheckCircle2 className="w-2.5 h-2.5 text-[#006644]" />
                             Bình thường (Normal)
-                          </Badge>
+                          </span>
                         )}
                       </TableCell>
                     </TableRow>

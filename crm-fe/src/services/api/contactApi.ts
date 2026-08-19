@@ -1,4 +1,5 @@
 import { apiFetch } from './apiClient';
+import type { PageResult } from './accountApi';
 
 export type ContactLifecycleStage =
   | 'PROSPECT'
@@ -144,15 +145,6 @@ export interface ContactSearchParams {
   ownerId?: string;
   page?: number;
   size?: number;
-}
-
-export interface PageResult<T> {
-  items: T[];
-  content?: T[];
-  page: number;
-  size: number;
-  totalElements: number;
-  totalPages: number;
 }
 
 function normalizeContact<T extends Partial<ContactItem>>(item: T): T & ContactItem {

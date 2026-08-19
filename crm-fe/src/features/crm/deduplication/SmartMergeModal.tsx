@@ -2,30 +2,23 @@ import React, { useState, useEffect } from 'react';
 import {
   deduplicationApi,
   DuplicateMatchGroup,
-  DuplicateAccountSummary,
 } from '@/services/api/deduplicationApi';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
 import {
-  Copy,
   GitMerge,
   ShieldAlert,
   CheckCircle2,
   AlertTriangle,
-  ArrowRight,
   Loader2,
   RefreshCw,
-  Building2,
-  Trash2,
   Layers,
-  Sparkles,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -141,9 +134,32 @@ export const SmartMergeModal: React.FC<SmartMergeModalProps> = ({
               <p className="text-xs text-slate-400">Không tìm thấy bản ghi khách hàng nào bị trùng lặp thông tin.</p>
             </div>
           ) : (
-            <div className="space-y-6">
-              {/* Top Banner: Found Match */}
-              <div className="p-4 bg-amber-50/70 border border-amber-200 rounded-xl flex items-center justify-between gap-4">
+            <div className="space-y-4">
+              {duplicateGroups.length > 1 && (
+                <div className="flex items-center gap-2 overflow-x-auto pb-1">
+                  {duplicateGroups.map((grp, idx) => (
+                    <Button
+                      key={idx}
+                      size="sm"
+                      variant={selectedGroupIndex === idx ? 'default' : 'outline'}
+                      onClick={() => {
+                        setSelectedGroupIndex(idx);
+                        if (grp.accounts.length >= 2) {
+                          setPrimaryRecordId(grp.accounts[0].id);
+                          setSecondaryRecordId(grp.accounts[1].id);
+                        }
+                      }}
+                      className="text-xs h-7.5 gap-1.5"
+                    >
+                      <span>Cặp trùng #{idx + 1}</span>
+                      <Badge variant="secondary" className="text-[10px] px-1 py-0">{grp.confidenceScore}%</Badge>
+                    </Button>
+                  ))}
+                </div>
+              )}
+
+              {/* Match Warning Banner */}
+              <div className="p-4 bg-amber-50/80 border border-amber-200 rounded-xl flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
                     <AlertTriangle className="w-4 h-4" />

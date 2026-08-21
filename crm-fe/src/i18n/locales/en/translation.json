@@ -23,7 +23,10 @@
     "close": "Close",
     "confirm": "Confirm",
     "mockModeNotice": "Application is running in Mock Data mode. No real database connection.",
-    "searchPlaceholder": "Search features, menus (Ctrl+K)..."
+    "searchPlaceholder": "Search features, menu (Ctrl+K)...",
+    "toggleSidebar": "Toggle sidebar",
+    "switchLanguage": "Switch language",
+    "noResults": "No results found"
   },
   "auth": {
     "loginHeading": "Sign in to VUM",
@@ -182,6 +185,7 @@
     "products": "Products",
     "priceBooks": "Price Books",
     "salesGroup": "Sales Management",
+    "forecast": "Sales Forecast",
     "quotes": "Quotes",
     "orders": "Orders",
     "contracts": "Contracts",
@@ -206,7 +210,8 @@
     "users": "Users",
     "teams": "Teams & Organization",
     "rolesPermissions": "Roles & Permissions",
-    "tenantSettings": "Tenant Settings"
+    "tenantSettings": "Tenant Settings",
+    "pipelines": "Sales Pipelines"
   },
   "overview": {
     "welcome": "Welcome back",
@@ -290,57 +295,114 @@
     },
     "home": {
       "hero": {
-        "kicker": "Enterprise B2B CRM Platform",
-        "title": "Unify Customer 360° & Accelerate Sales Pipeline",
-        "description": "Streamline customer intelligence, automate multi-version quotes, and track revenue velocity in real time.",
-        "primaryCta": "Book a Demo",
-        "secondaryCta": "Try VUM CRM"
+        "kicker": "B2B CRM for enterprises",
+        "title": "One system for the entire B2B sales lifecycle",
+        "description": "Centralize customer data, control the pipeline, and standardize quotes and approvals around your organization.",
+        "primaryCta": "Book a demo",
+        "secondaryCta": "See how VUM works",
+        "visualCaption": "Illustrative data from the VUM CRM interface"
       },
       "proof": {
         "label": "One connected operating flow",
-        "items": ["Customer 360°", "Stage-based pipeline", "Quotes and contracts", "Scope-based permissions", "Audit logs"]
+        "customerData": "Centralized customer data",
+        "pipeline": "Stage-based pipeline",
+        "quotes": "Quotes and approvals",
+        "contracts": "Connected contracts",
+        "access": "Scope-based access"
       },
       "problem": {
-        "eyebrow": "From scattered data to an operating system",
-        "title": "Your business does not need another report. It needs a trustworthy source of data for action.",
+        "eyebrow": "The operating problem",
+        "title": "Fragmented data makes the sales team react more slowly than the customer",
+        "description": "VUM CRM connects data, responsibility, and the next action in one operating flow.",
         "beforeTitle": "When the process is fragmented",
-        "beforeItems": ["Customer information lives in many files and with many people", "The pipeline is updated only before review meetings", "Quotes, contracts, and conversation history are disconnected"],
+        "beforeDataTitle": "Information lives in many files and with many people",
+        "beforeDataDescription": "The team spends time reconciling versions before it can act.",
+        "beforePipelineTitle": "The pipeline becomes clear only before review meetings",
+        "beforePipelineDescription": "Managers struggle to spot opportunities without an owner or next action.",
+        "beforeApprovalTitle": "Quotes and approvals are detached from deal history",
+        "beforeApprovalDescription": "Manual handoffs lose context and extend response cycles.",
         "afterTitle": "When operations run on VUM CRM",
-        "afterItems": ["Every account has one unified profile and timeline", "Every opportunity is tracked by stage, owner, and next action", "Leaders see the same data the team uses every day"]
+        "afterDescription": "Every customer, opportunity, quote, and contract is connected in a trackable operating flow."
       },
-      "capabilities": {
-        "eyebrow": "Three core capabilities",
-        "title": "Stay with the customer from the first signal through post-contract service",
-        "customer360Title": "One customer profile with complete context",
-        "customer360Description": "Connect organizations, contacts, activities, documents, and lifecycle status in one view.",
-        "pipelineTitle": "A pipeline that reflects real work",
-        "pipelineDescription": "Track value, probability, timing, and the next action for every opportunity instead of waiting for an end-of-period summary.",
-        "automationTitle": "Processes keep moving while the team is busy",
-        "automationDescription": "Standardize assignment, reminders, approvals, and alerts so opportunities are not lost between steps."
+      "workflow": {
+        "eyebrow": "Product workflow",
+        "title": "Stay with the customer from the first signal to the contract",
+        "description": "Every stage retains its context, owner, and next action.",
+        "illustrativeLabel": "Illustrative data",
+        "leadLabel": "Lead",
+        "leadTitle": "Capture and qualify the need",
+        "leadDescription": "Centralize lead sources, handling status, and ownership before conversion.",
+        "accountLabel": "Account",
+        "accountTitle": "Unify the customer record",
+        "accountDescription": "Connect the organization, contacts, activities, and lifecycle stage in one record.",
+        "opportunityLabel": "Opportunity",
+        "opportunityTitle": "Control the pipeline and next action",
+        "opportunityDescription": "Track the stage, value, timing, and responsibility for every opportunity.",
+        "quoteLabel": "Quote",
+        "quoteTitle": "Standardize the commercial proposal",
+        "quoteDescription": "Create quotes from the product catalog while retaining the related opportunity context.",
+        "approvalLabel": "Approval",
+        "approvalTitle": "Route decisions to the right owner and scope",
+        "approvalDescription": "Track review status and approval responsibility in the quote or contract flow.",
+        "contractLabel": "Contract",
+        "contractTitle": "Carry the data forward after the deal closes",
+        "contractDescription": "Retain value, status, and related history as the opportunity becomes a contract."
       },
       "roles": {
         "eyebrow": "One system, three perspectives",
         "title": "Each role sees what it needs to make a decision",
         "executiveLabel": "Executives",
         "executiveTitle": "See revenue and risk from the same source of data",
-        "executiveItems": ["Track pipeline and revenue trends", "Identify regions or stages where work is blocked", "Review performance without waiting for manual reports"],
+        "executivePointPipeline": "Track pipeline and revenue trends across the organization",
+        "executivePointRisk": "Identify regions or stages where work is blocked",
+        "executivePointReporting": "Reduce dependence on manually consolidated reports",
         "managerLabel": "Managers",
         "managerTitle": "Know which opportunities need support before it is too late",
-        "managerItems": ["Control assignment across teams", "Find opportunities with no next activity", "Coach with evidence from each pipeline stage"],
-        "salesLabel": "Sales representatives",
-        "salesTitle": "Spend less time updating and more time with customers",
-        "salesItems": ["Manage calls, meetings, and next tasks", "Create quotes from product catalogs and price books", "Review the full interaction history before every contact"]
+        "managerPointOwnership": "Control ownership across teams and assigned scopes",
+        "managerPointStalled": "Find opportunities without a next action",
+        "managerPointApproval": "Track quotes and decisions waiting for action",
+        "salesLabel": "Sales",
+        "salesTitle": "Keep the full context before every customer interaction",
+        "salesPointContext": "Review records, contacts, and interaction history in one place",
+        "salesPointQuote": "Create and track quotes in the opportunity context",
+        "salesPointFollowUp": "Manage calls, meetings, and next tasks"
       },
       "trust": {
-        "eyebrow": "Governance for enterprises",
+        "eyebrow": "Enterprise governance",
         "title": "Scale the team without giving up control of customer data",
-        "items": ["Centralized roles and permissions", "Data scope by organization and team", "Access and change logs", "Data import, webhooks, and integrations"]
+        "accessTitle": "Centralized roles and permissions",
+        "accessDescription": "Manage access by responsibility instead of distributing data freely.",
+        "scopeTitle": "Scope by organization and team",
+        "scopeDescription": "Limit data according to the operating structure and assigned scope.",
+        "auditTitle": "Access and change history",
+        "auditDescription": "Support traceability across system flows that provide activity logs.",
+        "integrationTitle": "Data import and integration",
+        "integrationDescription": "Connect data through configured imports, webhooks, or integrations."
       },
-      "finalCta": {
-        "title": "Start with the process costing your business the most time.",
-        "description": "The VUM team will review your current customer flow, pipeline, and data before recommending an implementation scope.",
-        "primary": "Book a demo",
-        "secondary": "Try VUM CRM"
+      "commercial": {
+        "eyebrow": "Implementation scope",
+        "title": "The solution is scoped to real scale and process complexity",
+        "description": "The business discusses its needs before selecting scope; this page does not publish unapproved pricing.",
+        "scaleTitle": "Users and operating units",
+        "scaleDescription": "The number of users, teams, regions, and branches joining the system.",
+        "processTitle": "Sales-process complexity",
+        "processDescription": "The pipelines, stages, handoff rules, and approval flows that need standardization.",
+        "integrationTitle": "Data and connected systems",
+        "integrationDescription": "The initial data sources, internal systems, and synchronization mechanisms required.",
+        "governanceTitle": "Governance and operating support",
+        "governanceDescription": "The access scope, logs, training, and support appropriate to the organization.",
+        "cta": "Discuss implementation scope"
+      },
+      "demo": {
+        "eyebrow": "A demo based on your real workflow",
+        "title": "See VUM CRM operate around your sales process",
+        "description": "Share your current team structure and sales flow so the conversation focuses on the right problem.",
+        "agendaTitle": "Conversation agenda",
+        "agendaDiscovery": "Review current data, roles, and handoff points",
+        "agendaWorkflow": "Walk through leads, opportunities, quotes, and contracts",
+        "agendaScope": "Define an appropriate implementation scope",
+        "formTitle": "Request a tailored demo",
+        "formDescription": "Leave your details so the VUM team can prepare content relevant to your needs."
       }
     },
     "features": {
@@ -390,6 +452,20 @@
       "heroKicker": "Talk directly with the VUM team",
       "heroTitle": "See VUM CRM applied to your sales process",
       "heroDescription": "Share how your team manages customers, pipeline, and reporting. VUM will prepare a focused conversation around that challenge.",
+      "consultationLabel": "Needs-based conversation",
+      "formIntro": "Provide your details so the VUM team can prepare content relevant to your organization.",
+      "optionalLabel": "optional",
+      "successNextTitle": "Next steps",
+      "successNextContact": "The VUM team will contact you using the details you provided.",
+      "successNextPrepare": "The demo content will be prepared around your selected needs.",
+      "submitAnother": "Send another request",
+      "placeholders": {
+        "fullName": "Contact name",
+        "workEmail": "name@company.com",
+        "phone": "+84 912 345 678",
+        "companyName": "Company name",
+        "message": "Share the goal or problem your organization wants to address"
+      },
       "form": {
         "title": "Information to prepare your demo",
         "fullName": "Full name",

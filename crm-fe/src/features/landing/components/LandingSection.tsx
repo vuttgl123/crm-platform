@@ -1,20 +1,25 @@
-import type { ReactElement, ComponentProps } from 'react';
+import type { ComponentPropsWithoutRef, ElementType, ReactElement } from 'react';
 import { cn } from '@/lib/utils';
 
-export interface LandingSectionProps extends ComponentProps<'section'> {
+export interface LandingSectionProps
+  extends ComponentPropsWithoutRef<'section'> {
+  as?: 'section' | 'div';
   contained?: boolean;
 }
 
 export function LandingSection({
+  as = 'section',
   contained = true,
   className,
   children,
   ...props
 }: LandingSectionProps): ReactElement {
+  const Component: ElementType = as;
+
   return (
-    <section className={cn('landing-section', className)} {...props}>
+    <Component className={cn('landing-section', className)} {...props}>
       {contained ? <div className="landing-container">{children}</div> : children}
-    </section>
+    </Component>
   );
 }
 

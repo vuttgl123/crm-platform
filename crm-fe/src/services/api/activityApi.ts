@@ -132,10 +132,10 @@ export interface ActivitySearchRequest {
 }
 
 export const ACTIVITY_TYPE_CONFIG: Record<string, { label: string; icon: string; className: string }> = {
-  CALL: { label: 'Cuộc gọi điện', icon: 'Phone', className: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-  MEETING: { label: 'Cuộc họp / Gặp gỡ', icon: 'Users', className: 'bg-blue-50 text-blue-700 border-blue-200' },
-  TASK: { label: 'Nhiệm vụ cần làm', icon: 'CheckSquare', className: 'bg-purple-50 text-purple-700 border-purple-200' },
-  EMAIL: { label: 'Gửi Email', icon: 'Mail', className: 'bg-amber-50 text-amber-700 border-amber-200' },
+  CALL: { label: 'Phone Call', icon: 'Phone', className: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+  MEETING: { label: 'Meeting / Meeting', icon: 'Users', className: 'bg-blue-50 text-blue-700 border-blue-200' },
+  TASK: { label: 'Action Task', icon: 'CheckSquare', className: 'bg-purple-50 text-purple-700 border-purple-200' },
+  EMAIL: { label: 'Email Dispatch', icon: 'Mail', className: 'bg-amber-50 text-amber-700 border-amber-200' },
 };
 
 function normalizeActivity(a: any): ActivityItem {

@@ -17,6 +17,8 @@ import {
   Dialog,
   DialogContent,
 } from '@/components/ui/dialog';
+import { ActionTooltip } from '@/components/ui/action-tooltip';
+
 import {
   Table,
   TableBody,
@@ -33,20 +35,16 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from 'sonner';
+import { StandardPageHeader } from '@/components/common/StandardPageHeader';
+import { StandardFilterBar, ViewTabItem } from '@/components/common/StandardFilterBar';
+import { StandardPagination } from '@/components/common/StandardPagination';
 import {
   ShoppingCart,
-  Search,
   Plus,
   RefreshCw,
   Edit,
   Trash2,
   Loader2,
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
-  X,
-  RotateCcw,
   DollarSign,
   Building2,
   Truck,
@@ -72,12 +70,10 @@ export const OrdersPage: React.FC = () => {
   // Form Fields
   const [accountName, setAccountName] = useState('');
   const [totalAmount, setTotalAmount] = useState('');
-  const [paidAmount, setPaidAmount] = useState('');
   const [status, setStatus] = useState<OrderStatus>('PROCESSING');
   const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>('PARTIALLY_PAID');
-  const [orderDate, setOrderDate] = useState('');
   const [deliveryDate, setDeliveryDate] = useState('');
-  const [assignedTo, setAssignedTo] = useState('Phạm Tuấn Vũ');
+  const [assignedTo, setAssignedTo] = useState('Alex Nguyen');
 
   const fetchOrders = useCallback(async () => {
     setLoading(true);
@@ -93,7 +89,7 @@ export const OrdersPage: React.FC = () => {
       setTotalPages(res.totalPages);
       setTotalElements(res.totalElements);
     } catch {
-      toast.error('Không thể tải danh sách đơn hàng');
+      toast.error('Unable to load orders from server');
     } finally {
       setLoading(false);
     }
@@ -115,31 +111,28 @@ export const OrdersPage: React.FC = () => {
     setEditingOrder(null);
     setAccountName('');
     setTotalAmount('');
-    setPaidAmount('0');
-    setStatus('DRAFT');
+    setStatus('CONFIRMED');
     setPaymentStatus('UNPAID');
-    setOrderDate(new Date().toISOString().split('T')[0]);
-    setDeliveryDate(new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0]);
+    setDeliveryDate(new Date(Date.now() + 14 * 86400000).toISOString().split('T')[0]);
+    setAssignedTo('Alex Nguyen');
     setIsModalOpen(true);
   };
 
   const handleOpenEdit = (order: OrderItem) => {
     setEditingOrder(order);
     setAccountName(order.accountName || '');
-    setTotalAmount((order.totalAmount || 0).toString());
-    setPaidAmount('0');
+    setTotalAmount(order.totalAmount ? order.totalAmount.toString() : '');
     setStatus(order.status);
     setPaymentStatus(order.paymentStatus);
-    setOrderDate(order.deliveryDate || '');
-    setDeliveryDate(order.deliveryDate || '');
+    setDeliveryDate(order.deliveryDate ? order.deliveryDate.split('T')[0] : '');
     setAssignedTo(order.assignedTo || '');
     setIsModalOpen(true);
   };
 
   const handleSaveOrder = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!accountName.trim() || !totalAmount.trim()) {
-      toast.error('Vui lòng nhập tên khách hàng và tổng tiền đơn');
+    if (!accountName.trim() || !totalAmount) {
+      toast.error('Please specify Client Organization and Order Value');
       return;
     }
 
@@ -155,7 +148,7 @@ export const OrdersPage: React.FC = () => {
           deliveryDate,
           assignedTo,
         });
-        toast.success('Đã cập nhật đơn hàng thành công!');
+        toast.success('Order updated successfully!');
       } else {
         await orderApi.create({
           accountId: 'acc-custom',
@@ -164,27 +157,27 @@ export const OrdersPage: React.FC = () => {
           status,
           paymentStatus,
           deliveryDate,
-          assignedTo: assignedTo || 'Phạm Tuấn Vũ',
+          assignedTo: assignedTo || 'Alex Nguyen',
         });
-        toast.success('Đã tạo đơn hàng mới thành công!');
+        toast.success('New sales order created successfully!');
       }
       setIsModalOpen(false);
       fetchOrders();
     } catch {
-      toast.error('Không thể lưu đơn hàng');
+      toast.error('Unable to save order details');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleDelete = async (id: string, code: string) => {
-    if (!window.confirm(`Bạn có chắc chắn muốn xóa đơn hàng "${code}"?`)) return;
+    if (!window.confirm(`Are you sure you want to delete order "${code}"?`)) return;
     try {
       await orderApi.delete(id);
-      toast.success(`Đã xóa đơn hàng "${code}"`);
+      toast.success(`Deleted order "${code}"`);
       fetchOrders();
     } catch {
-      toast.error('Không thể xóa đơn hàng');
+      toast.error('Unable to delete order');
     }
   };
 
@@ -199,172 +192,167 @@ export const OrdersPage: React.FC = () => {
     (selectedStatus !== 'ALL' ? 1 : 0) +
     (selectedPaymentStatus !== 'ALL' ? 1 : 0);
 
+  // View Tabs Config
+  const viewTabs: ViewTabItem[] = [
+    { id: 'ALL', label: 'All Orders', count: totalElements },
+    { id: 'PROCESSING', label: 'In Fulfillment', count: processingCount, icon: Truck, dotColor: 'bg-purple-500' },
+    { id: 'FULFILLED', label: 'Fulfilled', count: deliveredCount, icon: CreditCard, dotColor: 'bg-emerald-500' },
+  ];
+
+  const currentActiveTab = selectedStatus === 'PROCESSING' ? 'PROCESSING' : selectedStatus === 'FULFILLED' ? 'FULFILLED' : 'ALL';
+
+  const handleTabChange = (tabId: string) => {
+    if (tabId === 'PROCESSING') {
+      setSelectedStatus('PROCESSING');
+    } else if (tabId === 'FULFILLED') {
+      setSelectedStatus('FULFILLED');
+    } else {
+      setSelectedStatus('ALL');
+    }
+    setPage(0);
+  };
+
   return (
-    <div className="space-y-5 pb-12 font-sans w-full">
-      {/* ── Page Header ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-bold text-slate-900 flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shadow-xs shrink-0">
-              <ShoppingCart className="w-4.5 h-4.5 text-white" />
-            </div>
-            Quản lý Đơn hàng (Sales Orders)
-          </h1>
-          <p className="text-xs text-slate-500 mt-1 ml-10.5">
-            Theo dõi tiến độ bàn giao, thanh toán công nợ và hoàn tất hợp đồng kinh tế
-          </p>
-        </div>
+    <div className="space-y-4 pb-12 font-sans w-full">
+      {/* Standard Page Header */}
+      <StandardPageHeader
+        title="Sales Orders &amp; Fulfillment"
+        subtitle="Manage execution milestones, fulfillment lifecycles, invoicing &amp; payment reconciliations"
+        icon={ShoppingCart}
+        badgeCount={totalElements}
+        badgeLabel="orders"
+        actions={
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={fetchOrders}
+              disabled={loading}
+              className="text-xs font-medium text-slate-700 bg-white border-slate-200 hover:bg-slate-50 gap-1.5 h-8 rounded-[3px]"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+              <span>Refresh</span>
+            </Button>
 
-        <div className="flex items-center gap-2 shrink-0">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={fetchOrders}
-            disabled={loading}
-            className="text-xs gap-1.5 border-slate-200 h-8"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-            <span>Làm mới</span>
-          </Button>
+            <Button
+              size="sm"
+              onClick={handleOpenCreate}
+              className="text-xs font-semibold bg-[#0C66E4] hover:bg-[#0052CC] text-white gap-1.5 shadow-none h-8 rounded-[3px]"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>New Order</span>
+            </Button>
+          </>
+        }
+      />
 
-          <Button
-            size="sm"
-            onClick={handleOpenCreate}
-            className="text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white gap-1.5 shadow-xs h-8"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Tạo Đơn Hàng Mới</span>
-          </Button>
-        </div>
-      </div>
-
-      {/* ── Quick Stat Cards ── */}
+      {/* KPI Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="bg-white rounded-xl border border-slate-200 px-4 py-3 flex items-center gap-3 shadow-xs hover:shadow-sm transition-shadow">
+        <div className="bg-white rounded-[4px] border border-slate-200 px-4 py-3 flex items-center gap-3 shadow-none">
           <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
             <ShoppingCart className="w-4.5 h-4.5 text-blue-600" />
           </div>
           <div>
-            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Tổng Đơn hàng</div>
+            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Total Orders</div>
             <div className="text-lg font-black text-slate-900 leading-tight">{totalElements}</div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-indigo-100 px-4 py-3 flex items-center gap-3 shadow-xs hover:shadow-sm transition-shadow">
+        <div className="bg-white rounded-[4px] border border-indigo-100 px-4 py-3 flex items-center gap-3 shadow-none">
           <div className="w-9 h-9 rounded-lg bg-indigo-50 flex items-center justify-center shrink-0">
             <DollarSign className="w-4.5 h-4.5 text-indigo-600" />
           </div>
           <div>
-            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Tổng Doanh số Đơn</div>
+            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Gross Order Value</div>
             <div className="text-lg font-black text-indigo-700 leading-tight">
-              {(totalRevenue / 1_000_000).toFixed(0)} Tr ₫
+              {(totalRevenue / 1_000_000).toFixed(0)}M VND
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-emerald-100 px-4 py-3 flex items-center gap-3 shadow-xs hover:shadow-sm transition-shadow">
+        <div className="bg-white rounded-[4px] border border-emerald-100 px-4 py-3 flex items-center gap-3 shadow-none">
           <div className="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center shrink-0">
             <CreditCard className="w-4.5 h-4.5 text-emerald-600" />
           </div>
           <div>
-            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Đã thu thực tế ({deliveredCount} đơn giao)</div>
+            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Settled Payments</div>
             <div className="text-lg font-black text-emerald-700 leading-tight">
-              {(totalCollected / 1_000_000).toFixed(0)} Tr ₫
+              {(totalCollected / 1_000_000).toFixed(0)}M VND
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-amber-100 px-4 py-3 flex items-center gap-3 shadow-xs hover:shadow-sm transition-shadow">
+        <div className="bg-white rounded-[4px] border border-amber-100 px-4 py-3 flex items-center gap-3 shadow-none">
           <div className="w-9 h-9 rounded-lg bg-amber-50 flex items-center justify-center shrink-0">
             <Truck className="w-4.5 h-4.5 text-amber-600" />
           </div>
           <div>
-            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Đang xử lý / Chờ giao</div>
+            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">In Delivery / Fulfillment</div>
             <div className="text-lg font-black text-amber-700 leading-tight">{processingCount}</div>
           </div>
         </div>
       </div>
 
-      {/* ── Search & Filter Toolbar ── */}
-      <Card className="p-3.5 bg-white border border-slate-200 rounded-xl shadow-xs space-y-3">
-        <div className="flex flex-col md:flex-row gap-2.5 items-stretch md:items-center justify-between">
-          <div className="relative flex-1">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-            <Input
-              placeholder="Tìm kiếm theo mã đơn hàng, khách hàng..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 pr-8 text-xs h-8.5 bg-slate-50/60 focus:bg-white border-slate-200 rounded-lg"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
+      {/* Standard Filter Bar */}
+      <StandardFilterBar
+        searchQuery={searchQuery}
+        onSearchChange={(val) => { setSearchQuery(val); setPage(0); }}
+        searchPlaceholder="Search by order code, account name..."
+        viewTabs={viewTabs}
+        activeTab={currentActiveTab}
+        onTabChange={handleTabChange}
+        activeFiltersCount={activeFiltersCount}
+        onResetFilters={handleResetFilters}
+        filterControls={
+          <>
             <div className="w-40">
               <Select value={selectedStatus} onValueChange={(val) => { setSelectedStatus(val); setPage(0); }}>
-                <SelectTrigger className="h-8.5 text-xs bg-slate-50/60 border-slate-200 rounded-lg">
-                  <SelectValue placeholder="Trạng thái đơn" />
+                <SelectTrigger className="h-8 text-xs bg-white border-slate-200 rounded-[3px]">
+                  <SelectValue placeholder="Order Status" />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ALL">Tất cả trạng thái</SelectItem>
-                  <SelectItem value="PENDING">Chờ xác nhận</SelectItem>
-                  <SelectItem value="PROCESSING">Đang triển khai</SelectItem>
-                  <SelectItem value="SHIPPED">Đang bàn giao</SelectItem>
-                  <SelectItem value="DELIVERED">Đã nghiệm thu</SelectItem>
-                  <SelectItem value="CANCELLED">Đã hủy</SelectItem>
+                <SelectContent className="rounded-[3px]">
+                  <SelectItem value="ALL">All Statuses</SelectItem>
+                  <SelectItem value="DRAFT">DRAFT</SelectItem>
+                  <SelectItem value="CONFIRMED">CONFIRMED</SelectItem>
+                  <SelectItem value="PROCESSING">PROCESSING</SelectItem>
+                  <SelectItem value="PARTIALLY_FULFILLED">PARTIALLY FULFILLED</SelectItem>
+                  <SelectItem value="FULFILLED">FULFILLED</SelectItem>
+                  <SelectItem value="CANCELLED">CANCELLED</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="w-44">
               <Select value={selectedPaymentStatus} onValueChange={(val) => { setSelectedPaymentStatus(val); setPage(0); }}>
-                <SelectTrigger className="h-8.5 text-xs bg-slate-50/60 border-slate-200 rounded-lg">
-                  <SelectValue placeholder="Thanh toán" />
+                <SelectTrigger className="h-8 text-xs bg-white border-slate-200 rounded-[3px]">
+                  <SelectValue placeholder="Payment" />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ALL">Tất cả thanh toán</SelectItem>
-                  <SelectItem value="PAID">Đã thanh toán đủ</SelectItem>
-                  <SelectItem value="PARTIAL">Thanh toán 1 phần</SelectItem>
-                  <SelectItem value="UNPAID">Chưa thanh toán</SelectItem>
+                <SelectContent className="rounded-[3px]">
+                  <SelectItem value="ALL">All Payment Statuses</SelectItem>
+                  <SelectItem value="PAID">PAID</SelectItem>
+                  <SelectItem value="PARTIALLY_PAID">PARTIALLY PAID</SelectItem>
+                  <SelectItem value="UNPAID">UNPAID</SelectItem>
+                  <SelectItem value="REFUNDED">REFUNDED</SelectItem>
                 </SelectContent>
               </Select>
             </div>
+          </>
+        }
+      />
 
-            {activeFiltersCount > 0 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleResetFilters}
-                className="text-xs text-slate-500 hover:text-slate-800 gap-1 h-8.5 px-2"
-              >
-                <RotateCcw className="w-3 h-3" />
-                <span>Đặt lại ({activeFiltersCount})</span>
-              </Button>
-            )}
-          </div>
-        </div>
-      </Card>
-
-      {/* ── Orders Table ── */}
-      <Card className="overflow-hidden border border-slate-200 rounded-xl bg-white shadow-xs">
+      {/* Orders Table */}
+      <Card className="overflow-hidden border border-slate-200 rounded-[4px] bg-white shadow-none">
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
-              <TableRow className="bg-slate-50/80 hover:bg-slate-50/80 border-b border-slate-200">
-                <TableHead className="text-[11px] font-bold text-slate-600 uppercase tracking-wider py-3 pl-4">Mã Đơn hàng</TableHead>
-                <TableHead className="text-[11px] font-bold text-slate-600 uppercase tracking-wider py-3">Khách hàng / Doanh nghiệp</TableHead>
-                <TableHead className="text-[11px] font-bold text-slate-600 uppercase tracking-wider py-3">Tổng giá trị</TableHead>
-                <TableHead className="text-[11px] font-bold text-slate-600 uppercase tracking-wider py-3">Đã thanh toán</TableHead>
-                <TableHead className="text-[11px] font-bold text-slate-600 uppercase tracking-wider py-3">Thanh toán</TableHead>
-                <TableHead className="text-[11px] font-bold text-slate-600 uppercase tracking-wider py-3">Trạng thái giao</TableHead>
-                <TableHead className="text-[11px] font-bold text-slate-600 uppercase tracking-wider py-3 text-right pr-4">Thao tác</TableHead>
+              <TableRow className="bg-[#F7F8F9] border-b border-slate-200 hover:bg-[#F7F8F9]">
+                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Order Number</TableHead>
+                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Client Organization</TableHead>
+                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Total Amount</TableHead>
+                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Settled</TableHead>
+                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Payment Status</TableHead>
+                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Fulfillment Status</TableHead>
+                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3 text-right pr-4">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -373,7 +361,7 @@ export const OrdersPage: React.FC = () => {
                   <TableCell colSpan={7} className="h-48 text-center">
                     <div className="flex flex-col items-center justify-center gap-2 text-slate-500">
                       <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
-                      <span className="text-xs">Đang tải danh sách đơn hàng...</span>
+                      <span className="text-xs">Loading orders...</span>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -382,9 +370,9 @@ export const OrdersPage: React.FC = () => {
                   <TableCell colSpan={7} className="p-0">
                     <EmptyState
                       icon={ShoppingCart}
-                      title="Không tìm thấy đơn hàng nào"
-                      description="Hãy thử thay đổi điều kiện lọc hoặc tạo mới đơn hàng bán lẻ / hợp đồng."
-                      actionLabel="Tạo Đơn Hàng"
+                      title="No orders found"
+                      description="Try adjusting your filter criteria or generate a new sales order."
+                      actionLabel="Create Order"
                       onAction={handleOpenCreate}
                     />
                   </TableCell>
@@ -395,77 +383,81 @@ export const OrdersPage: React.FC = () => {
                   const paymentInfo = PAYMENT_STATUS_CONFIG[order.paymentStatus] || { label: order.paymentStatus, className: 'bg-slate-100 text-slate-700' };
 
                   return (
-                    <TableRow key={order.id} className="hover:bg-slate-50/80 transition-colors border-b border-slate-100 text-xs">
-                      {/* Cột 1: Mã đơn */}
-                      <TableCell className="pl-4 py-3">
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 border border-blue-100 shadow-2xs">
-                            <ShoppingCart className="w-4 h-4" />
+                    <TableRow key={order.id} className="hover:bg-[#F1F2F4] transition-colors border-b border-[#EBECF0] text-xs">
+                      {/* Order Number */}
+                      <TableCell className="py-2 px-3">
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-[3px] bg-[#E9F2FF] text-[#0C66E4] border border-[#C0D9FF] font-bold text-xs flex items-center justify-center shrink-0">
+                            <ShoppingCart className="w-3.5 h-3.5" />
                           </div>
                           <div>
-                            <div className="font-bold text-slate-900 font-mono">{order.orderNumber}</div>
-                            <div className="text-[11px] text-slate-400 mt-0.5">
-                              {order.createdAt ? new Date(order.createdAt).toLocaleDateString('vi-VN') : '-'}
+                            <div className="font-semibold text-slate-900 font-mono">{order.orderNumber}</div>
+                            <div className="text-[11px] text-slate-400">
+                              {order.createdAt ? new Date(order.createdAt).toLocaleDateString('en-US') : '-'}
                             </div>
                           </div>
                         </div>
                       </TableCell>
 
-                      {/* Cột 2: Khách hàng */}
-                      <TableCell>
+                      {/* Account */}
+                      <TableCell className="py-2 px-3">
                         <div className="flex items-center gap-1.5 text-slate-800 font-medium">
                           <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                           <span>{order.accountName}</span>
                         </div>
                       </TableCell>
 
-                      {/* Cột 3: Tổng giá trị */}
-                      <TableCell>
-                        <div className="font-bold text-slate-900 font-mono text-xs">
-                          {order.totalAmount.toLocaleString('vi-VN')} ₫
+                      {/* Total Value */}
+                      <TableCell className="py-2 px-3">
+                        <div className="font-semibold text-slate-900 font-mono text-xs">
+                          {order.totalAmount.toLocaleString('en-US')} ₫
                         </div>
                       </TableCell>
 
-                      {/* Cột 4: Đã trả */}
-                      <TableCell className="font-mono text-slate-700 text-[11px]">
-                        {order.paymentStatus === 'PAID' ? order.totalAmount.toLocaleString('vi-VN') : '0'} ₫
+                      {/* Paid */}
+                      <TableCell className="py-2 px-3 font-mono text-slate-700 text-[11px]">
+                        {order.paymentStatus === 'PAID' ? order.totalAmount.toLocaleString('en-US') : '0'} ₫
                       </TableCell>
 
-                      {/* Cột 5: Trạng thái thanh toán */}
-                      <TableCell>
-                        <Badge className={`${paymentInfo.className} text-[11px]`}>
+                      {/* Payment Status */}
+                      <TableCell className="py-2 px-3">
+                        <Badge className={`${paymentInfo.className} text-[11px] rounded-[3px]`}>
                           {paymentInfo.label}
                         </Badge>
                       </TableCell>
 
-                      {/* Cột 6: Trạng thái đơn */}
-                      <TableCell>
-                        <Badge className={`${statusInfo.className} text-[11px]`}>
+                      {/* Order Status */}
+                      <TableCell className="py-2 px-3">
+                        <Badge className={`${statusInfo.className} text-[11px] rounded-[3px]`}>
                           {statusInfo.label}
                         </Badge>
                       </TableCell>
 
-                      {/* Cột 7: Thao tác */}
-                      <TableCell className="text-right pr-4">
+                      {/* Actions */}
+                      <TableCell className="py-2 px-3 text-right pr-4">
                         <div className="flex items-center justify-end gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleOpenEdit(order)}
-                            className="h-7 w-7 text-slate-600 hover:text-blue-600 hover:bg-blue-50"
-                            title="Chỉnh sửa đơn hàng"
-                          >
-                            <Edit className="w-3.5 h-3.5" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleDelete(order.id, order.orderNumber)}
-                            className="h-7 w-7 text-slate-600 hover:text-red-600 hover:bg-red-50"
-                            title="Xóa đơn hàng"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </Button>
+                          <ActionTooltip label="Chỉnh sửa đơn hàng">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleOpenEdit(order)}
+                              className="h-7 w-7 rounded-[3px] text-slate-600 hover:text-[#0C66E4] hover:bg-[#E9F2FF]"
+                              aria-label="Edit Order"
+                            >
+                              <Edit className="w-3.5 h-3.5" />
+                            </Button>
+                          </ActionTooltip>
+                          <ActionTooltip label="Xóa đơn hàng">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDelete(order.id, order.orderNumber)}
+                              className="h-7 w-7 rounded-[3px] text-slate-600 hover:text-red-600 hover:bg-red-50"
+                              aria-label="Delete Order"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
+                          </ActionTooltip>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -476,60 +468,20 @@ export const OrdersPage: React.FC = () => {
           </Table>
         </div>
 
-        {/* ── Pagination Bar ── */}
-        {!loading && orders.length > 0 && (
-          <div className="px-4 py-3 bg-slate-50/50 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
-            <div>
-              Hiển thị <span className="font-bold text-slate-800">{page * pageSize + 1}</span> -{' '}
-              <span className="font-bold text-slate-800">{Math.min((page + 1) * pageSize, totalElements)}</span> trong tổng số{' '}
-              <span className="font-bold text-slate-800">{totalElements}</span> đơn hàng
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-7 w-7 border-slate-200"
-                onClick={() => setPage(0)}
-                disabled={page === 0}
-              >
-                <ChevronsLeft className="w-3.5 h-3.5" />
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-7 w-7 border-slate-200"
-                onClick={() => setPage((p) => Math.max(p - 1, 0))}
-                disabled={page === 0}
-              >
-                <ChevronLeft className="w-3.5 h-3.5" />
-              </Button>
-              <div className="px-2 font-medium text-slate-700">
-                Trang {page + 1} / {Math.max(totalPages, 1)}
-              </div>
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-7 w-7 border-slate-200"
-                onClick={() => setPage((p) => p + 1)}
-                disabled={page >= totalPages - 1}
-              >
-                <ChevronRight className="w-3.5 h-3.5" />
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-7 w-7 border-slate-200"
-                onClick={() => setPage(totalPages - 1)}
-                disabled={page >= totalPages - 1}
-              >
-                <ChevronsRight className="w-3.5 h-3.5" />
-              </Button>
-            </div>
-          </div>
+        {/* Standard Pagination Bar */}
+        {!loading && (
+          <StandardPagination
+            currentPage={page + 1}
+            totalPages={Math.max(totalPages, 1)}
+            totalElements={totalElements}
+            pageSize={pageSize}
+            onPageChange={(p) => setPage(p - 1)}
+            itemLabel="orders"
+          />
         )}
       </Card>
 
-      {/* ── Create / Edit Order Modal ── */}
+      {/* Create / Edit Order Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0 rounded-2xl border border-slate-200 shadow-xl">
           <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-5 text-white">
@@ -540,10 +492,10 @@ export const OrdersPage: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="font-bold text-base">
-                    {editingOrder ? `Chỉnh sửa Đơn hàng ${editingOrder.orderNumber}` : 'Tạo Đơn Hàng Mới'}
+                    {editingOrder ? 'Edit Sales Order Details' : 'Create New Sales Order'}
                   </h3>
                   <p className="text-xs text-blue-100 mt-0.5">
-                    Ghi nhận hợp đồng kinh tế và tiến độ thanh toán bàn giao
+                    {editingOrder ? `Order ID: ${editingOrder.orderNumber}` : 'Set order value, fulfillment status & delivery commitment'}
                   </p>
                 </div>
               </div>
@@ -554,11 +506,11 @@ export const OrdersPage: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <Label className="text-xs font-semibold text-slate-700">
-                  Khách hàng / Doanh nghiệp <span className="text-rose-500">*</span>
+                  Client Organization <span className="text-rose-500">*</span>
                 </Label>
                 <Input
                   required
-                  placeholder="Ví dụ: Công ty CP Bất Động Sản Alpha"
+                  placeholder="e.g. Acme Corporation"
                   value={accountName}
                   onChange={(e) => setAccountName(e.target.value)}
                   className="h-9 text-xs border-slate-200 mt-1"
@@ -566,70 +518,49 @@ export const OrdersPage: React.FC = () => {
               </div>
 
               <div>
-                <Label className="text-xs font-semibold text-slate-700">Chuyên viên phụ trách đơn</Label>
-                <Input
-                  placeholder="Phạm Tuấn Vũ"
-                  value={assignedTo}
-                  onChange={(e) => setAssignedTo(e.target.value)}
-                  className="h-9 text-xs border-slate-200 mt-1"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
                 <Label className="text-xs font-semibold text-slate-700">
-                  Tổng giá trị đơn (VNĐ) <span className="text-rose-500">*</span>
+                  Total Order Value (VND) <span className="text-rose-500">*</span>
                 </Label>
                 <Input
                   required
                   type="number"
-                  placeholder="300,000,000"
+                  placeholder="250,000,000"
                   value={totalAmount}
                   onChange={(e) => setTotalAmount(e.target.value)}
                   className="h-9 text-xs border-slate-200 mt-1 font-mono"
                 />
               </div>
-
-              <div>
-                <Label className="text-xs font-semibold text-slate-700">Số tiền đã thanh toán (VNĐ)</Label>
-                <Input
-                  type="number"
-                  placeholder="100,000,000"
-                  value={paidAmount}
-                  onChange={(e) => setPaidAmount(e.target.value)}
-                  className="h-9 text-xs border-slate-200 mt-1 font-mono"
-                />
-              </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <Label className="text-xs font-semibold text-slate-700">Trạng thái giao hàng</Label>
+                <Label className="text-xs font-semibold text-slate-700">Fulfillment Status</Label>
                 <Select value={status} onValueChange={(val: any) => setStatus(val)}>
                   <SelectTrigger className="h-9 text-xs border-slate-200 mt-1">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="PENDING">Chờ xác nhận</SelectItem>
-                    <SelectItem value="PROCESSING">Đang triển khai</SelectItem>
-                    <SelectItem value="SHIPPED">Đang bàn giao</SelectItem>
-                    <SelectItem value="DELIVERED">Đã nghiệm thu</SelectItem>
-                    <SelectItem value="CANCELLED">Đã hủy</SelectItem>
+                    <SelectItem value="DRAFT">DRAFT</SelectItem>
+                    <SelectItem value="CONFIRMED">CONFIRMED</SelectItem>
+                    <SelectItem value="PROCESSING">PROCESSING</SelectItem>
+                    <SelectItem value="PARTIALLY_FULFILLED">PARTIALLY FULFILLED</SelectItem>
+                    <SelectItem value="FULFILLED">FULFILLED</SelectItem>
+                    <SelectItem value="CANCELLED">CANCELLED</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div>
-                <Label className="text-xs font-semibold text-slate-700">Trạng thái thanh toán</Label>
+                <Label className="text-xs font-semibold text-slate-700">Payment Status</Label>
                 <Select value={paymentStatus} onValueChange={(val: any) => setPaymentStatus(val)}>
                   <SelectTrigger className="h-9 text-xs border-slate-200 mt-1">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="PAID">Đã thanh toán đủ</SelectItem>
-                    <SelectItem value="PARTIAL">Thanh toán 1 phần</SelectItem>
-                    <SelectItem value="UNPAID">Chưa thanh toán</SelectItem>
+                    <SelectItem value="PAID">PAID</SelectItem>
+                    <SelectItem value="PARTIALLY_PAID">PARTIALLY PAID</SelectItem>
+                    <SelectItem value="UNPAID">UNPAID</SelectItem>
+                    <SelectItem value="REFUNDED">REFUNDED</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -637,22 +568,22 @@ export const OrdersPage: React.FC = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <Label className="text-xs font-semibold text-slate-700">Ngày đặt hàng</Label>
-                <Input
-                  type="date"
-                  value={orderDate}
-                  onChange={(e) => setOrderDate(e.target.value)}
-                  className="h-9 text-xs border-slate-200 mt-1 font-mono"
-                />
-              </div>
-
-              <div>
-                <Label className="text-xs font-semibold text-slate-700">Ngày giao dự kiến</Label>
+                <Label className="text-xs font-semibold text-slate-700">Estimated Delivery / Handover Date</Label>
                 <Input
                   type="date"
                   value={deliveryDate}
                   onChange={(e) => setDeliveryDate(e.target.value)}
                   className="h-9 text-xs border-slate-200 mt-1 font-mono"
+                />
+              </div>
+
+              <div>
+                <Label className="text-xs font-semibold text-slate-700">Fulfillment Lead</Label>
+                <Input
+                  placeholder="Alex Nguyen"
+                  value={assignedTo}
+                  onChange={(e) => setAssignedTo(e.target.value)}
+                  className="h-9 text-xs border-slate-200 mt-1"
                 />
               </div>
             </div>
@@ -664,7 +595,7 @@ export const OrdersPage: React.FC = () => {
                 onClick={() => setIsModalOpen(false)}
                 className="text-xs border-slate-200 h-9"
               >
-                Hủy bỏ
+                Cancel
               </Button>
               <Button
                 type="submit"
@@ -672,7 +603,7 @@ export const OrdersPage: React.FC = () => {
                 className="text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white gap-1.5 shadow-xs h-9"
               >
                 {isSubmitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
-                <span>{editingOrder ? 'Lưu Thay Đổi' : 'Tạo Đơn Hàng'}</span>
+                <span>{editingOrder ? 'Save Changes' : 'Create Order'}</span>
               </Button>
             </div>
           </form>
@@ -681,3 +612,5 @@ export const OrdersPage: React.FC = () => {
     </div>
   );
 };
+
+export default OrdersPage;

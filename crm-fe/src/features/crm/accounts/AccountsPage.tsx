@@ -59,6 +59,7 @@ import {
   Dialog,
   DialogContent,
 } from '@/components/ui/dialog';
+import { ActionTooltip } from '@/components/ui/action-tooltip';
 
 import { useAuth } from '@/core/session/useAuth';
 
@@ -178,7 +179,7 @@ export const AccountsPage: React.FC = () => {
       setAccounts(rawItems);
     } catch {
       setAccounts([]);
-      toast.error('Không thể kết nối đến Backend hoặc chưa có dữ liệu khách hàng.');
+      toast.error('Unable to fetch account list from server.');
     } finally {
       setLoading(false);
     }
@@ -201,7 +202,7 @@ export const AccountsPage: React.FC = () => {
   const handleCreateAccount = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formAccountNumber.trim() || !formDisplayName.trim()) {
-      toast.error('Vui lòng nhập đầy đủ Mã khách hàng và Tên khách hàng');
+      toast.error('Please enter both Account Code and Account Name');
       return;
     }
 
@@ -230,12 +231,12 @@ export const AccountsPage: React.FC = () => {
 
     try {
       const created = await accountApi.create(payload);
-      toast.success(`Đã tạo thành công khách hàng "${created.displayName}"`);
+      toast.success(`Account "${created.displayName}" created successfully`);
       setIsCreateOpen(false);
       resetForm();
       fetchAccounts();
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Không thể tạo mới khách hàng';
+      const msg = err instanceof Error ? err.message : 'Failed to create account';
       toast.error(msg);
     } finally {
       setIsSubmitting(false);
@@ -247,14 +248,14 @@ export const AccountsPage: React.FC = () => {
   };
 
   const handleDeleteAccount = async (id: string, version: number, name: string) => {
-    if (!window.confirm(`Bạn có chắc chắn muốn xóa khách hàng "${name}" không?`)) return;
+    if (!window.confirm(`Are you sure you want to delete account "${name}"?`)) return;
 
     try {
       await accountApi.delete(id, version);
-      toast.success(`Đã xóa khách hàng "${name}" thành công!`);
+      toast.success(`Account "${name}" deleted successfully!`);
       fetchAccounts();
     } catch {
-      toast.error('Xóa khách hàng thất bại. Vui lòng kiểm tra quyền hoặc kết nối.');
+      toast.error('Failed to delete account. Please verify permissions or network.');
     }
   };
 
@@ -275,8 +276,6 @@ export const AccountsPage: React.FC = () => {
     setFormDoNotContact(false);
     setActiveFormTab('general');
   };
-
-
 
   // Client-side Filtered Accounts for Owner & DNC
   const filteredAccounts = useMemo(() => {
@@ -300,7 +299,7 @@ export const AccountsPage: React.FC = () => {
   const totalCount = accounts.length;
   const customerCount = accounts.filter((a) => a.lifecycleStage === 'CUSTOMER').length;
 
-  // Root Parent Accounts for Pagination (Max 3 Parents per Page)
+  // Root Parent Accounts for Pagination
   const rootParentAccounts = useMemo(() => {
     return filteredAccounts.filter(
       (acc) => !acc.parentAccountId || !accounts.some((p) => p.id === acc.parentAccountId)
@@ -336,7 +335,7 @@ export const AccountsPage: React.FC = () => {
               : 'bg-[#FAFBFC] hover:bg-[#F1F2F4]'
           }`}
         >
-          {/* Column 1: Mã Khách hàng & Nút Đóng/Mở Node */}
+          {/* Column 1: Account Code & Toggle */}
           <TableCell className="font-mono text-xs py-2 px-3">
             <div className="flex items-center gap-1.5 font-mono" style={{ paddingLeft: `${level * 1.25}rem` }}>
               {level > 0 && (
@@ -349,7 +348,7 @@ export const AccountsPage: React.FC = () => {
                   type="button"
                   onClick={() => toggleCollapse(acc.id)}
                   className="p-0.5 hover:bg-slate-200 rounded-[2px] transition-colors text-slate-600 flex items-center justify-center shrink-0"
-                  title={isCollapsed ? 'Mở rộng các đơn vị trực thuộc' : 'Thu gọn các đơn vị trực thuộc'}
+                  title={isCollapsed ? 'Expand subsidiaries' : 'Collapse subsidiaries'}
                 >
                   {isCollapsed ? (
                     <ChevronRight className="w-3.5 h-3.5 text-slate-500 font-bold" />
@@ -367,7 +366,7 @@ export const AccountsPage: React.FC = () => {
             </div>
           </TableCell>
 
-          {/* Column 2: Tên Khách hàng & Avatar */}
+          {/* Column 2: Account Name & Hierarchy */}
           <TableCell className="py-2 px-3">
             <div className="flex items-center gap-2">
               <div className={`w-6 h-6 rounded-[3px] flex items-center justify-center font-bold text-[11px] shrink-0 border ${
@@ -392,47 +391,53 @@ export const AccountsPage: React.FC = () => {
             </div>
           </TableCell>
 
-          {/* Column 3: Loại hình */}
+          {/* Column 3: Type */}
           <TableCell className="py-2 px-3">{getAccountTypeBadge(acc.accountType)}</TableCell>
 
-          {/* Column 4: Vòng đời */}
+          {/* Column 4: Lifecycle */}
           <TableCell className="py-2 px-3">{getLifecycleStageBadge(acc.lifecycleStage)}</TableCell>
 
-          {/* Column 5: Cập nhật cuối */}
+          {/* Column 5: Last Updated */}
           <TableCell className="py-2 px-3 text-slate-500 font-mono text-[11px]">
-            {new Date(acc.updatedAt).toLocaleTimeString('vi-VN')} {new Date(acc.updatedAt).toLocaleDateString('vi-VN')}
+            {new Date(acc.updatedAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })} {new Date(acc.updatedAt).toLocaleDateString('en-US')}
           </TableCell>
 
-          {/* Column 6: Thao tác */}
+          {/* Column 6: Actions */}
           <TableCell className="py-2 px-3 text-right pr-4">
             <div className="flex items-center justify-end gap-1">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => handleCreateChildAccount(acc.id)}
-                className="h-7 w-7 rounded-[3px] text-slate-600 hover:text-emerald-700 hover:bg-emerald-50"
-                title={`Thêm đơn vị trực thuộc ${acc.displayName}`}
-              >
-                <Plus className="w-3.5 h-3.5" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => handleViewDetail(acc.id)}
-                className="h-7 w-7 rounded-[3px] text-slate-600 hover:text-[#0C66E4] hover:bg-[#E9F2FF]"
-                title="Xem chi tiết"
-              >
-                <Eye className="w-3.5 h-3.5" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => handleDeleteAccount(acc.id, acc.version, acc.displayName)}
-                className="h-7 w-7 rounded-[3px] text-slate-600 hover:text-red-600 hover:bg-red-50"
-                title="Xóa khách hàng"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-              </Button>
+              <ActionTooltip label={`Thêm chi nhánh dưới ${acc.displayName}`}>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => handleCreateChildAccount(acc.id)}
+                  className="h-7 w-7 rounded-[3px] text-slate-600 hover:text-emerald-700 hover:bg-emerald-50"
+                  aria-label={`Add subsidiary under ${acc.displayName}`}
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                </Button>
+              </ActionTooltip>
+              <ActionTooltip label="Xem chi tiết">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => handleViewDetail(acc.id)}
+                  className="h-7 w-7 rounded-[3px] text-slate-600 hover:text-[#0C66E4] hover:bg-[#E9F2FF]"
+                  aria-label="View details"
+                >
+                  <Eye className="w-3.5 h-3.5" />
+                </Button>
+              </ActionTooltip>
+              <ActionTooltip label="Xóa tài khoản">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => handleDeleteAccount(acc.id, acc.version, acc.displayName)}
+                  className="h-7 w-7 rounded-[3px] text-slate-600 hover:text-red-600 hover:bg-red-50"
+                  aria-label="Delete account"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </Button>
+              </ActionTooltip>
             </div>
           </TableCell>
         </TableRow>
@@ -453,10 +458,10 @@ export const AccountsPage: React.FC = () => {
 
   // View Tabs Config
   const viewTabs: ViewTabItem[] = useMemo(() => [
-    { id: 'ALL', label: 'Tất cả', count: totalCount },
-    ...(session?.user ? [{ id: 'MY_OWN', label: 'Của tôi' }] : []),
-    { id: 'CUSTOMER', label: 'Khách hàng', count: customerCount, dotColor: 'bg-emerald-500' },
-    { id: 'PROSPECT', label: 'Tiềm năng', dotColor: 'bg-purple-500' },
+    { id: 'ALL', label: 'All', count: totalCount },
+    ...(session?.user ? [{ id: 'MY_OWN', label: 'My Accounts' }] : []),
+    { id: 'CUSTOMER', label: 'Customers', count: customerCount, dotColor: 'bg-emerald-500' },
+    { id: 'PROSPECT', label: 'Prospects', dotColor: 'bg-purple-500' },
   ], [totalCount, customerCount, session]);
 
   const currentActiveTab = ownerFilter === 'MY_OWN' ? 'MY_OWN' : selectedStage === 'CUSTOMER' ? 'CUSTOMER' : selectedStage === 'PROSPECT' ? 'PROSPECT' : 'ALL';
@@ -481,10 +486,10 @@ export const AccountsPage: React.FC = () => {
     <div className="space-y-4 pb-12 font-sans w-full">
       {/* Standard Page Header */}
       <StandardPageHeader
-        title="Quản lý Khách hàng Doanh nghiệp"
-        subtitle="Cơ cấu liên kết theo mô hình Cây phân cấp Doanh nghiệp mẹ - Công ty con, thông tin pháp lý & người phụ trách"
+        title="Enterprise Customer Accounts"
+        subtitle="Multi-level parent-subsidiary account hierarchy, legal entity registration & assigned account owners"
         badgeCount={totalCount}
-        badgeLabel="đối tượng"
+        badgeLabel="accounts"
         actions={
           <>
             <Button
@@ -492,17 +497,17 @@ export const AccountsPage: React.FC = () => {
               size="sm"
               onClick={toggleCollapseAll}
               className="text-xs font-medium text-slate-700 bg-white border-slate-200 hover:bg-slate-50 gap-1.5 h-8 rounded-[3px]"
-              title={collapsedNodeIds.size > 0 ? 'Mở rộng tất cả cây phân cấp' : 'Thu gọn tất cả cây phân cấp'}
+              title={collapsedNodeIds.size > 0 ? 'Expand all hierarchy trees' : 'Collapse all hierarchy trees'}
             >
               {collapsedNodeIds.size > 0 ? (
                 <>
                   <ChevronDown className="w-3.5 h-3.5 text-slate-500" />
-                  <span>Mở rộng tất cả</span>
+                  <span>Expand All</span>
                 </>
               ) : (
                 <>
                   <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
-                  <span>Thu gọn tất cả</span>
+                  <span>Collapse All</span>
                 </>
               )}
             </Button>
@@ -514,7 +519,7 @@ export const AccountsPage: React.FC = () => {
               className="text-xs font-medium text-slate-700 bg-white border-slate-200 hover:bg-slate-50 gap-1.5 h-8 rounded-[3px]"
             >
               <GitMerge className="w-3.5 h-3.5 text-indigo-500" />
-              <span>Quét trùng lặp</span>
+              <span>Scan Duplicates</span>
             </Button>
 
             <Button
@@ -523,7 +528,7 @@ export const AccountsPage: React.FC = () => {
               className="text-xs font-semibold bg-[#0C66E4] hover:bg-[#0052CC] text-white gap-1.5 shadow-none h-8 rounded-[3px]"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>Thêm Khách hàng</span>
+              <span>New Account</span>
             </Button>
           </>
         }
@@ -533,7 +538,7 @@ export const AccountsPage: React.FC = () => {
       <StandardFilterBar
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
-        searchPlaceholder="Tìm kiếm theo Mã KH, Tên, Pháp lý..."
+        searchPlaceholder="Search by account code, name, legal entity..."
         viewTabs={viewTabs}
         activeTab={currentActiveTab}
         onTabChange={handleTabChange}
@@ -541,11 +546,11 @@ export const AccountsPage: React.FC = () => {
         onResetFilters={handleResetFilters}
         filterControls={
           <>
-            {/* Filter 1: Người phụ trách */}
+            {/* Filter 1: Owner */}
             <SearchableSelect
               options={[
-                { value: 'ALL', label: 'Tất cả người phụ trách' },
-                ...(session?.user ? [{ value: 'MY_OWN', label: 'Chỉ Khách hàng của tôi' }] : []),
+                { value: 'ALL', label: 'All Account Owners' },
+                ...(session?.user ? [{ value: 'MY_OWN', label: 'My Accounts Only' }] : []),
                 ...teamMembers.map((m) => ({
                   value: m.id,
                   label: m.name,
@@ -553,43 +558,43 @@ export const AccountsPage: React.FC = () => {
               ]}
               value={ownerFilter}
               onValueChange={setOwnerFilter}
-              placeholder="Tất cả người phụ trách"
-              searchPlaceholder="Tìm người phụ trách..."
+              placeholder="All Owners"
+              searchPlaceholder="Search owners..."
               className="w-[175px] h-8 rounded-[3px] text-xs"
             />
 
-            {/* Filter 2: Loại hình */}
+            {/* Filter 2: Type */}
             <SearchableSelect
               options={[
-                { value: 'ALL', label: 'Tất cả loại hình' },
-                { value: 'ORGANIZATION', label: 'Doanh nghiệp' },
-                { value: 'PERSON', label: 'Cá nhân' },
-                { value: 'PARTNER', label: 'Đối tác' },
-                { value: 'RESELLER', label: 'Đại lý' },
-                { value: 'SUPPLIER', label: 'Nhà cung cấp' },
+                { value: 'ALL', label: 'All Account Types' },
+                { value: 'ORGANIZATION', label: 'Enterprise' },
+                { value: 'PERSON', label: 'Individual' },
+                { value: 'PARTNER', label: 'Strategic Partner' },
+                { value: 'RESELLER', label: 'Reseller' },
+                { value: 'SUPPLIER', label: 'Supplier' },
               ]}
               value={selectedType}
               onValueChange={setSelectedType}
-              placeholder="Loại hình"
-              searchPlaceholder="Tìm loại hình..."
-              className="w-[135px] h-8 rounded-[3px] text-xs"
+              placeholder="Account Type"
+              searchPlaceholder="Search type..."
+              className="w-[145px] h-8 rounded-[3px] text-xs"
             />
 
-            {/* Filter 3: Vòng đời */}
+            {/* Filter 3: Stage */}
             <SearchableSelect
               options={[
-                { value: 'ALL', label: 'Tất cả vòng đời' },
-                { value: 'PROSPECT', label: 'Tiềm năng', badge: 'Mới' },
-                { value: 'QUALIFIED', label: 'Đạt chuẩn', badge: 'Chuẩn' },
-                { value: 'CUSTOMER', label: 'Khách hàng chính thức', badge: 'Active' },
-                { value: 'INACTIVE', label: 'Ngừng hoạt động', badge: 'Tạm dừng' },
-                { value: 'CHURNED', label: 'Rời bỏ', badge: 'Mất' },
+                { value: 'ALL', label: 'All Lifecycle Stages' },
+                { value: 'PROSPECT', label: 'Prospect', badge: 'New' },
+                { value: 'QUALIFIED', label: 'Qualified', badge: 'Verified' },
+                { value: 'CUSTOMER', label: 'Customer', badge: 'Active' },
+                { value: 'INACTIVE', label: 'Inactive', badge: 'Paused' },
+                { value: 'CHURNED', label: 'Churned', badge: 'Lost' },
               ]}
               value={selectedStage}
               onValueChange={setSelectedStage}
-              placeholder="Vòng đời"
-              searchPlaceholder="Tìm vòng đời..."
-              className="w-[145px] h-8 rounded-[3px] text-xs"
+              placeholder="Lifecycle Stage"
+              searchPlaceholder="Search stage..."
+              className="w-[155px] h-8 rounded-[3px] text-xs"
             />
 
             {/* Filter 4: DNC */}
@@ -613,12 +618,12 @@ export const AccountsPage: React.FC = () => {
         <Table>
           <TableHeader className="bg-[#F7F8F9] border-b border-slate-200">
             <TableRow className="hover:bg-[#F7F8F9]">
-              <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-slate-600 w-44 py-2.5 px-3">Mã Khách hàng</TableHead>
-              <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-slate-600 py-2.5 px-3">Tên Khách hàng & Cấu trúc Phân cấp</TableHead>
-              <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-slate-600 py-2.5 px-3">Loại hình</TableHead>
-              <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-slate-600 py-2.5 px-3">Vòng đời Kinh doanh</TableHead>
-              <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-slate-600 py-2.5 px-3">Cập nhật cuối</TableHead>
-              <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-slate-600 text-right pr-4 py-2.5">Thao tác</TableHead>
+              <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-slate-600 w-44 py-2.5 px-3">Account Code</TableHead>
+              <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-slate-600 py-2.5 px-3">Account Name &amp; Hierarchy</TableHead>
+              <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-slate-600 py-2.5 px-3">Type</TableHead>
+              <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-slate-600 py-2.5 px-3">Lifecycle Stage</TableHead>
+              <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-slate-600 py-2.5 px-3">Last Updated</TableHead>
+              <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-slate-600 text-right pr-4 py-2.5">Actions</TableHead>
             </TableRow>
           </TableHeader>
 
@@ -627,7 +632,7 @@ export const AccountsPage: React.FC = () => {
               <TableRow>
                 <TableCell colSpan={6} className="h-44 text-center text-slate-500">
                   <Loader2 className="w-5 h-5 animate-spin mx-auto text-[#0C66E4] mb-2" />
-                  <span className="text-xs">Đang tải danh sách khách hàng...</span>
+                  <span className="text-xs">Loading customer accounts...</span>
                 </TableCell>
               </TableRow>
             ) : paginatedRootParents.length === 0 ? (
@@ -635,15 +640,15 @@ export const AccountsPage: React.FC = () => {
                 <TableCell colSpan={6} className="h-44 text-center">
                   <div className="flex flex-col items-center justify-center py-6 text-slate-400">
                     <Building2 className="w-8 h-8 text-slate-300 mb-2" />
-                    <div className="font-semibold text-slate-700 text-xs">Không tìm thấy khách hàng nào</div>
-                    <p className="text-[11px] text-slate-400 mt-0.5">Hãy thử thay đổi điều kiện lọc hoặc tạo mới khách hàng.</p>
+                    <div className="font-semibold text-slate-700 text-xs">No accounts found</div>
+                    <p className="text-[11px] text-slate-400 mt-0.5">Try adjusting your filters or create a new account.</p>
                     <Button
                       size="sm"
                       onClick={() => { resetForm(); setIsCreateOpen(true); }}
                       className="mt-3 text-xs bg-[#0C66E4] hover:bg-[#0052CC] text-white rounded-[3px] h-7 px-2.5"
                     >
                       <Plus className="w-3 h-3 mr-1" />
-                      Tạo khách hàng mới
+                      Create New Account
                     </Button>
                   </div>
                 </TableCell>
@@ -662,16 +667,15 @@ export const AccountsPage: React.FC = () => {
             totalElements={rootParentAccounts.length}
             pageSize={PARENT_PER_PAGE}
             onPageChange={setCurrentPage}
-            itemLabel="doanh nghiệp mẹ"
+            itemLabel="parent organizations"
           />
         )}
       </Card>
 
-      {/* Modal 1: Create Account Dialog — 100% Synchronized Flat Tabbed Design */}
+      {/* Modal 1: Create Account Dialog */}
       <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
         <DialogContent className="max-w-3xl w-full flex flex-col p-0 gap-0 overflow-hidden font-sans border-slate-200 shadow-xl rounded-2xl bg-white">
-
-          {/* ── Dialog Header ── */}
+          {/* Dialog Header */}
           <div className="shrink-0 px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-white">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center shadow-sm shrink-0">
@@ -679,16 +683,16 @@ export const AccountsPage: React.FC = () => {
               </div>
               <div>
                 <h2 className="text-base font-bold text-slate-900 leading-tight">
-                  {formParentAccountId ? 'Tạo Mới Đơn Vị Trực Thuộc' : 'Tạo Mới Khách Hàng / Doanh Nghiệp'}
+                  {formParentAccountId ? 'Create Subsidiary Unit' : 'Create Customer Account'}
                 </h2>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Khởi tạo hồ sơ thông tin khách hàng &amp; cấu trúc tổ chức
+                  Initialize account profile, enterprise hierarchy &amp; legal registration
                 </p>
               </div>
             </div>
           </div>
 
-          {/* ── Synchronized Horizontal Tabs Bar ── */}
+          {/* Synchronized Horizontal Tabs Bar */}
           <div className="shrink-0 flex items-center gap-1 px-6 bg-slate-50/70 border-b border-slate-200/80">
             <button
               type="button"
@@ -700,7 +704,7 @@ export const AccountsPage: React.FC = () => {
               }`}
             >
               <Building2 className="w-3.5 h-3.5" />
-              <span>1. Thông tin Chung &amp; Phân cấp</span>
+              <span>1. General Information &amp; Hierarchy</span>
             </button>
 
             <button
@@ -713,21 +717,19 @@ export const AccountsPage: React.FC = () => {
               }`}
             >
               <ShieldAlert className="w-3.5 h-3.5" />
-              <span>2. Thông tin Pháp lý &amp; Bổ sung</span>
+              <span>2. Legal &amp; Supplementary Info</span>
             </button>
           </div>
 
           <form onSubmit={handleCreateAccount} className="flex flex-col flex-1 overflow-hidden">
-            {/* ── Form Body (No nested card clutter, perfect flat layout) ── */}
             <div className="p-6 space-y-6 overflow-y-auto max-h-[58vh]">
-
               {/* Alert: Parent Account Preset Banner */}
               {formParentAccountId && formParentAccountId !== 'NONE' && (
                 <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl flex items-center justify-between text-xs text-blue-900">
                   <div className="flex items-center gap-2">
                     <Building2 className="w-4 h-4 text-blue-600 shrink-0" />
                     <span>
-                      Đang tạo đơn vị trực thuộc cho: <strong>{selectedParentAccountObj?.displayName}</strong> ({selectedParentAccountObj?.accountNumber})
+                      Creating subsidiary for parent: <strong>{selectedParentAccountObj?.displayName}</strong> ({selectedParentAccountObj?.accountNumber})
                     </span>
                   </div>
                   <button
@@ -735,33 +737,33 @@ export const AccountsPage: React.FC = () => {
                     onClick={() => setFormParentAccountId(undefined)}
                     className="text-[11px] text-blue-700 hover:text-blue-900 font-semibold underline"
                   >
-                    Bỏ chọn
+                    Clear Parent
                   </button>
                 </div>
               )}
 
-              {/* ── TAB 1: THÔNG TIN CHUNG & PHÂN CẤP ── */}
+              {/* TAB 1: GENERAL INFORMATION & HIERARCHY */}
               {activeFormTab === 'general' && (
                 <div className="space-y-6">
-                  {/* Section A: Định danh */}
+                  {/* Section A: Identity */}
                   <div className="space-y-3">
                     <div className="flex items-center gap-2 pb-1.5 border-b border-slate-100">
                       <Building2 className="w-3.5 h-3.5 text-blue-600" />
                       <h3 className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                        Thông tin Định danh
+                        Identity Information
                       </h3>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-1.5">
                         <Label htmlFor="accNumber" className="text-xs font-semibold text-slate-700">
-                          Mã Khách hàng <span className="text-red-500">*</span>
+                          Account Code <span className="text-red-500">*</span>
                         </Label>
                         <Input
                           id="accNumber"
                           value={formAccountNumber}
                           onChange={(e) => setFormAccountNumber(e.target.value)}
-                          placeholder="VD: ACC-1002"
+                          placeholder="e.g. ACC-1002"
                           className="text-xs font-mono h-9 border-slate-200 focus-visible:ring-blue-500 bg-white"
                           required
                         />
@@ -769,13 +771,13 @@ export const AccountsPage: React.FC = () => {
 
                       <div className="space-y-1.5">
                         <Label htmlFor="displayName" className="text-xs font-semibold text-slate-700">
-                          Tên Thương hiệu / Viết tắt <span className="text-red-500">*</span>
+                          Trading / Brand Name <span className="text-red-500">*</span>
                         </Label>
                         <Input
                           id="displayName"
                           value={formDisplayName}
                           onChange={(e) => setFormDisplayName(e.target.value)}
-                          placeholder="VD: MB Securities"
+                          placeholder="e.g. MB Securities"
                           className="text-xs h-9 border-slate-200 focus-visible:ring-blue-500 bg-white"
                           required
                         />
@@ -783,34 +785,34 @@ export const AccountsPage: React.FC = () => {
 
                       <div className="md:col-span-2 space-y-1.5">
                         <Label htmlFor="legalName" className="text-xs font-semibold text-slate-700">
-                          Tên Pháp lý Đầy đủ (Tên ĐKKD)
+                          Full Legal Entity Name
                         </Label>
                         <Input
                           id="legalName"
                           value={formLegalName}
                           onChange={(e) => setFormLegalName(e.target.value)}
-                          placeholder="VD: Công ty Cổ phần Chứng khoán MB"
+                          placeholder="e.g. MB Securities Joint Stock Company"
                           className="text-xs h-9 border-slate-200 focus-visible:ring-blue-500 bg-white"
                         />
                       </div>
                     </div>
                   </div>
 
-                  {/* Section B: Phân cấp & Quản lý */}
+                  {/* Section B: Hierarchy & Ownership */}
                   <div className="space-y-3">
                     <div className="flex items-center gap-2 pb-1.5 border-b border-slate-100">
                       <CornerDownRight className="w-3.5 h-3.5 text-emerald-600" />
                       <h3 className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                        Phân cấp Tổ chức &amp; Phụ trách
+                        Hierarchy &amp; Ownership
                       </h3>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-1.5">
-                        <Label className="text-xs font-semibold text-slate-700">Khách hàng Cha / Cấp trên</Label>
+                        <Label className="text-xs font-semibold text-slate-700">Parent Account / Organization</Label>
                         <SearchableSelect
                           options={[
-                            { value: 'NONE', label: 'Không có – Cấp cao nhất (Độc lập)' },
+                            { value: 'NONE', label: 'None – Top-level Root (Independent)' },
                             ...accounts.map((acc) => ({
                               value: acc.id,
                               label: `${acc.accountNumber} – ${acc.displayName}`,
@@ -820,13 +822,13 @@ export const AccountsPage: React.FC = () => {
                           ]}
                           value={formParentAccountId || 'NONE'}
                           onValueChange={(v) => setFormParentAccountId(v === 'NONE' ? undefined : v)}
-                          placeholder="Chọn Khách hàng Cha..."
-                          searchPlaceholder="Tìm mã hoặc tên khách hàng..."
+                          placeholder="Select Parent Account..."
+                          searchPlaceholder="Search account code or name..."
                         />
                       </div>
 
                       <div className="space-y-1.5">
-                        <Label className="text-xs font-semibold text-slate-700">Thành viên phụ trách</Label>
+                        <Label className="text-xs font-semibold text-slate-700">Assigned Account Owner</Label>
                         {teamMembers.length > 1 ? (
                           <SearchableSelect
                             options={teamMembers.map((member) => {
@@ -836,61 +838,61 @@ export const AccountsPage: React.FC = () => {
                                 : member.email;
                               return {
                                 value: member.id,
-                                label: `${label}${isSelf ? ' – Chính tôi' : ''}`,
+                                label: `${label}${isSelf ? ' – You' : ''}`,
                               };
                             })}
                             value={selectedOwnerId || session?.user?.id || ''}
                             onValueChange={(v) => setSelectedOwnerId(v)}
-                            placeholder="Chọn thành viên phụ trách..."
-                            searchPlaceholder="Tìm tên hoặc email..."
+                            placeholder="Select account owner..."
+                            searchPlaceholder="Search name or email..."
                           />
                         ) : (
                           <div className="flex items-center justify-between h-9 px-3 bg-white border border-slate-200 rounded-md text-xs text-slate-700 w-full">
-                            <span className="truncate">{session?.user?.email || 'Chính bạn (Tài khoản hiện tại)'}</span>
+                            <span className="truncate">{session?.user?.email || 'You (Current Session)'}</span>
                           </div>
                         )}
                       </div>
                     </div>
                   </div>
 
-                  {/* Section C: Phân loại & Vòng đời */}
+                  {/* Section C: Classification & Lifecycle */}
                   <div className="space-y-3">
                     <div className="flex items-center gap-2 pb-1.5 border-b border-slate-100">
                       <Users className="w-3.5 h-3.5 text-purple-600" />
                       <h3 className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                        Phân loại Kinh doanh
+                        Commercial Classification
                       </h3>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-1.5">
-                        <Label htmlFor="accType" className="text-xs font-semibold text-slate-700">Loại hình Khách hàng</Label>
+                        <Label htmlFor="accType" className="text-xs font-semibold text-slate-700">Account Type</Label>
                         <Select value={formAccountType} onValueChange={(v) => setFormAccountType(v as AccountType)}>
                           <SelectTrigger className="text-xs h-9 border-slate-200 bg-white">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent className="text-xs">
-                            <SelectItem value="ORGANIZATION">Doanh nghiệp</SelectItem>
-                            <SelectItem value="PERSON">Cá nhân</SelectItem>
-                            <SelectItem value="PARTNER">Đối tác chiến lược</SelectItem>
-                            <SelectItem value="RESELLER">Đại lý ủy quyền</SelectItem>
-                            <SelectItem value="SUPPLIER">Nhà cung cấp</SelectItem>
+                            <SelectItem value="ORGANIZATION">Enterprise</SelectItem>
+                            <SelectItem value="PERSON">Individual</SelectItem>
+                            <SelectItem value="PARTNER">Strategic Partner</SelectItem>
+                            <SelectItem value="RESELLER">Authorized Reseller</SelectItem>
+                            <SelectItem value="SUPPLIER">Supplier</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
 
                       <div className="space-y-1.5">
-                        <Label htmlFor="lifecycle" className="text-xs font-semibold text-slate-700">Giai đoạn Vòng đời</Label>
+                        <Label htmlFor="lifecycle" className="text-xs font-semibold text-slate-700">Lifecycle Stage</Label>
                         <Select value={formLifecycleStage} onValueChange={(v) => setFormLifecycleStage(v as AccountLifecycleStage)}>
                           <SelectTrigger className="text-xs h-9 border-slate-200 bg-white">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent className="text-xs">
-                            <SelectItem value="PROSPECT">Tiềm năng (Prospect)</SelectItem>
-                            <SelectItem value="QUALIFIED">Đạt chuẩn (Qualified)</SelectItem>
-                            <SelectItem value="CUSTOMER">Khách hàng chính thức</SelectItem>
-                            <SelectItem value="INACTIVE">Ngừng hoạt động</SelectItem>
-                            <SelectItem value="CHURNED">Rời bỏ (Churned)</SelectItem>
+                            <SelectItem value="PROSPECT">Prospect</SelectItem>
+                            <SelectItem value="QUALIFIED">Qualified</SelectItem>
+                            <SelectItem value="CUSTOMER">Customer (Active)</SelectItem>
+                            <SelectItem value="INACTIVE">Inactive (Paused)</SelectItem>
+                            <SelectItem value="CHURNED">Churned (Lost)</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -899,81 +901,81 @@ export const AccountsPage: React.FC = () => {
                 </div>
               )}
 
-              {/* ── TAB 2: THÔNG TIN PHÁP LÝ & BỔ SUNG ── */}
+              {/* TAB 2: LEGAL & SUPPLEMENTARY INFO */}
               {activeFormTab === 'legal' && (
                 <div className="space-y-6">
-                  {/* Section D: Pháp lý */}
+                  {/* Section D: Legal & Contact */}
                   <div className="space-y-3">
                     <div className="flex items-center gap-2 pb-1.5 border-b border-slate-100">
                       <ShieldAlert className="w-3.5 h-3.5 text-amber-600" />
                       <h3 className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                        Thông tin Đăng ký &amp; Liên hệ
+                        Registration &amp; Corporate Data
                       </h3>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-1.5">
-                        <Label htmlFor="taxId" className="text-xs font-semibold text-slate-700">Mã số thuế (MST)</Label>
-                        <Input id="taxId" value={formTaxIdentifier} onChange={(e) => setFormTaxIdentifier(e.target.value)} placeholder="VD: 0102065678" className="text-xs h-9 border-slate-200 bg-white" />
+                        <Label htmlFor="taxId" className="text-xs font-semibold text-slate-700">Tax Identification Number (TIN)</Label>
+                        <Input id="taxId" value={formTaxIdentifier} onChange={(e) => setFormTaxIdentifier(e.target.value)} placeholder="e.g. 0102065678" className="text-xs h-9 border-slate-200 bg-white" />
                       </div>
 
                       <div className="space-y-1.5">
-                        <Label htmlFor="regNo" className="text-xs font-semibold text-slate-700">Số Giấy phép ĐKKD</Label>
-                        <Input id="regNo" value={formRegistrationNumber} onChange={(e) => setFormRegistrationNumber(e.target.value)} placeholder="VD: 0102065678-GP" className="text-xs h-9 border-slate-200 bg-white" />
+                        <Label htmlFor="regNo" className="text-xs font-semibold text-slate-700">Business Registration Number</Label>
+                        <Input id="regNo" value={formRegistrationNumber} onChange={(e) => setFormRegistrationNumber(e.target.value)} placeholder="e.g. 0102065678-GP" className="text-xs h-9 border-slate-200 bg-white" />
                       </div>
 
                       <div className="space-y-1.5">
-                        <Label htmlFor="website" className="text-xs font-semibold text-slate-700">Website chính thức</Label>
-                        <Input id="website" value={formWebsite} onChange={(e) => setFormWebsite(e.target.value)} placeholder="https://..." className="text-xs h-9 border-slate-200 bg-white" />
+                        <Label htmlFor="website" className="text-xs font-semibold text-slate-700">Official Website</Label>
+                        <Input id="website" value={formWebsite} onChange={(e) => setFormWebsite(e.target.value)} placeholder="https://example.com" className="text-xs h-9 border-slate-200 bg-white" />
                       </div>
 
                       <div className="space-y-1.5">
-                        <Label htmlFor="industry" className="text-xs font-semibold text-slate-700">Ngành nghề / Lĩnh vực</Label>
-                        <Input id="industry" value={formIndustryCode} onChange={(e) => setFormIndustryCode(e.target.value)} placeholder="VD: Tài chính - Bất động sản" className="text-xs h-9 border-slate-200 bg-white" />
+                        <Label htmlFor="industry" className="text-xs font-semibold text-slate-700">Industry / Sector</Label>
+                        <Input id="industry" value={formIndustryCode} onChange={(e) => setFormIndustryCode(e.target.value)} placeholder="e.g. Financial Services - Real Estate" className="text-xs h-9 border-slate-200 bg-white" />
                       </div>
 
                       <div className="space-y-1.5">
                         <BusinessNumberInput
                           id="empCount"
-                          label="Quy mô Nhân sự"
+                          label="Total Headcount"
                           value={formEmployeeCount}
                           onChange={setFormEmployeeCount}
-                          placeholder="VD: 2500"
-                          unitSuffix="người"
+                          placeholder="e.g. 2500"
+                          unitSuffix="employees"
                         />
                       </div>
 
                       <div className="space-y-1.5">
                         <BusinessNumberInput
                           id="revenue"
-                          label="Doanh thu Hàng năm"
+                          label="Annual Revenue"
                           value={formRevenueAmount}
                           onChange={setFormRevenueAmount}
-                          placeholder="VD: 350,000,000,000"
-                          unitSuffix="VNĐ"
+                          placeholder="e.g. 350,000,000,000"
+                          unitSuffix="VND"
                         />
                       </div>
                     </div>
                   </div>
 
-                  {/* Section E: Ghi chú & DNC */}
+                  {/* Section E: Notes & Privacy */}
                   <div className="space-y-3">
                     <div className="flex items-center gap-2 pb-1.5 border-b border-slate-100">
                       <Users className="w-3.5 h-3.5 text-slate-600" />
                       <h3 className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                        Ghi chú &amp; Quyền riêng tư
+                        Notes &amp; Privacy Governance
                       </h3>
                     </div>
 
                     <div className="space-y-4">
                       <div className="space-y-1.5">
-                        <Label htmlFor="desc" className="text-xs font-semibold text-slate-700">Mô tả / Ghi chú Chăm sóc</Label>
+                        <Label htmlFor="desc" className="text-xs font-semibold text-slate-700">Commercial Notes / Description</Label>
                         <textarea
                           id="desc"
                           rows={3}
                           value={formDescription}
                           onChange={(e) => setFormDescription(e.target.value)}
-                          placeholder="Nhập thông tin ghi chú, đặc điểm chăm sóc đối tác..."
+                          placeholder="Enter account relationship context, key requirements, or notes..."
                           className="w-full rounded-lg border border-slate-200 p-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white resize-none"
                         />
                       </div>
@@ -989,9 +991,9 @@ export const AccountsPage: React.FC = () => {
                         />
                         <div>
                           <Label htmlFor="createDnc" className="text-xs font-semibold cursor-pointer text-rose-800">
-                            Đánh dấu Từ chối Tiếp thị (Do Not Contact - DNC)
+                            Mark as Do Not Contact (DNC)
                           </Label>
-                          <p className="text-[11px] text-rose-600 mt-0.5">Từ chối cuộc gọi / email tiếp thị tự động tới khách hàng này</p>
+                          <p className="text-[11px] text-rose-600 mt-0.5">Opt out of automated marketing calls and outbound marketing emails</p>
                         </div>
                       </div>
                     </div>
@@ -1000,10 +1002,10 @@ export const AccountsPage: React.FC = () => {
               )}
             </div>
 
-            {/* ── Synchronized Dialog Footer ── */}
+            {/* Dialog Footer */}
             <div className="shrink-0 px-6 py-3.5 bg-slate-50/80 border-t border-slate-100 flex items-center justify-end gap-2">
               <Button type="button" variant="outline" onClick={() => setIsCreateOpen(false)} className="text-xs h-9 px-4 border-slate-200">
-                Hủy
+                Cancel
               </Button>
               <Button
                 type="submit"
@@ -1013,12 +1015,12 @@ export const AccountsPage: React.FC = () => {
                 {isSubmitting ? (
                   <>
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    <span>Đang tạo...</span>
+                    <span>Creating...</span>
                   </>
                 ) : (
                   <>
                     <Plus className="w-3.5 h-3.5" />
-                    <span>Tạo mới Khách hàng</span>
+                    <span>Create Account</span>
                   </>
                 )}
               </Button>
@@ -1036,3 +1038,5 @@ export const AccountsPage: React.FC = () => {
     </div>
   );
 };
+
+export default AccountsPage;

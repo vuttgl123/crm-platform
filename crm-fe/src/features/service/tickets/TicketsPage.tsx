@@ -18,6 +18,8 @@ import {
   Dialog,
   DialogContent,
 } from '@/components/ui/dialog';
+import { ActionTooltip } from '@/components/ui/action-tooltip';
+
 import {
   Table,
   TableBody,
@@ -34,19 +36,15 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from 'sonner';
+import { StandardPageHeader } from '@/components/common/StandardPageHeader';
+import { StandardFilterBar, ViewTabItem } from '@/components/common/StandardFilterBar';
+import { StandardPagination } from '@/components/common/StandardPagination';
 import {
-  Search,
   Plus,
   RefreshCw,
   Edit,
   Trash2,
   Loader2,
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
-  X,
-  RotateCcw,
   Building2,
   CheckCircle2,
   Clock,
@@ -78,8 +76,8 @@ export const TicketsPage: React.FC = () => {
   const [priority, setPriority] = useState<TicketPriority>('MEDIUM');
   const [status, setStatus] = useState<TicketStatus>('NEW');
   const [channel, setChannel] = useState<TicketChannel>('PORTAL');
-  const [category, setCategory] = useState('Yêu cầu Dịch vụ');
-  const [assignedTo, setAssignedTo] = useState('Phạm Tuấn Vũ');
+  const [category, setCategory] = useState('Service Request');
+  const [assignedTo, setAssignedTo] = useState('Alex Nguyen');
 
   const fetchTickets = useCallback(async () => {
     setLoading(true);
@@ -95,7 +93,7 @@ export const TicketsPage: React.FC = () => {
       setTotalPages(res.totalPages);
       setTotalElements(res.totalElements);
     } catch {
-      toast.error('Không thể tải danh sách phiếu hỗ trợ');
+      toast.error('Unable to load service tickets from server');
     } finally {
       setLoading(false);
     }
@@ -121,7 +119,8 @@ export const TicketsPage: React.FC = () => {
     setPriority('MEDIUM');
     setStatus('NEW');
     setChannel('PORTAL');
-    setCategory('Yêu cầu Dịch vụ');
+    setCategory('Service Request');
+    setAssignedTo('Alex Nguyen');
     setIsModalOpen(true);
   };
 
@@ -133,15 +132,15 @@ export const TicketsPage: React.FC = () => {
     setPriority(ticket.priority);
     setStatus(ticket.status);
     setChannel(ticket.channel || 'PORTAL');
-    setCategory(ticket.category || 'Yêu cầu Dịch vụ');
+    setCategory(ticket.category || 'Service Request');
     setAssignedTo(ticket.assignedTo || '');
     setIsModalOpen(true);
   };
 
   const handleSaveTicket = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!subject.trim() || !accountName.trim()) {
-      toast.error('Vui lòng nhập tiêu đề ticket và tên khách hàng');
+    if (!subject.trim()) {
+      toast.error('Please enter Ticket Subject / Problem Description');
       return;
     }
 
@@ -151,242 +150,238 @@ export const TicketsPage: React.FC = () => {
         await ticketApi.update(editingTicket.id, {
           version: editingTicket.version || 1,
           subject,
+          priority,
+          category,
+          status,
           accountName,
           contactName,
-          priority,
-          status,
-          channel,
-          category,
           assignedTo,
+          channel,
         });
-        toast.success('Đã cập nhật phiếu hỗ trợ thành công!');
+        toast.success('Ticket updated successfully!');
       } else {
         await ticketApi.create({
           subject,
-          accountId: 'acc-custom',
-          accountName,
-          contactName: contactName || 'Người gửi yêu cầu',
           priority,
           category,
-          assignedTo: assignedTo || 'Phạm Tuấn Vũ',
+          accountId: 'acc-custom',
+          accountName: accountName || 'Enterprise Account',
+          contactName: contactName || 'Submitter',
+          assignedTo: assignedTo || 'Alex Nguyen',
           channel,
         });
-        toast.success('Đã tạo phiếu hỗ trợ mới thành công!');
+        toast.success('New service ticket created successfully!');
       }
       setIsModalOpen(false);
       fetchTickets();
     } catch {
-      toast.error('Không thể lưu phiếu hỗ trợ');
+      toast.error('Unable to save ticket details');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleDelete = async (id: string, code: string) => {
-    if (!window.confirm(`Bạn có chắc chắn muốn xóa phiếu "${code}"?`)) return;
+    if (!window.confirm(`Are you sure you want to delete ticket "${code}"?`)) return;
     try {
       await ticketApi.delete(id);
-      toast.success(`Đã xóa ticket "${code}"`);
+      toast.success(`Deleted ticket "${code}"`);
       fetchTickets();
     } catch {
-      toast.error('Không thể xóa ticket');
+      toast.error('Unable to delete ticket');
     }
   };
 
   // KPI Metrics
-  const newCount = tickets.filter((t) => t.status === 'NEW').length;
-  const inProgressCount = tickets.filter((t) => t.status === 'IN_PROGRESS' || t.status === 'OPEN').length;
+  const openCount = tickets.filter((t) => t.status === 'NEW' || t.status === 'OPEN').length;
+  const inProgressCount = tickets.filter((t) => t.status === 'IN_PROGRESS').length;
   const resolvedCount = tickets.filter((t) => t.status === 'RESOLVED' || t.status === 'CLOSED').length;
+  const urgentCount = tickets.filter((t) => t.priority === 'URGENT' || t.priority === 'HIGH').length;
 
   const activeFiltersCount =
     (searchQuery ? 1 : 0) +
     (selectedStatus !== 'ALL' ? 1 : 0) +
     (selectedPriority !== 'ALL' ? 1 : 0);
 
+  // View Tabs Config
+  const viewTabs: ViewTabItem[] = [
+    { id: 'ALL', label: 'All Tickets', count: totalElements },
+    { id: 'OPEN', label: 'Open / Unassigned', count: openCount, icon: Inbox, dotColor: 'bg-blue-500' },
+    { id: 'IN_PROGRESS', label: 'In Progress', count: inProgressCount, icon: Clock, dotColor: 'bg-amber-500' },
+    { id: 'RESOLVED', label: 'Resolved', count: resolvedCount, icon: CheckCircle2, dotColor: 'bg-emerald-500' },
+  ];
+
+  const currentActiveTab = selectedStatus === 'OPEN' ? 'OPEN' : selectedStatus === 'IN_PROGRESS' ? 'IN_PROGRESS' : selectedStatus === 'RESOLVED' ? 'RESOLVED' : 'ALL';
+
+  const handleTabChange = (tabId: string) => {
+    if (tabId === 'OPEN') {
+      setSelectedStatus('OPEN');
+    } else if (tabId === 'IN_PROGRESS') {
+      setSelectedStatus('IN_PROGRESS');
+    } else if (tabId === 'RESOLVED') {
+      setSelectedStatus('RESOLVED');
+    } else {
+      setSelectedStatus('ALL');
+    }
+    setPage(0);
+  };
+
   return (
-    <div className="space-y-5 pb-12 font-sans w-full">
-      {/* ── Page Header ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-bold text-slate-900 flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shadow-xs shrink-0">
-              <Headphones className="w-4.5 h-4.5 text-white" />
-            </div>
-            Dịch vụ &amp; Hỗ trợ Khách hàng (Helpdesk Tickets)
-          </h1>
-          <p className="text-xs text-slate-500 mt-1 ml-10.5">
-            Tiếp nhận sự cố kỹ thuật, giải quyết khiếu nại và cam kết chất lượng dịch vụ (SLA)
-          </p>
-        </div>
+    <div className="space-y-4 pb-12 font-sans w-full">
+      {/* Standard Page Header */}
+      <StandardPageHeader
+        title="Service Tickets &amp; Help Desk"
+        subtitle="Track customer technical issues, SLA response milestones, omnichannel inquiries &amp; resolutions"
+        icon={Headphones}
+        badgeCount={totalElements}
+        badgeLabel="tickets"
+        actions={
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={fetchTickets}
+              disabled={loading}
+              className="text-xs font-medium text-slate-700 bg-white border-slate-200 hover:bg-slate-50 gap-1.5 h-8 rounded-[3px]"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+              <span>Refresh</span>
+            </Button>
 
-        <div className="flex items-center gap-2 shrink-0">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={fetchTickets}
-            disabled={loading}
-            className="text-xs gap-1.5 border-slate-200 h-8"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-            <span>Làm mới</span>
-          </Button>
+            <Button
+              size="sm"
+              onClick={handleOpenCreate}
+              className="text-xs font-semibold bg-[#0C66E4] hover:bg-[#0052CC] text-white gap-1.5 shadow-none h-8 rounded-[3px]"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>New Ticket</span>
+            </Button>
+          </>
+        }
+      />
 
-          <Button
-            size="sm"
-            onClick={handleOpenCreate}
-            className="text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white gap-1.5 shadow-xs h-8"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Tạo Phiếu Hỗ Trợ Mới</span>
-          </Button>
-        </div>
-      </div>
-
-      {/* ── Quick Stat Cards ── */}
+      {/* KPI Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="bg-white rounded-xl border border-slate-200 px-4 py-3 flex items-center gap-3 shadow-xs hover:shadow-sm transition-shadow">
+        <div className="bg-white rounded-[4px] border border-slate-200 px-4 py-3 flex items-center gap-3 shadow-none">
           <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
             <Inbox className="w-4.5 h-4.5 text-blue-600" />
           </div>
           <div>
-            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Tổng Số Phiếu</div>
+            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Total Inquiries</div>
             <div className="text-lg font-black text-slate-900 leading-tight">{totalElements}</div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-rose-100 px-4 py-3 flex items-center gap-3 shadow-xs hover:shadow-sm transition-shadow">
+        <div className="bg-white rounded-[4px] border border-blue-100 px-4 py-3 flex items-center gap-3 shadow-none">
+          <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
+            <Clock className="w-4.5 h-4.5 text-blue-600" />
+          </div>
+          <div>
+            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Pending / Open</div>
+            <div className="text-lg font-black text-blue-700 leading-tight">{openCount}</div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-[4px] border border-rose-100 px-4 py-3 flex items-center gap-3 shadow-none">
           <div className="w-9 h-9 rounded-lg bg-rose-50 flex items-center justify-center shrink-0">
             <AlertCircle className="w-4.5 h-4.5 text-rose-600" />
           </div>
           <div>
-            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Phiếu mới tiếp nhận</div>
-            <div className="text-lg font-black text-rose-700 leading-tight">{newCount}</div>
+            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">High / Urgent SLA</div>
+            <div className="text-lg font-black text-rose-700 leading-tight">{urgentCount}</div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-amber-100 px-4 py-3 flex items-center gap-3 shadow-xs hover:shadow-sm transition-shadow">
-          <div className="w-9 h-9 rounded-lg bg-amber-50 flex items-center justify-center shrink-0">
-            <Clock className="w-4.5 h-4.5 text-amber-600" />
-          </div>
-          <div>
-            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Đang xử lý / SLA</div>
-            <div className="text-lg font-black text-amber-700 leading-tight">{inProgressCount}</div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl border border-emerald-100 px-4 py-3 flex items-center gap-3 shadow-xs hover:shadow-sm transition-shadow">
+        <div className="bg-white rounded-[4px] border border-emerald-100 px-4 py-3 flex items-center gap-3 shadow-none">
           <div className="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center shrink-0">
             <CheckCircle2 className="w-4.5 h-4.5 text-emerald-600" />
           </div>
           <div>
-            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Đã giải quyết</div>
+            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Resolved Issues</div>
             <div className="text-lg font-black text-emerald-700 leading-tight">{resolvedCount}</div>
           </div>
         </div>
       </div>
 
-      {/* ── Search & Filter Toolbar ── */}
-      <Card className="p-3.5 bg-white border border-slate-200 rounded-xl shadow-xs space-y-3">
-        <div className="flex flex-col md:flex-row gap-2.5 items-stretch md:items-center justify-between">
-          <div className="relative flex-1">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-            <Input
-              placeholder="Tìm kiếm theo mã phiếu, tiêu đề, khách hàng..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 pr-8 text-xs h-8.5 bg-slate-50/60 focus:bg-white border-slate-200 rounded-lg"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
+      {/* Standard Filter Bar */}
+      <StandardFilterBar
+        searchQuery={searchQuery}
+        onSearchChange={(val) => { setSearchQuery(val); setPage(0); }}
+        searchPlaceholder="Search ticket subject, ID, organization..."
+        viewTabs={viewTabs}
+        activeTab={currentActiveTab}
+        onTabChange={handleTabChange}
+        activeFiltersCount={activeFiltersCount}
+        onResetFilters={handleResetFilters}
+        filterControls={
+          <>
             <div className="w-40">
               <Select value={selectedStatus} onValueChange={(val) => { setSelectedStatus(val); setPage(0); }}>
-                <SelectTrigger className="h-8.5 text-xs bg-slate-50/60 border-slate-200 rounded-lg">
-                  <SelectValue placeholder="Trạng thái" />
+                <SelectTrigger className="h-8 text-xs bg-white border-slate-200 rounded-[3px]">
+                  <SelectValue placeholder="Ticket Status" />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ALL">Tất cả trạng thái</SelectItem>
-                  <SelectItem value="NEW">Mới tiếp nhận</SelectItem>
-                  <SelectItem value="OPEN">Đang mở</SelectItem>
-                  <SelectItem value="IN_PROGRESS">Đang xử lý</SelectItem>
-                  <SelectItem value="RESOLVED">Đã giải quyết</SelectItem>
-                  <SelectItem value="CLOSED">Đã đóng</SelectItem>
+                <SelectContent className="rounded-[3px]">
+                  <SelectItem value="ALL">All Statuses</SelectItem>
+                  <SelectItem value="NEW">NEW</SelectItem>
+                  <SelectItem value="OPEN">OPEN</SelectItem>
+                  <SelectItem value="IN_PROGRESS">IN PROGRESS</SelectItem>
+                  <SelectItem value="RESOLVED">RESOLVED</SelectItem>
+                  <SelectItem value="CLOSED">CLOSED</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
-            <div className="w-36">
+            <div className="w-40">
               <Select value={selectedPriority} onValueChange={(val) => { setSelectedPriority(val); setPage(0); }}>
-                <SelectTrigger className="h-8.5 text-xs bg-slate-50/60 border-slate-200 rounded-lg">
-                  <SelectValue placeholder="Độ ưu tiên" />
+                <SelectTrigger className="h-8 text-xs bg-white border-slate-200 rounded-[3px]">
+                  <SelectValue placeholder="Priority" />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ALL">Tất cả ưu tiên</SelectItem>
-                  <SelectItem value="URGENT">Khẩn cấp (Urgent)</SelectItem>
-                  <SelectItem value="HIGH">Cao (High)</SelectItem>
-                  <SelectItem value="MEDIUM">Trung bình</SelectItem>
-                  <SelectItem value="LOW">Thấp (Low)</SelectItem>
+                <SelectContent className="rounded-[3px]">
+                  <SelectItem value="ALL">All Priorities</SelectItem>
+                  <SelectItem value="URGENT">URGENT</SelectItem>
+                  <SelectItem value="HIGH">HIGH</SelectItem>
+                  <SelectItem value="MEDIUM">MEDIUM</SelectItem>
+                  <SelectItem value="LOW">LOW</SelectItem>
                 </SelectContent>
               </Select>
             </div>
+          </>
+        }
+      />
 
-            {activeFiltersCount > 0 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleResetFilters}
-                className="text-xs text-slate-500 hover:text-slate-800 gap-1 h-8.5 px-2"
-              >
-                <RotateCcw className="w-3 h-3" />
-                <span>Đặt lại ({activeFiltersCount})</span>
-              </Button>
-            )}
-          </div>
-        </div>
-      </Card>
-
-      {/* ── Tickets Table ── */}
-      <Card className="overflow-hidden border border-slate-200 rounded-xl bg-white shadow-xs">
+      {/* Tickets Table */}
+      <Card className="overflow-hidden border border-slate-200 rounded-[4px] bg-white shadow-none">
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
-              <TableRow className="bg-slate-50/80 hover:bg-slate-50/80 border-b border-slate-200">
-                <TableHead className="text-[11px] font-bold text-slate-600 uppercase tracking-wider py-3 pl-4">Mã Phiếu &amp; Tiêu đề</TableHead>
-                <TableHead className="text-[11px] font-bold text-slate-600 uppercase tracking-wider py-3">Khách hàng yêu cầu</TableHead>
-                <TableHead className="text-[11px] font-bold text-slate-600 uppercase tracking-wider py-3">Phân loại &amp; Kênh</TableHead>
-                <TableHead className="text-[11px] font-bold text-slate-600 uppercase tracking-wider py-3">Ưu tiên</TableHead>
-                <TableHead className="text-[11px] font-bold text-slate-600 uppercase tracking-wider py-3">Cam kết SLA</TableHead>
-                <TableHead className="text-[11px] font-bold text-slate-600 uppercase tracking-wider py-3">Trạng thái</TableHead>
-                <TableHead className="text-[11px] font-bold text-slate-600 uppercase tracking-wider py-3">Phụ trách</TableHead>
-                <TableHead className="text-[11px] font-bold text-slate-600 uppercase tracking-wider py-3 text-right pr-4">Thao tác</TableHead>
+              <TableRow className="bg-[#F7F8F9] border-b border-slate-200 hover:bg-[#F7F8F9]">
+                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Ticket ID &amp; Subject</TableHead>
+                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Organization &amp; Submitter</TableHead>
+                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Priority Level</TableHead>
+                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Status</TableHead>
+                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Channel</TableHead>
+                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Assigned Lead</TableHead>
+                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3 text-right pr-4">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="h-48 text-center">
+                  <TableCell colSpan={7} className="h-48 text-center">
                     <div className="flex flex-col items-center justify-center gap-2 text-slate-500">
                       <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
-                      <span className="text-xs">Đang tải danh sách phiếu hỗ trợ...</span>
+                      <span className="text-xs">Loading support tickets...</span>
                     </div>
                   </TableCell>
                 </TableRow>
               ) : tickets.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="p-0">
+                  <TableCell colSpan={7} className="p-0">
                     <EmptyState
                       icon={Headphones}
-                      title="Không tìm thấy phiếu hỗ trợ nào"
-                      description="Hãy thử thay đổi điều kiện lọc hoặc tạo mới ticket hỗ trợ khách hàng."
-                      actionLabel="Tạo Phiếu Hỗ Trợ"
+                      title="No tickets found"
+                      description="Try adjusting your filter criteria or submit a new service ticket."
+                      actionLabel="Create Ticket"
                       onAction={handleOpenCreate}
                     />
                   </TableCell>
@@ -395,61 +390,25 @@ export const TicketsPage: React.FC = () => {
                 tickets.map((ticket) => {
                   const statusInfo = TICKET_STATUS_CONFIG[ticket.status] || { label: ticket.status, className: 'bg-slate-100 text-slate-700' };
 
-                  // Calculate SLA
-                  const getSlaBadge = () => {
-                    if (ticket.status === 'RESOLVED' || ticket.status === 'CLOSED') {
-                      return (
-                        <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px] font-bold">
-                          <CheckCircle2 className="w-3 h-3 mr-0.5" /> Đạt SLA
-                        </Badge>
-                      );
-                    }
-                    const createdTime = new Date(ticket.createdAt).getTime();
-                    const now = Date.now();
-                    const hoursElapsed = (now - createdTime) / (1000 * 60 * 60);
-                    const slaLimit = ticket.priority === 'URGENT' ? 4 : ticket.priority === 'HIGH' ? 24 : 48;
-                    const remaining = slaLimit - hoursElapsed;
-
-                    if (remaining < 0) {
-                      return (
-                        <Badge variant="outline" className="bg-rose-50 text-rose-700 border-rose-200 text-[10px] font-bold animate-pulse">
-                          <AlertCircle className="w-3 h-3 mr-0.5" /> Quá hạn SLA ({Math.abs(Math.round(remaining))}h)
-                        </Badge>
-                      );
-                    }
-                    if (remaining <= 4) {
-                      return (
-                        <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 text-[10px] font-bold">
-                          <Clock className="w-3 h-3 mr-0.5" /> Sắp hạn ({Math.round(remaining)}h còn)
-                        </Badge>
-                      );
-                    }
-                    return (
-                      <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-[10px] font-semibold">
-                        <Clock className="w-3 h-3 mr-0.5" /> Còn {Math.round(remaining)}h
-                      </Badge>
-                    );
-                  };
-
                   return (
-                    <TableRow key={ticket.id} className="hover:bg-slate-50/80 transition-colors border-b border-slate-100 text-xs">
-                      {/* Cột 1: Mã & Tiêu đề */}
-                      <TableCell className="pl-4 py-3">
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 border border-blue-100 shadow-2xs">
-                            <Headphones className="w-4 h-4" />
+                    <TableRow key={ticket.id} className="hover:bg-[#F1F2F4] transition-colors border-b border-[#EBECF0] text-xs">
+                      {/* Ticket Code & Subject */}
+                      <TableCell className="py-2 px-3">
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-[3px] bg-[#E9F2FF] text-[#0C66E4] border border-[#C0D9FF] font-bold text-xs flex items-center justify-center shrink-0">
+                            <Headphones className="w-3.5 h-3.5" />
                           </div>
                           <div>
-                            <div className="font-bold text-slate-900">{ticket.subject}</div>
-                            <div className="text-[11px] text-slate-400 mt-0.5 font-mono">{ticket.ticketNumber}</div>
+                            <div className="font-semibold text-slate-900 line-clamp-1">{ticket.subject}</div>
+                            <div className="text-[11px] text-slate-400 font-mono mt-0.5">{ticket.ticketNumber}</div>
                           </div>
                         </div>
                       </TableCell>
 
-                      {/* Cột 2: Khách hàng */}
-                      <TableCell>
+                      {/* Account & Submitter */}
+                      <TableCell className="py-2 px-3">
                         <div>
-                          <div className="font-semibold text-slate-800 flex items-center gap-1">
+                          <div className="font-medium text-slate-800 flex items-center gap-1">
                             <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                             <span>{ticket.accountName}</span>
                           </div>
@@ -459,57 +418,53 @@ export const TicketsPage: React.FC = () => {
                         </div>
                       </TableCell>
 
-                      {/* Cột 3: Phân loại & Kênh */}
-                      <TableCell>
-                        <div>
-                          <div className="text-slate-800 font-medium">{ticket.category}</div>
-                          <div className="text-[10px] text-slate-400 font-mono">Kênh: {ticket.channel}</div>
-                        </div>
-                      </TableCell>
-
-                      {/* Cột 4: Ưu tiên */}
-                      <TableCell>
+                      {/* Priority */}
+                      <TableCell className="py-2 px-3">
                         {renderPriorityBadge(ticket.priority)}
                       </TableCell>
 
-                      {/* Cột 5: SLA Status */}
-                      <TableCell>
-                        {getSlaBadge()}
-                      </TableCell>
-
-                      {/* Cột 6: Trạng thái */}
-                      <TableCell>
-                        <Badge className={`${statusInfo.className} text-[11px]`}>
+                      {/* Status */}
+                      <TableCell className="py-2 px-3">
+                        <Badge className={`${statusInfo.className} text-[11px] rounded-[3px]`}>
                           {statusInfo.label}
                         </Badge>
                       </TableCell>
 
-                      {/* Cột 7: Phụ trách */}
-                      <TableCell className="text-slate-700">
-                        {ticket.assignedTo}
+                      {/* Channel */}
+                      <TableCell className="py-2 px-3 font-semibold text-[11px] text-slate-600">
+                        {ticket.channel}
                       </TableCell>
 
-                      {/* Cột 8: Thao tác */}
-                      <TableCell className="text-right pr-4">
+                      {/* Assigned */}
+                      <TableCell className="py-2 px-3 text-slate-700">
+                        {ticket.assignedTo || 'Unassigned'}
+                      </TableCell>
+
+                      {/* Actions */}
+                      <TableCell className="py-2 px-3 text-right pr-4">
                         <div className="flex items-center justify-end gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleOpenEdit(ticket)}
-                            className="h-7 w-7 text-slate-600 hover:text-blue-600 hover:bg-blue-50"
-                            title="Chỉnh sửa phiếu"
-                          >
-                            <Edit className="w-3.5 h-3.5" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleDelete(ticket.id, ticket.ticketNumber)}
-                            className="h-7 w-7 text-slate-600 hover:text-red-600 hover:bg-red-50"
-                            title="Xóa phiếu"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </Button>
+                          <ActionTooltip label="Chỉnh sửa ticket">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleOpenEdit(ticket)}
+                              className="h-7 w-7 rounded-[3px] text-slate-600 hover:text-[#0C66E4] hover:bg-[#E9F2FF]"
+                              aria-label="Edit Ticket"
+                            >
+                              <Edit className="w-3.5 h-3.5" />
+                            </Button>
+                          </ActionTooltip>
+                          <ActionTooltip label="Xóa ticket">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDelete(ticket.id, ticket.ticketNumber)}
+                              className="h-7 w-7 rounded-[3px] text-slate-600 hover:text-red-600 hover:bg-red-50"
+                              aria-label="Delete Ticket"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
+                          </ActionTooltip>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -520,60 +475,20 @@ export const TicketsPage: React.FC = () => {
           </Table>
         </div>
 
-        {/* ── Pagination Bar ── */}
-        {!loading && tickets.length > 0 && (
-          <div className="px-4 py-3 bg-slate-50/50 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
-            <div>
-              Hiển thị <span className="font-bold text-slate-800">{page * pageSize + 1}</span> -{' '}
-              <span className="font-bold text-slate-800">{Math.min((page + 1) * pageSize, totalElements)}</span> trong tổng số{' '}
-              <span className="font-bold text-slate-800">{totalElements}</span> phiếu hỗ trợ
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-7 w-7 border-slate-200"
-                onClick={() => setPage(0)}
-                disabled={page === 0}
-              >
-                <ChevronsLeft className="w-3.5 h-3.5" />
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-7 w-7 border-slate-200"
-                onClick={() => setPage((p) => Math.max(p - 1, 0))}
-                disabled={page === 0}
-              >
-                <ChevronLeft className="w-3.5 h-3.5" />
-              </Button>
-              <div className="px-2 font-medium text-slate-700">
-                Trang {page + 1} / {Math.max(totalPages, 1)}
-              </div>
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-7 w-7 border-slate-200"
-                onClick={() => setPage((p) => p + 1)}
-                disabled={page >= totalPages - 1}
-              >
-                <ChevronRight className="w-3.5 h-3.5" />
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-7 w-7 border-slate-200"
-                onClick={() => setPage(totalPages - 1)}
-                disabled={page >= totalPages - 1}
-              >
-                <ChevronsRight className="w-3.5 h-3.5" />
-              </Button>
-            </div>
-          </div>
+        {/* Standard Pagination Bar */}
+        {!loading && (
+          <StandardPagination
+            currentPage={page + 1}
+            totalPages={Math.max(totalPages, 1)}
+            totalElements={totalElements}
+            pageSize={pageSize}
+            onPageChange={(p) => setPage(p - 1)}
+            itemLabel="tickets"
+          />
         )}
       </Card>
 
-      {/* ── Create / Edit Ticket Modal ── */}
+      {/* Create / Edit Ticket Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0 rounded-2xl border border-slate-200 shadow-xl">
           <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-5 text-white">
@@ -584,10 +499,10 @@ export const TicketsPage: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="font-bold text-base">
-                    {editingTicket ? `Chỉnh sửa Phiếu ${editingTicket.ticketNumber}` : 'Tạo Phiếu Hỗ Trợ Mới'}
+                    {editingTicket ? 'Edit Support Ticket' : 'Create New Service Ticket'}
                   </h3>
                   <p className="text-xs text-blue-100 mt-0.5">
-                    Ghi nhận yêu cầu hỗ trợ và chỉ định chuyên viên xử lý
+                    {editingTicket ? `Ticket ID: ${editingTicket.ticketNumber}` : 'Record incident summary, SLA priority level & assigned support specialist'}
                   </p>
                 </div>
               </div>
@@ -597,11 +512,11 @@ export const TicketsPage: React.FC = () => {
           <form onSubmit={handleSaveTicket} className="p-6 space-y-4">
             <div>
               <Label className="text-xs font-semibold text-slate-700">
-                Tiêu đề sự cố / Yêu cầu <span className="text-rose-500">*</span>
+                Ticket Subject / Issue Summary <span className="text-rose-500">*</span>
               </Label>
               <Input
                 required
-                placeholder="Ví dụ: Không kết nối được cổng API tích hợp ngân hàng"
+                placeholder="e.g. Webhook API synchronization timeout with external ERP"
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
                 className="h-9 text-xs border-slate-200 mt-1"
@@ -610,22 +525,18 @@ export const TicketsPage: React.FC = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <Label className="text-xs font-semibold text-slate-700">
-                  Khách hàng / Doanh nghiệp <span className="text-rose-500">*</span>
-                </Label>
+                <Label className="text-xs font-semibold text-slate-700">Client Organization</Label>
                 <Input
-                  required
-                  placeholder="Ví dụ: Tập đoàn Bán Lẻ SunGroup"
+                  placeholder="e.g. Acme Corporation"
                   value={accountName}
                   onChange={(e) => setAccountName(e.target.value)}
                   className="h-9 text-xs border-slate-200 mt-1"
                 />
               </div>
-
               <div>
-                <Label className="text-xs font-semibold text-slate-700">Người liên hệ gửi yêu cầu</Label>
+                <Label className="text-xs font-semibold text-slate-700">Submitter Contact</Label>
                 <Input
-                  placeholder="Nhập người đại diện..."
+                  placeholder="e.g. David Harrison"
                   value={contactName}
                   onChange={(e) => setContactName(e.target.value)}
                   className="h-9 text-xs border-slate-200 mt-1"
@@ -635,47 +546,47 @@ export const TicketsPage: React.FC = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
-                <Label className="text-xs font-semibold text-slate-700">Mức độ ưu tiên</Label>
+                <Label className="text-xs font-semibold text-slate-700">Priority Level</Label>
                 <Select value={priority} onValueChange={(val: any) => setPriority(val)}>
                   <SelectTrigger className="h-9 text-xs border-slate-200 mt-1">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="URGENT">Khẩn cấp (Urgent)</SelectItem>
-                    <SelectItem value="HIGH">Cao (High)</SelectItem>
-                    <SelectItem value="MEDIUM">Trung bình</SelectItem>
-                    <SelectItem value="LOW">Thấp (Low)</SelectItem>
+                    <SelectItem value="URGENT">URGENT</SelectItem>
+                    <SelectItem value="HIGH">HIGH</SelectItem>
+                    <SelectItem value="MEDIUM">MEDIUM</SelectItem>
+                    <SelectItem value="LOW">LOW</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div>
-                <Label className="text-xs font-semibold text-slate-700">Trạng thái xử lý</Label>
+                <Label className="text-xs font-semibold text-slate-700">Ticket Status</Label>
                 <Select value={status} onValueChange={(val: any) => setStatus(val)}>
                   <SelectTrigger className="h-9 text-xs border-slate-200 mt-1">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="NEW">Mới tiếp nhận</SelectItem>
-                    <SelectItem value="OPEN">Đang mở</SelectItem>
-                    <SelectItem value="IN_PROGRESS">Đang xử lý</SelectItem>
-                    <SelectItem value="RESOLVED">Đã giải quyết</SelectItem>
-                    <SelectItem value="CLOSED">Đã đóng</SelectItem>
+                    <SelectItem value="NEW">NEW</SelectItem>
+                    <SelectItem value="OPEN">OPEN</SelectItem>
+                    <SelectItem value="IN_PROGRESS">IN PROGRESS</SelectItem>
+                    <SelectItem value="RESOLVED">RESOLVED</SelectItem>
+                    <SelectItem value="CLOSED">CLOSED</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div>
-                <Label className="text-xs font-semibold text-slate-700">Kênh tiếp nhận</Label>
+                <Label className="text-xs font-semibold text-slate-700">Inbound Channel</Label>
                 <Select value={channel} onValueChange={(val: any) => setChannel(val)}>
                   <SelectTrigger className="h-9 text-xs border-slate-200 mt-1">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="PORTAL">Cổng Portal KH</SelectItem>
-                    <SelectItem value="EMAIL">Email hỗ trợ</SelectItem>
-                    <SelectItem value="PHONE">Tổng đài Hotline</SelectItem>
-                    <SelectItem value="CHAT">Trò chuyện trực tiếp</SelectItem>
+                    <SelectItem value="PORTAL">PORTAL</SelectItem>
+                    <SelectItem value="EMAIL">EMAIL</SelectItem>
+                    <SelectItem value="PHONE">PHONE</SelectItem>
+                    <SelectItem value="CHAT">CHAT</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -683,19 +594,18 @@ export const TicketsPage: React.FC = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <Label className="text-xs font-semibold text-slate-700">Phân loại yêu cầu</Label>
+                <Label className="text-xs font-semibold text-slate-700">Issue Category</Label>
                 <Input
-                  placeholder="Ví dụ: Sự cố kỹ thuật (Bug / Issue)"
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
+                  placeholder="e.g. Technical Incident"
                   className="h-9 text-xs border-slate-200 mt-1"
                 />
               </div>
-
               <div>
-                <Label className="text-xs font-semibold text-slate-700">Chuyên viên hỗ trợ phụ trách</Label>
+                <Label className="text-xs font-semibold text-slate-700">Assigned Support Engineer</Label>
                 <Input
-                  placeholder="Phạm Tuấn Vũ"
+                  placeholder="Alex Nguyen"
                   value={assignedTo}
                   onChange={(e) => setAssignedTo(e.target.value)}
                   className="h-9 text-xs border-slate-200 mt-1"
@@ -710,7 +620,7 @@ export const TicketsPage: React.FC = () => {
                 onClick={() => setIsModalOpen(false)}
                 className="text-xs border-slate-200 h-9"
               >
-                Hủy bỏ
+                Cancel
               </Button>
               <Button
                 type="submit"
@@ -718,7 +628,7 @@ export const TicketsPage: React.FC = () => {
                 className="text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white gap-1.5 shadow-xs h-9"
               >
                 {isSubmitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
-                <span>{editingTicket ? 'Lưu Thay Đổi' : 'Tạo Phiếu Hỗ Trợ'}</span>
+                <span>{editingTicket ? 'Save Changes' : 'Create Ticket'}</span>
               </Button>
             </div>
           </form>
@@ -727,3 +637,5 @@ export const TicketsPage: React.FC = () => {
     </div>
   );
 };
+
+export default TicketsPage;

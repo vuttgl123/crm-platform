@@ -17,17 +17,17 @@ export interface OrderItem {
 }
 
 export const ORDER_STATUS_CONFIG: Record<OrderStatus, { label: string; className: string }> = {
-  PENDING: { label: 'Chờ xác nhận', className: 'bg-amber-50 text-amber-700 border-amber-200 font-semibold' },
-  PROCESSING: { label: 'Đang triển khai', className: 'bg-blue-50 text-blue-700 border-blue-200 font-bold' },
-  SHIPPED: { label: 'Đang bàn giao', className: 'bg-indigo-50 text-indigo-700 border-indigo-200 font-bold' },
-  DELIVERED: { label: 'Đã nghiệm thu', className: 'bg-emerald-50 text-emerald-700 border-emerald-200 font-bold' },
-  CANCELLED: { label: 'Đã hủy đơn', className: 'bg-rose-50 text-rose-700 border-rose-200 font-semibold' },
+  PENDING: { label: 'PENDING', className: 'bg-amber-50 text-amber-700 border-amber-200 font-semibold' },
+  PROCESSING: { label: 'PROCESSING', className: 'bg-blue-50 text-blue-700 border-blue-200 font-bold' },
+  SHIPPED: { label: 'SHIPPED', className: 'bg-indigo-50 text-indigo-700 border-indigo-200 font-bold' },
+  DELIVERED: { label: 'DELIVERED', className: 'bg-emerald-50 text-emerald-700 border-emerald-200 font-bold' },
+  CANCELLED: { label: 'CANCELLED', className: 'bg-rose-50 text-rose-700 border-rose-200 font-semibold' },
 };
 
 export const PAYMENT_STATUS_CONFIG: Record<PaymentStatus, { label: string; className: string }> = {
-  UNPAID: { label: 'Chưa thanh toán', className: 'bg-rose-50 text-rose-700 border-rose-200 font-semibold' },
-  PARTIAL: { label: 'Thanh toán một phần', className: 'bg-amber-50 text-amber-700 border-amber-200 font-semibold' },
-  PAID: { label: 'Đã thanh toán đủ', className: 'bg-emerald-50 text-emerald-700 border-emerald-200 font-bold' },
+  UNPAID: { label: 'UNPAID', className: 'bg-rose-50 text-rose-700 border-rose-200 font-semibold' },
+  PARTIAL: { label: 'PARTIAL', className: 'bg-amber-50 text-amber-700 border-amber-200 font-semibold' },
+  PAID: { label: 'PAID', className: 'bg-emerald-50 text-emerald-700 border-emerald-200 font-bold' },
 };
 
 export const INITIAL_MOCK_ORDERS: OrderItem[] = [

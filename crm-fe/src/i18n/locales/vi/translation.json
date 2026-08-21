@@ -23,7 +23,10 @@
     "close": "Đóng",
     "confirm": "Xác nhận",
     "mockModeNotice": "Ứng dụng đang chạy ở chế độ Mock Data (dữ liệu mô phỏng). Không có kết nối cơ sở dữ liệu thực.",
-    "searchPlaceholder": "Tìm kiếm chức năng, menu (Ctrl+K)..."
+    "searchPlaceholder": "Tìm kiếm chức năng, menu (Ctrl+K)...",
+    "toggleSidebar": "Đóng/mở thanh bên",
+    "switchLanguage": "Đổi ngôn ngữ",
+    "noResults": "Không tìm thấy kết quả"
   },
   "auth": {
     "loginHeading": "Đăng nhập vào VUM",
@@ -182,6 +185,7 @@
     "products": "Sản phẩm",
     "priceBooks": "Bảng giá",
     "salesGroup": "Quản lý Bán hàng",
+    "forecast": "Dự báo doanh số",
     "quotes": "Báo giá",
     "orders": "Đơn hàng",
     "contracts": "Hợp đồng",
@@ -206,7 +210,8 @@
     "users": "Người dùng",
     "teams": "Nhóm & Phòng ban",
     "rolesPermissions": "Vai trò & Phân quyền",
-    "tenantSettings": "Cài đặt Tổ chức"
+    "tenantSettings": "Cài đặt Tổ chức",
+    "pipelines": "Quy trình Bán hàng"
   },
   "overview": {
     "welcome": "Xin chào",
@@ -290,57 +295,114 @@
     },
     "home": {
       "hero": {
-        "kicker": "Nền tảng CRM Doanh nghiệp B2B",
-        "title": "Quản trị Khách hàng & Tăng tốc Doanh số Toàn diện",
-        "description": "Hợp nhất Customer 360°, tối ưu quy trình báo giá và kiểm soát phễu bán hàng theo thời gian thực.",
+        "kicker": "CRM B2B cho doanh nghiệp",
+        "title": "Một hệ thống cho toàn bộ chu kỳ bán hàng B2B",
+        "description": "Tập trung dữ liệu khách hàng, kiểm soát pipeline, chuẩn hóa báo giá và phê duyệt theo cơ cấu doanh nghiệp.",
         "primaryCta": "Đặt lịch demo",
-        "secondaryCta": "Dùng thử VUM CRM"
+        "secondaryCta": "Xem cách VUM vận hành",
+        "visualCaption": "Dữ liệu minh họa từ giao diện VUM CRM"
       },
       "proof": {
         "label": "Một luồng vận hành xuyên suốt",
-        "items": ["Khách hàng 360°", "Pipeline theo giai đoạn", "Báo giá và hợp đồng", "Phân quyền theo phạm vi", "Nhật ký kiểm toán"]
+        "customerData": "Dữ liệu khách hàng tập trung",
+        "pipeline": "Pipeline theo giai đoạn",
+        "quotes": "Báo giá và phê duyệt",
+        "contracts": "Hợp đồng xuyên suốt",
+        "access": "Phân quyền theo phạm vi"
       },
       "problem": {
-        "eyebrow": "Từ dữ liệu rời rạc đến một hệ thống điều hành",
-        "title": "Không cần thêm một bảng báo cáo. Doanh nghiệp cần một nguồn dữ liệu đủ tin cậy để hành động.",
+        "eyebrow": "Bài toán vận hành",
+        "title": "Dữ liệu rời rạc khiến đội ngũ bán hàng phản ứng chậm hơn khách hàng",
+        "description": "VUM CRM kết nối dữ liệu, trách nhiệm và hành động tiếp theo trong cùng một quy trình.",
         "beforeTitle": "Khi quy trình bị phân tán",
-        "beforeItems": ["Thông tin khách hàng nằm ở nhiều tệp và nhiều người", "Pipeline chỉ được cập nhật trước buổi họp", "Báo giá, hợp đồng và lịch sử trao đổi không nối với nhau"],
+        "beforeDataTitle": "Thông tin nằm ở nhiều tệp và nhiều người",
+        "beforeDataDescription": "Đội ngũ mất thời gian đối chiếu phiên bản trước khi có thể hành động.",
+        "beforePipelineTitle": "Pipeline chỉ rõ ràng trước buổi họp",
+        "beforePipelineDescription": "Người quản lý khó nhận ra cơ hội đang thiếu chủ sở hữu hoặc hành động tiếp theo.",
+        "beforeApprovalTitle": "Báo giá và phê duyệt tách khỏi lịch sử deal",
+        "beforeApprovalDescription": "Các bước bàn giao thủ công làm mất bối cảnh và kéo dài vòng phản hồi.",
         "afterTitle": "Khi vận hành trên VUM CRM",
-        "afterItems": ["Mỗi tài khoản có một hồ sơ và dòng thời gian thống nhất", "Cơ hội được theo dõi theo giai đoạn, người phụ trách và hành động tiếp theo", "Lãnh đạo xem cùng dữ liệu mà đội ngũ đang sử dụng hằng ngày"]
+        "afterDescription": "Mỗi khách hàng, cơ hội, báo giá và hợp đồng được nối trong một dòng công việc có thể theo dõi."
       },
-      "capabilities": {
-        "eyebrow": "Ba năng lực cốt lõi",
-        "title": "Theo sát khách hàng từ tín hiệu đầu tiên đến sau khi ký hợp đồng",
-        "customer360Title": "Một hồ sơ khách hàng, đầy đủ bối cảnh",
-        "customer360Description": "Kết nối doanh nghiệp, người liên hệ, hoạt động, tài liệu và trạng thái vòng đời trong cùng một góc nhìn.",
-        "pipelineTitle": "Pipeline phản ánh công việc thật",
-        "pipelineDescription": "Theo dõi giá trị, xác suất, thời hạn và hành động tiếp theo của từng cơ hội thay vì chờ tổng hợp cuối kỳ.",
-        "automationTitle": "Quy trình tiếp tục vận hành khi đội ngũ bận rộn",
-        "automationDescription": "Chuẩn hóa phân công, nhắc việc, phê duyệt và cảnh báo để cơ hội không bị bỏ quên giữa các bước."
+      "workflow": {
+        "eyebrow": "Quy trình sản phẩm",
+        "title": "Theo sát khách hàng từ tín hiệu đầu tiên đến hợp đồng",
+        "description": "Mỗi bước giữ nguyên bối cảnh, người phụ trách và hành động tiếp theo.",
+        "illustrativeLabel": "Dữ liệu minh họa",
+        "leadLabel": "Lead",
+        "leadTitle": "Tiếp nhận và đánh giá nhu cầu",
+        "leadDescription": "Tập trung nguồn lead, trạng thái xử lý và người phụ trách trước khi chuyển đổi.",
+        "accountLabel": "Khách hàng",
+        "accountTitle": "Hợp nhất hồ sơ khách hàng",
+        "accountDescription": "Kết nối doanh nghiệp, người liên hệ, hoạt động và trạng thái vòng đời trong cùng một hồ sơ.",
+        "opportunityLabel": "Cơ hội",
+        "opportunityTitle": "Kiểm soát pipeline và hành động tiếp theo",
+        "opportunityDescription": "Theo dõi giai đoạn, giá trị, thời hạn và trách nhiệm của từng cơ hội.",
+        "quoteLabel": "Báo giá",
+        "quoteTitle": "Chuẩn hóa đề xuất thương mại",
+        "quoteDescription": "Tạo báo giá từ danh mục sản phẩm và duy trì bối cảnh của cơ hội liên quan.",
+        "approvalLabel": "Phê duyệt",
+        "approvalTitle": "Đưa quyết định về đúng người, đúng phạm vi",
+        "approvalDescription": "Theo dõi trạng thái xem xét và trách nhiệm phê duyệt trong luồng báo giá hoặc hợp đồng.",
+        "contractLabel": "Hợp đồng",
+        "contractTitle": "Tiếp nối dữ liệu sau khi chốt deal",
+        "contractDescription": "Duy trì giá trị, trạng thái và lịch sử liên quan khi cơ hội chuyển sang hợp đồng."
       },
       "roles": {
         "eyebrow": "Một hệ thống, ba góc nhìn",
         "title": "Mỗi vai trò nhìn thấy điều cần thiết để ra quyết định",
         "executiveLabel": "Lãnh đạo",
         "executiveTitle": "Nhìn doanh thu và rủi ro từ cùng một nguồn dữ liệu",
-        "executiveItems": ["Theo dõi xu hướng pipeline và doanh thu", "Nhận diện khu vực hoặc giai đoạn đang tắc nghẽn", "Kiểm tra hiệu suất mà không chờ báo cáo thủ công"],
+        "executivePointPipeline": "Theo dõi xu hướng pipeline và doanh thu theo cơ cấu tổ chức",
+        "executivePointRisk": "Nhận diện khu vực hoặc giai đoạn đang tắc nghẽn",
+        "executivePointReporting": "Giảm phụ thuộc vào báo cáo tổng hợp thủ công",
         "managerLabel": "Quản lý",
         "managerTitle": "Biết cơ hội nào cần hỗ trợ trước khi quá muộn",
-        "managerItems": ["Kiểm soát phân công theo đội nhóm", "Theo dõi cơ hội thiếu hoạt động tiếp theo", "Huấn luyện dựa trên dữ liệu của từng giai đoạn"],
-        "salesLabel": "Nhân viên kinh doanh",
-        "salesTitle": "Giảm thời gian cập nhật, tăng thời gian làm việc với khách hàng",
-        "salesItems": ["Quản lý lịch gọi, họp và công việc tiếp theo", "Tạo báo giá từ danh mục sản phẩm và bảng giá", "Xem toàn bộ lịch sử trao đổi trước mỗi lần liên hệ"]
+        "managerPointOwnership": "Kiểm soát phân công theo đội nhóm và phạm vi phụ trách",
+        "managerPointStalled": "Phát hiện cơ hội thiếu hành động tiếp theo",
+        "managerPointApproval": "Theo dõi báo giá và quyết định đang chờ xử lý",
+        "salesLabel": "Kinh doanh",
+        "salesTitle": "Giữ toàn bộ bối cảnh trước mỗi lần làm việc với khách hàng",
+        "salesPointContext": "Xem hồ sơ, liên hệ và lịch sử trao đổi tập trung",
+        "salesPointQuote": "Tạo và theo dõi báo giá trong bối cảnh của cơ hội",
+        "salesPointFollowUp": "Quản lý lịch gọi, họp và công việc tiếp theo"
       },
       "trust": {
-        "eyebrow": "Quản trị dành cho doanh nghiệp",
+        "eyebrow": "Quản trị doanh nghiệp",
         "title": "Mở rộng đội ngũ mà không đánh đổi quyền kiểm soát dữ liệu",
-        "items": ["Vai trò và quyền hạn tập trung", "Phạm vi dữ liệu theo tổ chức và đội nhóm", "Nhật ký truy cập và thay đổi", "Luồng nhập dữ liệu, webhook và tích hợp"]
+        "accessTitle": "Vai trò và quyền hạn tập trung",
+        "accessDescription": "Quản lý quyền truy cập theo trách nhiệm thay vì phân phối dữ liệu tự do.",
+        "scopeTitle": "Phạm vi theo tổ chức và đội nhóm",
+        "scopeDescription": "Giới hạn dữ liệu theo cơ cấu vận hành và phạm vi được giao.",
+        "auditTitle": "Lịch sử truy cập và thay đổi",
+        "auditDescription": "Hỗ trợ truy vết hoạt động trên các luồng có nhật ký trong hệ thống.",
+        "integrationTitle": "Nhập dữ liệu và tích hợp",
+        "integrationDescription": "Kết nối dữ liệu qua các cơ chế nhập, webhook hoặc tích hợp đã được cấu hình."
       },
-      "finalCta": {
-        "title": "Bắt đầu từ quy trình đang làm doanh nghiệp mất nhiều thời gian nhất.",
-        "description": "Đội ngũ VUM sẽ cùng bạn rà soát luồng khách hàng, pipeline và dữ liệu hiện tại trước khi đề xuất phạm vi triển khai.",
-        "primary": "Đặt lịch demo",
-        "secondary": "Dùng thử VUM CRM"
+      "commercial": {
+        "eyebrow": "Phạm vi triển khai",
+        "title": "Giải pháp được xác định theo quy mô và độ phức tạp thực tế",
+        "description": "Doanh nghiệp trao đổi nhu cầu trước khi lựa chọn phạm vi phù hợp; trang này không công bố mức giá chưa được phê duyệt.",
+        "scaleTitle": "Quy mô người dùng và đơn vị vận hành",
+        "scaleDescription": "Số lượng người dùng, đội nhóm, vùng và chi nhánh cần tham gia hệ thống.",
+        "processTitle": "Độ phức tạp của quy trình bán hàng",
+        "processDescription": "Số pipeline, giai đoạn, quy tắc bàn giao và luồng phê duyệt cần chuẩn hóa.",
+        "integrationTitle": "Dữ liệu và hệ thống cần kết nối",
+        "integrationDescription": "Nguồn dữ liệu ban đầu, hệ thống nội bộ và cơ chế đồng bộ cần triển khai.",
+        "governanceTitle": "Quản trị và hỗ trợ vận hành",
+        "governanceDescription": "Phạm vi quyền, nhật ký, đào tạo và hỗ trợ phù hợp với mô hình tổ chức.",
+        "cta": "Trao đổi về phạm vi triển khai"
+      },
+      "demo": {
+        "eyebrow": "Demo theo quy trình thực tế",
+        "title": "Xem VUM CRM vận hành trên quy trình bán hàng của doanh nghiệp bạn",
+        "description": "Chia sẻ cấu trúc đội ngũ và luồng bán hàng hiện tại để buổi trao đổi tập trung đúng vấn đề.",
+        "agendaTitle": "Nội dung trao đổi",
+        "agendaDiscovery": "Rà soát dữ liệu, vai trò và các điểm bàn giao hiện tại",
+        "agendaWorkflow": "Đi qua luồng lead, cơ hội, báo giá và hợp đồng",
+        "agendaScope": "Xác định phạm vi triển khai phù hợp",
+        "formTitle": "Đăng ký nhận bản demo",
+        "formDescription": "Để lại thông tin để đội ngũ VUM chuẩn bị nội dung phù hợp với nhu cầu của bạn."
       }
     },
     "features": {
@@ -390,6 +452,20 @@
       "heroKicker": "Trao đổi trực tiếp với đội ngũ VUM",
       "heroTitle": "Xem VUM CRM trên chính quy trình bán hàng của doanh nghiệp bạn",
       "heroDescription": "Chia sẻ cách đội ngũ đang quản lý khách hàng, pipeline và báo cáo. VUM sẽ chuẩn bị một buổi trao đổi tập trung vào bài toán đó.",
+      "consultationLabel": "Trao đổi theo nhu cầu",
+      "formIntro": "Cung cấp thông tin để đội ngũ VUM chuẩn bị nội dung phù hợp với doanh nghiệp của bạn.",
+      "optionalLabel": "tùy chọn",
+      "successNextTitle": "Bước tiếp theo",
+      "successNextContact": "Đội ngũ VUM sẽ liên hệ qua thông tin bạn đã cung cấp.",
+      "successNextPrepare": "Nội dung demo sẽ được chuẩn bị theo nhu cầu đã chọn.",
+      "submitAnother": "Gửi thêm yêu cầu khác",
+      "placeholders": {
+        "fullName": "Họ và tên người liên hệ",
+        "workEmail": "ten@doanhnghiep.vn",
+        "phone": "+84 912 345 678",
+        "companyName": "Tên doanh nghiệp",
+        "message": "Chia sẻ mục tiêu hoặc vấn đề doanh nghiệp đang muốn giải quyết"
+      },
       "form": {
         "title": "Thông tin để chuẩn bị buổi demo",
         "fullName": "Họ và tên",

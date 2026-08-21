@@ -1,50 +1,39 @@
 import React from 'react';
-
-import { ProductCockpit } from '../../components/ProductCockpit';
+import { useTranslation } from 'react-i18next';
+import { LandingSection } from '../../components/LandingSection';
+import { LandingProductVisual } from '../../components/LandingProductVisual';
+import { homeProductAssets } from '../../content/homeProductEvidence';
 
 export const HeroSection: React.FC = () => {
+  const { t } = useTranslation();
 
   return (
-    <section
-      id="hero"
-      className="relative bg-white pt-20 pb-0 overflow-hidden"
-    >
-      <div className="landing-container">
-        {/* ── Main Headline ─────────────────────────────────────── */}
-        <div className="mx-auto max-w-[48rem] text-center space-y-6">
-          <h1 className="h-hero landing-display">
-            Hệ thống CRM chuẩn Enterprise
-            <br className="hidden sm:block" />
-            {' '}cho doanh nghiệp Việt
-          </h1>
-
-          <p className="mx-auto max-w-[38rem] text-lg sm:text-xl leading-relaxed text-[--color-ink-muted]">
-            Hợp nhất Customer 360°, quản lý phễu Pipeline, báo giá CPQ và kiểm soát phân quyền RBAC 4 cấp — tất cả trên một nền tảng duy nhất.
+    <LandingSection id="hero" className="overflow-hidden bg-[var(--landing-canvas)] pt-16 md:pt-24">
+      <div className="grid items-center gap-12 lg:grid-cols-12 lg:gap-10">
+        <div className="lg:col-span-5">
+          <p className="mb-5 text-sm font-semibold text-[var(--landing-blue)]">
+            {t('landing.home.hero.kicker')}
           </p>
-
-          {/* ── CTAs ──────────────────────────────────────────── */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-            <a href="#demo" className="btn-primary h-12 px-8 text-base w-full sm:w-auto">
-              Đặt lịch demo ngay
+          <h1 className="landing-display text-[clamp(2.75rem,5.5vw,4.75rem)] font-extrabold text-[var(--landing-ink)]">
+            {t('landing.home.hero.title')}
+          </h1>
+          <p className="landing-body-copy mt-6 max-w-[38rem] text-lg">
+            {t('landing.home.hero.description')}
+          </p>
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+            <a href="#demo" className="landing-primary-action">
+              {t('landing.home.hero.primaryCta')}
             </a>
-            <a 
-              href="#features" 
-              className="inline-flex items-center justify-center h-12 px-8 text-base font-semibold text-[--color-ink] bg-white border border-[--color-border] hover:bg-[--color-canvas] transition-colors rounded-md w-full sm:w-auto"
-            >
-              Xem tính năng
+            <a href="#features" className="landing-secondary-action">
+              {t('landing.home.hero.secondaryCta')}
             </a>
           </div>
         </div>
-
-        {/* ── Product Cockpit ───────────────────────────────────── */}
-        <div className="relative mt-20 sm:mt-24 max-w-[1000px] mx-auto">
-          {/* Subtle browser chrome border */}
-          <div className="relative rounded-xl overflow-hidden border border-[--color-border] bg-white shadow-sm">
-            <ProductCockpit />
-          </div>
+        <div className="lg:col-span-7">
+          <LandingProductVisual asset={homeProductAssets.hero} priority />
         </div>
       </div>
-    </section>
+    </LandingSection>
   );
 };
 

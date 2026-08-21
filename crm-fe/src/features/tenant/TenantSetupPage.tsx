@@ -24,10 +24,10 @@ export const TenantSetupPage: React.FC = () => {
   const [displayName, setDisplayName] = useState('');
   const [tenantCode, setTenantCode] = useState('');
   const [legalName, setLegalName] = useState('');
-  const [currencyCode, setCurrencyCode] = useState('VND');
-  const [countryCode, setCountryCode] = useState('VN');
-  const [languageCode, setLanguageCode] = useState('vi');
-  const [timezone, setTimezone] = useState('Asia/Ho_Chi_Minh');
+  const [currencyCode, setCurrencyCode] = useState('USD');
+  const [countryCode, setCountryCode] = useState('US');
+  const [languageCode, setLanguageCode] = useState('en');
+  const [timezone, setTimezone] = useState('UTC');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Auto-generate slug for tenantCode when displayName changes
@@ -56,7 +56,7 @@ export const TenantSetupPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!displayName.trim() || !tenantCode.trim() || !legalName.trim()) {
-      toast.error('Vui lòng điền đầy đủ các thông tin bắt buộc');
+      toast.error('Please complete all required fields');
       return;
     }
 
@@ -73,7 +73,7 @@ export const TenantSetupPage: React.FC = () => {
 
     try {
       const created = await tenantApi.bootstrap(payload);
-      toast.success(`Khởi tạo tổ chức "${created.displayName}" thành công!`);
+      toast.success(`Organization "${created.displayName}" initialized successfully!`);
 
       // Refresh session to acquire the new tenant context & Tenant Admin role
       await authService.restoreSession();
@@ -81,7 +81,7 @@ export const TenantSetupPage: React.FC = () => {
       // Redirect to main overview dashboard
       window.location.href = '/app/overview';
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Khởi tạo tổ chức thất bại';
+      const msg = err instanceof Error ? err.message : 'Organization initialization failed';
       toast.error(msg);
       setIsSubmitting(false);
     }
@@ -96,11 +96,11 @@ export const TenantSetupPage: React.FC = () => {
             <Building2 className="w-8 h-8" />
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight flex items-center justify-center gap-2">
-            <span>Thiết lập Tổ chức / Doanh nghiệp</span>
+            <span>Organization Onboarding &amp; Setup</span>
             <Sparkles className="w-5 h-5 text-amber-500" />
           </h1>
           <p className="text-slate-500 text-xs sm:text-sm max-w-md mx-auto">
-            Chào mừng bạn đến với hệ thống CRM! Hãy khởi tạo tổ chức đầu tiên để kích hoạt đầy đủ quyền quản trị (Tenant Admin).
+            Welcome to the CRM Platform! Initialize your primary enterprise tenant to activate Tenant Administrator privileges.
           </p>
         </div>
 
@@ -109,10 +109,10 @@ export const TenantSetupPage: React.FC = () => {
           <CardHeader className="border-b border-slate-100 pb-4 bg-slate-50/40">
             <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
               <ShieldCheck className="w-5 h-5 text-blue-600" />
-              <span>Thông tin Khởi tạo Tổ chức mới</span>
+              <span>Enterprise Profile &amp; Governance Parameters</span>
             </CardTitle>
             <CardDescription className="text-slate-500 text-xs mt-1">
-              Cấu hình thông tin pháp lý, đơn vị tiền tệ, múi giờ và quyền quản trị cao nhất cho tổ chức của bạn.
+              Configure corporate legal entity metadata, reporting currency, regional timezone and default localization parameters.
             </CardDescription>
           </CardHeader>
 
@@ -121,13 +121,13 @@ export const TenantSetupPage: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5 md:col-span-2">
                   <Label htmlFor="dispName" className="text-xs font-semibold text-slate-700">
-                    Tên Doanh nghiệp / Tổ chức *
+                    Enterprise / Organization Name *
                   </Label>
                   <Input
                     id="dispName"
                     value={displayName}
                     onChange={handleDisplayNameChange}
-                    placeholder="Ví dụ: Công ty Cổ phần VUM CRM"
+                    placeholder="e.g. Acme Global Technologies Inc"
                     className="bg-white border-slate-200 text-slate-900 placeholder:text-slate-400 text-xs"
                     required
                   />
@@ -135,28 +135,28 @@ export const TenantSetupPage: React.FC = () => {
 
                 <div className="space-y-1.5">
                   <Label htmlFor="tCode" className="text-xs font-semibold text-slate-700">
-                    Mã Định danh Tổ chức (Slug ID) *
+                    Tenant Slug Identifier *
                   </Label>
                   <Input
                     id="tCode"
                     value={tenantCode}
                     onChange={(e) => setTenantCode(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
-                    placeholder="vum-corp"
+                    placeholder="acme-global"
                     className="bg-white border-slate-200 text-blue-600 font-mono text-xs font-semibold"
                     required
                   />
-                  <p className="text-[10px] text-slate-400">Mã truy cập duy nhất (Ví dụ: vum-corp)</p>
+                  <p className="text-[10px] text-slate-400">Unique tenant routing slug (e.g. acme-corp)</p>
                 </div>
 
                 <div className="space-y-1.5">
                   <Label htmlFor="lName" className="text-xs font-semibold text-slate-700">
-                    Tên Pháp lý Đầy đủ *
+                    Full Registered Legal Entity Name *
                   </Label>
                   <Input
                     id="lName"
                     value={legalName}
                     onChange={(e) => setLegalName(e.target.value)}
-                    placeholder="Công ty Cổ phần VUM CRM..."
+                    placeholder="Acme Global Technologies Inc..."
                     className="bg-white border-slate-200 text-slate-900 placeholder:text-slate-400 text-xs"
                     required
                   />
@@ -165,69 +165,73 @@ export const TenantSetupPage: React.FC = () => {
                 <div className="space-y-1.5">
                   <Label htmlFor="curr" className="text-xs font-semibold text-slate-700 flex items-center gap-1">
                     <DollarSign className="w-3.5 h-3.5 text-emerald-600" />
-                    Đơn vị Tiền tệ Mặc định *
+                    Default Operating Currency *
                   </Label>
                   <SearchableSelect
                     options={[
-                      { value: 'VND', label: 'VND (Việt Nam Đồng)', badge: '₫' },
-                      { value: 'USD', label: 'USD (Đô la Mỹ)', badge: '$' },
-                      { value: 'EUR', label: 'EUR (Euro)', badge: '€' },
+                      { value: 'USD', label: 'USD ($) - US Dollar', badge: '$' },
+                      { value: 'EUR', label: 'EUR (€) - Euro', badge: '€' },
+                      { value: 'GBP', label: 'GBP (£) - British Pound', badge: '£' },
+                      { value: 'VND', label: 'VND (₫) - Vietnam Dong', badge: '₫' },
                     ]}
                     value={currencyCode}
                     onValueChange={setCurrencyCode}
-                    placeholder="Chọn đơn vị tiền tệ..."
-                    searchPlaceholder="Tìm tiền tệ..."
+                    placeholder="Select currency..."
+                    searchPlaceholder="Search currency..."
                   />
                 </div>
 
                 <div className="space-y-1.5">
                   <Label htmlFor="country" className="text-xs font-semibold text-slate-700 flex items-center gap-1">
                     <Globe className="w-3.5 h-3.5 text-blue-600" />
-                    Quốc gia Mặc định *
+                    Default Jurisdiction Country *
                   </Label>
                   <SearchableSelect
                     options={[
-                      { value: 'VN', label: 'Việt Nam (VN)', badge: 'VN' },
-                      { value: 'US', label: 'Hoa Kỳ (US)', badge: 'US' },
-                      { value: 'JP', label: 'Nhật Bản (JP)', badge: 'JP' },
+                      { value: 'US', label: 'United States (US)', badge: 'US' },
+                      { value: 'GB', label: 'United Kingdom (GB)', badge: 'GB' },
                       { value: 'SG', label: 'Singapore (SG)', badge: 'SG' },
+                      { value: 'VN', label: 'Vietnam (VN)', badge: 'VN' },
+                      { value: 'JP', label: 'Japan (JP)', badge: 'JP' },
                     ]}
                     value={countryCode}
                     onValueChange={setCountryCode}
-                    placeholder="Chọn quốc gia..."
-                    searchPlaceholder="Tìm quốc gia..."
+                    placeholder="Select country..."
+                    searchPlaceholder="Search country..."
                   />
                 </div>
 
                 <div className="space-y-1.5">
                   <Label htmlFor="lang" className="text-xs font-semibold text-slate-700">
-                    Ngôn ngữ Hệ thống
+                    System Interface Language
                   </Label>
                   <SearchableSelect
                     options={[
-                      { value: 'vi', label: 'Tiếng Việt (vi)', badge: 'VI' },
                       { value: 'en', label: 'English (en)', badge: 'EN' },
                     ]}
                     value={languageCode}
                     onValueChange={setLanguageCode}
-                    placeholder="Chọn ngôn ngữ..."
-                    searchPlaceholder="Tìm ngôn ngữ..."
+                    placeholder="Select language..."
+                    searchPlaceholder="Search language..."
                   />
                 </div>
 
                 <div className="space-y-1.5">
                   <Label htmlFor="tz" className="text-xs font-semibold text-slate-700">
-                    Múi giờ Khu vực
+                    Primary Operational Timezone
                   </Label>
                   <SearchableSelect
                     options={[
-                      { value: 'Asia/Ho_Chi_Minh', label: 'Asia/Ho_Chi_Minh (UTC+7)', badge: 'UTC+7' },
                       { value: 'UTC', label: 'UTC (Coordinated Universal Time)', badge: 'UTC' },
+                      { value: 'America/New_York', label: 'America/New_York (EST/EDT)', badge: 'EST' },
+                      { value: 'Europe/London', label: 'Europe/London (GMT/BST)', badge: 'GMT' },
+                      { value: 'Asia/Singapore', label: 'Asia/Singapore (SGT UTC+8)', badge: 'SGT' },
+                      { value: 'Asia/Ho_Chi_Minh', label: 'Asia/Ho_Chi_Minh (UTC+7)', badge: 'UTC+7' },
                     ]}
                     value={timezone}
                     onValueChange={setTimezone}
-                    placeholder="Chọn múi giờ..."
-                    searchPlaceholder="Tìm múi giờ..."
+                    placeholder="Select timezone..."
+                    searchPlaceholder="Search timezone..."
                   />
                 </div>
               </div>
@@ -236,9 +240,9 @@ export const TenantSetupPage: React.FC = () => {
               <div className="p-3.5 rounded-xl bg-blue-50/70 border border-blue-200/80 flex items-start gap-3 mt-4">
                 <CheckCircle2 className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
                 <div className="space-y-1 text-slate-700 text-[11px]">
-                  <div className="font-bold text-blue-950">Quyền lợi sau khi khởi tạo thành công:</div>
-                  <p>• Bạn nhận được vai trò **Tenant Admin** sở hữu toàn bộ quyền hạn cao nhất của tổ chức.</p>
-                  <p>• Kích hoạt đầy đủ quyền **tạo, xem và quản lý dữ liệu Khách hàng (`crm_account.write`)**, Báo giá và Đơn hàng.</p>
+                  <div className="font-bold text-blue-950">Privileges granted upon bootstrap:</div>
+                  <p>• Your account is assigned **Tenant Administrator** possessing highest security governance scope.</p>
+                  <p>• Unlocks full CRUD access for Accounts, Contacts, Leads, Opportunities, CPQ Quotes, Orders and Invoices.</p>
                 </div>
               </div>
             </CardContent>
@@ -250,7 +254,7 @@ export const TenantSetupPage: React.FC = () => {
                 onClick={() => navigate('/login')}
                 className="text-xs text-slate-500 hover:text-slate-900"
               >
-                Đăng xuất / Quay lại
+                Sign Out / Back to Login
               </Button>
 
               <Button
@@ -261,11 +265,11 @@ export const TenantSetupPage: React.FC = () => {
                 {isSubmitting ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Đang khởi tạo Tổ chức...</span>
+                    <span>Bootstrapping Organization...</span>
                   </>
                 ) : (
                   <>
-                    <span>Khởi tạo Tổ chức & Bắt đầu</span>
+                    <span>Initialize Tenant &amp; Launch</span>
                     <ArrowRight className="w-4 h-4" />
                   </>
                 )}
@@ -277,3 +281,5 @@ export const TenantSetupPage: React.FC = () => {
     </div>
   );
 };
+
+export default TenantSetupPage;

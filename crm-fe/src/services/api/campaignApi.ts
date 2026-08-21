@@ -35,18 +35,18 @@ export interface CampaignPageResult {
 }
 
 export const CAMPAIGN_STATUS_CONFIG: Record<CampaignStatus, { label: string; className: string }> = {
-  PLANNING: { label: 'Đang lên kế hoạch', className: 'bg-purple-50 text-purple-700 border-purple-200 font-bold' },
-  ACTIVE: { label: 'Đang chạy chiến dịch', className: 'bg-blue-50 text-blue-700 border-blue-200 font-bold' },
-  COMPLETED: { label: 'Đã hoàn thành', className: 'bg-emerald-50 text-emerald-700 border-emerald-200 font-bold' },
-  CANCELLED: { label: 'Đã hủy bỏ', className: 'bg-rose-50 text-rose-700 border-rose-200 font-semibold' },
+  PLANNING: { label: 'PLANNING', className: 'bg-purple-50 text-purple-700 border-purple-200 font-bold' },
+  ACTIVE: { label: 'ACTIVE', className: 'bg-blue-50 text-blue-700 border-blue-200 font-bold' },
+  COMPLETED: { label: 'COMPLETED', className: 'bg-emerald-50 text-emerald-700 border-emerald-200 font-bold' },
+  CANCELLED: { label: 'CANCELLED', className: 'bg-rose-50 text-rose-700 border-rose-200 font-semibold' },
 };
 
 export const CAMPAIGN_TYPE_CONFIG: Record<CampaignType, { label: string; className: string }> = {
   EMAIL: { label: 'Email Marketing', className: 'bg-amber-50 text-amber-700 border-amber-200' },
-  WEBINAR: { label: 'Hội thảo Trực tuyến (Webinar)', className: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
-  EVENT: { label: 'Triển lãm / Sự kiện Offline', className: 'bg-sky-50 text-sky-700 border-sky-200' },
-  SOCIAL_ADS: { label: 'Quảng cáo MXH (Meta / LinkedIn)', className: 'bg-purple-50 text-purple-700 border-purple-200' },
-  DIRECT_MAIL: { label: 'Thư ngỏ / Tài liệu trực tiếp', className: 'bg-slate-100 text-slate-700 border-slate-200' },
+  WEBINAR: { label: 'Webinar / Online Demo', className: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
+  EVENT: { label: 'Tradeshow / Conference', className: 'bg-sky-50 text-sky-700 border-sky-200' },
+  SOCIAL_ADS: { label: 'Social Advertising (LinkedIn)', className: 'bg-purple-50 text-purple-700 border-purple-200' },
+  DIRECT_MAIL: { label: 'Direct Account Outreach', className: 'bg-slate-100 text-slate-700 border-slate-200' },
 };
 
 export interface DripStepDto {

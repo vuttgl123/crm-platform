@@ -25,43 +25,43 @@ export const userStep1Schema: FormSchema<UserStep1Values> = {
   sections: [
     {
       id: 'personal_info',
-      title: 'Thông tin Cá nhân & Khởi tạo Tài khoản',
+      title: 'Personal & Account Details',
       fields: [
         {
           name: 'email',
-          label: 'Email Công việc',
+          label: 'Work Email Address',
           type: 'text',
-          placeholder: 'nguyen.van.a@company.com',
+          placeholder: 'alex.nguyen@enterprise.com',
           required: true,
           colSpan: 'full',
         },
         {
           name: 'displayName',
-          label: 'Họ và Tên Hiển thị (Đầy đủ)',
+          label: 'Full Display Name',
           type: 'text',
-          placeholder: 'Ví dụ: Nguyễn Văn Anh',
+          placeholder: 'e.g. Alex Nguyen',
           required: true,
           colSpan: 'full',
         },
         {
           name: 'familyName',
-          label: 'Họ & Tên lót',
+          label: 'Last Name',
           type: 'text',
-          placeholder: 'Nguyễn Văn',
+          placeholder: 'Nguyen',
           colSpan: 1,
         },
         {
           name: 'givenName',
-          label: 'Tên chính',
+          label: 'First Name',
           type: 'text',
-          placeholder: 'Anh',
+          placeholder: 'Alex',
           colSpan: 1,
         },
         {
           name: 'phone',
-          label: 'Số điện thoại Di động',
+          label: 'Mobile Phone',
           type: 'text',
-          placeholder: '0912 345 678',
+          placeholder: '+84 912 345 678',
           colSpan: 'full',
         },
       ],
@@ -74,61 +74,35 @@ export const userStep2Schema: FormSchema<UserStep2Values> = {
   sections: [
     {
       id: 'job_info',
-      title: 'Phòng ban & Chức danh Chuyên môn',
+      title: 'Department & Professional Role',
       fields: [
         {
           name: 'department',
-          label: 'Phòng ban / Nhóm Làm việc',
+          label: 'Department / Team Assignment',
           type: 'select',
           required: true,
           colSpan: 'full',
           options: [
-            { label: 'Khối Kinh doanh Miền Bắc', value: 'team-mb-001' },
-            { label: 'Nhóm Kinh doanh Hà Nội 1', value: 'team-hn-001' },
-            { label: 'Phòng Chăm sóc Khách hàng', value: 'team-cs-001' },
-            { label: 'Ban Giám đốc', value: 'team-bod-001' },
+            { label: 'Northern Regional Enterprise Sales', value: 'team-mb-001' },
+            { label: 'Commercial Account Executive Team', value: 'team-hn-001' },
+            { label: 'Customer Success & Support', value: 'team-cs-001' },
+            { label: 'Executive Board & Management', value: 'team-bod-001' },
           ],
         },
         {
           name: 'jobTitle',
-          label: 'Chức danh Chuyên môn',
+          label: 'Job Title',
           type: 'text',
-          placeholder: 'Ví dụ: Chuyên viên Tư vấn Khách hàng',
+          placeholder: 'e.g. Senior Solution Consultant',
           required: true,
           colSpan: 1,
         },
         {
           name: 'employeeCode',
-          label: 'Mã Số Nhân viên (Mã định danh)',
+          label: 'Employee ID Code',
           type: 'text',
-          placeholder: 'Ví dụ: EMP-202608',
+          placeholder: 'EMP-9021',
           colSpan: 1,
-        },
-      ],
-    },
-  ],
-};
-
-/** Step 3 Schema: System Role Assignment */
-export const userStep3Schema: FormSchema<UserStep3Values> = {
-  sections: [
-    {
-      id: 'role_info',
-      title: 'Phân bổ Vai trò & Quyền hạn Hệ thống',
-      fields: [
-        {
-          name: 'selectedRole',
-          label: 'Vai trò Phân quyền Hệ thống',
-          type: 'select',
-          required: true,
-          colSpan: 'full',
-          options: [
-            { label: 'Quản trị viên Hệ thống (ADMIN)', value: 'ADMIN' },
-            { label: 'Quản lý Vùng (REGIONAL_MANAGER)', value: 'REGIONAL_MANAGER' },
-            { label: 'Trưởng nhóm Kinh doanh (TEAM_LEADER)', value: 'TEAM_LEADER' },
-            { label: 'Nhân viên Kinh doanh (SALES_STAFF)', value: 'SALES_STAFF' },
-            { label: 'Người xem Read-only (VIEWER)', value: 'VIEWER' },
-          ],
         },
       ],
     },

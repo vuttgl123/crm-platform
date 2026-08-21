@@ -16,6 +16,7 @@ import {
   Dialog,
   DialogContent,
 } from '@/components/ui/dialog';
+import { ActionTooltip } from '@/components/ui/action-tooltip';
 import {
   Table,
   TableBody,
@@ -75,7 +76,7 @@ export const OpportunitiesPage: React.FC = () => {
   const [stage, setStage] = useState<OpportunityStage>('PROSPECTING');
   const [probability, setProbability] = useState('15');
   const [expectedCloseDate, setExpectedCloseDate] = useState('');
-  const [assignedTo, setAssignedTo] = useState('Phạm Tuấn Vũ');
+  const [assignedTo, setAssignedTo] = useState('Alex Nguyen');
   const [description, setDescription] = useState('');
   const [nextStep, setNextStep] = useState('');
 
@@ -98,11 +99,11 @@ export const OpportunitiesPage: React.FC = () => {
         setTotalElements(res.totalElements);
       }
     } catch {
-      toast.error('Không thể tải danh sách cơ hội bán hàng');
+      toast.error('Unable to load commercial pipeline opportunities');
     } finally {
       setLoading(false);
     }
-  }, [viewMode, searchQuery, selectedStage, page, pageSize]);
+  }, [searchQuery, selectedStage, page, pageSize, viewMode]);
 
   useEffect(() => {
     fetchOpportunities();
@@ -123,7 +124,8 @@ export const OpportunitiesPage: React.FC = () => {
     setAmount('');
     setStage('PROSPECTING');
     setProbability('15');
-    setExpectedCloseDate('');
+    setExpectedCloseDate(new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0]);
+    setAssignedTo('Alex Nguyen');
     setDescription('');
     setNextStep('');
     setIsModalOpen(true);
@@ -138,7 +140,7 @@ export const OpportunitiesPage: React.FC = () => {
     setStage(opp.stage);
     setProbability(opp.probability.toString());
     setExpectedCloseDate(opp.expectedCloseDate);
-    setAssignedTo(opp.assignedTo);
+    setAssignedTo(opp.assignedTo || '');
     setDescription(opp.description || '');
     setNextStep(opp.nextStep || '');
     setIsModalOpen(true);
@@ -146,8 +148,8 @@ export const OpportunitiesPage: React.FC = () => {
 
   const handleSaveOpportunity = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!dealName.trim() || !amount.trim()) {
-      toast.error('Vui lòng nhập tên cơ hội và giá trị hợp đồng');
+    if (!dealName.trim() || !amount) {
+      toast.error('Please enter Opportunity Name and Deal Amount');
       return;
     }
 
@@ -167,40 +169,40 @@ export const OpportunitiesPage: React.FC = () => {
           description,
           nextStep,
         });
-        toast.success('Đã cập nhật cơ hội bán hàng thành công!');
+        toast.success('Opportunity updated successfully!');
       } else {
         await opportunityApi.create({
           dealName,
           accountId: 'acc-custom',
-          accountName: accountName || 'Khách hàng chưa gán',
-          contactName: contactName || 'Chưa chọn',
+          accountName: accountName || 'Unassigned Account',
+          contactName: contactName || 'Unassigned Contact',
           amount: parseFloat(amount),
           stage,
           probability: parseInt(probability, 10),
           expectedCloseDate: expectedCloseDate || new Date().toISOString().split('T')[0],
-          assignedTo: assignedTo || 'Phạm Tuấn Vũ',
+          assignedTo: assignedTo || 'Alex Nguyen',
           description,
           nextStep,
         });
-        toast.success('Đã thêm cơ hội bán hàng mới thành công!');
+        toast.success('New opportunity created successfully!');
       }
       setIsModalOpen(false);
       fetchOpportunities();
     } catch {
-      toast.error('Không thể lưu thông tin');
+      toast.error('Unable to save opportunity details');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleDelete = async (id: string, name: string) => {
-    if (!window.confirm(`Bạn có chắc chắn muốn xóa cơ hội "${name}"?`)) return;
+    if (!window.confirm(`Are you sure you want to delete opportunity "${name}"?`)) return;
     try {
       await opportunityApi.delete(id);
-      toast.success(`Đã xóa cơ hội "${name}"`);
+      toast.success(`Deleted opportunity "${name}"`);
       fetchOpportunities();
     } catch {
-      toast.error('Không thể xóa cơ hội');
+      toast.error('Unable to delete opportunity');
     }
   };
 
@@ -218,15 +220,15 @@ export const OpportunitiesPage: React.FC = () => {
       });
 
       if (nextStage.id === 'PROPOSAL') {
-        toast.success(`⚡ Workflow Automation: Đã chuyển sang "${nextStage.title}" và tự động kích hoạt tạo nhiệm vụ 'Soạn báo giá'`);
+        toast.success(`⚡ Workflow Automation: Advanced to "${nextStage.title}" and auto-triggered 'Draft Quotation'`);
       } else if (nextStage.id === 'CLOSED_WON') {
-        toast.success(`🎉 Chúc mừng! Đã chuyển sang "Ký kết Thành công" và tự động kích hoạt Workflow khởi tạo Đơn hàng / Hợp đồng mới`);
+        toast.success(`🎉 Won! Advanced to "Closed Won" and auto-triggered Order & Contract workflows`);
       } else {
-        toast.success(`Đã chuyển cơ hội sang "${nextStage.title}"`);
+        toast.success(`Advanced deal to "${nextStage.title}"`);
       }
       fetchOpportunities();
     } catch {
-      toast.error('Không thể cập nhật giai đoạn cơ hội');
+      toast.error('Unable to update opportunity stage');
     }
   };
 
@@ -240,9 +242,9 @@ export const OpportunitiesPage: React.FC = () => {
 
   // View Tabs Config
   const viewTabs: ViewTabItem[] = [
-    { id: 'ALL', label: 'Tất cả', count: totalElements },
-    { id: 'IN_PROGRESS', label: 'Đang đàm phán', count: inProgressCount, icon: Target, dotColor: 'bg-purple-500' },
-    { id: 'CLOSED_WON', label: 'Thành công (Won)', count: closedWonList.length, icon: Trophy, dotColor: 'bg-emerald-500' },
+    { id: 'ALL', label: 'All', count: totalElements },
+    { id: 'IN_PROGRESS', label: 'In Negotiation', count: inProgressCount, icon: Target, dotColor: 'bg-purple-500' },
+    { id: 'CLOSED_WON', label: 'Closed Won', count: closedWonList.length, icon: Trophy, dotColor: 'bg-emerald-500' },
   ];
 
   const currentActiveTab = selectedStage === 'CLOSED_WON' ? 'CLOSED_WON' : 'ALL';
@@ -260,10 +262,10 @@ export const OpportunitiesPage: React.FC = () => {
     <div className="space-y-4 pb-12 font-sans w-full">
       {/* Standard Page Header */}
       <StandardPageHeader
-        title="Quản lý Cơ hội Bán hàng"
-        subtitle="Theo dõi phễu đường ống bán hàng (Pipeline), xác suất chốt hợp đồng & giá trị dự báo doanh thu"
+        title="Commercial Opportunities"
+        subtitle="Track sales pipeline stages, deal probabilities, forecast revenue &amp; automated stage workflows"
         badgeCount={totalElements}
-        badgeLabel="cơ hội"
+        badgeLabel="deals"
         actions={
           <>
             <div className="flex items-center bg-slate-100 p-0.5 rounded-[3px] border border-slate-200">
@@ -276,7 +278,7 @@ export const OpportunitiesPage: React.FC = () => {
                 }`}
               >
                 <List className="w-3.5 h-3.5" />
-                <span>Bảng</span>
+                <span>Table</span>
               </button>
               <button
                 onClick={() => setViewMode('KANBAN')}
@@ -299,7 +301,7 @@ export const OpportunitiesPage: React.FC = () => {
               className="text-xs font-medium text-slate-700 bg-white border-slate-200 hover:bg-slate-50 gap-1.5 h-8 rounded-[3px]"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-              <span>Làm mới</span>
+              <span>Refresh</span>
             </Button>
 
             <Button
@@ -308,7 +310,7 @@ export const OpportunitiesPage: React.FC = () => {
               className="text-xs font-semibold bg-[#0C66E4] hover:bg-[#0052CC] text-white gap-1.5 shadow-none h-8 rounded-[3px]"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>Thêm Cơ hội</span>
+              <span>New Opportunity</span>
             </Button>
           </>
         }
@@ -319,7 +321,7 @@ export const OpportunitiesPage: React.FC = () => {
         <StandardFilterBar
           searchQuery={searchQuery}
           onSearchChange={(val) => { setSearchQuery(val); setPage(0); }}
-          searchPlaceholder="Tìm kiếm cơ hội, doanh nghiệp, phụ trách..."
+          searchPlaceholder="Search opportunities, accounts, reps..."
           viewTabs={viewTabs}
           activeTab={currentActiveTab}
           onTabChange={handleTabChange}
@@ -329,10 +331,10 @@ export const OpportunitiesPage: React.FC = () => {
             <div className="w-48">
               <Select value={selectedStage} onValueChange={(val) => { setSelectedStage(val); setPage(0); }}>
                 <SelectTrigger className="h-8 text-xs bg-white border-slate-200 rounded-[3px]">
-                  <SelectValue placeholder="Giai đoạn phễu" />
+                  <SelectValue placeholder="Pipeline Stage" />
                 </SelectTrigger>
                 <SelectContent className="rounded-[3px]">
-                  <SelectItem value="ALL">Tất cả giai đoạn</SelectItem>
+                  <SelectItem value="ALL">All Stages</SelectItem>
                   {PIPELINE_STAGES.map((s) => (
                     <SelectItem key={s.id} value={s.id}>
                       {s.title} ({s.defaultProb}%)
@@ -345,20 +347,20 @@ export const OpportunitiesPage: React.FC = () => {
         />
       )}
 
-      {/* ── Main View: Table vs Kanban ── */}
+      {/* Main View: Table vs Kanban */}
       {viewMode === 'TABLE' ? (
         <Card className="overflow-hidden border border-slate-200 rounded-[4px] bg-white shadow-none">
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow className="bg-[#F7F8F9] border-b border-slate-200 hover:bg-[#F7F8F9]">
-                  <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Tên Cơ hội &amp; Mã số</TableHead>
-                  <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Doanh nghiệp</TableHead>
-                  <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Giai đoạn Phễu</TableHead>
-                  <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Giá trị Hợp đồng</TableHead>
-                  <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Xác suất</TableHead>
-                  <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Dự kiến chốt</TableHead>
-                  <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3 text-right pr-4">Thao tác</TableHead>
+                  <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Opportunity Name &amp; Code</TableHead>
+                  <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Account</TableHead>
+                  <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Pipeline Stage</TableHead>
+                  <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Deal Value</TableHead>
+                  <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Probability</TableHead>
+                  <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Expected Close</TableHead>
+                  <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3 text-right pr-4">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -367,7 +369,7 @@ export const OpportunitiesPage: React.FC = () => {
                     <TableCell colSpan={7} className="h-48 text-center">
                       <div className="flex flex-col items-center justify-center gap-2 text-slate-500">
                         <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
-                        <span className="text-xs">Đang tải danh sách cơ hội...</span>
+                        <span className="text-xs">Loading opportunities...</span>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -376,9 +378,9 @@ export const OpportunitiesPage: React.FC = () => {
                     <TableCell colSpan={7} className="p-0">
                       <EmptyState
                         icon={TrendingUp}
-                        title="Không tìm thấy cơ hội bán hàng nào"
-                        description="Hãy thử thay đổi bộ lọc hoặc tạo thêm cơ hội kinh doanh mới."
-                        actionLabel="Thêm Cơ Hội"
+                        title="No opportunities found"
+                        description="Try adjusting your filters or create a new sales opportunity."
+                        actionLabel="Create Opportunity"
                         onAction={handleOpenCreate}
                       />
                     </TableCell>
@@ -386,7 +388,7 @@ export const OpportunitiesPage: React.FC = () => {
                 ) : (
                   opportunities.map((opp) => (
                     <TableRow key={opp.id} className="hover:bg-[#F1F2F4] transition-colors border-b border-[#EBECF0] text-xs">
-                      {/* Cột 1: Tên cơ hội */}
+                      {/* Name */}
                       <TableCell className="py-2 px-3">
                         <div className="flex items-center gap-2">
                           <div className="w-6 h-6 rounded-[3px] bg-[#E9F2FF] text-[#0C66E4] border border-[#C0D9FF] font-bold text-xs flex items-center justify-center shrink-0">
@@ -399,7 +401,7 @@ export const OpportunitiesPage: React.FC = () => {
                         </div>
                       </TableCell>
 
-                      {/* Cột 2: Khách hàng */}
+                      {/* Account */}
                       <TableCell className="py-2 px-3">
                         <div>
                           <div className="font-medium text-slate-800 flex items-center gap-1">
@@ -412,19 +414,19 @@ export const OpportunitiesPage: React.FC = () => {
                         </div>
                       </TableCell>
 
-                      {/* Cột 3: Giai đoạn */}
+                      {/* Stage */}
                       <TableCell className="py-2 px-3">
                         {renderOpportunityStageBadge(opp.stage)}
                       </TableCell>
 
-                      {/* Cột 4: Giá trị */}
+                      {/* Deal Value */}
                       <TableCell className="py-2 px-3">
                         <div className="font-semibold text-slate-900 font-mono text-xs">
-                          {opp.amount.toLocaleString('vi-VN')} ₫
+                          {opp.amount.toLocaleString('en-US')} ₫
                         </div>
                       </TableCell>
 
-                      {/* Cột 5: Xác suất */}
+                      {/* Probability */}
                       <TableCell className="py-2 px-3">
                         <div className="flex items-center gap-1.5">
                           <div className="w-12 bg-slate-100 rounded-full h-1.5 overflow-hidden border border-slate-200">
@@ -437,32 +439,36 @@ export const OpportunitiesPage: React.FC = () => {
                         </div>
                       </TableCell>
 
-                      {/* Cột 6: Dự kiến chốt */}
+                      {/* Expected Close */}
                       <TableCell className="py-2 px-3 text-slate-600 font-mono text-[11px]">
-                        {new Date(opp.expectedCloseDate).toLocaleDateString('vi-VN')}
+                        {new Date(opp.expectedCloseDate).toLocaleDateString('en-US')}
                       </TableCell>
 
-                      {/* Cột 7: Thao tác */}
+                      {/* Actions */}
                       <TableCell className="py-2 px-3 text-right pr-4">
                         <div className="flex items-center justify-end gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleOpenEdit(opp)}
-                            className="h-7 w-7 rounded-[3px] text-slate-600 hover:text-[#0C66E4] hover:bg-[#E9F2FF]"
-                            title="Chỉnh sửa cơ hội"
-                          >
-                            <Edit className="w-3.5 h-3.5" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleDelete(opp.id, opp.dealName)}
-                            className="h-7 w-7 rounded-[3px] text-slate-600 hover:text-red-600 hover:bg-red-50"
-                            title="Xóa cơ hội"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </Button>
+                          <ActionTooltip label="Chỉnh sửa cơ hội">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleOpenEdit(opp)}
+                              className="h-7 w-7 rounded-[3px] text-slate-600 hover:text-[#0C66E4] hover:bg-[#E9F2FF]"
+                              aria-label="Edit Opportunity"
+                            >
+                              <Edit className="w-3.5 h-3.5" />
+                            </Button>
+                          </ActionTooltip>
+                          <ActionTooltip label="Xóa cơ hội">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDelete(opp.id, opp.dealName)}
+                              className="h-7 w-7 rounded-[3px] text-slate-600 hover:text-red-600 hover:bg-red-50"
+                              aria-label="Delete Opportunity"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
+                          </ActionTooltip>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -472,7 +478,7 @@ export const OpportunitiesPage: React.FC = () => {
             </Table>
           </div>
 
-          {/* ── Standard Pagination Bar ── */}
+          {/* Standard Pagination Bar */}
           {!loading && (
             <StandardPagination
               currentPage={page + 1}
@@ -480,12 +486,12 @@ export const OpportunitiesPage: React.FC = () => {
               totalElements={totalElements}
               pageSize={pageSize}
               onPageChange={(p) => setPage(p - 1)}
-              itemLabel="cơ hội"
+              itemLabel="opportunities"
             />
           )}
         </Card>
       ) : (
-        /* ── Kanban View ── */
+        /* Kanban View */
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-3 overflow-x-auto pb-4">
           {PIPELINE_STAGES.map((s) => {
             const stageDeals = opportunities.filter((o) => o.stage === s.id);
@@ -497,7 +503,7 @@ export const OpportunitiesPage: React.FC = () => {
                   <div>
                     <h4 className="font-bold text-xs text-slate-900">{s.title}</h4>
                     <span className="text-[10px] text-slate-500 font-mono">
-                      {(stageTotal / 1_000_000).toFixed(0)} Tr ₫
+                      {(stageTotal / 1_000_000).toFixed(0)}M VND
                     </span>
                   </div>
                   <Badge variant="outline" className="bg-white text-slate-700 border-slate-200 text-[10px] px-1.5 py-0 font-bold">
@@ -508,7 +514,7 @@ export const OpportunitiesPage: React.FC = () => {
                 <div className="space-y-2 flex-1 overflow-y-auto max-h-[600px] pr-0.5">
                   {stageDeals.length === 0 ? (
                     <div className="py-6 text-center text-slate-400 text-[11px] italic">
-                      Không có deal
+                      No deals
                     </div>
                   ) : (
                     stageDeals.map((deal) => (
@@ -526,7 +532,7 @@ export const OpportunitiesPage: React.FC = () => {
                         </div>
                         <div className="flex items-center justify-between pt-1 border-t border-slate-50 text-[11px]">
                           <span className="font-bold text-slate-900 font-mono">
-                            {(deal.amount / 1_000_000).toFixed(0)} Tr
+                            {(deal.amount / 1_000_000).toFixed(0)}M VND
                           </span>
                           <div className="flex items-center gap-1">
                             <span className="text-slate-400 text-[10px]">{deal.expectedCloseDate}</span>
@@ -534,7 +540,7 @@ export const OpportunitiesPage: React.FC = () => {
                               <button
                                 onClick={(e) => handleAdvanceStage(deal, e)}
                                 className="p-0.5 rounded hover:bg-blue-50 text-slate-400 hover:text-blue-600 transition-colors ml-1"
-                                title="Chuyển sang giai đoạn tiếp theo (Workflow Trigger)"
+                                title="Advance to Next Stage (Workflow Trigger)"
                               >
                                 <ArrowRight className="w-3 h-3" />
                               </button>
@@ -551,7 +557,7 @@ export const OpportunitiesPage: React.FC = () => {
         </div>
       )}
 
-      {/* ── Create / Edit Opportunity Modal ── */}
+      {/* Create / Edit Opportunity Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0 rounded-2xl border border-slate-200 shadow-xl">
           <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-5 text-white">
@@ -562,10 +568,10 @@ export const OpportunitiesPage: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="font-bold text-base">
-                    {editingOpp ? 'Chỉnh sửa Cơ hội Bán hàng' : 'Thêm Cơ Hội Bán Hàng Mới'}
+                    {editingOpp ? 'Edit Opportunity Details' : 'Create New Opportunity'}
                   </h3>
                   <p className="text-xs text-blue-100 mt-0.5">
-                    {editingOpp ? `Mã: ${editingOpp.id.toUpperCase()}` : 'Thiết lập phễu cơ hội và dự báo doanh thu tiềm năng'}
+                    {editingOpp ? `Deal ID: ${editingOpp.id.toUpperCase()}` : 'Define deal pipeline stage, probability & revenue forecast'}
                   </p>
                 </div>
               </div>
@@ -576,11 +582,11 @@ export const OpportunitiesPage: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="sm:col-span-2">
                 <Label className="text-xs font-semibold text-slate-700">
-                  Tên thương vụ / Cơ hội <span className="text-rose-500">*</span>
+                  Deal / Opportunity Name <span className="text-rose-500">*</span>
                 </Label>
                 <Input
                   required
-                  placeholder="Ví dụ: Triển khai Hệ thống CRM Enterprise 2026"
+                  placeholder="e.g. Enterprise Cloud ERP Deployment 2026"
                   value={dealName}
                   onChange={(e) => setDealName(e.target.value)}
                   className="h-9 text-xs border-slate-200 mt-1"
@@ -588,9 +594,9 @@ export const OpportunitiesPage: React.FC = () => {
               </div>
 
               <div>
-                <Label className="text-xs font-semibold text-slate-700">Doanh nghiệp khách hàng</Label>
+                <Label className="text-xs font-semibold text-slate-700">Client Organization</Label>
                 <Input
-                  placeholder="Nhập tên doanh nghiệp..."
+                  placeholder="Enter organization name..."
                   value={accountName}
                   onChange={(e) => setAccountName(e.target.value)}
                   className="h-9 text-xs border-slate-200 mt-1"
@@ -598,9 +604,9 @@ export const OpportunitiesPage: React.FC = () => {
               </div>
 
               <div>
-                <Label className="text-xs font-semibold text-slate-700">Người liên hệ chính</Label>
+                <Label className="text-xs font-semibold text-slate-700">Key Contact Representative</Label>
                 <Input
-                  placeholder="Nhập người đại diện..."
+                  placeholder="Enter contact name..."
                   value={contactName}
                   onChange={(e) => setContactName(e.target.value)}
                   className="h-9 text-xs border-slate-200 mt-1"
@@ -611,7 +617,7 @@ export const OpportunitiesPage: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
                 <Label className="text-xs font-semibold text-slate-700">
-                  Giá trị Hợp đồng (VNĐ) <span className="text-rose-500">*</span>
+                  Contract Amount (VND) <span className="text-rose-500">*</span>
                 </Label>
                 <Input
                   required
@@ -624,7 +630,7 @@ export const OpportunitiesPage: React.FC = () => {
               </div>
 
               <div>
-                <Label className="text-xs font-semibold text-slate-700">Giai đoạn Phễu</Label>
+                <Label className="text-xs font-semibold text-slate-700">Pipeline Stage</Label>
                 <Select
                   value={stage}
                   onValueChange={(val: any) => {
@@ -647,7 +653,7 @@ export const OpportunitiesPage: React.FC = () => {
               </div>
 
               <div>
-                <Label className="text-xs font-semibold text-slate-700">Xác suất thành công (%)</Label>
+                <Label className="text-xs font-semibold text-slate-700">Probability (%)</Label>
                 <Input
                   type="number"
                   min="0"
@@ -661,7 +667,7 @@ export const OpportunitiesPage: React.FC = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <Label className="text-xs font-semibold text-slate-700">Ngày dự kiến chốt</Label>
+                <Label className="text-xs font-semibold text-slate-700">Expected Close Date</Label>
                 <Input
                   type="date"
                   value={expectedCloseDate}
@@ -671,9 +677,9 @@ export const OpportunitiesPage: React.FC = () => {
               </div>
 
               <div>
-                <Label className="text-xs font-semibold text-slate-700">Người phụ trách thương vụ</Label>
+                <Label className="text-xs font-semibold text-slate-700">Assigned Deal Owner</Label>
                 <Input
-                  placeholder="Phạm Tuấn Vũ"
+                  placeholder="Alex Nguyen"
                   value={assignedTo}
                   onChange={(e) => setAssignedTo(e.target.value)}
                   className="h-9 text-xs border-slate-200 mt-1"
@@ -682,9 +688,9 @@ export const OpportunitiesPage: React.FC = () => {
             </div>
 
             <div>
-              <Label className="text-xs font-semibold text-slate-700">Bước tiếp theo cần thực hiện</Label>
+              <Label className="text-xs font-semibold text-slate-700">Next Action Step</Label>
               <Input
-                placeholder="Ví dụ: Gửi bảng chào giá và Demo trực tiếp vào thứ 5..."
+                placeholder="e.g. Dispatch formal CPQ proposal and conduct architecture review on Thursday..."
                 value={nextStep}
                 onChange={(e) => setNextStep(e.target.value)}
                 className="h-9 text-xs border-slate-200 mt-1"
@@ -692,10 +698,10 @@ export const OpportunitiesPage: React.FC = () => {
             </div>
 
             <div>
-              <Label className="text-xs font-semibold text-slate-700">Mô tả &amp; Chi tiết thương vụ</Label>
+              <Label className="text-xs font-semibold text-slate-700">Commercial Notes &amp; Scope</Label>
               <textarea
                 rows={3}
-                placeholder="Yêu cầu tích hợp API với ERP SAP và hỗ trợ đào tạo 50 nhân sự..."
+                placeholder="Requires SAP ERP integration API connector and user onboarding support for 50 commercial reps..."
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 className="w-full text-xs border border-slate-200 rounded-lg p-2.5 mt-1 focus:ring-1 focus:ring-blue-500 focus:outline-hidden"
@@ -709,7 +715,7 @@ export const OpportunitiesPage: React.FC = () => {
                 onClick={() => setIsModalOpen(false)}
                 className="text-xs border-slate-200 h-9"
               >
-                Hủy bỏ
+                Cancel
               </Button>
               <Button
                 type="submit"
@@ -717,7 +723,7 @@ export const OpportunitiesPage: React.FC = () => {
                 className="text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white gap-1.5 shadow-xs h-9"
               >
                 {isSubmitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
-                <span>{editingOpp ? 'Lưu Thay Đổi' : 'Thêm Cơ Hội'}</span>
+                <span>{editingOpp ? 'Save Changes' : 'Create Opportunity'}</span>
               </Button>
             </div>
           </form>
@@ -726,3 +732,5 @@ export const OpportunitiesPage: React.FC = () => {
     </div>
   );
 };
+
+export default OpportunitiesPage;

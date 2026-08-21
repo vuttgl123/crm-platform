@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Archive, RefreshCw, Loader2, Calendar } from 'lucide-react';
+import { StandardPageHeader } from '@/components/common/StandardPageHeader';
 
 export const RetentionPoliciesPage: React.FC = () => {
   const [policies, setPolicies] = useState<RetentionPolicyItem[]>([]);
@@ -23,76 +24,81 @@ export const RetentionPoliciesPage: React.FC = () => {
   }, []);
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-black tracking-tight text-slate-900 flex items-center gap-2">
-            <Archive className="w-7 h-7 text-blue-600" />
-            <span>Chính sách Lưu trữ & Tiêu hủy (Retention Policies)</span>
-          </h1>
-          <p className="text-sm text-slate-500 mt-1">
-            Quy định vòng đời lưu trữ, tự động nén lưu trữ hoặc ẩn danh hóa dữ liệu hết hạn
-          </p>
-        </div>
-        <Button variant="outline" size="sm" onClick={fetchPolicies} disabled={loading} className="h-9 px-3 text-xs font-semibold gap-1.5 border-slate-200">
-          <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-          <span>Làm mới</span>
-        </Button>
-      </div>
+    <div className="space-y-4 pb-12 font-sans w-full">
+      {/* Standard Page Header */}
+      <StandardPageHeader
+        title="Data Retention &amp; Disposal Policies"
+        subtitle="Configure data retention lifecycle rules, automatic compression archiving &amp; expiry anonymization"
+        icon={Archive}
+        badgeCount={policies.length}
+        badgeLabel="policies"
+        actions={
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={fetchPolicies}
+            disabled={loading}
+            className="h-8 px-3 text-xs font-medium text-slate-700 bg-white border-slate-200 hover:bg-slate-50 gap-1.5 rounded-[3px]"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+            <span>Refresh</span>
+          </Button>
+        }
+      />
 
-      <Card className="border-slate-200 shadow-2xs bg-white overflow-hidden">
+      <Card className="border border-slate-200 shadow-none bg-white rounded-[4px] overflow-hidden">
         {loading ? (
           <div className="py-20 flex flex-col items-center justify-center text-slate-400 gap-2">
             <Loader2 className="w-7 h-7 animate-spin text-blue-600" />
-            <span className="text-xs font-semibold">Đang tải chính sách lưu trữ...</span>
+            <span className="text-xs font-semibold">Loading retention policies...</span>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <Table>
-              <TableHeader className="bg-slate-50/80 border-b border-slate-200">
-                <TableRow>
-                  <TableHead className="text-xs font-bold text-slate-700 py-3.5 pl-5">Loại Dữ liệu áp dụng</TableHead>
-                  <TableHead className="text-xs font-bold text-slate-700 py-3.5">Thời hạn lưu giữ</TableHead>
-                  <TableHead className="text-xs font-bold text-slate-700 py-3.5">Hành động khi hết hạn</TableHead>
-                  <TableHead className="text-xs font-bold text-slate-700 py-3.5">Lần quét gần nhất</TableHead>
-                  <TableHead className="text-xs font-bold text-slate-700 py-3.5 text-right pr-5">Trạng thái Chính sách</TableHead>
+              <TableHeader className="bg-[#F7F8F9] border-b border-slate-200">
+                <TableRow className="hover:bg-[#F7F8F9]">
+                  <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Target Data Entity</TableHead>
+                  <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Retention Period</TableHead>
+                  <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Action Upon Expiry</TableHead>
+                  <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Last Scheduled Scan</TableHead>
+                  <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3 text-right pr-4">Enforcement Status</TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody className="divide-y divide-slate-100">
+              <TableBody>
                 {policies.map((p) => (
-                  <TableRow key={p.id} className="hover:bg-slate-50/70 transition-colors">
-                    <TableCell className="pl-5 py-3.5 font-bold text-slate-900 text-xs">
+                  <TableRow key={p.id} className="hover:bg-[#F1F2F4] border-b border-[#EBECF0] transition-colors text-xs">
+                    <TableCell className="py-2 px-3 font-semibold text-slate-900 text-xs">
                       {p.dataType}
                     </TableCell>
-                    <TableCell className="py-3.5 text-xs font-bold text-blue-700">
-                      {p.durationYears} Năm
+                    <TableCell className="py-2 px-3 text-xs font-bold text-blue-700 font-mono">
+                      {p.durationYears} {p.durationYears === 1 ? 'Year' : 'Years'}
                     </TableCell>
-                    <TableCell className="py-3.5">
+                    <TableCell className="py-2 px-3">
                       {p.actionAfterExpiry === 'ARCHIVE' && (
-                        <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200 font-semibold text-xs">
-                          Nén & Lưu trữ (Archive)
+                        <Badge variant="outline" className="bg-[#EAE6FF] text-[#403294] border-purple-200 font-bold text-[10px] rounded-[3px]">
+                          ARCHIVE &amp; COMPRESS
                         </Badge>
                       )}
                       {p.actionAfterExpiry === 'PERMANENT_DELETE' && (
-                        <Badge variant="outline" className="bg-rose-50 text-rose-700 border-rose-200 font-semibold text-xs">
-                          Xóa vĩnh viễn (Delete)
+                        <Badge variant="outline" className="bg-[#FFEBE6] text-[#DE350B] border-rose-200 font-bold text-[10px] rounded-[3px]">
+                          PERMANENT PURGE
                         </Badge>
                       )}
                       {p.actionAfterExpiry === 'ANONYMIZE' && (
-                        <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 font-semibold text-xs">
-                          Ẩn danh hóa (Anonymize)
+                        <Badge variant="outline" className="bg-[#FFFAE6] text-[#974F0C] border-amber-200 font-bold text-[10px] rounded-[3px]">
+                          ANONYMIZE
                         </Badge>
                       )}
                     </TableCell>
-                    <TableCell className="py-3.5 text-xs text-slate-500">
+                    <TableCell className="py-2 px-3 text-xs text-slate-500 font-mono">
                       <div className="flex items-center gap-1">
                         <Calendar className="w-3.5 h-3.5 text-slate-400" />
                         <span>{p.lastRunDate}</span>
                       </div>
                     </TableCell>
-                    <TableCell className="text-right pr-5 py-3.5">
-                      <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 font-semibold text-xs">
-                        Đang áp dụng
+                    <TableCell className="text-right pr-4 py-2 px-3">
+                      <Badge variant="outline" className="bg-[#E3FCEF] text-[#006644] border-emerald-300 font-bold text-[10px] rounded-[3px]">
+                        ACTIVE ENFORCEMENT
                       </Badge>
                     </TableCell>
                   </TableRow>
@@ -105,3 +111,5 @@ export const RetentionPoliciesPage: React.FC = () => {
     </div>
   );
 };
+
+export default RetentionPoliciesPage;

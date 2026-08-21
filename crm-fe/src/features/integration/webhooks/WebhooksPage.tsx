@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from 'sonner';
 import { Webhook, RefreshCw, Loader2, Plus, Globe } from 'lucide-react';
+import { StandardPageHeader } from '@/components/common/StandardPageHeader';
 
 export const WebhooksPage: React.FC = () => {
   const [webhooks, setWebhooks] = useState<WebhookSubscription[]>([]);
@@ -24,79 +25,87 @@ export const WebhooksPage: React.FC = () => {
   }, []);
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-black tracking-tight text-slate-900 flex items-center gap-2">
-            <Webhook className="w-7 h-7 text-blue-600" />
-            <span>Đăng ký Webhook Sự kiện (Webhooks)</span>
-          </h1>
-          <p className="text-sm text-slate-500 mt-1">
-            Gửi tín hiệu HTTP POST theo thời gian thực khi có sự kiện thay đổi dữ liệu CRM tới hệ thống bên ngoài
-          </p>
-        </div>
-        <div className="flex items-center gap-2.5">
-          <Button variant="outline" size="sm" onClick={fetchWebhooks} disabled={loading} className="h-9 px-3 text-xs font-semibold gap-1.5 border-slate-200">
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-            <span>Làm mới</span>
-          </Button>
-          <Button size="sm" onClick={() => toast.info('Mở hộp thoại tạo Webhook endpoint mới')} className="h-9 px-4 text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white gap-1.5">
-            <Plus className="w-4 h-4" />
-            <span>Tạo Webhook Mới</span>
-          </Button>
-        </div>
-      </div>
+    <div className="space-y-4 pb-12 font-sans w-full">
+      <StandardPageHeader
+        title="Event Webhook Subscriptions"
+        subtitle="Dispatch real-time HTTP POST notifications on CRM entity mutation events to downstream enterprise systems"
+        icon={Webhook}
+        badgeCount={webhooks.length}
+        badgeLabel="endpoints"
+        actions={
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={fetchWebhooks}
+              disabled={loading}
+              className="h-8 px-3 text-xs font-medium text-slate-700 bg-white border-slate-200 hover:bg-slate-50 gap-1.5 rounded-[3px]"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+              <span>Refresh</span>
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => toast.info('Open new Webhook endpoint dialog')}
+              className="h-8 px-3 text-xs font-semibold bg-[#0C66E4] hover:bg-[#0052CC] text-white gap-1.5 shadow-none rounded-[3px]"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>New Webhook Endpoint</span>
+            </Button>
+          </div>
+        }
+      />
 
-      <Card className="border-slate-200 shadow-2xs bg-white overflow-hidden">
+      <Card className="border border-slate-200 shadow-none bg-white overflow-hidden rounded-[4px]">
         {loading ? (
           <div className="py-20 flex flex-col items-center justify-center text-slate-400 gap-2">
             <Loader2 className="w-7 h-7 animate-spin text-blue-600" />
-            <span className="text-xs font-semibold">Đang tải danh sách Webhooks...</span>
+            <span className="text-xs font-semibold">Loading Webhook subscriptions...</span>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <Table>
-              <TableHeader className="bg-slate-50/80 border-b border-slate-200">
-                <TableRow>
-                  <TableHead className="text-xs font-bold text-slate-700 py-3.5 pl-5">Tên Webhook & URL Đích</TableHead>
-                  <TableHead className="text-xs font-bold text-slate-700 py-3.5">Sự kiện lắng nghe</TableHead>
-                  <TableHead className="text-xs font-bold text-slate-700 py-3.5">Khóa bí mật (Secret)</TableHead>
-                  <TableHead className="text-xs font-bold text-slate-700 py-3.5">Tỷ lệ phân phối thành công</TableHead>
-                  <TableHead className="text-xs font-bold text-slate-700 py-3.5 text-right pr-5">Trạng thái</TableHead>
+              <TableHeader className="bg-[#F7F8F9] border-b border-slate-200">
+                <TableRow className="hover:bg-[#F7F8F9]">
+                  <TableHead className="text-[11px] font-semibold text-slate-600 uppercase py-2.5 px-3">Webhook Name &amp; Target URL</TableHead>
+                  <TableHead className="text-[11px] font-semibold text-slate-600 uppercase py-2.5 px-3">Subscribed Events</TableHead>
+                  <TableHead className="text-[11px] font-semibold text-slate-600 uppercase py-2.5 px-3">Signing Secret</TableHead>
+                  <TableHead className="text-[11px] font-semibold text-slate-600 uppercase py-2.5 px-3">Delivery Success</TableHead>
+                  <TableHead className="text-[11px] font-semibold text-slate-600 uppercase py-2.5 px-3 text-right pr-4">Status</TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody className="divide-y divide-slate-100">
+              <TableBody>
                 {webhooks.map((w) => (
-                  <TableRow key={w.id} className="hover:bg-slate-50/70 transition-colors">
-                    <TableCell className="pl-5 py-3.5">
-                      <span className="font-bold text-slate-900 text-xs block">{w.name}</span>
+                  <TableRow key={w.id} className="hover:bg-[#F1F2F4] border-b border-[#EBECF0] text-xs">
+                    <TableCell className="py-2 px-3">
+                      <span className="font-semibold text-slate-900 text-xs block">{w.name}</span>
                       <span className="font-mono text-[11px] text-blue-600 flex items-center gap-1 mt-0.5">
                         <Globe className="w-3 h-3 text-slate-400" /> {w.targetUrl}
                       </span>
                     </TableCell>
 
-                    <TableCell className="py-3.5">
+                    <TableCell className="py-2 px-3">
                       <div className="flex flex-wrap gap-1">
                         {w.events.map((ev) => (
-                          <Badge key={ev} variant="outline" className="bg-purple-50 text-purple-700 border-purple-200 text-[10px] font-mono">
+                          <Badge key={ev} variant="outline" className="bg-purple-50 text-purple-700 border-purple-200 text-[10px] font-mono rounded-[2px]">
                             {ev}
                           </Badge>
                         ))}
                       </div>
                     </TableCell>
 
-                    <TableCell className="py-3.5 font-mono text-[11px] text-slate-400">
+                    <TableCell className="py-2 px-3 font-mono text-[11px] text-slate-400">
                       {(w.secretKey || (w as any).secretToken || 'whsec_••••••••').slice(0, 10)}••••••••
                     </TableCell>
 
-                    <TableCell className="py-3.5">
-                      <span className="text-xs font-bold text-emerald-600">{w.successRate}%</span>
-                      <span className="text-[10px] text-slate-400 block">Lần cuối: {w.lastTriggeredAt}</span>
+                    <TableCell className="py-2 px-3">
+                      <span className="text-xs font-bold text-emerald-600 font-mono">{w.successRate}%</span>
+                      <span className="text-[10px] text-slate-400 block font-mono">Last: {w.lastTriggeredAt}</span>
                     </TableCell>
 
-                    <TableCell className="text-right pr-5 py-3.5">
-                      <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 font-bold text-xs">
-                        Đang hoạt động
+                    <TableCell className="text-right pr-4 py-2 px-3">
+                      <Badge variant="outline" className="bg-[#E3FCEF] text-[#006644] border-emerald-300 font-bold text-[10px] rounded-[2px] shadow-none">
+                        ACTIVE
                       </Badge>
                     </TableCell>
                   </TableRow>
@@ -109,3 +118,5 @@ export const WebhooksPage: React.FC = () => {
     </div>
   );
 };
+
+export default WebhooksPage;

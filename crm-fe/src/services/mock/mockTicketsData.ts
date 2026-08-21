@@ -19,11 +19,11 @@ export interface TicketItem {
 }
 
 export const TICKET_STATUS_CONFIG: Record<TicketStatus, { label: string; className: string }> = {
-  NEW: { label: 'Mới tạo', className: 'bg-purple-50 text-purple-700 border-purple-200 font-bold' },
-  OPEN: { label: 'Đang mở', className: 'bg-blue-50 text-blue-700 border-blue-200 font-bold' },
-  IN_PROGRESS: { label: 'Đang xử lý', className: 'bg-amber-50 text-amber-700 border-amber-200 font-semibold' },
-  RESOLVED: { label: 'Đã giải quyết', className: 'bg-emerald-50 text-emerald-700 border-emerald-200 font-bold' },
-  CLOSED: { label: 'Đã đóng', className: 'bg-slate-100 text-slate-600 border-slate-300 font-semibold' },
+  NEW: { label: 'NEW', className: 'bg-purple-50 text-purple-700 border-purple-200 font-bold' },
+  OPEN: { label: 'OPEN', className: 'bg-blue-50 text-blue-700 border-blue-200 font-bold' },
+  IN_PROGRESS: { label: 'IN PROGRESS', className: 'bg-amber-50 text-amber-700 border-amber-200 font-semibold' },
+  RESOLVED: { label: 'RESOLVED', className: 'bg-emerald-50 text-emerald-700 border-emerald-200 font-bold' },
+  CLOSED: { label: 'CLOSED', className: 'bg-slate-100 text-slate-600 border-slate-300 font-semibold' },
 };
 
 export const INITIAL_MOCK_TICKETS: TicketItem[] = [

@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useAuth } from '@/core/session/useAuth';
-import { can } from '@/core/permissions/evaluator';
+import { canAccessRule } from '@/core/permissions/evaluator';
+import { NavigationAccessRule } from '@/types/navigation';
 import { CRM_READ_PERMISSIONS } from '@/core/permissions/constants';
 
 interface PermissionGateProps {
@@ -22,19 +23,20 @@ export const PermissionGate: React.FC<PermissionGateProps> = ({
 }) => {
   const { session } = useAuth();
 
-  let hasAccess = true;
+  const rule: NavigationAccessRule = useMemo(() => {
+    if (requiresTenantAdmin) {
+      return { kind: 'tenant-admin' };
+    }
+    if (requiresAnyCrmReadPermission) {
+      return { kind: 'any-permission', codes: CRM_READ_PERMISSIONS };
+    }
+    if (permission) {
+      return { kind: 'permission', code: permission };
+    }
+    return { kind: 'authenticated' };
+  }, [requiresTenantAdmin, requiresAnyCrmReadPermission, permission]);
 
-  if (!session) {
-    hasAccess = false;
-  } else if (session.membership.is_tenant_admin) {
-    hasAccess = true;
-  } else if (requiresTenantAdmin) {
-    hasAccess = session.membership.is_tenant_admin;
-  } else if (requiresAnyCrmReadPermission) {
-    hasAccess = CRM_READ_PERMISSIONS.some((code) => session.grantedPermissions.includes(code));
-  } else if (permission) {
-    hasAccess = can(permission, session);
-  }
+  const hasAccess = canAccessRule(rule, session);
 
   if (hasAccess) {
     return <>{children}</>;

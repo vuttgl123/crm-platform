@@ -33,11 +33,11 @@ interface ActivityTimelineWidgetProps {
 }
 
 const CATEGORY_TABS: { label: string; value: TimelineCategory | 'ALL'; countKey?: string }[] = [
-  { label: 'Tất cả', value: 'ALL' },
-  { label: 'Tương tác & Họp', value: 'ENGAGEMENT' },
-  { label: 'Ghi chú', value: 'NOTE' },
-  { label: 'Giao dịch & Hợp đồng', value: 'TRANSACTION' },
-  { label: 'Hỗ trợ CSKH', value: 'SUPPORT' },
+  { label: 'All Activities', value: 'ALL' },
+  { label: 'Meetings & Calls', value: 'ENGAGEMENT' },
+  { label: 'Internal Notes', value: 'NOTE' },
+  { label: 'Deals & Orders', value: 'TRANSACTION' },
+  { label: 'Customer Support', value: 'SUPPORT' },
 ];
 
 export const ActivityTimelineWidget: React.FC<ActivityTimelineWidgetProps> = ({
@@ -62,9 +62,9 @@ export const ActivityTimelineWidget: React.FC<ActivityTimelineWidgetProps> = ({
           {
             id: 'fallback-1',
             eventType: 'ACTIVITY_MEETING',
-            title: 'Họp rà soát điều khoản hợp đồng và lộ trình triển khai',
-            description: 'Đã thống nhất tiến độ bàn giao module CRM giai đoạn 1 vào ngày 30/08/2026.',
-            actorName: 'Phạm Tuấn Vũ (Account Lead)',
+            title: 'Executive Contract Review & Milestone Alignment',
+            description: 'Agreed on CRM Phase 1 deployment timeline and user onboarding schedule for Q3.',
+            actorName: 'Alex Morgan (Account Lead)',
             occurredAt: new Date(Date.now() - 3600000 * 2).toISOString(),
             category: 'ENGAGEMENT',
             metadata: { priority: 'HIGH', status: 'COMPLETED' },
@@ -73,9 +73,9 @@ export const ActivityTimelineWidget: React.FC<ActivityTimelineWidgetProps> = ({
           {
             id: 'fallback-2',
             eventType: 'NOTE',
-            title: 'Ghi chú thẩm định ngân sách & người ra quyết định',
-            description: 'Khách hàng có ngân sách dự kiến 3.2 tỷ VND cho toàn bộ giải pháp Enterprise. Quyền phê duyệt thuộc về Giám đốc CNTT.',
-            actorName: 'Trần Thị Mai',
+            title: 'Budget Qualification & Decision Maker Stakeholders',
+            description: 'Client confirmed $150,000 annual IT modernization allocation. Final approval by VP of Technology.',
+            actorName: 'Sarah Jenkins',
             occurredAt: new Date(Date.now() - 3600000 * 5).toISOString(),
             category: 'NOTE',
             pinned: false,
@@ -83,9 +83,9 @@ export const ActivityTimelineWidget: React.FC<ActivityTimelineWidgetProps> = ({
           {
             id: 'fallback-3',
             eventType: 'QUOTE_SENT',
-            title: 'Đã gửi bảng báo giá BG-2026-0899 (Chiết khấu 10%)',
-            description: 'Gói giải pháp SmartCRM Enterprise 200 Users kèm dịch vụ bảo trì 24/7.',
-            actorName: 'Hệ thống Sales',
+            title: 'Dispatched Enterprise Proposal Quotation QT-2026-0899',
+            description: 'Enterprise 200 Users license tier with 24/7 dedicated support SLA package.',
+            actorName: 'Sales System',
             occurredAt: new Date(Date.now() - 86400000).toISOString(),
             category: 'TRANSACTION',
             metadata: { amount: 1500000000, status: 'SENT' },
@@ -94,9 +94,9 @@ export const ActivityTimelineWidget: React.FC<ActivityTimelineWidgetProps> = ({
           {
             id: 'fallback-4',
             eventType: 'ACTIVITY_CALL',
-            title: 'Cuộc gọi trao đổi kỹ thuật với Trưởng phòng IT',
-            description: 'Xác nhận hạ tầng máy chủ On-premise và phân quyền cơ sở dữ liệu PostgreSQL.',
-            actorName: 'Phạm Tuấn Vũ',
+            title: 'Technical Discovery Call with Architecture Lead',
+            description: 'Confirmed cloud database connectivity parameters and role scoping configurations.',
+            actorName: 'David Miller',
             occurredAt: new Date(Date.now() - 86400000 * 3).toISOString(),
             category: 'ENGAGEMENT',
             metadata: { priority: 'MEDIUM', status: 'COMPLETED' },
@@ -105,7 +105,7 @@ export const ActivityTimelineWidget: React.FC<ActivityTimelineWidgetProps> = ({
         ]);
       }
     } catch {
-      toast.error('Không thể tải dòng thời gian tương tác');
+      toast.error('Unable to retrieve activity timeline');
     } finally {
       setLoading(false);
     }
@@ -136,24 +136,24 @@ export const ActivityTimelineWidget: React.FC<ActivityTimelineWidgetProps> = ({
   const getEventBadge = (category: TimelineCategory) => {
     switch (category) {
       case 'ENGAGEMENT':
-        return <Badge variant="outline" className="text-[10px] bg-blue-50 text-blue-700 border-blue-200">Tương tác</Badge>;
+        return <Badge variant="outline" className="text-[10px] bg-blue-50 text-blue-700 border-blue-200">Engagement</Badge>;
       case 'NOTE':
-        return <Badge variant="outline" className="text-[10px] bg-indigo-50 text-indigo-700 border-indigo-200">Ghi chú</Badge>;
+        return <Badge variant="outline" className="text-[10px] bg-indigo-50 text-indigo-700 border-indigo-200">Note</Badge>;
       case 'TRANSACTION':
-        return <Badge variant="outline" className="text-[10px] bg-emerald-50 text-emerald-700 border-emerald-200">Giao dịch</Badge>;
+        return <Badge variant="outline" className="text-[10px] bg-emerald-50 text-emerald-700 border-emerald-200">Transaction</Badge>;
       case 'SUPPORT':
-        return <Badge variant="outline" className="text-[10px] bg-rose-50 text-rose-700 border-rose-200">Hỗ trợ</Badge>;
+        return <Badge variant="outline" className="text-[10px] bg-rose-50 text-rose-700 border-rose-200">Support</Badge>;
       default:
-        return <Badge variant="outline" className="text-[10px] bg-slate-50 text-slate-700 border-slate-200">Hệ thống</Badge>;
+        return <Badge variant="outline" className="text-[10px] bg-slate-50 text-slate-700 border-slate-200">System</Badge>;
     }
   };
 
   const formatTimestamp = (ts: string) => {
     try {
       const date = new Date(ts);
-      return date.toLocaleDateString('vi-VN', {
-        day: '2-digit',
-        month: '2-digit',
+      return date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
         year: 'numeric',
         hour: '2-digit',
         minute: '2-digit',
@@ -164,20 +164,20 @@ export const ActivityTimelineWidget: React.FC<ActivityTimelineWidgetProps> = ({
   };
 
   return (
-    <Card className="border border-slate-200/90 shadow-2xs rounded-2xl bg-white overflow-hidden">
-      <CardHeader className="p-4 pb-3 border-b border-slate-100 bg-gradient-to-r from-slate-50/70 to-white flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+    <Card className="border border-slate-200/90 shadow-none rounded-[4px] bg-white overflow-hidden">
+      <CardHeader className="p-3.5 pb-2.5 border-b border-slate-100 bg-[#F7F8F9] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-xl bg-blue-600/10 flex items-center justify-center text-blue-600 font-bold">
-            <Clock className="w-4.5 h-4.5" />
+          <div className="w-7 h-7 rounded-[3px] bg-blue-600/10 flex items-center justify-center text-blue-600 font-bold">
+            <Clock className="w-4 h-4" />
           </div>
           <div>
-            <CardTitle className="text-sm font-bold text-slate-900 flex items-center gap-2">
-              Dòng Thời gian Tương tác 360° (Activity Timeline)
-              <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-blue-50 text-blue-700 border-blue-200 font-bold">
-                {items.length} sự kiện
+            <CardTitle className="text-xs font-bold text-slate-900 flex items-center gap-2">
+              <span>Activity &amp; Engagement Timeline</span>
+              <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-blue-50 text-blue-700 border-blue-200 font-bold rounded-[2px]">
+                {items.length} events
               </Badge>
             </CardTitle>
-            <p className="text-[11px] text-slate-500">Lịch sử tương tác, trao đổi, giao dịch & ghi chú của khách hàng</p>
+            <p className="text-[11px] text-slate-500">Historical touchpoints, meetings, notes &amp; deal progression</p>
           </div>
         </div>
 
@@ -187,10 +187,10 @@ export const ActivityTimelineWidget: React.FC<ActivityTimelineWidgetProps> = ({
             size="sm"
             onClick={fetchTimeline}
             disabled={loading}
-            className="h-7.5 px-2.5 text-xs font-semibold border-slate-200 gap-1"
+            className="h-7 px-2.5 text-xs font-medium border-slate-200 gap-1 rounded-[3px]"
           >
             <RefreshCw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} />
-            <span>Làm mới</span>
+            <span>Refresh</span>
           </Button>
 
           {onOpenQuickNote && (
@@ -198,10 +198,10 @@ export const ActivityTimelineWidget: React.FC<ActivityTimelineWidgetProps> = ({
               variant="outline"
               size="sm"
               onClick={onOpenQuickNote}
-              className="h-7.5 px-2.5 text-xs font-semibold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200 gap-1"
+              className="h-7 px-2.5 text-xs font-medium bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200 gap-1 rounded-[3px]"
             >
               <MessageSquare className="w-3 h-3" />
-              <span>Ghi chú nhanh</span>
+              <span>Quick Note</span>
             </Button>
           )}
 
@@ -209,25 +209,25 @@ export const ActivityTimelineWidget: React.FC<ActivityTimelineWidgetProps> = ({
             <Button
               size="sm"
               onClick={onOpenNewActivity}
-              className="h-7.5 px-3 text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white gap-1 shadow-2xs"
+              className="h-7 px-3 text-xs font-semibold bg-[#0C66E4] hover:bg-[#0052CC] text-white gap-1 shadow-none rounded-[3px]"
             >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Thêm Hoạt động</span>
+              <Plus className="w-3 h-3" />
+              <span>New Activity</span>
             </Button>
           )}
         </div>
       </CardHeader>
 
       {/* Category Filter Tabs */}
-      <div className="px-4 py-2 bg-slate-50/50 border-b border-slate-100 flex items-center gap-1 overflow-x-auto">
+      <div className="px-3.5 py-1.5 bg-slate-50/50 border-b border-slate-100 flex items-center gap-1 overflow-x-auto">
         <Filter className="w-3 h-3 text-slate-400 mr-1 shrink-0" />
         {CATEGORY_TABS.map((tab) => (
           <button
             key={tab.value}
             onClick={() => setSelectedCategory(tab.value)}
-            className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all shrink-0 ${
+            className={`px-2 py-0.5 rounded-[3px] text-xs font-medium transition-all shrink-0 ${
               selectedCategory === tab.value
-                ? 'bg-blue-600 text-white shadow-2xs'
+                ? 'bg-blue-600 text-white shadow-none font-semibold'
                 : 'text-slate-600 hover:bg-slate-200/60 hover:text-slate-900'
             }`}
           >
@@ -236,38 +236,38 @@ export const ActivityTimelineWidget: React.FC<ActivityTimelineWidgetProps> = ({
         ))}
       </div>
 
-      <CardContent className="p-4 sm:p-5">
+      <CardContent className="p-4">
         {filteredItems.length === 0 ? (
           <div className="py-12 text-center text-slate-400 space-y-1">
-            <Clock className="w-8 h-8 mx-auto text-slate-300 stroke-1" />
-            <p className="text-xs font-medium">Chưa có sự kiện nào trong danh mục này</p>
+            <Clock className="w-7 h-7 mx-auto text-slate-300 stroke-1" />
+            <p className="text-xs font-medium">No activity records in this category</p>
           </div>
         ) : (
-          <div className="relative pl-6 space-y-4 before:absolute before:left-2.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200/80">
+          <div className="relative pl-5 space-y-3.5 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200/80">
             {filteredItems.map((item) => (
               <div key={item.id} className="relative group">
                 {/* Timeline Node Dot */}
-                <div className={`absolute -left-6 top-1.5 w-5 h-5 rounded-full border-2 border-white flex items-center justify-center shadow-xs transition-transform group-hover:scale-110 ${
-                  item.pinned ? 'bg-amber-500 text-white ring-2 ring-amber-200' : 'bg-slate-100 text-slate-600'
+                <div className={`absolute -left-5 top-1.5 w-4.5 h-4.5 rounded-full border-2 border-white flex items-center justify-center shadow-xs ${
+                  item.pinned ? 'bg-amber-500 text-white' : 'bg-slate-100 text-slate-600'
                 }`}>
                   {item.pinned ? <Pin className="w-2.5 h-2.5 fill-current" /> : getEventIcon(item.eventType, item.category)}
                 </div>
 
                 {/* Timeline Card Content */}
-                <div className={`p-3.5 rounded-xl border transition-all ${
+                <div className={`p-3 rounded-[4px] border transition-all ${
                   item.pinned
-                    ? 'bg-amber-50/40 border-amber-200 shadow-xs'
-                    : 'bg-white border-slate-200/80 hover:border-blue-200 hover:shadow-2xs'
+                    ? 'bg-amber-50/40 border-amber-200'
+                    : 'bg-white border-slate-200/80 hover:border-blue-200'
                 }`}>
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 mb-1.5">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-1">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-bold text-xs text-slate-900 leading-tight">
                         {item.title}
                       </span>
                       {getEventBadge(item.category)}
                       {item.pinned && (
-                        <span className="text-[10px] font-bold text-amber-700 bg-amber-100/80 px-1.5 py-0.5 rounded flex items-center gap-0.5">
-                          <Pin className="w-2.5 h-2.5 fill-current" /> Đã ghim
+                        <span className="text-[10px] font-bold text-amber-700 bg-amber-100/80 px-1.5 py-0.2 rounded-[2px] flex items-center gap-0.5">
+                          <Pin className="w-2.5 h-2.5 fill-current" /> Pinned
                         </span>
                       )}
                     </div>
@@ -277,17 +277,17 @@ export const ActivityTimelineWidget: React.FC<ActivityTimelineWidgetProps> = ({
                   </div>
 
                   {item.description && (
-                    <p className="text-xs text-slate-600 leading-relaxed bg-slate-50/50 p-2 rounded-lg border border-slate-100">
+                    <p className="text-xs text-slate-600 leading-relaxed bg-slate-50/50 p-2 rounded-[3px] border border-slate-100">
                       {item.description}
                     </p>
                   )}
 
                   {item.actorName && (
-                    <div className="flex items-center justify-between mt-2 pt-1.5 border-t border-slate-100/80 text-[11px] text-slate-500">
-                      <span>Thực hiện bởi: <strong className="text-slate-800 font-semibold">{item.actorName}</strong></span>
+                    <div className="flex items-center justify-between mt-1.5 pt-1 border-t border-slate-100/80 text-[11px] text-slate-500">
+                      <span>Logged by: <strong className="text-slate-800 font-semibold">{item.actorName}</strong></span>
                       {item.metadata?.status && (
                         <span className="text-slate-500 font-medium">
-                          Trạng thái: <strong className="text-slate-700">{item.metadata.status}</strong>
+                          Status: <strong className="text-slate-700 font-mono">{item.metadata.status}</strong>
                         </span>
                       )}
                     </div>
@@ -301,3 +301,5 @@ export const ActivityTimelineWidget: React.FC<ActivityTimelineWidgetProps> = ({
     </Card>
   );
 };
+
+export default ActivityTimelineWidget;

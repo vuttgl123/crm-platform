@@ -89,13 +89,13 @@ export const CreateUserWizardModal: React.FC<CreateUserWizardModalProps> = ({
   const handleNext = () => {
     if (currentStep === 1) {
       if (!step1Values.email.trim() || !step1Values.displayName.trim()) {
-        toast.error('Vui lòng nhập Email công việc và Họ tên nhân viên!');
+        toast.error('Please enter work email and full display name');
         return;
       }
     }
     if (currentStep === 2) {
       if (!step2Values.jobTitle.trim()) {
-        toast.error('Vui lòng nhập Chức danh công việc!');
+        toast.error('Please enter professional job title');
         return;
       }
     }
@@ -110,10 +110,10 @@ export const CreateUserWizardModal: React.FC<CreateUserWizardModalProps> = ({
     e.preventDefault();
 
     const deptMap: Record<string, string> = {
-      'team-mb-001': 'Khối Kinh doanh Miền Bắc',
-      'team-hn-001': 'Nhóm Kinh doanh Hà Nội 1',
-      'team-cs-001': 'Phòng Chăm sóc Khách hàng',
-      'team-bod-001': 'Ban Giám đốc',
+      'team-mb-001': 'Northern Regional Enterprise Sales',
+      'team-hn-001': 'Commercial Account Executive Team',
+      'team-cs-001': 'Customer Success & Support',
+      'team-bod-001': 'Executive Board & Management',
     };
 
     const chosenRole = roles.find((r) => r.id === selectedRole || r.roleCode === selectedRole);
@@ -121,12 +121,12 @@ export const CreateUserWizardModal: React.FC<CreateUserWizardModalProps> = ({
     onUserCreated({
       displayName: step1Values.displayName.trim(),
       email: step1Values.email.trim(),
-      roleName: chosenRole ? chosenRole.name : selectedRole || 'Thành viên Tập đoàn',
-      department: deptMap[step2Values.department] || 'Khối Kinh doanh',
+      roleName: chosenRole ? chosenRole.name : selectedRole || 'Tenant Member',
+      department: deptMap[step2Values.department] || 'Enterprise Sales',
       employeeCode: step2Values.employeeCode.trim() || `EMP-${Date.now().toString().slice(-4)}`,
     });
 
-    toast.success(`Đã thêm thành công nhân viên mới "${step1Values.displayName}"!`);
+    toast.success(`Successfully registered new team member "${step1Values.displayName}"!`);
     resetForm();
     onOpenChange(false);
   };
@@ -159,10 +159,10 @@ export const CreateUserWizardModal: React.FC<CreateUserWizardModalProps> = ({
             </div>
             <div>
               <DialogTitle className="text-base font-bold text-slate-900">
-                Thêm Nhân viên Mới vào Hệ thống
+                Register New System Member
               </DialogTitle>
               <DialogDescription className="text-xs text-slate-500 mt-0.5">
-                Khởi tạo tài khoản nhân sự và phân bổ vai trò quyền hạn qua Form động
+                Provision workforce profile, department mapping and RBAC security role assignments
               </DialogDescription>
             </div>
           </div>
@@ -191,7 +191,7 @@ export const CreateUserWizardModal: React.FC<CreateUserWizardModalProps> = ({
                   currentStep === 1 ? 'text-blue-600 font-bold' : 'text-slate-600'
                 }`}
               >
-                1. Thông tin Cá nhân
+                1. Personal Details
               </span>
             </div>
 
@@ -213,7 +213,7 @@ export const CreateUserWizardModal: React.FC<CreateUserWizardModalProps> = ({
                   currentStep === 2 ? 'text-blue-600 font-bold' : 'text-slate-600'
                 }`}
               >
-                2. Phòng ban & Chức danh
+                2. Department &amp; Role
               </span>
             </div>
 
@@ -233,21 +233,21 @@ export const CreateUserWizardModal: React.FC<CreateUserWizardModalProps> = ({
                   currentStep === 3 ? 'text-blue-600 font-bold' : 'text-slate-600'
                 }`}
               >
-                3. Vai trò & Quyền hạn
+                3. Security Role &amp; Access
               </span>
             </div>
           </div>
         </div>
 
         {/* Wizard Form Content Area */}
-        <form onSubmit={handleSubmit} className="flex-1 flex flex-col min-h-0">
+        <form onSubmit={handleSubmit} className="flex-1 flex-col min-h-0">
           <div className="flex-1 overflow-y-auto p-6 space-y-4 text-xs">
             {/* STEP 1: Personal Information via DynamicForm */}
             {currentStep === 1 && (
               <div className="space-y-4">
                 <div className="p-3.5 rounded-xl bg-blue-50/70 border border-blue-100 flex items-center gap-2 text-xs text-blue-800">
                   <User className="w-4 h-4 text-blue-600 shrink-0" />
-                  <span>Bước 1: Nhập email công việc và họ tên của nhân viên mới để khởi tạo hồ sơ.</span>
+                  <span>Step 1: Enter corporate work email and legal display name to provision profile.</span>
                 </div>
 
                 <DynamicForm
@@ -263,7 +263,7 @@ export const CreateUserWizardModal: React.FC<CreateUserWizardModalProps> = ({
               <div className="space-y-4">
                 <div className="p-3.5 rounded-xl bg-purple-50/70 border border-purple-100 flex items-center gap-2 text-xs text-purple-800">
                   <Building2 className="w-4 h-4 text-purple-600 shrink-0" />
-                  <span>Bước 2: Phân bổ nhân viên vào khối phòng ban và gán mã nhân sự.</span>
+                  <span>Step 2: Assign member to department, title and internal employee identifier code.</span>
                 </div>
 
                 <DynamicForm
@@ -279,13 +279,13 @@ export const CreateUserWizardModal: React.FC<CreateUserWizardModalProps> = ({
               <div className="space-y-4">
                 <div className="p-3.5 rounded-xl bg-emerald-50/70 border border-emerald-100 flex items-center gap-2 text-xs text-emerald-800">
                   <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>Bước 3: Gán vai trò quyền hạn truy cập hệ thống CRM cho nhân viên.</span>
+                  <span>Step 3: Assign security role &amp; permission level for CRM platform access.</span>
                 </div>
 
                 <div className="space-y-2.5">
                   <Label className="text-xs font-semibold flex items-center gap-1 text-slate-900">
                     <Shield className="w-3.5 h-3.5 text-blue-600" />
-                    <span>Chọn Vai trò Quyền hạn (Role) *</span>
+                    <span>Select Security Role (RBAC) *</span>
                   </Label>
 
                   <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
@@ -317,16 +317,16 @@ export const CreateUserWizardModal: React.FC<CreateUserWizardModalProps> = ({
                                 </Badge>
                                 {r.isSystem || r.system ? (
                                   <Badge variant="outline" className="bg-slate-100 text-slate-700 border-slate-200 text-[10px]">
-                                    Hệ thống
+                                    SYSTEM
                                   </Badge>
                                 ) : (
                                   <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px]">
-                                    Tùy chỉnh
+                                    CUSTOM
                                   </Badge>
                                 )}
                               </div>
                               <p className="text-[11px] text-slate-500 mt-0.5">
-                                {r.description || `Vai trò ${r.name} với ${r.permissionCount || 0} quyền hạn.`}
+                                {r.description || `Security role ${r.name} with ${r.permissionCount || 0} permissions.`}
                               </p>
                             </div>
                           </div>
@@ -335,8 +335,8 @@ export const CreateUserWizardModal: React.FC<CreateUserWizardModalProps> = ({
                     ) : (
                       <EmptyState
                         icon={Shield}
-                        title="Chưa có vai trò nào trong hệ thống"
-                        description="Vui lòng tạo vai trò trong mục Quản lý Vai trò trước khi phân quyền cho nhân viên mới."
+                        title="No roles configured in tenant"
+                        description="Please create roles in Role Management before provisioning team access."
                       />
                     )}
                   </div>
@@ -357,7 +357,7 @@ export const CreateUserWizardModal: React.FC<CreateUserWizardModalProps> = ({
                   className="text-xs font-semibold gap-1"
                 >
                   <ChevronLeft className="w-4 h-4" />
-                  <span>Quay lại</span>
+                  <span>Back</span>
                 </Button>
               )}
             </div>
@@ -370,7 +370,7 @@ export const CreateUserWizardModal: React.FC<CreateUserWizardModalProps> = ({
                 onClick={() => onOpenChange(false)}
                 className="text-xs"
               >
-                Hủy
+                Cancel
               </Button>
 
               {currentStep < 3 ? (
@@ -380,7 +380,7 @@ export const CreateUserWizardModal: React.FC<CreateUserWizardModalProps> = ({
                   onClick={handleNext}
                   className="text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white gap-1"
                 >
-                  <span>Tiếp tục (Bước {currentStep + 1})</span>
+                  <span>Continue (Step {currentStep + 1})</span>
                   <ChevronRight className="w-4 h-4" />
                 </Button>
               ) : (
@@ -390,7 +390,7 @@ export const CreateUserWizardModal: React.FC<CreateUserWizardModalProps> = ({
                   className="text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5 min-w-32"
                 >
                   <CheckCircle2 className="w-4 h-4" />
-                  <span>Hoàn tất & Tạo nhân viên</span>
+                  <span>Complete &amp; Register</span>
                 </Button>
               )}
             </div>

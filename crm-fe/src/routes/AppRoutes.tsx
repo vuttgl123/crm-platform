@@ -1,5 +1,5 @@
 import React from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { SessionExpired } from '@/components/common/SessionExpired';
 import { AppLayout } from '@/layouts/AppLayout';
 import { OverviewPage } from '@/features/overview/OverviewPage';
@@ -9,6 +9,7 @@ import { AccountDetailPage } from '@/features/crm/accounts/AccountDetailPage';
 import { ForbiddenPage } from '@/features/system/ForbiddenPage';
 import { NotFoundPage } from '@/features/system/NotFoundPage';
 import { ProtectedRoute } from '@/components/common/ProtectedRoute';
+import { RouteAccessBoundary } from '@/components/common/RouteAccessBoundary';
 
 import AuthLogin from '@/features/auth/AuthLogin';
 import AuthRegister from '@/features/auth/AuthRegister';
@@ -59,6 +60,18 @@ import FeaturesPage from '@/features/landing/pages/FeaturesPage';
 import PricingPage from '@/features/landing/pages/PricingPage';
 import DemoPage from '@/features/landing/pages/DemoPage';
 
+import { useAuth } from '@/core/session/useAuth';
+import { getAuthorizedPrimaryNavigationItems } from '@/core/navigation/routeResolver';
+
+const AppIndexRedirect = () => {
+  const { session } = useAuth();
+  const primaryItems = getAuthorizedPrimaryNavigationItems(session);
+  if (primaryItems.length > 0) {
+    return <Navigate to={primaryItems[0].path} replace />;
+  }
+  return <Navigate to="/app/overview" replace />;
+};
+
 export const AppRoutes: React.FC = () => {
   return (
     <Routes>
@@ -103,10 +116,15 @@ export const AppRoutes: React.FC = () => {
         path="/app"
         element={
           <ProtectedRoute>
-            <AppLayout />
+            <RouteAccessBoundary>
+              <AppLayout />
+            </RouteAccessBoundary>
           </ProtectedRoute>
         }
       >
+        {/* Default Redirect */}
+        <Route index element={<AppIndexRedirect />} />
+
         {/* Overview & Profile */}
         <Route path="overview" element={<OverviewPage />} />
         <Route path="profile" element={<UserProfilePage />} />

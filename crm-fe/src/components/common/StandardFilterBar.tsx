@@ -26,7 +26,7 @@ interface StandardFilterBarProps {
 export const StandardFilterBar: React.FC<StandardFilterBarProps> = ({
   searchQuery,
   onSearchChange,
-  searchPlaceholder = 'Tìm kiếm từ khóa...',
+  searchPlaceholder = 'Search keywords...',
   viewTabs,
   activeTab,
   onTabChange,
@@ -36,7 +36,7 @@ export const StandardFilterBar: React.FC<StandardFilterBarProps> = ({
 }) => {
   return (
     <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-2.5 py-1">
-      {/* Left: Jira Quick Search & Quick Filter Pills */}
+      {/* Left: Quick Search & Quick Filter Pills */}
       <div className="flex flex-wrap items-center gap-2 flex-1 min-w-0">
         {/* Search Input Box */}
         <div className="relative w-full sm:w-64 shrink-0">
@@ -57,7 +57,7 @@ export const StandardFilterBar: React.FC<StandardFilterBarProps> = ({
           )}
         </div>
 
-        {/* Jira Quick Filter Pills */}
+        {/* Quick Filter Pills */}
         {viewTabs && viewTabs.length > 0 && onTabChange && (
           <div className="flex items-center gap-1.5 flex-wrap">
             {viewTabs.map((tab) => {
@@ -103,10 +103,10 @@ export const StandardFilterBar: React.FC<StandardFilterBarProps> = ({
               size="sm"
               onClick={onResetFilters}
               className="h-8 px-2 text-xs text-slate-500 hover:text-slate-800 gap-1 rounded-[3px]"
-              title="Xóa bộ lọc"
+              title="Reset Filters"
             >
               <RotateCcw className="w-3 h-3" />
-              <span>Đặt lại</span>
+              <span>Reset</span>
             </Button>
           )}
         </div>

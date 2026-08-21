@@ -128,18 +128,18 @@ export default {
   				'Inter'
   			],
   			sans: [
-  				'Be Vietnam Pro"',
+  				'Be Vietnam Pro',
   				'Inter',
-  				'Plus Jakarta Sans"',
+  				'Plus Jakarta Sans',
   				'-apple-system',
   				'BlinkMacSystemFont',
-  				'Segoe UI"',
+  				'Segoe UI',
   				'Roboto',
   				'sans-serif'
   			],
   			display: [
-  				'Plus Jakarta Sans"',
-  				'Be Vietnam Pro"',
+  				'Plus Jakarta Sans',
+  				'Be Vietnam Pro',
   				'sans-serif'
   			],
   			mono: [

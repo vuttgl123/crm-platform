@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Network, RefreshCw, Loader2 } from 'lucide-react';
+import { StandardPageHeader } from '@/components/common/StandardPageHeader';
 
 export const ExternalIdsPage: React.FC = () => {
   const [mappings, setMappings] = useState<ExternalIdMapping[]>([]);
@@ -23,59 +24,63 @@ export const ExternalIdsPage: React.FC = () => {
   }, []);
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-black tracking-tight text-slate-900 flex items-center gap-2">
-            <Network className="w-7 h-7 text-blue-600" />
-            <span>Ánh xạ Mã Định danh Ngoài (External IDs)</span>
-          </h1>
-          <p className="text-sm text-slate-500 mt-1">
-            Liên kết khóa ngoại (Foreign Keys) giữa CRM và các hệ thống SAP ERP, Salesforce, Zalo OA
-          </p>
-        </div>
-        <Button variant="outline" size="sm" onClick={fetchMappings} disabled={loading} className="h-9 px-3 text-xs font-semibold gap-1.5 border-slate-200">
-          <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-          <span>Làm mới</span>
-        </Button>
-      </div>
+    <div className="space-y-4 pb-12 font-sans w-full">
+      <StandardPageHeader
+        title="External ID &amp; Foreign Key Mappings"
+        subtitle="Manage cross-system entity foreign keys linking CRM records with SAP ERP, Salesforce, Billing, and Third-Party Systems"
+        icon={Network}
+        badgeCount={mappings.length}
+        badgeLabel="mappings"
+        actions={
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={fetchMappings}
+            disabled={loading}
+            className="h-8 px-3 text-xs font-medium text-slate-700 bg-white border-slate-200 hover:bg-slate-50 gap-1.5 rounded-[3px]"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+            <span>Refresh</span>
+          </Button>
+        }
+      />
 
-      <Card className="border-slate-200 shadow-2xs bg-white overflow-hidden">
+      <Card className="border border-slate-200 shadow-none bg-white overflow-hidden rounded-[4px]">
         {loading ? (
           <div className="py-20 flex flex-col items-center justify-center text-slate-400 gap-2">
             <Loader2 className="w-7 h-7 animate-spin text-blue-600" />
-            <span className="text-xs font-semibold">Đang tải bảng ánh xạ...</span>
+            <span className="text-xs font-semibold">Loading mapping catalog...</span>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <Table>
-              <TableHeader className="bg-slate-50/80 border-b border-slate-200">
-                <TableRow>
-                  <TableHead className="text-xs font-bold text-slate-700 py-3.5 pl-5">Thực thể CRM Nội bộ</TableHead>
-                  <TableHead className="text-xs font-bold text-slate-700 py-3.5">Hệ thống Đối tác / Bên thứ ba</TableHead>
-                  <TableHead className="text-xs font-bold text-slate-700 py-3.5">Mã ID Ngoại (External ID)</TableHead>
-                  <TableHead className="text-xs font-bold text-slate-700 py-3.5 text-right pr-5">Lần đồng bộ gần nhất</TableHead>
+              <TableHeader className="bg-[#F7F8F9] border-b border-slate-200">
+                <TableRow className="hover:bg-[#F7F8F9]">
+                  <TableHead className="text-[11px] font-semibold text-slate-600 uppercase py-2.5 px-3">Internal CRM Entity</TableHead>
+                  <TableHead className="text-[11px] font-semibold text-slate-600 uppercase py-2.5 px-3">External Target System</TableHead>
+                  <TableHead className="text-[11px] font-semibold text-slate-600 uppercase py-2.5 px-3">External Foreign Key</TableHead>
+                  <TableHead className="text-[11px] font-semibold text-slate-600 uppercase py-2.5 px-3 text-right pr-4">Last Synchronized</TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody className="divide-y divide-slate-100">
+              <TableBody>
                 {mappings.map((m) => (
-                  <TableRow key={m.id} className="hover:bg-slate-50/70 transition-colors">
-                    <TableCell className="pl-5 py-3.5">
-                      <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 font-bold text-xs mr-2">
+                  <TableRow key={m.id} className="hover:bg-[#F1F2F4] border-b border-[#EBECF0] text-xs">
+                    <TableCell className="py-2 px-3">
+                      <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 font-bold text-[10px] mr-2 rounded-[2px]">
                         {m.internalEntity}
                       </Badge>
                       <span className="font-mono text-xs font-bold text-slate-900">{m.internalId}</span>
                     </TableCell>
 
-                    <TableCell className="py-3.5 text-xs font-semibold text-slate-800">
+                    <TableCell className="py-2 px-3 text-xs font-medium text-slate-800">
                       {m.systemName}
                     </TableCell>
 
-                    <TableCell className="py-3.5 font-mono text-xs font-bold text-purple-700">
+                    <TableCell className="py-2 px-3 font-mono text-xs font-bold text-purple-700">
                       {m.externalId}
                     </TableCell>
 
-                    <TableCell className="text-right pr-5 py-3.5 text-xs text-slate-400">
+                    <TableCell className="text-right pr-4 py-2 px-3 text-xs text-slate-500 font-mono">
                       {m.lastSyncedAt}
                     </TableCell>
                   </TableRow>
@@ -88,3 +93,5 @@ export const ExternalIdsPage: React.FC = () => {
     </div>
   );
 };
+
+export default ExternalIdsPage;

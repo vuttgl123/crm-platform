@@ -10,10 +10,7 @@ export const LandingLayout: React.FC = () => {
 
   return (
     <div className="landing-theme flex min-h-[100dvh] flex-col">
-      <a
-        href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-[#085AC0] focus:text-white focus:rounded-md focus:shadow-md focus:outline-none"
-      >
+      <a href="#main-content" className="landing-skip-link">
         {t('landing.common.skipToContent')}
       </a>
       <LandingHeader />

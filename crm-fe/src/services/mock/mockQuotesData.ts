@@ -17,11 +17,11 @@ export interface QuoteItem {
 }
 
 export const QUOTE_STATUS_CONFIG: Record<QuoteStatus, { label: string; className: string }> = {
-  DRAFT: { label: 'Bản nháp', className: 'bg-slate-100 text-slate-600 border-slate-300 font-semibold' },
-  SENT: { label: 'Đã gửi khách', className: 'bg-blue-50 text-blue-700 border-blue-200 font-bold' },
-  ACCEPTED: { label: 'Đã chấp thuận', className: 'bg-emerald-50 text-emerald-700 border-emerald-200 font-bold' },
-  REJECTED: { label: 'Bị từ chối', className: 'bg-rose-50 text-rose-700 border-rose-200 font-semibold' },
-  EXPIRED: { label: 'Đã hết hạn', className: 'bg-amber-50 text-amber-700 border-amber-200 font-semibold' },
+  DRAFT: { label: 'DRAFT', className: 'bg-slate-100 text-slate-600 border-slate-300 font-semibold' },
+  SENT: { label: 'SENT', className: 'bg-blue-50 text-blue-700 border-blue-200 font-bold' },
+  ACCEPTED: { label: 'ACCEPTED', className: 'bg-emerald-50 text-emerald-700 border-emerald-200 font-bold' },
+  REJECTED: { label: 'REJECTED', className: 'bg-rose-50 text-rose-700 border-rose-200 font-semibold' },
+  EXPIRED: { label: 'EXPIRED', className: 'bg-amber-50 text-amber-700 border-amber-200 font-semibold' },
 };
 
 export const INITIAL_MOCK_QUOTES: QuoteItem[] = [

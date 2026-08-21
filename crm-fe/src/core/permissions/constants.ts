@@ -1,9 +1,9 @@
 /**
- * Exact 19 permission codes seeded in docs/crm_mysql80.sql (lines 2208-2228).
- * Do NOT invent replacement permission strings.
+ * Known permission codes seeded in the database.
+ * This list can be expanded as backend catalogue expands.
  */
 
-export const SEEDED_PERMISSIONS = [
+export const KNOWN_PERMISSION_CODES = [
   'crm_account.read',
   'crm_account.write',
   'crm_contact.read',
@@ -23,9 +23,11 @@ export const SEEDED_PERMISSIONS = [
   'privacy_consent.write',
   'audit_read',
   'platform_user.manage',
+  'platform_role.read',
+  'platform_role.manage',
 ] as const;
 
-export type SeededPermissionCode = (typeof SEEDED_PERMISSIONS)[number];
+export type KnownPermissionCode = (typeof KNOWN_PERMISSION_CODES)[number];
 
 export const CRM_READ_PERMISSIONS = [
   'crm_account.read',

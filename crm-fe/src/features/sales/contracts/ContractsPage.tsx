@@ -5,22 +5,17 @@ import {
   ContractStatus,
   CONTRACT_STATUS_CONFIG,
 } from '@/services/api/contractApi';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { SearchableSelect } from '@/components/ui/searchable-select';
-import { DatePicker } from '@/components/ui/date-picker';
 import { EmptyState } from '@/components/common/EmptyState';
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
 } from '@/components/ui/dialog';
+import { ActionTooltip } from '@/components/ui/action-tooltip';
 import {
   Table,
   TableBody,
@@ -38,17 +33,16 @@ import {
 } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { DocumentPreviewModal } from '@/features/sales/templates/DocumentPreviewModal';
+import { StandardPageHeader } from '@/components/common/StandardPageHeader';
+import { StandardFilterBar, ViewTabItem } from '@/components/common/StandardFilterBar';
+import { StandardPagination } from '@/components/common/StandardPagination';
 import {
   FileCheck,
-  Search,
   Plus,
   RefreshCw,
   Edit,
   Trash2,
   Loader2,
-  ChevronLeft,
-  ChevronRight,
-  Save,
   DollarSign,
   Building2,
   Calendar,
@@ -62,7 +56,7 @@ export const ContractsPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('ALL');
   const [page, setPage] = useState(0);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
   const [previewContract, setPreviewContract] = useState<ContractItem | null>(null);
@@ -82,7 +76,7 @@ export const ContractsPage: React.FC = () => {
   const [endDate, setEndDate] = useState('');
   const [status, setStatus] = useState<ContractStatus>('ACTIVE');
   const [signedByCustomer, setSignedByCustomer] = useState('');
-  const [assignedTo, setAssignedTo] = useState('Phạm Tuấn Vũ');
+  const [assignedTo, setAssignedTo] = useState('Alex Nguyen');
 
   const fetchContracts = useCallback(async () => {
     setLoading(true);
@@ -97,7 +91,7 @@ export const ContractsPage: React.FC = () => {
       setTotalPages(res.totalPages);
       setTotalElements(res.totalElements);
     } catch {
-      toast.error('Không thể tải danh sách hợp đồng');
+      toast.error('Unable to load contracts list from server');
     } finally {
       setLoading(false);
     }
@@ -107,9 +101,16 @@ export const ContractsPage: React.FC = () => {
     fetchContracts();
   }, [fetchContracts]);
 
+  const handleResetFilters = () => {
+    setSearchQuery('');
+    setSelectedStatus('ALL');
+    setPage(0);
+    fetchContracts();
+  };
+
   const handleOpenCreate = () => {
     setEditingContract(null);
-    setContractNumber(`HD-${new Date().getFullYear()}/` + Math.floor(100 + Math.random() * 900));
+    setContractNumber(`CT-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`);
     setTitle('');
     setAccountName('');
     setContractValue('');
@@ -117,7 +118,7 @@ export const ContractsPage: React.FC = () => {
     setEndDate(new Date(Date.now() + 365 * 86400000).toISOString().split('T')[0]);
     setStatus('ACTIVE');
     setSignedByCustomer('');
-    setAssignedTo('Phạm Tuấn Vũ');
+    setAssignedTo('Alex Nguyen');
     setIsModalOpen(true);
   };
 
@@ -126,9 +127,9 @@ export const ContractsPage: React.FC = () => {
     setContractNumber(c.contractNumber);
     setTitle(c.title);
     setAccountName(c.accountName || '');
-    setContractValue((c.contractValue || c.totalValue || 0).toString());
-    setStartDate(c.startDate);
-    setEndDate(c.endDate);
+    setContractValue(c.contractValue ? c.contractValue.toString() : '');
+    setStartDate(c.startDate ? c.startDate.split('T')[0] : '');
+    setEndDate(c.endDate ? c.endDate.split('T')[0] : '');
     setStatus(c.status);
     setSignedByCustomer(c.signedByCustomer || '');
     setAssignedTo(c.assignedTo || '');
@@ -137,8 +138,8 @@ export const ContractsPage: React.FC = () => {
 
   const handleSaveContract = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !contractValue.trim()) {
-      toast.error('Vui lòng nhập tên hợp đồng và giá trị');
+    if (!title.trim() || !contractNumber.trim() || !contractValue) {
+      toast.error('Please specify Contract Number, Title and Contract Value');
       return;
     }
 
@@ -157,7 +158,7 @@ export const ContractsPage: React.FC = () => {
           signedByCustomer,
           assignedTo,
         });
-        toast.success('Đã cập nhật hợp đồng thành công!');
+        toast.success('Contract updated successfully!');
       } else {
         await contractApi.create({
           contractNumber,
@@ -171,25 +172,25 @@ export const ContractsPage: React.FC = () => {
           signedByCustomer,
           assignedTo,
         });
-        toast.success('Đã tạo hợp đồng mới thành công!');
+        toast.success('New legal contract created successfully!');
       }
       setIsModalOpen(false);
       fetchContracts();
     } catch {
-      toast.error('Không thể lưu hợp đồng');
+      toast.error('Unable to save contract details');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleDelete = async (id: string, num: string) => {
-    if (!window.confirm(`Bạn có chắc chắn muốn xóa hợp đồng "${num}"?`)) return;
+    if (!window.confirm(`Are you sure you want to delete contract "${num}"?`)) return;
     try {
       await contractApi.delete(id);
-      toast.success(`Đã xóa hợp đồng "${num}"`);
+      toast.success(`Deleted contract "${num}"`);
       fetchContracts();
     } catch {
-      toast.error('Không thể xóa hợp đồng');
+      toast.error('Unable to delete contract');
     }
   };
 
@@ -197,462 +198,436 @@ export const ContractsPage: React.FC = () => {
   const activeCount = contracts.filter((c) => c.status === 'ACTIVE').length;
   const totalContractVal = contracts.reduce((sum, c) => sum + (c.contractValue || 0), 0);
 
+  const activeFiltersCount =
+    (searchQuery ? 1 : 0) +
+    (selectedStatus !== 'ALL' ? 1 : 0);
+
+  // View Tabs Config
+  const viewTabs: ViewTabItem[] = [
+    { id: 'ALL', label: 'All Contracts', count: totalElements },
+    { id: 'ACTIVE', label: 'Active', count: activeCount, icon: ShieldCheck, dotColor: 'bg-emerald-500' },
+  ];
+
+  const currentActiveTab = selectedStatus === 'ACTIVE' ? 'ACTIVE' : 'ALL';
+
+  const handleTabChange = (tabId: string) => {
+    if (tabId === 'ACTIVE') {
+      setSelectedStatus('ACTIVE');
+    } else {
+      setSelectedStatus('ALL');
+    }
+    setPage(0);
+  };
+
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-black tracking-tight text-slate-900 flex items-center gap-2">
-            <FileCheck className="w-7 h-7 text-blue-600" />
-            <span>Hợp đồng & Pháp lý</span>
-          </h1>
-          <p className="text-sm text-slate-500 mt-1">
-            Quản trị hợp đồng kinh tế, theo dõi thời hạn hiệu lực bản quyền và điều khoản thanh lý
-          </p>
-        </div>
+    <div className="space-y-4 pb-12 font-sans w-full">
+      {/* Standard Page Header */}
+      <StandardPageHeader
+        title="Commercial Contracts &amp; Legal"
+        subtitle="Manage master services agreements, licensing terms, renewal schedules &amp; compliance status"
+        icon={FileCheck}
+        badgeCount={totalElements}
+        badgeLabel="contracts"
+        actions={
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={fetchContracts}
+              disabled={loading}
+              className="text-xs font-medium text-slate-700 bg-white border-slate-200 hover:bg-slate-50 gap-1.5 h-8 rounded-[3px]"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+              <span>Refresh</span>
+            </Button>
 
-        <div className="flex items-center gap-2.5">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={fetchContracts}
-            disabled={loading}
-            className="h-9 px-3 text-xs font-semibold gap-1.5 shadow-2xs border-slate-200"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-            <span>Làm mới</span>
-          </Button>
-
-          <Button
-            size="sm"
-            onClick={handleOpenCreate}
-            className="h-9 px-4 text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white gap-1.5 shadow-2xs"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Tạo Hợp đồng Mới</span>
-          </Button>
-        </div>
-      </div>
+            <Button
+              size="sm"
+              onClick={handleOpenCreate}
+              className="text-xs font-semibold bg-[#0C66E4] hover:bg-[#0052CC] text-white gap-1.5 shadow-none h-8 rounded-[3px]"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>New Contract</span>
+            </Button>
+          </>
+        }
+      />
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="border-slate-200 shadow-2xs bg-white">
-          <CardContent className="p-4 flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Tổng số hợp đồng</p>
-              <h3 className="text-2xl font-black text-slate-900 mt-1">{totalElements}</h3>
-            </div>
-            <div className="w-11 h-11 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
-              <FileCheck className="w-5 h-5" />
-            </div>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="bg-white rounded-[4px] border border-slate-200 px-4 py-3 flex items-center gap-3 shadow-none">
+          <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
+            <FileCheck className="w-4.5 h-4.5 text-blue-600" />
+          </div>
+          <div>
+            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Total Contracts</div>
+            <div className="text-lg font-black text-slate-900 leading-tight">{totalElements}</div>
+          </div>
+        </div>
 
-        <Card className="border-slate-200 shadow-2xs bg-white">
-          <CardContent className="p-4 flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Đang hiệu lực</p>
-              <h3 className="text-2xl font-black text-emerald-600 mt-1">{activeCount}</h3>
-            </div>
-            <div className="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-              <ShieldCheck className="w-5 h-5" />
-            </div>
-          </CardContent>
-        </Card>
+        <div className="bg-white rounded-[4px] border border-emerald-100 px-4 py-3 flex items-center gap-3 shadow-none">
+          <div className="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center shrink-0">
+            <ShieldCheck className="w-4.5 h-4.5 text-emerald-600" />
+          </div>
+          <div>
+            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Active Agreements</div>
+            <div className="text-lg font-black text-emerald-700 leading-tight">{activeCount}</div>
+          </div>
+        </div>
 
-        <Card className="border-slate-200 shadow-2xs bg-white">
-          <CardContent className="p-4 flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Tổng giá trị hợp đồng</p>
-              <h3 className="text-xl font-black text-blue-700 mt-1">
-                {(totalContractVal / 1000000000).toFixed(2)} tỷ ₫
-              </h3>
+        <div className="bg-white rounded-[4px] border border-indigo-100 px-4 py-3 flex items-center gap-3 shadow-none">
+          <div className="w-9 h-9 rounded-lg bg-indigo-50 flex items-center justify-center shrink-0">
+            <DollarSign className="w-4.5 h-4.5 text-indigo-600" />
+          </div>
+          <div>
+            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Total Contract Value</div>
+            <div className="text-lg font-black text-indigo-700 leading-tight">
+              {(totalContractVal / 1_000_000).toFixed(0)}M VND
             </div>
-            <div className="w-11 h-11 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
-              <DollarSign className="w-5 h-5" />
-            </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        <Card className="border-slate-200 shadow-2xs bg-white">
-          <CardContent className="p-4 flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Thời hạn trung bình</p>
-              <h3 className="text-2xl font-black text-purple-600 mt-1">12 Tháng</h3>
-            </div>
-            <div className="w-11 h-11 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
-              <Calendar className="w-5 h-5" />
-            </div>
-          </CardContent>
-        </Card>
+        <div className="bg-white rounded-[4px] border border-purple-100 px-4 py-3 flex items-center gap-3 shadow-none">
+          <div className="w-9 h-9 rounded-lg bg-purple-50 flex items-center justify-center shrink-0">
+            <Calendar className="w-4.5 h-4.5 text-purple-600" />
+          </div>
+          <div>
+            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Standard Term</div>
+            <div className="text-lg font-black text-purple-700 leading-tight">12 Months</div>
+          </div>
+        </div>
       </div>
 
-      {/* Filter Card */}
-      <Card className="border-slate-200 shadow-2xs bg-white">
-        <CardContent className="p-4">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-            <div className="flex-1 flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200/80 focus-within:border-blue-500 focus-within:bg-white transition-all">
-              <Search className="w-4 h-4 text-slate-400 shrink-0" />
-              <input
-                type="text"
-                placeholder="Tìm kiếm theo số hợp đồng, tên khách hàng..."
-                value={searchQuery}
-                onChange={(e) => {
-                  setSearchQuery(e.target.value);
-                  setPage(0);
-                }}
-                className="w-full bg-transparent text-xs text-slate-800 placeholder-slate-400 focus:outline-none"
-              />
-            </div>
+      {/* Standard Filter Bar */}
+      <StandardFilterBar
+        searchQuery={searchQuery}
+        onSearchChange={(val) => { setSearchQuery(val); setPage(0); }}
+        searchPlaceholder="Search contract code, title, client..."
+        viewTabs={viewTabs}
+        activeTab={currentActiveTab}
+        onTabChange={handleTabChange}
+        activeFiltersCount={activeFiltersCount}
+        onResetFilters={handleResetFilters}
+        filterControls={
+          <div className="w-44">
+            <Select value={selectedStatus} onValueChange={(val) => { setSelectedStatus(val); setPage(0); }}>
+              <SelectTrigger className="h-8 text-xs bg-white border-slate-200 rounded-[3px]">
+                <SelectValue placeholder="Contract Status" />
+              </SelectTrigger>
+              <SelectContent className="rounded-[3px]">
+                <SelectItem value="ALL">All Statuses</SelectItem>
+                <SelectItem value="ACTIVE">ACTIVE</SelectItem>
+                <SelectItem value="DRAFT">DRAFT</SelectItem>
+                <SelectItem value="EXPIRED">EXPIRED</SelectItem>
+                <SelectItem value="TERMINATED">TERMINATED</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        }
+      />
 
-            <div className="flex items-center gap-2.5">
-              <div className="w-48">
-                <SearchableSelect
-                  placeholder="Lọc trạng thái..."
-                  searchPlaceholder="Tìm trạng thái..."
-                  value={selectedStatus}
-                  onValueChange={(val) => {
-                    setSelectedStatus(val);
-                    setPage(0);
-                  }}
-                  options={[
-                    { label: 'Tất cả trạng thái', value: 'ALL' },
-                    { label: 'Đang hiệu lực', value: 'ACTIVE' },
-                    { label: 'Bản thảo', value: 'DRAFT' },
-                    { label: 'Đã hết hạn', value: 'EXPIRED' },
-                    { label: 'Đã thanh lý', value: 'TERMINATED' },
-                  ]}
-                  className="h-9 text-xs"
-                />
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Table */}
-      <Card className="border-slate-200 shadow-2xs bg-white overflow-hidden">
-        {loading ? (
-          <div className="py-20 flex flex-col items-center justify-center text-slate-400 gap-2">
-            <Loader2 className="w-7 h-7 animate-spin text-blue-600" />
-            <span className="text-xs font-semibold">Đang tải danh sách hợp đồng...</span>
-          </div>
-        ) : contracts.length === 0 ? (
-          <div className="p-8">
-            <EmptyState
-              icon={FileCheck}
-              title="Không tìm thấy hợp đồng nào"
-              description="Thử thay đổi bộ lọc tìm kiếm hoặc tạo mới hợp đồng đầu tiên."
-              actionLabel="Tạo Hợp đồng Mới"
-              onAction={handleOpenCreate}
-            />
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader className="bg-slate-50/80 border-b border-slate-200">
+      {/* Contracts Table */}
+      <Card className="overflow-hidden border border-slate-200 rounded-[4px] bg-white shadow-none">
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-[#F7F8F9] border-b border-slate-200 hover:bg-[#F7F8F9]">
+                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Contract Code &amp; Title</TableHead>
+                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Client Organization</TableHead>
+                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Contract Value</TableHead>
+                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Effective Term</TableHead>
+                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Status</TableHead>
+                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3 text-right pr-4">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {loading ? (
                 <TableRow>
-                  <TableHead className="text-xs font-bold text-slate-700 py-3.5 pl-5">Số HĐ & Tên Hợp đồng</TableHead>
-                  <TableHead className="text-xs font-bold text-slate-700 py-3.5">Khách hàng</TableHead>
-                  <TableHead className="text-xs font-bold text-slate-700 py-3.5">Giá trị hợp đồng</TableHead>
-                  <TableHead className="text-xs font-bold text-slate-700 py-3.5">Thời hạn hiệu lực</TableHead>
-                  <TableHead className="text-xs font-bold text-slate-700 py-3.5">Trạng thái</TableHead>
-                  <TableHead className="text-xs font-bold text-slate-700 py-3.5 text-right pr-5">Thao tác</TableHead>
+                  <TableCell colSpan={6} className="h-48 text-center">
+                    <div className="flex flex-col items-center justify-center gap-2 text-slate-500">
+                      <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+                      <span className="text-xs">Loading contracts...</span>
+                    </div>
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody className="divide-y divide-slate-100">
-                {contracts.map((c) => {
-                  const statusObj = CONTRACT_STATUS_CONFIG[c.status];
+              ) : contracts.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="p-0">
+                    <EmptyState
+                      icon={FileCheck}
+                      title="No contracts found"
+                      description="Try adjusting your filter criteria or register a new legal contract."
+                      actionLabel="Create Contract"
+                      onAction={handleOpenCreate}
+                    />
+                  </TableCell>
+                </TableRow>
+              ) : (
+                contracts.map((c) => {
+                  const statusObj = CONTRACT_STATUS_CONFIG[c.status] || { label: c.status, className: 'bg-slate-100 text-slate-700' };
 
                   return (
-                    <TableRow key={c.id} className="hover:bg-slate-50/70 transition-colors">
-                      <TableCell className="pl-5 py-3.5">
-                        <span className="font-mono text-[11px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200 inline-block mb-1">
+                    <TableRow key={c.id} className="hover:bg-[#F1F2F4] transition-colors border-b border-[#EBECF0] text-xs">
+                      {/* Code & Title */}
+                      <TableCell className="py-2 px-3">
+                        <span className="font-mono text-[10px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.2 rounded border border-blue-200 inline-block mb-0.5">
                           {c.contractNumber}
                         </span>
-                        <span className="font-bold text-slate-900 text-xs block">{c.title}</span>
+                        <div className="font-semibold text-slate-900">{c.title}</div>
                       </TableCell>
 
-                      <TableCell className="py-3.5">
-                        <p className="text-xs font-semibold text-slate-800 flex items-center gap-1">
+                      {/* Account */}
+                      <TableCell className="py-2 px-3">
+                        <div className="font-medium text-slate-800 flex items-center gap-1">
                           <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                           <span>{c.accountName}</span>
-                        </p>
+                        </div>
                         {c.signedByCustomer && (
-                          <p className="text-[11px] text-slate-400 pl-4">Đại diện ký: {c.signedByCustomer}</p>
+                          <div className="text-[11px] text-slate-400 mt-0.5">Signatory: {c.signedByCustomer}</div>
                         )}
                       </TableCell>
 
-                      <TableCell className="py-3.5">
-                        <span className="text-xs font-bold text-blue-700 block">
-                          {(c.contractValue || 0).toLocaleString('vi-VN')} ₫
-                        </span>
-                        <span className="text-[11px] text-slate-400">Phụ trách: {c.assignedTo}</span>
+                      {/* Value */}
+                      <TableCell className="py-2 px-3">
+                        <div className="font-semibold text-slate-900 font-mono text-xs">
+                          {(c.contractValue || 0).toLocaleString('en-US')} ₫
+                        </div>
+                        <div className="text-[11px] text-slate-400">Rep: {c.assignedTo}</div>
                       </TableCell>
 
-                      <TableCell className="py-3.5">
-                        <div className="flex items-center gap-1.5 text-xs text-slate-700 font-medium">
+                      {/* Term */}
+                      <TableCell className="py-2 px-3">
+                        <div className="flex items-center gap-1.5 text-xs text-slate-700 font-mono">
                           <Calendar className="w-3.5 h-3.5 text-slate-400" />
                           <span>{c.startDate} → {c.endDate}</span>
                         </div>
                       </TableCell>
 
-                      <TableCell className="py-3.5">
-                        <Badge variant="outline" className={`text-[10px] font-bold ${statusObj.className}`}>
+                      {/* Status */}
+                      <TableCell className="py-2 px-3">
+                        <Badge className={`text-[10px] font-bold rounded-[3px] ${statusObj.className}`}>
                           {statusObj.label}
                         </Badge>
                       </TableCell>
 
-                      <TableCell className="text-right pr-5 py-3.5">
+                      {/* Actions */}
+                      <TableCell className="py-2 px-3 text-right pr-4">
                         <div className="flex items-center justify-end gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              setPreviewContract(c);
-                              setShowPrintModal(true);
-                            }}
-                            className="h-8 w-8 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                            title="Xem bản in & Xuất PDF"
-                          >
-                            <Printer className="w-3.5 h-3.5" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleOpenEdit(c)}
-                            className="h-8 w-8 p-0 text-slate-500 hover:text-blue-600 hover:bg-blue-50"
-                          >
-                            <Edit className="w-3.5 h-3.5" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDelete(c.id, c.contractNumber)}
-                            className="h-8 w-8 p-0 text-slate-400 hover:text-rose-600 hover:bg-rose-50"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </Button>
+                          <ActionTooltip label="In / Xuất PDF">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => {
+                                setPreviewContract(c);
+                                setShowPrintModal(true);
+                              }}
+                              className="h-7 w-7 rounded-[3px] text-[#0C66E4] hover:text-[#0052CC] hover:bg-[#E9F2FF]"
+                              aria-label="Print Preview & PDF Export"
+                            >
+                              <Printer className="w-3.5 h-3.5" />
+                            </Button>
+                          </ActionTooltip>
+                          <ActionTooltip label="Chỉnh sửa hợp đồng">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleOpenEdit(c)}
+                              className="h-7 w-7 rounded-[3px] text-slate-600 hover:text-[#0C66E4] hover:bg-[#E9F2FF]"
+                              aria-label="Edit Contract"
+                            >
+                              <Edit className="w-3.5 h-3.5" />
+                            </Button>
+                          </ActionTooltip>
+                          <ActionTooltip label="Xóa hợp đồng">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDelete(c.id, c.contractNumber)}
+                              className="h-7 w-7 rounded-[3px] text-slate-600 hover:text-red-600 hover:bg-red-50"
+                              aria-label="Delete Contract"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
+                          </ActionTooltip>
                         </div>
                       </TableCell>
                     </TableRow>
                   );
-                })}
-              </TableBody>
-            </Table>
-          </div>
-        )}
+                })
+              )}
+            </TableBody>
+          </Table>
+        </div>
 
-        {/* Pagination */}
-        {!loading && contracts.length > 0 && (
-          <div className="p-4 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-slate-500">
-            <div className="flex items-center gap-2">
-              <span>Hiển thị</span>
-              <Select
-                value={pageSize.toString()}
-                onValueChange={(val) => {
-                  setPageSize(Number(val));
-                  setPage(0);
-                }}
-              >
-                <SelectTrigger className="h-8 w-16 text-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="10">10</SelectItem>
-                  <SelectItem value="20">20</SelectItem>
-                  <SelectItem value="50">50</SelectItem>
-                </SelectContent>
-              </Select>
-              <span>trên tổng số <b>{totalElements}</b> bản ghi</span>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <span className="font-semibold text-slate-700">
-                Trang {page + 1} / {totalPages || 1}
-              </span>
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage(Math.max(0, page - 1))}
-                  disabled={page === 0}
-                  className="h-8 w-8 p-0"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage(Math.min(totalPages - 1, page + 1))}
-                  disabled={page >= totalPages - 1}
-                  className="h-8 w-8 p-0"
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
-          </div>
+        {/* Standard Pagination Bar */}
+        {!loading && (
+          <StandardPagination
+            currentPage={page + 1}
+            totalPages={Math.max(totalPages, 1)}
+            totalElements={totalElements}
+            pageSize={pageSize}
+            onPageChange={(p) => setPage(p - 1)}
+            itemLabel="contracts"
+          />
         )}
       </Card>
 
-      {/* Modal */}
+      {/* Create / Edit Contract Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="max-w-xl bg-white p-0 gap-0 overflow-hidden font-sans border-slate-200 shadow-xl rounded-2xl">
-          <DialogHeader className="p-5 pb-4 border-b border-slate-100 bg-slate-50/70">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-blue-100/80 text-blue-700 flex items-center justify-center shrink-0">
-                <FileCheck className="w-5 h-5" />
-              </div>
-              <div>
-                <DialogTitle className="text-base font-bold text-slate-900">
-                  {editingContract ? 'Chỉnh sửa Hợp đồng' : 'Tạo Hợp đồng Mới'}
-                </DialogTitle>
-                <DialogDescription className="text-xs text-slate-500 mt-0.5">
-                  Thiết lập số hiệu, thời hạn hiệu lực và đại diện pháp lý hai bên
-                </DialogDescription>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0 rounded-2xl border border-slate-200 shadow-xl">
+          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-5 text-white">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20">
+                  <FileCheck className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-base">
+                    {editingContract ? 'Edit Contract Details' : 'Create New Legal Contract'}
+                  </h3>
+                  <p className="text-xs text-blue-100 mt-0.5">
+                    {editingContract ? `Contract ID: ${editingContract.contractNumber}` : 'Register master contract terms, signatories & validity dates'}
+                  </p>
+                </div>
               </div>
             </div>
-          </DialogHeader>
+          </div>
 
-          <form onSubmit={handleSaveContract} className="p-5 space-y-4 text-xs">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-              <div className="space-y-1.5">
-                <Label className="font-bold text-slate-700 text-xs">Số hiệu Hợp đồng *</Label>
+          <form onSubmit={handleSaveContract} className="p-6 space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs font-semibold text-slate-700">
+                  Contract Number <span className="text-rose-500">*</span>
+                </Label>
                 <Input
-                  placeholder="VD: HD-2026/FPT-CRM"
+                  required
+                  placeholder="e.g. CT-2026/ACME-01"
                   value={contractNumber}
                   onChange={(e) => setContractNumber(e.target.value)}
-                  className="h-9 text-xs"
-                  required
+                  className="h-9 text-xs border-slate-200 mt-1 font-mono"
                 />
               </div>
 
-              <div className="space-y-1.5">
-                <Label className="font-bold text-slate-700 text-xs">Trạng thái hiệu lực</Label>
-                <Select value={status} onValueChange={(v) => setStatus(v as ContractStatus)}>
-                  <SelectTrigger className="h-9 text-xs">
+              <div>
+                <Label className="text-xs font-semibold text-slate-700">
+                  Total Contract Value (VND) <span className="text-rose-500">*</span>
+                </Label>
+                <Input
+                  required
+                  type="number"
+                  placeholder="500,000,000"
+                  value={contractValue}
+                  onChange={(e) => setContractValue(e.target.value)}
+                  className="h-9 text-xs border-slate-200 mt-1 font-mono"
+                />
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-xs font-semibold text-slate-700">
+                Contract Title <span className="text-rose-500">*</span>
+              </Label>
+              <Input
+                required
+                placeholder="e.g. Master Services & Enterprise Cloud SLA Agreement"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="h-9 text-xs border-slate-200 mt-1"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs font-semibold text-slate-700">Client Organization</Label>
+                <Input
+                  placeholder="e.g. Acme Corporation"
+                  value={accountName}
+                  onChange={(e) => setAccountName(e.target.value)}
+                  className="h-9 text-xs border-slate-200 mt-1"
+                />
+              </div>
+
+              <div>
+                <Label className="text-xs font-semibold text-slate-700">Customer Signatory</Label>
+                <Input
+                  placeholder="e.g. David Harrison (Managing Director)"
+                  value={signedByCustomer}
+                  onChange={(e) => setSignedByCustomer(e.target.value)}
+                  className="h-9 text-xs border-slate-200 mt-1"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <Label className="text-xs font-semibold text-slate-700">Effective Start Date</Label>
+                <Input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="h-9 text-xs border-slate-200 mt-1 font-mono"
+                />
+              </div>
+
+              <div>
+                <Label className="text-xs font-semibold text-slate-700">Expiration End Date</Label>
+                <Input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="h-9 text-xs border-slate-200 mt-1 font-mono"
+                />
+              </div>
+
+              <div>
+                <Label className="text-xs font-semibold text-slate-700">Contract Status</Label>
+                <Select value={status} onValueChange={(val: any) => setStatus(val)}>
+                  <SelectTrigger className="h-9 text-xs border-slate-200 mt-1">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="ACTIVE">Đang hiệu lực</SelectItem>
-                    <SelectItem value="DRAFT">Bản thảo</SelectItem>
-                    <SelectItem value="EXPIRED">Đã hết hạn</SelectItem>
-                    <SelectItem value="TERMINATED">Đã thanh lý</SelectItem>
+                    <SelectItem value="ACTIVE">ACTIVE</SelectItem>
+                    <SelectItem value="DRAFT">DRAFT</SelectItem>
+                    <SelectItem value="EXPIRED">EXPIRED</SelectItem>
+                    <SelectItem value="TERMINATED">TERMINATED</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
 
-            <div className="space-y-1.5">
-              <Label className="font-bold text-slate-700 text-xs">Tên / Trích yếu Hợp đồng *</Label>
+            <div>
+              <Label className="text-xs font-semibold text-slate-700">Assigned Contract Representative</Label>
               <Input
-                placeholder="VD: Hợp đồng Cung cấp & Triển khai Hệ thống CRM..."
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                className="h-9 text-xs"
-                required
+                placeholder="Alex Nguyen"
+                value={assignedTo}
+                onChange={(e) => setAssignedTo(e.target.value)}
+                className="h-9 text-xs border-slate-200 mt-1"
               />
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-              <div className="space-y-1.5">
-                <Label className="font-bold text-slate-700 text-xs">Khách hàng / Doanh nghiệp *</Label>
-                <Input
-                  placeholder="VD: Tập đoàn Công nghệ FPT"
-                  value={accountName}
-                  onChange={(e) => setAccountName(e.target.value)}
-                  className="h-9 text-xs"
-                  required
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <Label className="font-bold text-slate-700 text-xs">Giá trị hợp đồng (VNĐ) *</Label>
-                <Input
-                  type="number"
-                  placeholder="VD: 1620000000"
-                  value={contractValue}
-                  onChange={(e) => setContractValue(e.target.value)}
-                  className="h-9 text-xs"
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-              <div className="space-y-1.5">
-                <Label className="font-bold text-slate-700 text-xs">Ngày bắt đầu hiệu lực</Label>
-                <DatePicker
-                  value={startDate}
-                  onChange={setStartDate}
-                  placeholder="Chọn ngày bắt đầu..."
-                  className="h-9 text-xs"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <Label className="font-bold text-slate-700 text-xs">Ngày hết hạn hợp đồng</Label>
-                <DatePicker
-                  value={endDate}
-                  onChange={setEndDate}
-                  placeholder="Chọn ngày kết thúc..."
-                  className="h-9 text-xs"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-              <div className="space-y-1.5">
-                <Label className="font-bold text-slate-700 text-xs">Đại diện khách hàng ký</Label>
-                <Input
-                  placeholder="VD: Trần Minh Đức (CTO)"
-                  value={signedByCustomer}
-                  onChange={(e) => setSignedByCustomer(e.target.value)}
-                  className="h-9 text-xs"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <Label className="font-bold text-slate-700 text-xs">Nhân viên phụ trách</Label>
-                <Input
-                  placeholder="VD: Phạm Tuấn Vũ"
-                  value={assignedTo}
-                  onChange={(e) => setAssignedTo(e.target.value)}
-                  className="h-9 text-xs"
-                />
-              </div>
-            </div>
-
-            <DialogFooter className="pt-4 border-t border-slate-100 flex items-center justify-end gap-2">
+            <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-100">
               <Button
                 type="button"
                 variant="outline"
-                size="sm"
                 onClick={() => setIsModalOpen(false)}
-                className="h-9 text-xs font-semibold px-4"
+                className="text-xs border-slate-200 h-9"
               >
-                Hủy bỏ
+                Cancel
               </Button>
               <Button
                 type="submit"
-                size="sm"
                 disabled={isSubmitting}
-                className="h-9 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-5 gap-1.5"
+                className="text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white gap-1.5 shadow-xs h-9"
               >
-                {isSubmitting ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  <Save className="w-3.5 h-3.5" />
-                )}
-                <span>{editingContract ? 'Lưu Thay đổi' : 'Tạo Hợp đồng'}</span>
+                {isSubmitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+                <span>{editingContract ? 'Save Changes' : 'Create Contract'}</span>
               </Button>
-            </DialogFooter>
+            </div>
           </form>
         </DialogContent>
       </Dialog>
 
-      {/* Printable Contract Modal */}
+      {/* Printable Document Modal */}
       {previewContract && (
         <DocumentPreviewModal
           open={showPrintModal}
@@ -662,23 +637,26 @@ export const ContractsPage: React.FC = () => {
           }}
           documentType="CONTRACT"
           documentNumber={previewContract.contractNumber}
-          documentDate={previewContract.startDate || new Date().toLocaleDateString('vi-VN')}
+          documentDate={previewContract.startDate || new Date().toLocaleDateString('en-US')}
           validUntilDate={previewContract.endDate || undefined}
           clientName={previewContract.accountName || ''}
           clientRepresentative={previewContract.signedByCustomer || ''}
           items={[
             {
-              name: previewContract.title || previewContract.contractNumber,
+              name: previewContract.title,
               quantity: 1,
-              unit: 'Hợp đồng',
-              unitPrice: previewContract.contractValue || 0,
-              totalAmount: previewContract.contractValue || 0,
+              unit: 'Contract Term',
+              unitPrice: previewContract.contractValue || previewContract.totalValue || 0,
+              discountAmount: 0,
+              totalAmount: previewContract.contractValue || previewContract.totalValue || 0,
             },
           ]}
-          subtotal={previewContract.contractValue || 0}
-          grandTotal={previewContract.contractValue || 0}
+          subtotal={previewContract.contractValue || previewContract.totalValue || 0}
+          grandTotal={previewContract.contractValue || previewContract.totalValue || 0}
         />
       )}
     </div>
   );
 };
+
+export default ContractsPage;

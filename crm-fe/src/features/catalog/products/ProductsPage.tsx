@@ -12,6 +12,7 @@ import {
   Dialog,
   DialogContent,
 } from '@/components/ui/dialog';
+import { ActionTooltip } from '@/components/ui/action-tooltip';
 import {
   Table,
   TableBody,
@@ -58,8 +59,8 @@ export const ProductsPage: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [sku, setSku] = useState('');
   const [name, setName] = useState('');
-  const [categoryName, setCategoryName] = useState('Bản quyền Phần mềm');
-  const [unit, setUnit] = useState('User / Năm');
+  const [categoryName, setCategoryName] = useState('Software Licenses');
+  const [unit, setUnit] = useState('User / Year');
   const [unitPrice, setUnitPrice] = useState('');
 
   const fetchProducts = useCallback(async () => {
@@ -75,7 +76,7 @@ export const ProductsPage: React.FC = () => {
       setTotalPages(res.totalPages);
       setTotalElements(res.totalElements);
     } catch {
-      toast.error('Không thể tải danh sách sản phẩm');
+      toast.error('Unable to load products from server');
     } finally {
       setLoading(false);
     }
@@ -96,8 +97,8 @@ export const ProductsPage: React.FC = () => {
     setEditingProduct(null);
     setSku(`PRD-${Math.floor(1000 + Math.random() * 9000)}`);
     setName('');
-    setCategoryName('Bản quyền Phần mềm');
-    setUnit('User / Năm');
+    setCategoryName('Software Licenses');
+    setUnit('User / Year');
     setUnitPrice('');
     setIsModalOpen(true);
   };
@@ -106,8 +107,8 @@ export const ProductsPage: React.FC = () => {
     setEditingProduct(prd);
     setSku(prd.sku);
     setName(prd.name);
-    setCategoryName(prd.categoryName || 'Bản quyền Phần mềm');
-    setUnit(prd.unit || 'Cái');
+    setCategoryName(prd.categoryName || 'Software Licenses');
+    setUnit(prd.unit || 'Unit');
     setUnitPrice((prd.unitPrice || 0).toString());
     setIsModalOpen(true);
   };
@@ -115,7 +116,7 @@ export const ProductsPage: React.FC = () => {
   const handleSaveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !unitPrice.trim()) {
-      toast.error('Vui lòng nhập tên sản phẩm và đơn giá');
+      toast.error('Please specify Product Name and Unit Price');
       return;
     }
 
@@ -128,7 +129,7 @@ export const ProductsPage: React.FC = () => {
           unit,
           unitPrice: parseFloat(unitPrice),
         });
-        toast.success('Đã cập nhật sản phẩm thành công!');
+        toast.success('Product updated successfully!');
       } else {
         await catalogApi.createProduct({
           sku,
@@ -136,31 +137,31 @@ export const ProductsPage: React.FC = () => {
           unit,
           unitPrice: parseFloat(unitPrice),
         });
-        toast.success('Đã tạo sản phẩm mới thành công!');
+        toast.success('New product catalog item created successfully!');
       }
       setIsModalOpen(false);
       fetchProducts();
     } catch {
-      toast.error('Không thể lưu sản phẩm');
+      toast.error('Unable to save product details');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleDelete = async (id: string, name: string) => {
-    if (!window.confirm(`Bạn có chắc chắn muốn xóa sản phẩm "${name}"?`)) return;
+    if (!window.confirm(`Are you sure you want to delete product "${name}"?`)) return;
     try {
       await catalogApi.deleteProduct(id);
-      toast.success(`Đã xóa sản phẩm "${name}"`);
+      toast.success(`Deleted product "${name}"`);
       fetchProducts();
     } catch {
-      toast.error('Không thể xóa sản phẩm');
+      toast.error('Unable to delete product');
     }
   };
 
   // KPI Metrics
-  const softwareCount = products.filter((p) => (p.categoryName || '').includes('Phần mềm')).length;
-  const serviceCount = products.filter((p) => (p.categoryName || '').includes('Dịch vụ')).length;
+  const softwareCount = products.filter((p) => (p.categoryName || '').toLowerCase().includes('software') || (p.categoryName || '').toLowerCase().includes('phần mềm')).length;
+  const serviceCount = products.filter((p) => (p.categoryName || '').toLowerCase().includes('service') || (p.categoryName || '').toLowerCase().includes('dịch vụ')).length;
 
   const activeFiltersCount =
     (searchQuery ? 1 : 0) +
@@ -168,12 +169,12 @@ export const ProductsPage: React.FC = () => {
 
   // View Tabs Config
   const viewTabs: ViewTabItem[] = [
-    { id: 'ALL', label: 'Tất cả', count: totalElements },
-    { id: 'SOFTWARE', label: 'Bản quyền / SaaS', count: softwareCount, icon: Layers, dotColor: 'bg-indigo-500' },
-    { id: 'SERVICE', label: 'Dịch vụ triển khai', count: serviceCount, icon: CheckCircle2, dotColor: 'bg-emerald-500' },
+    { id: 'ALL', label: 'All Products', count: totalElements },
+    { id: 'SOFTWARE', label: 'SaaS / Licenses', count: softwareCount, icon: Layers, dotColor: 'bg-indigo-500' },
+    { id: 'SERVICE', label: 'Implementation Services', count: serviceCount, icon: CheckCircle2, dotColor: 'bg-emerald-500' },
   ];
 
-  const currentActiveTab = selectedCategory === 'Bản quyền Phần mềm' ? 'SOFTWARE' : selectedCategory === 'Dịch vụ Triển khai & Đào tạo' ? 'SERVICE' : 'ALL';
+  const currentActiveTab = selectedCategory === 'Bản quyền Phần mềm' || selectedCategory === 'Software Licenses' ? 'SOFTWARE' : selectedCategory === 'Dịch vụ Triển khai & Đào tạo' || selectedCategory === 'Professional Services' ? 'SERVICE' : 'ALL';
 
   const handleTabChange = (tabId: string) => {
     if (tabId === 'SOFTWARE') {
@@ -190,10 +191,10 @@ export const ProductsPage: React.FC = () => {
     <div className="space-y-4 pb-12 font-sans w-full">
       {/* Standard Page Header */}
       <StandardPageHeader
-        title="Quản lý Danh mục Sản phẩm & Dịch vụ"
-        subtitle="Quản lý danh mục mã SKU, các gói giải pháp bản quyền phần mềm SaaS & đơn giá niêm yết chuẩn"
+        title="Product &amp; Services Catalog"
+        subtitle="Manage master SKU catalog, SaaS licensing tiers, professional services &amp; base pricing"
         badgeCount={totalElements}
-        badgeLabel="sản phẩm"
+        badgeLabel="products"
         actions={
           <>
             <Button
@@ -204,7 +205,7 @@ export const ProductsPage: React.FC = () => {
               className="text-xs font-medium text-slate-700 bg-white border-slate-200 hover:bg-slate-50 gap-1.5 h-8 rounded-[3px]"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-              <span>Làm mới</span>
+              <span>Refresh</span>
             </Button>
 
             <Button
@@ -213,7 +214,7 @@ export const ProductsPage: React.FC = () => {
               className="text-xs font-semibold bg-[#0C66E4] hover:bg-[#0052CC] text-white gap-1.5 shadow-none h-8 rounded-[3px]"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>Thêm Sản Phẩm</span>
+              <span>New Product</span>
             </Button>
           </>
         }
@@ -223,7 +224,7 @@ export const ProductsPage: React.FC = () => {
       <StandardFilterBar
         searchQuery={searchQuery}
         onSearchChange={(val) => { setSearchQuery(val); setPage(0); }}
-        searchPlaceholder="Tìm kiếm theo mã SKU, tên sản phẩm..."
+        searchPlaceholder="Search by SKU code, product name..."
         viewTabs={viewTabs}
         activeTab={currentActiveTab}
         onTabChange={handleTabChange}
@@ -233,31 +234,31 @@ export const ProductsPage: React.FC = () => {
           <div className="w-52">
             <Select value={selectedCategory} onValueChange={(val) => { setSelectedCategory(val); setPage(0); }}>
               <SelectTrigger className="h-8 text-xs bg-white border-slate-200 rounded-[3px]">
-                <SelectValue placeholder="Nhóm sản phẩm" />
+                <SelectValue placeholder="Product Category" />
               </SelectTrigger>
               <SelectContent className="rounded-[3px]">
-                <SelectItem value="ALL">Tất cả nhóm</SelectItem>
-                <SelectItem value="Bản quyền Phần mềm">Bản quyền Phần mềm</SelectItem>
-                <SelectItem value="Dịch vụ Triển khai & Đào tạo">Dịch vụ Triển khai</SelectItem>
-                <SelectItem value="Phần cứng & Thiết bị">Phần cứng & Thiết bị</SelectItem>
+                <SelectItem value="ALL">All Categories</SelectItem>
+                <SelectItem value="Bản quyền Phần mềm">Software Licenses</SelectItem>
+                <SelectItem value="Dịch vụ Triển khai & Đào tạo">Professional Services</SelectItem>
+                <SelectItem value="Phần cứng & Thiết bị">Hardware &amp; Devices</SelectItem>
               </SelectContent>
             </Select>
           </div>
         }
       />
 
-      {/* ── Products Table ── */}
+      {/* Products Table */}
       <Card className="overflow-hidden border border-slate-200 rounded-[4px] bg-white shadow-none">
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow className="bg-[#F7F8F9] border-b border-slate-200 hover:bg-[#F7F8F9]">
-                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Mã SKU &amp; Tên Sản phẩm</TableHead>
-                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Danh mục / Phân loại</TableHead>
-                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Đơn vị tính</TableHead>
-                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Đơn giá niêm yết</TableHead>
-                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Trạng thái kinh doanh</TableHead>
-                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3 text-right pr-4">Thao tác</TableHead>
+                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">SKU &amp; Product Name</TableHead>
+                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Category</TableHead>
+                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Unit</TableHead>
+                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">List Price</TableHead>
+                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Commercial Status</TableHead>
+                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3 text-right pr-4">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -266,7 +267,7 @@ export const ProductsPage: React.FC = () => {
                   <TableCell colSpan={6} className="h-48 text-center">
                     <div className="flex flex-col items-center justify-center gap-2 text-slate-500">
                       <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
-                      <span className="text-xs">Đang tải danh mục sản phẩm...</span>
+                      <span className="text-xs">Loading product catalog...</span>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -275,9 +276,9 @@ export const ProductsPage: React.FC = () => {
                   <TableCell colSpan={6} className="p-0">
                     <EmptyState
                       icon={Package}
-                      title="Không tìm thấy sản phẩm nào"
-                      description="Hãy thử thay đổi điều kiện lọc hoặc thêm mới sản phẩm vào danh mục."
-                      actionLabel="Thêm Sản Phẩm"
+                      title="No products found"
+                      description="Try adjusting your search criteria or register a new product item."
+                      actionLabel="Create Product"
                       onAction={handleOpenCreate}
                     />
                   </TableCell>
@@ -285,7 +286,7 @@ export const ProductsPage: React.FC = () => {
               ) : (
                 products.map((product) => (
                   <TableRow key={product.id} className="hover:bg-[#F1F2F4] transition-colors border-b border-[#EBECF0] text-xs">
-                    {/* Cột 1: SKU & Tên */}
+                    {/* SKU & Name */}
                     <TableCell className="py-2 px-3">
                       <div className="flex items-center gap-2">
                         <div className="w-6 h-6 rounded-[3px] bg-[#E9F2FF] text-[#0C66E4] border border-[#C0D9FF] font-bold text-xs flex items-center justify-center shrink-0">
@@ -298,59 +299,63 @@ export const ProductsPage: React.FC = () => {
                       </div>
                     </TableCell>
 
-                    {/* Cột 2: Danh mục */}
+                    {/* Category */}
                     <TableCell className="py-2 px-3">
                       <span className="bg-[#EBECF0] text-[#42526E] font-semibold text-[11px] uppercase tracking-wider px-1.5 py-0.5 rounded-[3px]">
                         {product.categoryName}
                       </span>
                     </TableCell>
 
-                    {/* Cột 3: Đơn vị */}
+                    {/* Unit */}
                     <TableCell className="py-2 px-3 text-slate-600 font-medium">
                       {product.unit}
                     </TableCell>
 
-                    {/* Cột 4: Đơn giá */}
+                    {/* Unit Price */}
                     <TableCell className="py-2 px-3">
                       <div className="font-semibold text-slate-900 font-mono text-xs">
-                        {(product.unitPrice || 0).toLocaleString('vi-VN')} ₫
+                        {(product.unitPrice || 0).toLocaleString('en-US')} ₫
                       </div>
                     </TableCell>
 
-                    {/* Cột 5: Trạng thái */}
+                    {/* Status */}
                     <TableCell className="py-2 px-3">
                       {product.status === 'ACTIVE' ? (
                         <span className="bg-[#E3FCEF] text-[#006644] font-bold rounded-[3px] text-[11px] uppercase tracking-wider px-1.5 py-0.5">
-                          Đang kinh doanh
+                          ACTIVE
                         </span>
                       ) : (
                         <span className="bg-[#FFFAE6] text-[#974F0C] font-bold rounded-[3px] text-[11px] uppercase tracking-wider px-1.5 py-0.5">
-                          Ngừng kinh doanh
+                          INACTIVE
                         </span>
                       )}
                     </TableCell>
 
-                    {/* Cột 6: Thao tác */}
+                    {/* Actions */}
                     <TableCell className="py-2 px-3 text-right pr-4">
                       <div className="flex items-center justify-end gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleOpenEdit(product)}
-                          className="h-7 w-7 rounded-[3px] text-slate-600 hover:text-[#0C66E4] hover:bg-[#E9F2FF]"
-                          title="Chỉnh sửa sản phẩm"
-                        >
-                          <Edit className="w-3.5 h-3.5" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDelete(product.id, product.name)}
-                          className="h-7 w-7 rounded-[3px] text-slate-600 hover:text-red-600 hover:bg-red-50"
-                          title="Xóa sản phẩm"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </Button>
+                        <ActionTooltip label="Chỉnh sửa sản phẩm">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleOpenEdit(product)}
+                            className="h-7 w-7 rounded-[3px] text-slate-600 hover:text-[#0C66E4] hover:bg-[#E9F2FF]"
+                            aria-label="Edit Product"
+                          >
+                            <Edit className="w-3.5 h-3.5" />
+                          </Button>
+                        </ActionTooltip>
+                        <ActionTooltip label="Xóa sản phẩm">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDelete(product.id, product.name)}
+                            className="h-7 w-7 rounded-[3px] text-slate-600 hover:text-red-600 hover:bg-red-50"
+                            aria-label="Delete Product"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </Button>
+                        </ActionTooltip>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -360,7 +365,7 @@ export const ProductsPage: React.FC = () => {
           </Table>
         </div>
 
-        {/* ── Standard Pagination Bar ── */}
+        {/* Standard Pagination Bar */}
         {!loading && (
           <StandardPagination
             currentPage={page + 1}
@@ -368,14 +373,14 @@ export const ProductsPage: React.FC = () => {
             totalElements={totalElements}
             pageSize={pageSize}
             onPageChange={(p) => setPage(p - 1)}
-            itemLabel="sản phẩm"
+            itemLabel="products"
           />
         )}
       </Card>
 
-      {/* ── Create / Edit Product Modal ── */}
+      {/* Create / Edit Product Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto p-0 rounded-2xl border border-slate-200 shadow-xl">
+        <DialogContent className="max-w-xl p-0 rounded-2xl border border-slate-200 shadow-xl overflow-hidden">
           <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-5 text-white">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -384,10 +389,10 @@ export const ProductsPage: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="font-bold text-base">
-                    {editingProduct ? 'Chỉnh sửa Sản phẩm' : 'Thêm Sản Phẩm Mới'}
+                    {editingProduct ? 'Edit Product Item' : 'Add New Product'}
                   </h3>
                   <p className="text-xs text-blue-100 mt-0.5">
-                    {editingProduct ? `Mã SKU: ${editingProduct.sku}` : 'Khai báo SKU, danh mục và đơn giá niêm yết'}
+                    {editingProduct ? `SKU: ${editingProduct.sku}` : 'Register SKU item, pricing model & commercial unit'}
                   </p>
                 </div>
               </div>
@@ -395,25 +400,36 @@ export const ProductsPage: React.FC = () => {
           </div>
 
           <form onSubmit={handleSaveProduct} className="p-6 space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <Label className="text-xs font-semibold text-slate-700">
+                Product Name <span className="text-rose-500">*</span>
+              </Label>
+              <Input
+                required
+                placeholder="e.g. CRM Enterprise Multi-Tenant License"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="h-9 text-xs border-slate-200 mt-1"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <Label className="text-xs font-semibold text-slate-700">Mã SKU</Label>
+                <Label className="text-xs font-semibold text-slate-700">SKU Code</Label>
                 <Input
-                  disabled
+                  disabled={!!editingProduct}
                   value={sku}
+                  onChange={(e) => setSku(e.target.value)}
                   className="h-9 text-xs border-slate-200 mt-1 font-mono bg-slate-50"
                 />
               </div>
 
-              <div className="sm:col-span-2">
-                <Label className="text-xs font-semibold text-slate-700">
-                  Tên sản phẩm / Gói giải pháp <span className="text-rose-500">*</span>
-                </Label>
+              <div>
+                <Label className="text-xs font-semibold text-slate-700">Category</Label>
                 <Input
-                  required
-                  placeholder="Ví dụ: CRM Enterprise Core Edition"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  value={categoryName}
+                  onChange={(e) => setCategoryName(e.target.value)}
+                  placeholder="e.g. Software Licenses"
                   className="h-9 text-xs border-slate-200 mt-1"
                 />
               </div>
@@ -421,42 +437,28 @@ export const ProductsPage: React.FC = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <Label className="text-xs font-semibold text-slate-700">Danh mục phân loại</Label>
-                <Select value={categoryName} onValueChange={(val) => setCategoryName(val)}>
-                  <SelectTrigger className="h-9 text-xs border-slate-200 mt-1">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Bản quyền Phần mềm">Bản quyền Phần mềm</SelectItem>
-                    <SelectItem value="Dịch vụ Triển khai &amp; Đào tạo">Dịch vụ Triển khai &amp; Đào tạo</SelectItem>
-                    <SelectItem value="Phần cứng &amp; Thiết bị">Phần cứng &amp; Thiết bị</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label className="text-xs font-semibold text-slate-700">Đơn vị tính</Label>
+                <Label className="text-xs font-semibold text-slate-700">Pricing Unit</Label>
                 <Input
-                  placeholder="Ví dụ: User / Năm, Gói trọn gói..."
                   value={unit}
                   onChange={(e) => setUnit(e.target.value)}
+                  placeholder="e.g. User / Year"
                   className="h-9 text-xs border-slate-200 mt-1"
                 />
               </div>
-            </div>
 
-            <div>
-              <Label className="text-xs font-semibold text-slate-700">
-                Đơn giá niêm yết (VNĐ) <span className="text-rose-500">*</span>
-              </Label>
-              <Input
-                required
-                type="number"
-                placeholder="25,000,000"
-                value={unitPrice}
-                onChange={(e) => setUnitPrice(e.target.value)}
-                className="h-9 text-xs border-slate-200 mt-1 font-mono"
-              />
+              <div>
+                <Label className="text-xs font-semibold text-slate-700">
+                  List Price (VND) <span className="text-rose-500">*</span>
+                </Label>
+                <Input
+                  required
+                  type="number"
+                  placeholder="1,200,000"
+                  value={unitPrice}
+                  onChange={(e) => setUnitPrice(e.target.value)}
+                  className="h-9 text-xs border-slate-200 mt-1 font-mono"
+                />
+              </div>
             </div>
 
             <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-100">
@@ -466,7 +468,7 @@ export const ProductsPage: React.FC = () => {
                 onClick={() => setIsModalOpen(false)}
                 className="text-xs border-slate-200 h-9"
               >
-                Hủy bỏ
+                Cancel
               </Button>
               <Button
                 type="submit"
@@ -474,7 +476,7 @@ export const ProductsPage: React.FC = () => {
                 className="text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white gap-1.5 shadow-xs h-9"
               >
                 {isSubmitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
-                <span>{editingProduct ? 'Lưu Thay Đổi' : 'Thêm Sản Phẩm'}</span>
+                <span>{editingProduct ? 'Save Changes' : 'Create Product'}</span>
               </Button>
             </div>
           </form>
@@ -483,3 +485,5 @@ export const ProductsPage: React.FC = () => {
     </div>
   );
 };
+
+export default ProductsPage;

@@ -60,9 +60,9 @@ export const storageAdapter = {
 
   getLocale(): string {
     try {
-      return localStorage.getItem(LOCALE_KEY) || 'vi';
+      return localStorage.getItem(LOCALE_KEY) || 'en';
     } catch {
-      return 'vi';
+      return 'en';
     }
   },
 

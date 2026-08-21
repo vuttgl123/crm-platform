@@ -1,150 +1,131 @@
-/* ============================================================
-   VUM CRM — Landing Page Design System
-   Standard: Anti-Slop Minimalist SaaS
-   Style: Linear / Vercel / High-Contrast, No Gradients
-   ============================================================ */
-
 .landing-theme {
-  /* Ultra-minimalist Color Palette */
-  --color-ink:        #09090b;   /* zinc-950 — True sharp black */
-  --color-ink-muted:  #52525b;   /* zinc-500 — Clean grey */
-  --color-ink-faint:  #a1a1aa;   /* zinc-400 */
-  --color-surface:    #ffffff;   /* Pure white */
-  --color-canvas:     #fafafa;   /* zinc-50 — Extreme subtle off-white for sections */
-  --color-border:     #e4e4e7;   /* zinc-200 — Sharp, uncolored borders */
-  
-  /* Brand Accent: Single high-contrast accent color. No purple, no glows. */
-  --color-brand:      #09090b;   /* Primary default is solid black */
-  --color-brand-alt:  #2563eb;   /* Minimalist sharp blue when strictly needed */
-  
-  /* Dark mode variants for Demo Section */
-  --color-dark:       #09090b;   /* zinc-950 */
-  --color-dark-border:#27272a;   /* zinc-800 */
-  --color-dark-muted: #a1a1aa;   /* zinc-400 */
-
-  /* Typography */
-  --font-display: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-
-  /* Baseline */
+  --landing-canvas: #F6F9FC;
+  --landing-surface: #FFFFFF;
+  --landing-ink: #07182B;
+  --landing-muted: #52647A;
+  --landing-line: #DCE5F0;
+  --landing-blue: #085AC0;
+  --landing-blue-hover: #06499D;
+  --landing-blue-soft: #EAF2FC;
+  --landing-font-body: 'Be Vietnam Pro', 'Inter', sans-serif;
+  --landing-font-display: 'Plus Jakarta Sans', 'Be Vietnam Pro', sans-serif;
   min-height: 100dvh;
-  background: var(--color-surface);
-  color: var(--color-ink);
-  font-family: var(--font-display);
   overflow-x: clip;
+  background: var(--landing-canvas);
+  color: var(--landing-ink);
+  font-family: var(--landing-font-body);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* ── 1. LAYOUT ────────────────────────────────────────── */
 .landing-theme .landing-container {
-  width: min(100% - 2.5rem, 80rem); /* Max 1280px for tighter reading rhythm */
+  width: min(calc(100% - 2rem), 80rem);
   margin-inline: auto;
 }
 
-/* ── 2. SECTION RHYTHM ────────────────────────────────── */
-.landing-theme .section-py {
-  padding-block: clamp(6rem, 10vw, 8rem);
-}
-.landing-theme .section-py-sm {
-  padding-block: clamp(4rem, 6vw, 6rem);
+.landing-theme .landing-section {
+  position: relative;
+  padding-block: clamp(4.5rem, 8vw, 8rem);
+  scroll-margin-top: 5rem;
 }
 
-/* ── 3. TYPOGRAPHY ────────────────────────────────────── */
 .landing-theme .landing-display {
-  font-family: var(--font-display);
-  letter-spacing: -0.04em; /* Tight Vercel-style tracking */
+  font-family: var(--landing-font-display);
+  letter-spacing: -0.035em;
+  line-height: 1.08;
   text-wrap: balance;
-  line-height: 1.1;
 }
 
-.landing-theme .h-hero {
-  font-size: clamp(3rem, 7vw, 5.5rem);
-  font-weight: 900; /* Black */
-  letter-spacing: -0.05em;
-  line-height: 1.05;
-  color: var(--color-ink);
+.landing-theme .landing-body-copy {
+  color: var(--landing-muted);
+  line-height: 1.7;
+  text-wrap: pretty;
 }
 
-.landing-theme .h-section {
-  font-size: clamp(2rem, 4vw, 3.5rem);
-  font-weight: 800; /* ExtraBold */
-  letter-spacing: -0.04em;
-  line-height: 1.1;
-  color: var(--color-ink);
+.landing-theme :where(a, button, input, select, textarea):focus-visible {
+  outline: 2px solid var(--landing-blue);
+  outline-offset: 3px;
 }
 
-/* ── 4. PRIMITIVES (Strictly No Glows / Shimmers) ─────── */
-
-/* Primary CTA — Solid Black, sharp hover */
-.landing-theme .btn-primary {
+.landing-theme .landing-primary-action {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  height: 2.75rem; /* 44px */
-  padding: 0 1.5rem;
-  border-radius: 0.375rem; /* rounded-md - SaaS standard */
-  font-size: 0.875rem;
+  height: 2.75rem;
+  padding-inline: 1.5rem;
+  border-radius: 0.5rem;
+  background-color: var(--landing-blue);
+  color: #ffffff;
   font-weight: 600;
-  background: var(--color-ink);
-  color: #FFFFFF;
-  transition: all 150ms ease;
-  border: 1px solid var(--color-ink);
-  box-shadow: 0 1px 2px rgba(0,0,0,0.05); /* Minimal physical shadow, NO GLOW */
+  font-size: 0.875rem;
+  text-decoration: none;
+  transition: background-color 150ms ease, transform 150ms ease;
 }
-.landing-theme .btn-primary:hover {
-  background: #27272a; /* zinc-800 */
+
+.landing-theme .landing-primary-action:hover {
+  background-color: var(--landing-blue-hover);
 }
-.landing-theme .btn-primary:active {
+
+.landing-theme .landing-primary-action:active {
   transform: scale(0.98);
 }
 
-/* Base Card — Pure flat design */
-.landing-theme .card-feature {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: 0.75rem; /* rounded-xl */
-  padding: clamp(1.5rem, 3vw, 2.5rem);
-  /* No hover float, no glow. Just solid engineering feel. */
-}
-
-/* Icon badge — Minimalist */
-.landing-theme .icon-badge {
-  display: flex;
+.landing-theme .landing-secondary-action {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2.5rem;
-  height: 2.5rem;
+  height: 2.75rem;
+  padding-inline: 1.5rem;
   border-radius: 0.5rem;
-  flex-shrink: 0;
-  background: var(--color-canvas);
-  border: 1px solid var(--color-border);
-  color: var(--color-ink);
+  background-color: var(--landing-surface);
+  color: var(--landing-ink);
+  border: 1px solid var(--landing-line);
+  font-weight: 600;
+  font-size: 0.875rem;
+  text-decoration: none;
+  transition: background-color 150ms ease, border-color 150ms ease, transform 150ms ease;
 }
 
-/* ── 5. BACKGROUND UTILITIES ──────────────────────────── */
-.landing-theme .bg-canvas {
-  background-color: var(--color-canvas);
+.landing-theme .landing-secondary-action:hover {
+  background-color: var(--landing-blue-soft);
+  border-color: var(--landing-blue);
 }
 
-.landing-theme .bg-dark-section {
-  background-color: var(--color-dark);
-  color: #fafafa;
+.landing-theme .landing-secondary-action:active {
+  transform: scale(0.98);
 }
 
-/* Legacy compat */
-.landing-theme .landing-section {
-  padding-block: clamp(6rem, 10vw, 8rem);
-  position: relative;
+.landing-skip-link {
+  position: absolute;
+  top: -9999px;
+  left: 1rem;
+  z-index: 9999;
+  padding: 0.75rem 1.5rem;
+  background: var(--landing-surface);
+  color: var(--landing-blue);
+  border: 2px solid var(--landing-blue);
+  border-radius: 0.375rem;
+  font-weight: 600;
+  text-decoration: none;
 }
 
-/* A11y Focus */
-.landing-theme :where(a, button, input, select, textarea):focus-visible {
-  outline: 2px solid var(--color-ink);
-  outline-offset: 2px;
-  border-radius: 0.25rem;
+.landing-skip-link:focus {
+  top: 1rem;
 }
 
-/* Remove scrollbar for clean horizontal lists if any */
-.landing-theme .no-scrollbar::-webkit-scrollbar { display: none; }
-.landing-theme .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+@media (min-width: 768px) {
+  .landing-theme .landing-container {
+    width: min(calc(100% - 3rem), 80rem);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-theme *,
+  .landing-theme *::before,
+  .landing-theme *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

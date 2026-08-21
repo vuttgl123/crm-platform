@@ -10,6 +10,7 @@ import {
   Dialog,
   DialogContent,
 } from '@/components/ui/dialog';
+import { ActionTooltip } from '@/components/ui/action-tooltip';
 import {
   Table,
   TableBody,
@@ -19,9 +20,10 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { toast } from 'sonner';
+import { StandardPageHeader } from '@/components/common/StandardPageHeader';
+import { StandardFilterBar } from '@/components/common/StandardFilterBar';
 import {
   Users2,
-  Search,
   Plus,
   RefreshCw,
   Edit,
@@ -29,8 +31,6 @@ import {
   Users,
   Crown,
   Building2,
-  X,
-  RotateCcw,
   UserCheck,
 } from 'lucide-react';
 
@@ -55,7 +55,7 @@ export const TeamsPage: React.FC = () => {
       const data = await teamApi.listTeams({ search: searchQuery });
       setTeams(data);
     } catch {
-      toast.error('Không thể tải danh sách phòng ban');
+      toast.error('Unable to load department roster');
     } finally {
       setLoading(false);
     }
@@ -64,11 +64,6 @@ export const TeamsPage: React.FC = () => {
   useEffect(() => {
     fetchTeams();
   }, [fetchTeams]);
-
-  const handleResetFilters = () => {
-    setSearchQuery('');
-    fetchTeams();
-  };
 
   const handleOpenCreate = () => {
     setEditingTeam(null);
@@ -91,7 +86,7 @@ export const TeamsPage: React.FC = () => {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) {
-      toast.error('Vui lòng nhập tên đội nhóm / phòng ban');
+      toast.error('Please enter department / team name');
       return;
     }
 
@@ -103,19 +98,19 @@ export const TeamsPage: React.FC = () => {
           name,
           description,
         });
-        toast.success('Đã cập nhật phòng ban thành công!');
+        toast.success('Department updated successfully!');
       } else {
         await teamApi.createTeam({
           code,
           name,
           description,
         });
-        toast.success('Đã tạo phòng ban mới thành công!');
+        toast.success('New department team created successfully!');
       }
       setIsModalOpen(false);
       fetchTeams();
     } catch {
-      toast.error('Không thể lưu phòng ban');
+      toast.error('Unable to save department details');
     } finally {
       setIsSubmitting(false);
     }
@@ -124,134 +119,101 @@ export const TeamsPage: React.FC = () => {
   const totalMembers = teams.reduce((sum, t) => sum + (t.membersCount || 0), 0);
 
   return (
-    <div className="space-y-5 pb-12 font-sans w-full">
-      {/* ── Page Header ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-bold text-slate-900 flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shadow-xs shrink-0">
-              <Users2 className="w-4.5 h-4.5 text-white" />
-            </div>
-            Phòng ban &amp; Đội nhóm (Teams)
-          </h1>
-          <p className="text-xs text-slate-500 mt-1 ml-10.5">
-            Cấu trúc sơ đồ tổ chức, phân bổ nhân sự và chỉ định trưởng nhóm phụ trách
-          </p>
-        </div>
+    <div className="space-y-4 pb-12 font-sans w-full">
+      {/* Standard Page Header */}
+      <StandardPageHeader
+        title="Departments &amp; Functional Teams"
+        subtitle="Configure corporate organizational chart, workforce units &amp; appointed team leaders"
+        icon={Users2}
+        badgeCount={teams.length}
+        badgeLabel="teams"
+        actions={
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={fetchTeams}
+              disabled={loading}
+              className="text-xs font-medium text-slate-700 bg-white border-slate-200 hover:bg-slate-50 gap-1.5 h-8 rounded-[3px]"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+              <span>Refresh</span>
+            </Button>
 
-        <div className="flex items-center gap-2 shrink-0">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={fetchTeams}
-            disabled={loading}
-            className="text-xs gap-1.5 border-slate-200 h-8"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-            <span>Làm mới</span>
-          </Button>
+            <Button
+              size="sm"
+              onClick={handleOpenCreate}
+              className="text-xs font-semibold bg-[#0C66E4] hover:bg-[#0052CC] text-white gap-1.5 shadow-none h-8 rounded-[3px]"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>New Department</span>
+            </Button>
+          </>
+        }
+      />
 
-          <Button
-            size="sm"
-            onClick={handleOpenCreate}
-            className="text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white gap-1.5 shadow-xs h-8"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Tạo Phòng ban Mới</span>
-          </Button>
-        </div>
-      </div>
-
-      {/* ── Quick Stat Cards ── */}
+      {/* Quick Stat Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="bg-white rounded-xl border border-slate-200 px-4 py-3 flex items-center gap-3 shadow-xs hover:shadow-sm transition-shadow">
+        <div className="bg-white rounded-[4px] border border-slate-200 px-4 py-3 flex items-center gap-3 shadow-none">
           <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
             <Users2 className="w-4.5 h-4.5 text-blue-600" />
           </div>
           <div>
-            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Tổng số phòng ban</div>
+            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Total Teams</div>
             <div className="text-lg font-black text-slate-900 leading-tight">{teams.length}</div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-emerald-100 px-4 py-3 flex items-center gap-3 shadow-xs hover:shadow-sm transition-shadow">
+        <div className="bg-white rounded-[4px] border border-emerald-100 px-4 py-3 flex items-center gap-3 shadow-none">
           <div className="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center shrink-0">
             <Users className="w-4.5 h-4.5 text-emerald-600" />
           </div>
           <div>
-            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Tổng Nhân sự</div>
-            <div className="text-lg font-black text-emerald-700 leading-tight">{totalMembers} Thành viên</div>
+            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Assigned Workforce</div>
+            <div className="text-lg font-black text-emerald-700 leading-tight">{totalMembers} Members</div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-purple-100 px-4 py-3 flex items-center gap-3 shadow-xs hover:shadow-sm transition-shadow">
+        <div className="bg-white rounded-[4px] border border-purple-100 px-4 py-3 flex items-center gap-3 shadow-none">
           <div className="w-9 h-9 rounded-lg bg-purple-50 flex items-center justify-center shrink-0">
             <Crown className="w-4.5 h-4.5 text-purple-600" />
           </div>
           <div>
-            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Trưởng nhóm (Lead)</div>
-            <div className="text-lg font-black text-purple-700 leading-tight">{teams.length} Trưởng nhóm</div>
+            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Team Leads</div>
+            <div className="text-lg font-black text-purple-700 leading-tight">{teams.length} Leads</div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-indigo-100 px-4 py-3 flex items-center gap-3 shadow-xs hover:shadow-sm transition-shadow">
+        <div className="bg-white rounded-[4px] border border-indigo-100 px-4 py-3 flex items-center gap-3 shadow-none">
           <div className="w-9 h-9 rounded-lg bg-indigo-50 flex items-center justify-center shrink-0">
             <UserCheck className="w-4.5 h-4.5 text-indigo-600" />
           </div>
           <div>
-            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Trạng thái vận hành</div>
-            <div className="text-lg font-black text-indigo-700 leading-tight">100% Hoạt động</div>
+            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Operational Health</div>
+            <div className="text-lg font-black text-indigo-700 leading-tight">100% ACTIVE</div>
           </div>
         </div>
       </div>
 
-      {/* ── Search Toolbar ── */}
-      <Card className="p-3.5 bg-white border border-slate-200 rounded-xl shadow-xs space-y-3">
-        <div className="flex flex-col md:flex-row gap-2.5 items-stretch md:items-center justify-between">
-          <div className="relative flex-1">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-            <Input
-              placeholder="Tìm kiếm theo mã phòng ban, tên phòng ban hoặc tên trưởng nhóm..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 pr-8 text-xs h-8.5 bg-slate-50/60 focus:bg-white border-slate-200 rounded-lg"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
+      {/* Filter Toolbar */}
+      <StandardFilterBar
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        searchPlaceholder="Search department by code, title or leader..."
+      />
 
-          {searchQuery && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleResetFilters}
-              className="text-xs text-slate-500 hover:text-slate-800 gap-1 h-8.5 px-2"
-            >
-              <RotateCcw className="w-3 h-3" />
-              <span>Đặt lại</span>
-            </Button>
-          )}
-        </div>
-      </Card>
-
-      {/* ── Teams Table ── */}
-      <Card className="overflow-hidden border border-slate-200 rounded-xl bg-white shadow-xs">
+      {/* Teams Table */}
+      <Card className="overflow-hidden border border-slate-200 rounded-[4px] bg-white shadow-none">
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
-              <TableRow className="bg-slate-50/80 hover:bg-slate-50/80 border-b border-slate-200">
-                <TableHead className="text-[11px] font-bold text-slate-600 uppercase tracking-wider py-3 pl-4">Mã &amp; Tên Phòng ban</TableHead>
-                <TableHead className="text-[11px] font-bold text-slate-600 uppercase tracking-wider py-3">Trưởng nhóm (Team Leader)</TableHead>
-                <TableHead className="text-[11px] font-bold text-slate-600 uppercase tracking-wider py-3">Quy mô nhân sự</TableHead>
-                <TableHead className="text-[11px] font-bold text-slate-600 uppercase tracking-wider py-3">Mô tả nhiệm vụ</TableHead>
-                <TableHead className="text-[11px] font-bold text-slate-600 uppercase tracking-wider py-3">Trạng thái</TableHead>
-                <TableHead className="text-[11px] font-bold text-slate-600 uppercase tracking-wider py-3 text-right pr-4">Thao tác</TableHead>
+              <TableRow className="bg-[#F7F8F9] border-b border-slate-200 hover:bg-[#F7F8F9]">
+                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Team Code &amp; Title</TableHead>
+                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Team Leader</TableHead>
+                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Team Size</TableHead>
+                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Mission Scope</TableHead>
+                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Status</TableHead>
+                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3 text-right pr-4">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -260,7 +222,7 @@ export const TeamsPage: React.FC = () => {
                   <TableCell colSpan={6} className="h-48 text-center">
                     <div className="flex flex-col items-center justify-center gap-2 text-slate-500">
                       <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
-                      <span className="text-xs">Đang tải danh sách phòng ban...</span>
+                      <span className="text-xs">Loading department roster...</span>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -269,68 +231,70 @@ export const TeamsPage: React.FC = () => {
                   <TableCell colSpan={6} className="p-0">
                     <EmptyState
                       icon={Users2}
-                      title="Không tìm thấy phòng ban nào"
-                      description="Hãy thử thay đổi điều kiện tìm kiếm hoặc tạo thêm phòng ban mới."
-                      actionLabel="Tạo Phòng ban"
+                      title="No departments found"
+                      description="Try adjusting search terms or register a new organizational team."
+                      actionLabel="Create Department"
                       onAction={handleOpenCreate}
                     />
                   </TableCell>
                 </TableRow>
               ) : (
                 teams.map((t) => (
-                  <TableRow key={t.id} className="hover:bg-slate-50/80 transition-colors border-b border-slate-100 text-xs">
-                    {/* Cột 1: Mã & Tên */}
-                    <TableCell className="pl-4 py-3">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 border border-blue-100 shadow-2xs">
-                          <Building2 className="w-4 h-4" />
+                  <TableRow key={t.id} className="hover:bg-[#F1F2F4] transition-colors border-b border-[#EBECF0] text-xs">
+                    {/* Code & Name */}
+                    <TableCell className="py-2 px-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-[3px] bg-[#E9F2FF] text-[#0C66E4] border border-[#C0D9FF] font-bold text-xs flex items-center justify-center shrink-0">
+                          <Building2 className="w-3.5 h-3.5" />
                         </div>
                         <div>
-                          <div className="font-bold text-slate-900">{t.name}</div>
-                          <div className="text-[11px] text-slate-400 mt-0.5 font-mono">{t.code}</div>
+                          <div className="font-semibold text-slate-900">{t.name}</div>
+                          <div className="text-[11px] text-slate-400 font-mono mt-0.5">{t.code}</div>
                         </div>
                       </div>
                     </TableCell>
 
-                    {/* Cột 2: Leader */}
-                    <TableCell>
+                    {/* Leader */}
+                    <TableCell className="py-2 px-3">
                       <div className="flex items-center gap-1.5 font-semibold text-slate-800">
                         <Crown className="w-3.5 h-3.5 text-amber-500 shrink-0" />
                         <span>{t.leaderName}</span>
                       </div>
                     </TableCell>
 
-                    {/* Cột 3: Số nhân sự */}
-                    <TableCell>
-                      <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 font-bold text-[11px]">
-                        {t.membersCount} Nhân sự
+                    {/* Size */}
+                    <TableCell className="py-2 px-3">
+                      <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 font-semibold text-[11px] rounded-[3px]">
+                        {t.membersCount} Members
                       </Badge>
                     </TableCell>
 
-                    {/* Cột 4: Mô tả */}
-                    <TableCell className="text-slate-600 max-w-xs truncate">
+                    {/* Description */}
+                    <TableCell className="py-2 px-3 text-slate-600 max-w-xs truncate">
                       {t.description}
                     </TableCell>
 
-                    {/* Cột 5: Trạng thái */}
-                    <TableCell>
-                      <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 font-bold text-[11px]">
-                        Đang hoạt động
+                    {/* Status */}
+                    <TableCell className="py-2 px-3">
+                      <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 font-bold text-[11px] rounded-[3px]">
+                        ACTIVE
                       </Badge>
                     </TableCell>
 
-                    {/* Cột 6: Thao tác */}
-                    <TableCell className="text-right pr-4">
+                    {/* Actions */}
+                    <TableCell className="py-2 px-3 text-right pr-4">
                       <div className="flex items-center justify-end gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleOpenEdit(t)}
-                          className="h-7 w-7 text-slate-600 hover:text-blue-600 hover:bg-blue-50"
-                          title="Chỉnh sửa phòng ban"
-                        >
-                          <Edit className="w-3.5 h-3.5" />
-                        </Button>
+                        <ActionTooltip label="Chỉnh sửa nhóm">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleOpenEdit(t)}
+                            className="h-7 w-7 rounded-[3px] text-slate-600 hover:text-[#0C66E4] hover:bg-[#E9F2FF]"
+                            aria-label="Edit Team"
+                          >
+                            <Edit className="w-3.5 h-3.5" />
+                          </Button>
+                        </ActionTooltip>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -341,7 +305,7 @@ export const TeamsPage: React.FC = () => {
         </div>
       </Card>
 
-      {/* ── Create / Edit Team Modal ── */}
+      {/* Create / Edit Team Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto p-0 rounded-2xl border border-slate-200 shadow-xl">
           <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-5 text-white">
@@ -352,10 +316,10 @@ export const TeamsPage: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="font-bold text-base">
-                    {editingTeam ? 'Chỉnh sửa Phòng ban' : 'Tạo Phòng ban / Đội nhóm Mới'}
+                    {editingTeam ? 'Edit Department' : 'Create New Department Team'}
                   </h3>
                   <p className="text-xs text-blue-100 mt-0.5">
-                    {editingTeam ? `Mã: ${editingTeam.code}` : 'Thiết lập mã phòng ban và chỉ định trưởng nhóm'}
+                    {editingTeam ? `Code: ${editingTeam.code}` : 'Define team code and assign designated department lead'}
                   </p>
                 </div>
               </div>
@@ -364,9 +328,9 @@ export const TeamsPage: React.FC = () => {
 
           <form onSubmit={handleSave} className="p-6 space-y-4">
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-slate-700">Mã phòng ban *</Label>
+              <Label className="text-xs font-semibold text-slate-700">Team Identifier Code *</Label>
               <Input
-                placeholder="VD: SALES_ENT"
+                placeholder="e.g. SALES_ENT"
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
                 className="h-9 text-xs border-slate-200"
@@ -375,9 +339,9 @@ export const TeamsPage: React.FC = () => {
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-slate-700">Tên phòng ban *</Label>
+              <Label className="text-xs font-semibold text-slate-700">Department Name *</Label>
               <Input
-                placeholder="VD: Khối Kinh doanh Doanh nghiệp Lớn"
+                placeholder="e.g. Strategic Enterprise Commercial Group"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 className="h-9 text-xs border-slate-200"
@@ -386,9 +350,9 @@ export const TeamsPage: React.FC = () => {
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-slate-700">Trưởng nhóm phụ trách</Label>
+              <Label className="text-xs font-semibold text-slate-700">Appointed Lead</Label>
               <Input
-                placeholder="VD: Phạm Tuấn Vũ"
+                placeholder="e.g. Alex Nguyen"
                 value={leaderName}
                 onChange={(e) => setLeaderName(e.target.value)}
                 className="h-9 text-xs border-slate-200"
@@ -396,10 +360,10 @@ export const TeamsPage: React.FC = () => {
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-slate-700">Mô tả nhiệm vụ</Label>
+              <Label className="text-xs font-semibold text-slate-700">Mission Description</Label>
               <textarea
                 rows={3}
-                placeholder="Mô tả phạm vi khách hàng và chức năng phòng ban..."
+                placeholder="Describe team operational objectives and assigned territory..."
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 className="w-full text-xs border border-slate-200 rounded-lg p-2.5 mt-1 focus:ring-1 focus:ring-blue-500 focus:outline-hidden"
@@ -413,7 +377,7 @@ export const TeamsPage: React.FC = () => {
                 onClick={() => setIsModalOpen(false)}
                 className="text-xs border-slate-200 h-9"
               >
-                Hủy bỏ
+                Cancel
               </Button>
               <Button
                 type="submit"
@@ -421,7 +385,7 @@ export const TeamsPage: React.FC = () => {
                 className="text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white gap-1.5 shadow-xs h-9 px-4"
               >
                 {isSubmitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
-                <span>{editingTeam ? 'Lưu Thay Đổi' : 'Tạo Phòng Ban'}</span>
+                <span>{editingTeam ? 'Save Changes' : 'Create Team'}</span>
               </Button>
             </div>
           </form>
@@ -430,3 +394,5 @@ export const TeamsPage: React.FC = () => {
     </div>
   );
 };
+
+export default TeamsPage;

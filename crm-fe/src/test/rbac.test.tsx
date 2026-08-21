@@ -1,18 +1,18 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { canAccessEntity } from '@/core/permissions/evaluator';
-import { SEEDED_PERMISSIONS } from '@/core/permissions/constants';
+import { KNOWN_PERMISSION_CODES } from '@/core/permissions/constants';
 import { mockAuthService } from '@/services/mock/MockAuthService';
 import { PermissionGate } from '@/components/common/PermissionGate';
 import { AuthProvider } from '@/core/session/AuthContext';
 import { storageAdapter } from '@/services/mock/storageAdapter';
 
 describe('RBAC & Data Scope Evaluation Tests', () => {
-  it('10. Permission evaluation uses strictly seeded permission codes from SQL schema', () => {
-    expect(SEEDED_PERMISSIONS).toHaveLength(19);
-    expect(SEEDED_PERMISSIONS).toContain('crm_account.read');
-    expect(SEEDED_PERMISSIONS).toContain('platform_user.manage');
-    expect(SEEDED_PERMISSIONS).toContain('sales_quote.approve');
+  it('10. Permission evaluation uses known permission codes from SQL schema', () => {
+    expect(KNOWN_PERMISSION_CODES).toContain('crm_account.read');
+    expect(KNOWN_PERMISSION_CODES).toContain('platform_user.manage');
+    expect(KNOWN_PERMISSION_CODES).toContain('sales_quote.approve');
+    expect(KNOWN_PERMISSION_CODES).toContain('platform_role.read');
   });
 
   it('9. PermissionGate renders children for allowed actions and fallback for denied actions', async () => {

@@ -6,7 +6,7 @@ import { env } from '@/config/env';
 export function useLandingMetadata(metadata: LandingMetadata): void {
   useEffect(() => {
     const canonicalUrl = new URL(metadata.path, `${env.publicSiteUrl}/`).toString();
-    const imageUrl = new URL(metadata.imagePath ?? '/og/vum-crm-landing.png', `${env.publicSiteUrl}/`).toString();
+    const imageUrl = new URL(metadata.imagePath ?? '/og/vum-crm-landing.svg', `${env.publicSiteUrl}/`).toString();
 
     document.title = metadata.title;
 

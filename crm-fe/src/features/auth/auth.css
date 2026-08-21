@@ -1,14 +1,14 @@
 .auth-theme {
-  --auth-canvas: #f5f8fc;
-  --auth-surface: #ffffff;
-  --auth-ink: #07182b;
-  --auth-muted: #52647a;
-  --auth-line: #dce5f0;
-  --auth-blue: #085ac0;
-  --auth-blue-hover: #06499d;
-  --auth-blue-soft: #eaf2fc;
-  --auth-danger: #be123c;
-  --auth-danger-soft: #fff1f2;
+  --auth-canvas: #F6F9FC;
+  --auth-surface: #FFFFFF;
+  --auth-ink: #07182B;
+  --auth-muted: #52647A;
+  --auth-line: #DCE5F0;
+  --auth-blue: #085AC0;
+  --auth-blue-hover: #06499D;
+  --auth-blue-soft: #EAF2FC;
+  --auth-danger: #BE123C;
+  --auth-danger-soft: #FFF1F2;
   min-height: 100dvh;
   background: var(--auth-canvas);
   color: var(--auth-ink);
@@ -17,20 +17,20 @@
 }
 
 .auth-theme .auth-frame {
-  width: min(calc(100% - 2rem), 73.75rem);
-  min-height: min(48rem, calc(100dvh - 3rem));
+  width: min(calc(100% - 2rem), 74rem);
+  min-height: min(46rem, calc(100dvh - 4rem));
   margin-inline: auto;
   display: grid;
-  grid-template-columns: minmax(0, 42fr) minmax(0, 58fr);
+  grid-template-columns: minmax(0, 44fr) minmax(0, 56fr);
   overflow: hidden;
   border: 1px solid var(--auth-line);
-  border-radius: 1rem;
+  border-radius: 1.25rem;
   background: var(--auth-surface);
-  box-shadow: 0 28px 70px -44px rgb(8 90 192 / 0.38);
+  box-shadow: 0 24px 60px -24px rgba(7, 24, 43, 0.12);
 }
 
 .auth-theme .auth-frame--compact {
-  width: min(calc(100% - 2rem), 40rem);
+  width: min(calc(100% - 2rem), 38rem);
   min-height: auto;
   display: block;
 }
@@ -46,8 +46,11 @@
   min-width: 0;
   flex-direction: column;
   justify-content: space-between;
-  padding: clamp(2rem, 4vw, 4.5rem);
-  background: var(--auth-blue-soft);
+  padding: clamp(2.5rem, 5vw, 4.5rem);
+  background: linear-gradient(180deg, #EBF3FC 0%, #E2EEFB 100%);
+  border-right: 1px solid var(--auth-line);
+  position: relative;
+  overflow: hidden;
 }
 
 .auth-theme .auth-form-region {
@@ -58,14 +61,14 @@
 }
 
 .auth-theme .auth-form-column {
-  width: min(100%, 27.5rem);
+  width: min(100%, 28rem);
   margin: auto;
-  padding: 2rem;
+  padding: clamp(2rem, 4vw, 3.5rem) 2rem;
 }
 
 .auth-theme :where(a, button, input):focus-visible {
-  outline: 3px solid color-mix(in srgb, var(--auth-blue) 65%, white);
-  outline-offset: 3px;
+  outline: 2px solid var(--auth-blue);
+  outline-offset: 2px;
 }
 
 .auth-theme .auth-control {
@@ -75,16 +78,16 @@
 
 .auth-theme .auth-icon-button {
   display: inline-flex;
-  width: 2.75rem;
-  height: 2.75rem;
+  width: 2.5rem;
+  height: 2.5rem;
   align-items: center;
   justify-content: center;
   border-radius: 0.5rem;
 }
 
 .auth-theme .auth-interactive {
-  transition-property: color, background-color, border-color, opacity, transform;
-  transition-duration: 180ms;
+  transition-property: color, background-color, border-color, opacity, transform, box-shadow;
+  transition-duration: 150ms;
   transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -100,7 +103,9 @@
   }
 
   .auth-theme .auth-brand-panel {
-    padding: 1.5rem 2rem;
+    padding: 2rem;
+    border-right: none;
+    border-bottom: 1px solid var(--auth-line);
   }
 
   .auth-theme .auth-brand-capabilities {

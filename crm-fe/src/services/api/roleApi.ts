@@ -1,22 +1,23 @@
 import { apiFetch } from './apiClient';
 
 export interface PermissionResponse {
+  permissionCode: string;
+  description: string;
+  moduleCode: string;
+  riskLevel: 'NORMAL' | 'SENSITIVE' | 'PRIVILEGED';
+  // Compatibility fields for legacy usage
   id?: string;
-  permissionCode?: string;
   code?: string;
-  description?: string;
-  moduleCode?: string;
   moduleGroup?: string;
   displayNameVi?: string;
   displayNameEn?: string;
   descriptionVi?: string;
-  riskLevel?: 'NORMAL' | 'SENSITIVE' | 'PRIVILEGED';
 }
 
-export interface RoleDataScopeRequest {
+export interface RoleDataScope {
   entityType: string;
   type: 'OWN' | 'TEAM' | 'TEAM_TREE' | 'TENANT';
-  teamId?: string;
+  teamId?: string | null;
 }
 
 export interface RoleSummaryResponse {
@@ -24,12 +25,14 @@ export interface RoleSummaryResponse {
   roleCode: string;
   name: string;
   description?: string;
-  isSystem: boolean;
-  system?: boolean;
-  permissionCount: number;
+  system: boolean;
   status: 'ACTIVE' | 'INACTIVE';
-  createdAt: string;
-  version?: number;
+  permissionCount: number;
+  dataScopeCount: number;
+  updatedAt: string;
+  version: number;
+  // Compatibility alias
+  isSystem?: boolean;
 }
 
 export interface RoleDetailResponse {
@@ -37,25 +40,24 @@ export interface RoleDetailResponse {
   roleCode: string;
   name: string;
   description?: string;
-  isSystem: boolean;
-  system?: boolean;
-  scopeType?: 'OWN' | 'TEAM' | 'TEAM_TREE' | 'TENANT';
+  system: boolean;
   status: 'ACTIVE' | 'INACTIVE';
-  permissions?: PermissionResponse[];
-  permissionCodes?: string[];
-  dataScopes?: RoleDataScopeRequest[];
-  version?: number;
+  permissionCodes: string[];
+  dataScopes: RoleDataScope[];
   createdAt: string;
   updatedAt: string;
+  version: number;
+  // Compatibility alias
+  isSystem?: boolean;
+  permissions?: PermissionResponse[];
 }
 
 export interface CreateRoleRequest {
   roleCode: string;
   name: string;
   description?: string;
-  scopeType?: 'OWN' | 'TEAM' | 'TEAM_TREE' | 'TENANT';
   permissionCodes: string[];
-  dataScopes?: RoleDataScopeRequest[];
+  dataScopes?: RoleDataScope[];
 }
 
 export interface UpdateRoleRequest {
@@ -64,7 +66,7 @@ export interface UpdateRoleRequest {
   description?: string;
   status: 'ACTIVE' | 'INACTIVE';
   permissionCodes: string[];
-  dataScopes?: RoleDataScopeRequest[];
+  dataScopes?: RoleDataScope[];
 }
 
 export const roleApi = {
@@ -110,9 +112,9 @@ export const roleApi = {
   },
 
   /**
-   * DELETE /api/roles/{id} - Delete custom role
+   * DELETE /api/roles/{id} - Delete custom role with ETag version verification
    */
-  async deleteRole(id: string, version = 1): Promise<void> {
+  async deleteRole(id: string, version: number = 1): Promise<void> {
     return apiFetch<void>(`/roles/${id}`, {
       method: 'DELETE',
       headers: {

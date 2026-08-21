@@ -4,7 +4,7 @@ import {
   PlatformUser,
 } from '@/types/schema';
 import { DemoRoleDefinition, DemoRoleCode } from '@/types/auth';
-import { SEEDED_PERMISSIONS } from '@/core/permissions/constants';
+import { KNOWN_PERMISSION_CODES } from '@/core/permissions/constants';
 
 export const DEMO_PASSWORD = 'Demo@123456';
 
@@ -51,9 +51,10 @@ export const DEMO_ROLES: Record<DemoRoleCode, DemoRoleDefinition> = {
     nameVi: 'Quản trị viên Tập đoàn (Tenant Admin)',
     nameEn: 'System Administrator',
     descriptionVi: 'Quyền cao nhất hệ thống, phạm vi TENANT, toàn bộ permissions và quản trị tổ chức',
+    descriptionEn: 'Full system permissions, TENANT scope, and complete platform administration',
     scopeType: 'TENANT',
     isTenantAdmin: true,
-    permissions: [...SEEDED_PERMISSIONS],
+    permissions: [...KNOWN_PERMISSION_CODES],
     userEmail: 'admin@vum.vn',
   },
   REGIONAL_MANAGER: {
@@ -61,6 +62,7 @@ export const DEMO_ROLES: Record<DemoRoleCode, DemoRoleDefinition> = {
     nameVi: 'Quản lý Vùng (Miền Bắc)',
     nameEn: 'Regional Manager',
     descriptionVi: 'Quản lý nhóm Miền Bắc và các nhóm con (TEAM_TREE scope)',
+    descriptionEn: 'Manage regional sales operations and subordinate teams (TEAM_TREE scope)',
     scopeType: 'TEAM_TREE',
     isTenantAdmin: false,
     permissions: [
@@ -88,6 +90,7 @@ export const DEMO_ROLES: Record<DemoRoleCode, DemoRoleDefinition> = {
     nameVi: 'Trưởng nhóm Kinh doanh',
     nameEn: 'Team Leader',
     descriptionVi: 'Quản lý dữ liệu trong phạm vi nhóm Hà Nội 1 (TEAM scope)',
+    descriptionEn: 'Manage team pipeline, assigned accounts and subordinate reps (TEAM scope)',
     scopeType: 'TEAM',
     isTenantAdmin: false,
     permissions: [
@@ -112,6 +115,7 @@ export const DEMO_ROLES: Record<DemoRoleCode, DemoRoleDefinition> = {
     nameVi: 'Nhân viên Kinh doanh',
     nameEn: 'Sales Representative',
     descriptionVi: 'Chỉ truy cập dữ liệu do bản thân sở hữu hoặc phụ trách (OWN scope)',
+    descriptionEn: 'Access only deals, leads, and accounts owned by self (OWN scope)',
     scopeType: 'OWN',
     isTenantAdmin: false,
     permissions: [
@@ -133,6 +137,7 @@ export const DEMO_ROLES: Record<DemoRoleCode, DemoRoleDefinition> = {
     nameVi: 'Người xem (Read-only)',
     nameEn: 'Read-only Viewer',
     descriptionVi: 'Xem toàn bộ dữ liệu tổ chức (TENANT scope) nhưng không có quyền chỉnh sửa/phê duyệt',
+    descriptionEn: 'Read-only visibility across organization records without edit permissions',
     scopeType: 'TENANT',
     isTenantAdmin: false,
     permissions: [

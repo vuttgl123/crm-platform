@@ -36,7 +36,7 @@ export function PasswordField({
 
   return (
     <div className="space-y-1.5 text-left">
-      <Label htmlFor={id} className="text-xs font-semibold text-[#07182B]">
+      <Label htmlFor={id} className="text-xs font-semibold text-[var(--auth-ink)]">
         {label}
       </Label>
 
@@ -48,8 +48,8 @@ export function PasswordField({
           autoComplete={autoComplete}
           aria-invalid={Boolean(error)}
           aria-describedby={computedDescribedBy}
-          className={`auth-control auth-interactive flex w-full border bg-white px-3.5 pr-11 text-sm text-[#07182B] placeholder:text-slate-400 focus-visible:border-[#085AC0] ${
-            error ? 'border-rose-400 focus-visible:ring-rose-500' : 'border-[#DCE5F0]'
+          className={`auth-control auth-interactive flex w-full border bg-white px-3.5 pr-11 text-sm text-[var(--auth-ink)] placeholder:text-slate-400 focus-visible:border-[var(--auth-blue)] ${
+            error ? 'border-rose-400 focus-visible:ring-rose-500' : 'border-[var(--auth-line)]'
           }`}
           {...registration}
         />
@@ -57,7 +57,7 @@ export function PasswordField({
         <button
           type="button"
           onClick={() => setVisible((prev) => !prev)}
-          className="auth-icon-button auth-interactive absolute right-1 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
+          className="auth-icon-button auth-interactive absolute right-1 top-1/2 -translate-y-1/2 text-slate-400 hover:text-[var(--auth-ink)]"
           aria-label={
             visible
               ? t('auth.gateway.password.hide')
@@ -77,7 +77,7 @@ export function PasswordField({
           {error}
         </p>
       ) : helperText ? (
-        <p id={helpId} className="text-xs text-slate-500 mt-1">
+        <p id={helpId} className="text-xs text-[var(--auth-muted)] mt-1">
           {helperText}
         </p>
       ) : null}

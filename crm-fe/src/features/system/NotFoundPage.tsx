@@ -13,12 +13,12 @@ export const NotFoundPage: React.FC = () => {
           <FileQuestion className="w-8 h-8" />
         </div>
         <h1 className="text-xl font-bold text-slate-900 mb-2">
-          {t('states.notFoundTitle', '404 - Trang không tồn tại')}
+          {t('states.notFoundTitle', '404 - Page Not Found')}
         </h1>
         <p className="text-sm text-slate-600 mb-6">
           {t(
             'states.notFoundDesc',
-            'Đường dẫn bạn truy cập không tồn tại hoặc đã bị di chuyển.'
+            'The requested resource could not be found or has been relocated.'
           )}
         </p>
         <Link
@@ -26,7 +26,7 @@ export const NotFoundPage: React.FC = () => {
           className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors shadow-xs"
         >
           <ArrowLeft className="w-4 h-4" />
-          {t('common.backToOverview', 'Quay lại Tổng quan')}
+          {t('common.backToOverview', 'Back to Overview')}
         </Link>
       </div>
     </div>

@@ -76,19 +76,19 @@ export interface OrderSearchRequest {
 }
 
 export const ORDER_STATUS_CONFIG: Record<OrderStatus, { label: string; className: string }> = {
-  DRAFT: { label: 'Đơn nháp', className: 'bg-slate-100 text-slate-600 border-slate-300 font-semibold' },
-  CONFIRMED: { label: 'Đã xác nhận', className: 'bg-blue-50 text-blue-700 border-blue-200 font-bold' },
-  PROCESSING: { label: 'Đang xử lý / Giao hàng', className: 'bg-purple-50 text-purple-700 border-purple-200 font-bold' },
-  PARTIALLY_FULFILLED: { label: 'Giao một phần', className: 'bg-amber-50 text-amber-700 border-amber-200 font-semibold' },
-  FULFILLED: { label: 'Đã hoàn tất', className: 'bg-emerald-50 text-emerald-700 border-emerald-200 font-bold' },
-  CANCELLED: { label: 'Đã hủy đơn', className: 'bg-rose-50 text-rose-700 border-rose-200 font-semibold' },
+  DRAFT: { label: 'DRAFT', className: 'bg-slate-100 text-slate-600 border-slate-300 font-semibold' },
+  CONFIRMED: { label: 'CONFIRMED', className: 'bg-blue-50 text-blue-700 border-blue-200 font-bold' },
+  PROCESSING: { label: 'PROCESSING', className: 'bg-purple-50 text-purple-700 border-purple-200 font-bold' },
+  PARTIALLY_FULFILLED: { label: 'PARTIALLY FULFILLED', className: 'bg-amber-50 text-amber-700 border-amber-200 font-semibold' },
+  FULFILLED: { label: 'FULFILLED', className: 'bg-emerald-50 text-emerald-700 border-emerald-200 font-bold' },
+  CANCELLED: { label: 'CANCELLED', className: 'bg-rose-50 text-rose-700 border-rose-200 font-semibold' },
 };
 
 export const PAYMENT_STATUS_CONFIG: Record<PaymentStatus, { label: string; className: string }> = {
-  PAID: { label: 'Đã thanh toán', className: 'bg-emerald-50 text-emerald-700 border-emerald-200 font-bold' },
-  PARTIALLY_PAID: { label: 'Thanh toán một phần', className: 'bg-amber-50 text-amber-700 border-amber-200 font-semibold' },
-  UNPAID: { label: 'Chưa thanh toán', className: 'bg-rose-50 text-rose-700 border-rose-200 font-semibold' },
-  REFUNDED: { label: 'Đã hoàn tiền', className: 'bg-slate-200 text-slate-700 border-slate-300' },
+  PAID: { label: 'PAID', className: 'bg-emerald-50 text-emerald-700 border-emerald-200 font-bold' },
+  PARTIALLY_PAID: { label: 'PARTIALLY PAID', className: 'bg-amber-50 text-amber-700 border-amber-200 font-semibold' },
+  UNPAID: { label: 'UNPAID', className: 'bg-rose-50 text-rose-700 border-rose-200 font-semibold' },
+  REFUNDED: { label: 'REFUNDED', className: 'bg-slate-200 text-slate-700 border-slate-300' },
 };
 
 function normalizeOrder(o: any): OrderItem {

@@ -1,5 +1,5 @@
 import { env } from '@/config/env';
-import { storageAdapter } from '../mock/storageAdapter';
+import { storageAdapter } from '../storageAdapter';
 
 export interface ApiErrorDetail {
   field: string;
@@ -140,8 +140,12 @@ export async function apiFetch<T = unknown>(
 
     const retryPromise = new Promise<T>((resolve, reject) => {
       addRefreshSubscriber((newToken: string) => {
+        const currentSession = storageAdapter.getSession();
         const retryHeaders = new Headers(requestOptions.headers);
         retryHeaders.set('Authorization', `Bearer ${newToken}`);
+        if (currentSession?.tenant?.id) {
+          retryHeaders.set('X-Tenant-ID', currentSession.tenant.id);
+        }
         fetch(url, { ...requestOptions, headers: retryHeaders })
           .then(async (res) => {
             if (!res.ok) {

@@ -22,6 +22,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { DatePicker } from '@/components/ui/date-picker';
 import { EmptyState } from '@/components/common/EmptyState';
+import { StandardPageHeader } from '@/components/common/StandardPageHeader';
+import { StandardPagination } from '@/components/common/StandardPagination';
 import {
   Dialog,
   DialogContent,
@@ -87,7 +89,7 @@ export const CampaignsPage: React.FC = () => {
   const [selectedStatus, setSelectedStatus] = useState('ALL');
   const [selectedType, setSelectedType] = useState('ALL');
   const [page, setPage] = useState(0);
-  const [pageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
 
@@ -102,7 +104,7 @@ export const CampaignsPage: React.FC = () => {
   const [campEndDate, setCampEndDate] = useState('');
   const [campBudget, setCampBudget] = useState('');
   const [campExpectedRevenue, setCampExpectedRevenue] = useState('');
-  const [campAssignedTo, setCampAssignedTo] = useState('Trần Thị Mai');
+  const [campAssignedTo, setCampAssignedTo] = useState('Sarah Jenkins');
   const [campDescription, setCampDescription] = useState('');
 
   // ==================== 2. DRIP AUTOMATION STATE ====================
@@ -115,10 +117,10 @@ export const CampaignsPage: React.FC = () => {
   const [dripTrigger, setDripTrigger] = useState('LEAD_CREATED');
   const [dripAudience, setDripAudience] = useState('ALL_LEADS');
   const [dripSteps, setDripSteps] = useState<DripStepDto[]>([
-    { stepOrder: 1, stepType: 'EMAIL', name: 'Email Chào mừng & Giới thiệu Năng lực', delayDays: 0, templateSubject: 'Chào mừng quý khách đến với CRM' },
-    { stepOrder: 2, stepType: 'SMS', name: 'SMS Nhắc nhở Đăng ký Trải nghiệm Demo Trực tuyến', delayDays: 2 },
-    { stepOrder: 3, stepType: 'EMAIL', name: 'Email Chia sẻ Case Study Doanh nghiệp Cùng Ngành', delayDays: 4, templateSubject: 'Case study doanh nghiệp tối ưu 35% chi phí' },
-    { stepOrder: 4, stepType: 'CREATE_TASK', name: 'Tự động Phân công Sales Gọi Tư vấn Báo giá', delayDays: 6, actionTarget: 'SALES_REP' },
+    { stepOrder: 1, stepType: 'EMAIL', name: 'Welcome & Enterprise Capabilities Overview', delayDays: 0, templateSubject: 'Welcome to our enterprise CRM platform' },
+    { stepOrder: 2, stepType: 'SMS', name: 'SMS Live Architecture Demo Reminder', delayDays: 2 },
+    { stepOrder: 3, stepType: 'EMAIL', name: 'Industry Case Study: 35% Cost Optimization', delayDays: 4, templateSubject: 'Case study: How tech enterprises scale revenue' },
+    { stepOrder: 4, stepType: 'CREATE_TASK', name: 'Sales AE Discovery Consultation Call', delayDays: 6, actionTarget: 'SALES_REP' },
   ]);
 
   // Drip Analytics Modal
@@ -150,17 +152,16 @@ export const CampaignsPage: React.FC = () => {
   // Preview Template Modal
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [previewRendered, setPreviewRendered] = useState<{ renderedSubject?: string; renderedContent?: string; subject?: string; content?: string } | null>(null);
-  const [previewSampleName, setPreviewSampleName] = useState('Nguyễn Văn Tuấn');
-  const [previewSampleCompany, setPreviewSampleCompany] = useState('Tập đoàn Công nghệ FPT');
+  const [previewSampleName, setPreviewSampleName] = useState('Alex Morgan');
+  const [previewSampleCompany, setPreviewSampleCompany] = useState('Apex Technologies Inc');
 
   // ==================== 4. ANALYTICS & ROI STATE ====================
   const [analyticsData, setAnalyticsData] = useState<MarketingAnalyticsResponse | null>(null);
   const [loadingAnalytics, setLoadingAnalytics] = useState(false);
 
-  // Format Currency VND
   const formatVND = (num?: number) => {
     if (!num) return '0 ₫';
-    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(num);
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'VND' }).format(num);
   };
 
   // ==================== DATA FETCHING ====================
@@ -178,7 +179,7 @@ export const CampaignsPage: React.FC = () => {
       setTotalPages(res.totalPages);
       setTotalElements(res.totalElements);
     } catch {
-      toast.error('Không thể tải danh sách chiến dịch tiếp thị');
+      toast.error('Unable to load campaigns list');
     } finally {
       setLoadingCampaigns(false);
     }
@@ -190,7 +191,7 @@ export const CampaignsPage: React.FC = () => {
       const list = await dripApi.list();
       setDripCampaigns(list);
     } catch {
-      toast.error('Không thể tải danh sách kịch bản nuôi dưỡng');
+      toast.error('Unable to load drip nurturing workflows');
     } finally {
       setLoadingDrip(false);
     }
@@ -205,7 +206,7 @@ export const CampaignsPage: React.FC = () => {
       });
       setTemplates(list);
     } catch {
-      toast.error('Không thể tải danh sách mẫu nội dung');
+      toast.error('Unable to load marketing template catalog');
     } finally {
       setLoadingTemplates(false);
     }
@@ -217,7 +218,7 @@ export const CampaignsPage: React.FC = () => {
       const data = await marketingAnalyticsApi.getFull();
       setAnalyticsData(data);
     } catch {
-      toast.error('Không thể tải dữ liệu báo cáo phân tích');
+      toast.error('Unable to load analytics report');
     } finally {
       setLoadingAnalytics(false);
     }
@@ -240,7 +241,7 @@ export const CampaignsPage: React.FC = () => {
     setCampEndDate(new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0]);
     setCampBudget('50000000');
     setCampExpectedRevenue('500000000');
-    setCampAssignedTo('Trần Thị Mai');
+    setCampAssignedTo('Sarah Jenkins');
     setCampDescription('');
     setIsCampaignModalOpen(true);
   };
@@ -254,7 +255,7 @@ export const CampaignsPage: React.FC = () => {
     setCampEndDate(c.endDate || '');
     setCampBudget((c.budget || c.budgetAmount || 0).toString());
     setCampExpectedRevenue((c.expectedRevenue || 0).toString());
-    setCampAssignedTo(c.assignedTo || 'Trần Thị Mai');
+    setCampAssignedTo(c.assignedTo || 'Sarah Jenkins');
     setCampDescription(c.description || '');
     setIsCampaignModalOpen(true);
   };
@@ -262,7 +263,7 @@ export const CampaignsPage: React.FC = () => {
   const handleSaveCampaign = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!campName.trim()) {
-      toast.error('Vui lòng nhập tên chiến dịch');
+      toast.error('Please enter campaign title');
       return;
     }
 
@@ -282,7 +283,7 @@ export const CampaignsPage: React.FC = () => {
           assignedTo: campAssignedTo,
           description: campDescription,
         });
-        toast.success('Đã cập nhật chiến dịch thành công!');
+        toast.success('Campaign updated successfully!');
       } else {
         await campaignApi.create({
           name: campName,
@@ -294,27 +295,27 @@ export const CampaignsPage: React.FC = () => {
           expectedRevenue: Number(campExpectedRevenue) || 0,
           description: campDescription,
         });
-        toast.success('Đã tạo chiến dịch tiếp thị mới thành công!');
+        toast.success('New marketing campaign created successfully!');
       }
       setIsCampaignModalOpen(false);
       fetchCampaigns();
       fetchAnalytics();
     } catch {
-      toast.error('Không thể lưu chiến dịch');
+      toast.error('Unable to save campaign');
     } finally {
       setIsCampaignSubmitting(false);
     }
   };
 
   const handleDeleteCampaign = async (id: string, name: string) => {
-    if (!window.confirm(`Bạn có chắc chắn muốn xóa chiến dịch "${name}"?`)) return;
+    if (!window.confirm(`Are you sure you want to delete campaign "${name}"?`)) return;
     try {
       await campaignApi.delete(id);
-      toast.success(`Đã xóa chiến dịch "${name}"`);
+      toast.success(`Campaign "${name}" deleted`);
       fetchCampaigns();
       fetchAnalytics();
     } catch {
-      toast.error('Không thể xóa chiến dịch');
+      toast.error('Unable to delete campaign');
     }
   };
 
@@ -323,10 +324,10 @@ export const CampaignsPage: React.FC = () => {
     const nextStatus = currentStatus === 'ACTIVE' ? 'PAUSED' : 'ACTIVE';
     try {
       await dripApi.updateStatus(id, nextStatus);
-      toast.success(`Đã chuyển trạng thái kịch bản sang ${nextStatus === 'ACTIVE' ? 'Đang chạy (ACTIVE)' : 'Tạm dừng (PAUSED)'}`);
+      toast.success(`Workflow status updated to ${nextStatus}`);
       fetchDripCampaigns();
     } catch {
-      toast.error('Không thể đổi trạng thái kịch bản');
+      toast.error('Unable to update workflow status');
     }
   };
 
@@ -337,7 +338,7 @@ export const CampaignsPage: React.FC = () => {
       const analytics = await dripApi.getAnalytics(drip.id);
       setSelectedDripAnalytics(analytics);
     } catch {
-      toast.error('Không thể tải báo cáo bước kịch bản');
+      toast.error('Unable to load sequence step analytics');
     } finally {
       setLoadingStepAnalytics(false);
     }
@@ -345,16 +346,16 @@ export const CampaignsPage: React.FC = () => {
 
   const handleOpenEnrollModal = (dripId: string) => {
     setEnrollingDripId(dripId);
-    setEnrollName('Vũ Văn Minh');
-    setEnrollEmail('minh.vu@techcorp.vn');
-    setEnrollPhone('0912 345 678');
+    setEnrollName('Alex Morgan');
+    setEnrollEmail('alex.morgan@apextechnologies.com');
+    setEnrollPhone('+1 555 0192');
     setIsEnrollModalOpen(true);
   };
 
   const handleEnrollSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!enrollingDripId || !enrollName.trim()) {
-      toast.error('Vui lòng nhập tên khách hàng');
+      toast.error('Please specify lead contact name');
       return;
     }
     try {
@@ -364,18 +365,18 @@ export const CampaignsPage: React.FC = () => {
         email: enrollEmail,
         phone: enrollPhone,
       });
-      toast.success(`Đã ghi danh ${enrollName} vào kịch bản nuôi dưỡng thành công!`);
+      toast.success(`Enrolled ${enrollName} into nurturing workflow!`);
       setIsEnrollModalOpen(false);
       fetchDripCampaigns();
     } catch {
-      toast.error('Không thể ghi danh khách hàng');
+      toast.error('Unable to enroll contact');
     }
   };
 
   const handleSaveDripCampaign = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!dripName.trim()) {
-      toast.error('Vui lòng nhập tên kịch bản nuôi dưỡng');
+      toast.error('Please enter workflow name');
       return;
     }
     setIsDripSubmitting(true);
@@ -387,11 +388,11 @@ export const CampaignsPage: React.FC = () => {
         targetAudience: dripAudience,
         steps: dripSteps,
       });
-      toast.success('Đã tạo kịch bản nuôi dưỡng tự động thành công!');
+      toast.success('Drip automation workflow created successfully!');
       setIsDripModalOpen(false);
       fetchDripCampaigns();
     } catch {
-      toast.error('Không thể tạo kịch bản nuôi dưỡng');
+      toast.error('Unable to create workflow');
     } finally {
       setIsDripSubmitting(false);
     }
@@ -404,16 +405,16 @@ export const CampaignsPage: React.FC = () => {
       {
         stepOrder: nextOrder,
         stepType: 'EMAIL',
-        name: `Bước ${nextOrder}: Gửi Email cung cấp giá trị`,
+        name: `Step ${nextOrder}: Value Proposition Dispatch`,
         delayDays: nextOrder * 2,
-        templateSubject: 'Cập nhật giải pháp công nghệ',
+        templateSubject: 'Enterprise solution update',
       },
     ]);
   };
 
   const handleRemoveDripStep = (index: number) => {
     if (dripSteps.length <= 1) {
-      toast.error('Kịch bản phải có ít nhất 1 bước thực thi');
+      toast.error('Workflow must contain at least 1 action step');
       return;
     }
     const updated = dripSteps.filter((_, i) => i !== index).map((s, i) => ({ ...s, stepOrder: i + 1 }));
@@ -426,8 +427,8 @@ export const CampaignsPage: React.FC = () => {
     setTemplateName('');
     setTemplateChannel('EMAIL');
     setTemplateCategory('WELCOME');
-    setTemplateSubject('Chào mừng {{lead.name}} đến với hệ thống');
-    setTemplateContent('Kính gửi {{lead.name}},\n\nCảm ơn công ty {{lead.company}} đã quan tâm đến giải pháp.\n\nTrân trọng,\n{{consultant.name}}');
+    setTemplateSubject('Welcome {{lead.name}} to our enterprise suite');
+    setTemplateContent('Dear {{lead.name}},\n\nThank you for exploring our enterprise software solutions at {{lead.company}}.\n\nBest regards,\n{{consultant.name}}');
     setIsTemplateModalOpen(true);
   };
 
@@ -444,7 +445,7 @@ export const CampaignsPage: React.FC = () => {
   const handleSaveTemplate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!templateName.trim() || !templateContent.trim()) {
-      toast.error('Vui lòng nhập đầy đủ tên và nội dung mẫu');
+      toast.error('Please enter template name and content');
       return;
     }
     setIsTemplateSubmitting(true);
@@ -458,7 +459,7 @@ export const CampaignsPage: React.FC = () => {
           content: templateContent,
           status: 'ACTIVE',
         });
-        toast.success('Đã cập nhật mẫu tiếp thị thành công!');
+        toast.success('Template updated successfully!');
       } else {
         await marketingTemplateApi.create({
           name: templateName,
@@ -468,25 +469,25 @@ export const CampaignsPage: React.FC = () => {
           content: templateContent,
           status: 'ACTIVE',
         });
-        toast.success('Đã tạo mẫu tiếp thị mới thành công!');
+        toast.success('Marketing template created successfully!');
       }
       setIsTemplateModalOpen(false);
       fetchTemplates();
     } catch {
-      toast.error('Không thể lưu mẫu tiếp thị');
+      toast.error('Unable to save template');
     } finally {
       setIsTemplateSubmitting(false);
     }
   };
 
   const handleDeleteTemplate = async (id: string, name: string) => {
-    if (!window.confirm(`Bạn có chắc chắn muốn xóa mẫu "${name}"?`)) return;
+    if (!window.confirm(`Are you sure you want to delete template "${name}"?`)) return;
     try {
       await marketingTemplateApi.delete(id);
-      toast.success(`Đã xóa mẫu tiếp thị "${name}"`);
+      toast.success(`Template "${name}" deleted`);
       fetchTemplates();
     } catch {
-      toast.error('Không thể xóa mẫu');
+      toast.error('Unable to delete template');
     }
   };
 
@@ -498,264 +499,235 @@ export const CampaignsPage: React.FC = () => {
         sampleData: {
           'lead.name': previewSampleName,
           'lead.company': previewSampleCompany,
-          'consultant.name': 'Trần Thị Mai',
-          'consultant.phone': '0988 123 456',
-          'promo.code': 'VIPCRM2026',
+          'consultant.name': 'Sarah Jenkins',
+          'consultant.phone': '+1 555 0192',
+          'promo.code': 'ENTERPRISE2026',
         },
       });
       setPreviewRendered(res);
       setIsPreviewModalOpen(true);
     } catch {
-      toast.error('Không thể hiển thị xem trước');
+      toast.error('Unable to generate preview');
     }
   };
 
   return (
-    <div className="space-y-6">
-      {/* Top Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-2xs">
-        <div>
-          <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-xs">
-              <Megaphone className="w-5 h-5" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-black tracking-tight text-slate-900 flex items-center gap-2">
-                <span>Trung tâm Tiếp thị & Chiến dịch</span>
-                <Badge className="bg-blue-50 text-blue-700 border-blue-200 text-xs font-bold px-2 py-0.5">
-                  Marketing Automation Suite
-                </Badge>
-              </h1>
-              <p className="text-sm text-slate-500 mt-0.5">
-                Quản lý chiến dịch đa kênh, kịch bản tự động hóa Drip Nurturing, mẫu nội dung và tối ưu hiệu suất ROI
-              </p>
-            </div>
+    <div className="space-y-4 pb-12 font-sans w-full">
+      {/* Standard Page Header */}
+      <StandardPageHeader
+        title="Marketing Hub &amp; Campaign Automation"
+        subtitle="Multi-channel campaign orchestration, automated drip nurturing sequences, template asset library &amp; ROI attribution"
+        icon={Megaphone}
+        badgeCount={campaigns.length}
+        badgeLabel="campaigns"
+        actions={
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                fetchCampaigns();
+                fetchDripCampaigns();
+                fetchTemplates();
+                fetchAnalytics();
+                toast.success('Marketing datasets refreshed');
+              }}
+              className="h-8 px-3 text-xs font-medium text-slate-700 bg-white border-slate-200 hover:bg-slate-50 gap-1.5 rounded-[3px]"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${loadingCampaigns || loadingDrip || loadingAnalytics ? 'animate-spin' : ''}`} />
+              <span>Refresh</span>
+            </Button>
+
+            {activeTab === 'campaigns' && (
+              <Button
+                size="sm"
+                onClick={handleOpenCreateCampaign}
+                className="h-8 px-3 text-xs font-semibold bg-[#0C66E4] hover:bg-[#0052CC] text-white gap-1.5 shadow-none rounded-[3px]"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>New Campaign</span>
+              </Button>
+            )}
+
+            {activeTab === 'automation' && (
+              <Button
+                size="sm"
+                onClick={() => setIsDripModalOpen(true)}
+                className="h-8 px-3 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white gap-1.5 shadow-none rounded-[3px]"
+              >
+                <Zap className="w-3.5 h-3.5" />
+                <span>New Drip Sequence</span>
+              </Button>
+            )}
+
+            {activeTab === 'templates' && (
+              <Button
+                size="sm"
+                onClick={handleOpenCreateTemplate}
+                className="h-8 px-3 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5 shadow-none rounded-[3px]"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>New Content Template</span>
+              </Button>
+            )}
           </div>
-        </div>
-
-        <div className="flex items-center gap-2.5 flex-wrap">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              fetchCampaigns();
-              fetchDripCampaigns();
-              fetchTemplates();
-              fetchAnalytics();
-              toast.success('Đã làm mới toàn bộ dữ liệu tiếp thị');
-            }}
-            className="h-9 px-3 text-xs font-semibold gap-1.5 border-slate-200"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${loadingCampaigns || loadingDrip || loadingAnalytics ? 'animate-spin' : ''}`} />
-            <span>Làm mới</span>
-          </Button>
-
-          {activeTab === 'campaigns' && (
-            <Button
-              size="sm"
-              onClick={handleOpenCreateCampaign}
-              className="h-9 px-4 text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white gap-1.5 shadow-2xs"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Tạo Chiến dịch Mới</span>
-            </Button>
-          )}
-
-          {activeTab === 'automation' && (
-            <Button
-              size="sm"
-              onClick={() => setIsDripModalOpen(true)}
-              className="h-9 px-4 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white gap-1.5 shadow-2xs"
-            >
-              <Zap className="w-4 h-4" />
-              <span>Tạo Kịch bản Tự động (Drip)</span>
-            </Button>
-          )}
-
-          {activeTab === 'templates' && (
-            <Button
-              size="sm"
-              onClick={handleOpenCreateTemplate}
-              className="h-9 px-4 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5 shadow-2xs"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Tạo Mẫu Nội dung Mới</span>
-            </Button>
-          )}
-        </div>
-      </div>
+        }
+      />
 
       {/* Main Tabs Navigation */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="bg-slate-100/90 p-1 rounded-xl border border-slate-200 flex flex-wrap h-auto gap-1">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+        <TabsList className="bg-slate-100 p-0.5 rounded-[4px] border border-slate-200 flex flex-wrap h-9 gap-1">
           <TabsTrigger
             value="analytics"
-            className="rounded-lg px-4 py-2 text-xs font-bold flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:text-blue-700 data-[state=active]:shadow-xs"
+            className="rounded-[3px] px-3 py-1.5 text-xs font-semibold flex items-center gap-1.5 data-[state=active]:bg-white data-[state=active]:text-blue-700 data-[state=active]:shadow-none"
           >
-            <BarChart2 className="w-4 h-4" />
-            <span>📊 Báo cáo ROI & Phễu Chuyển đổi</span>
+            <BarChart2 className="w-3.5 h-3.5" />
+            <span>ROI Attribution &amp; Funnel</span>
           </TabsTrigger>
 
           <TabsTrigger
             value="campaigns"
-            className="rounded-lg px-4 py-2 text-xs font-bold flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:text-blue-700 data-[state=active]:shadow-xs"
+            className="rounded-[3px] px-3 py-1.5 text-xs font-semibold flex items-center gap-1.5 data-[state=active]:bg-white data-[state=active]:text-blue-700 data-[state=active]:shadow-none"
           >
-            <Megaphone className="w-4 h-4" />
-            <span>📢 Chiến dịch Đa kênh ({campaigns.length})</span>
+            <Megaphone className="w-3.5 h-3.5" />
+            <span>Campaign Directory ({campaigns.length})</span>
           </TabsTrigger>
 
           <TabsTrigger
             value="automation"
-            className="rounded-lg px-4 py-2 text-xs font-bold flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:text-indigo-700 data-[state=active]:shadow-xs"
+            className="rounded-[3px] px-3 py-1.5 text-xs font-semibold flex items-center gap-1.5 data-[state=active]:bg-white data-[state=active]:text-indigo-700 data-[state=active]:shadow-none"
           >
-            <Zap className="w-4 h-4" />
-            <span>⚡ Tự động hóa Nuôi dưỡng Drip ({dripCampaigns.length})</span>
+            <Zap className="w-3.5 h-3.5" />
+            <span>Drip Nurturing Workflows ({dripCampaigns.length})</span>
           </TabsTrigger>
 
           <TabsTrigger
             value="templates"
-            className="rounded-lg px-4 py-2 text-xs font-bold flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:text-emerald-700 data-[state=active]:shadow-xs"
+            className="rounded-[3px] px-3 py-1.5 text-xs font-semibold flex items-center gap-1.5 data-[state=active]:bg-white data-[state=active]:text-emerald-700 data-[state=active]:shadow-none"
           >
-            <Mail className="w-4 h-4" />
-            <span>✉️ Thư viện Mẫu Email/SMS ({templates.length})</span>
+            <Mail className="w-3.5 h-3.5" />
+            <span>Message Templates ({templates.length})</span>
           </TabsTrigger>
         </TabsList>
 
-        {/* ========================================================================= */}
-        {/* TAB 1: EXECUTIVE MARKETING ROI & ATTRIBUTION FUNNEL                       */}
-        {/* ========================================================================= */}
-        <TabsContent value="analytics" className="space-y-6">
-          {/* Top 6 KPI Metric Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-            <Card className="border-slate-200 bg-white shadow-2xs">
-              <CardContent className="p-4">
-                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1">
-                  <DollarSign className="w-3.5 h-3.5 text-blue-500" />
-                  <span>Tổng Ngân Sách</span>
-                </p>
-                <h3 className="text-xl font-black text-slate-900 mt-2">
-                  {formatVND(analyticsData?.summary?.totalBudget || 345000000)}
-                </h3>
-                <span className="text-[11px] text-slate-400 mt-1 block">4 chiến dịch chiến lược</span>
-              </CardContent>
-            </Card>
+        {/* TAB 1: EXECUTIVE MARKETING ROI & ATTRIBUTION FUNNEL */}
+        <TabsContent value="analytics" className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
+            <div className="border border-slate-200 bg-white rounded-[4px] shadow-none p-3.5 space-y-1">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1">
+                <DollarSign className="w-3.5 h-3.5 text-blue-500" />
+                <span>Allocated Budget</span>
+              </p>
+              <h3 className="text-lg font-black text-slate-900 font-mono">
+                {formatVND(analyticsData?.summary?.totalBudget || 345000000)}
+              </h3>
+              <span className="text-[10px] text-slate-400 block">4 active initiatives</span>
+            </div>
 
-            <Card className="border-slate-200 bg-white shadow-2xs">
-              <CardContent className="p-4">
-                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1">
-                  <TrendingUp className="w-3.5 h-3.5 text-indigo-500" />
-                  <span>Chi phí Thực chi</span>
-                </p>
-                <h3 className="text-xl font-black text-indigo-600 mt-2">
-                  {formatVND(analyticsData?.summary?.totalActualSpend || 75000000)}
-                </h3>
-                <span className="text-[11px] text-slate-400 mt-1 block">21.7% ngân sách kế hoạch</span>
-              </CardContent>
-            </Card>
+            <div className="border border-slate-200 bg-white rounded-[4px] shadow-none p-3.5 space-y-1">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1">
+                <TrendingUp className="w-3.5 h-3.5 text-indigo-500" />
+                <span>Actual Spend</span>
+              </p>
+              <h3 className="text-lg font-black text-indigo-600 font-mono">
+                {formatVND(analyticsData?.summary?.totalActualSpend || 75000000)}
+              </h3>
+              <span className="text-[10px] text-slate-400 block">21.7% of budget deployed</span>
+            </div>
 
-            <Card className="border-slate-200 bg-white shadow-2xs">
-              <CardContent className="p-4">
-                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1">
-                  <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
-                  <span>Doanh thu Đã chốt (Won)</span>
-                </p>
-                <h3 className="text-xl font-black text-emerald-600 mt-2">
-                  {formatVND(analyticsData?.summary?.totalWonRevenue || 1280000000)}
-                </h3>
-                <span className="text-[11px] text-emerald-600 font-semibold mt-1 block">37 khách hàng chuyển đổi</span>
-              </CardContent>
-            </Card>
+            <div className="border border-slate-200 bg-white rounded-[4px] shadow-none p-3.5 space-y-1">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1">
+                <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
+                <span>Attributed Revenue</span>
+              </p>
+              <h3 className="text-lg font-black text-emerald-600 font-mono">
+                {formatVND(analyticsData?.summary?.totalWonRevenue || 1280000000)}
+              </h3>
+              <span className="text-[10px] text-emerald-600 font-semibold block">37 closed customers</span>
+            </div>
 
-            <Card className="border-slate-200 bg-white shadow-2xs">
-              <CardContent className="p-4">
-                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1">
-                  <Percent className="w-3.5 h-3.5 text-purple-500" />
-                  <span>Tỷ suất ROI Tổng thể</span>
-                </p>
-                <h3 className="text-xl font-black text-purple-600 mt-2">
-                  +{analyticsData?.summary?.overallRoiPercent || 1606.67}%
-                </h3>
-                <span className="text-[11px] text-purple-600 font-semibold mt-1 block">Hoàn vốn x17.0 lần</span>
-              </CardContent>
-            </Card>
+            <div className="border border-slate-200 bg-white rounded-[4px] shadow-none p-3.5 space-y-1">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1">
+                <Percent className="w-3.5 h-3.5 text-purple-500" />
+                <span>Overall ROI Ratio</span>
+              </p>
+              <h3 className="text-lg font-black text-purple-600 font-mono">
+                +{analyticsData?.summary?.overallRoiPercent || 1606.67}%
+              </h3>
+              <span className="text-[10px] text-purple-600 font-semibold block">17.0x spend efficiency</span>
+            </div>
 
-            <Card className="border-slate-200 bg-white shadow-2xs">
-              <CardContent className="p-4">
-                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1">
-                  <Users className="w-3.5 h-3.5 text-sky-500" />
-                  <span>Chi phí / Lead (CPL)</span>
-                </p>
-                <h3 className="text-xl font-black text-sky-600 mt-2">
-                  {formatVND(analyticsData?.summary?.costPerLead || 263158)}
-                </h3>
-                <span className="text-[11px] text-slate-400 mt-1 block">Thu hút 285 Leads</span>
-              </CardContent>
-            </Card>
+            <div className="border border-slate-200 bg-white rounded-[4px] shadow-none p-3.5 space-y-1">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1">
+                <Users className="w-3.5 h-3.5 text-sky-500" />
+                <span>Cost Per Lead (CPL)</span>
+              </p>
+              <h3 className="text-lg font-black text-sky-600 font-mono">
+                {formatVND(analyticsData?.summary?.costPerLead || 263158)}
+              </h3>
+              <span className="text-[10px] text-slate-400 block">285 inbound leads</span>
+            </div>
 
-            <Card className="border-slate-200 bg-white shadow-2xs">
-              <CardContent className="p-4">
-                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
-                  <span>Chi phí Thu nạp (CAC)</span>
-                </p>
-                <h3 className="text-xl font-black text-emerald-700 mt-2">
-                  {formatVND(analyticsData?.summary?.customerAcquisitionCost || 2027027)}
-                </h3>
-                <span className="text-[11px] text-slate-400 mt-1 block">Trên mỗi khách hàng chốt</span>
-              </CardContent>
-            </Card>
+            <div className="border border-slate-200 bg-white rounded-[4px] shadow-none p-3.5 space-y-1">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                <span>Customer Acquisition (CAC)</span>
+              </p>
+              <h3 className="text-lg font-black text-emerald-700 font-mono">
+                {formatVND(analyticsData?.summary?.customerAcquisitionCost || 2027027)}
+              </h3>
+              <span className="text-[10px] text-slate-400 block">Per acquired customer</span>
+            </div>
           </div>
 
           {/* Marketing Attribution Funnel */}
-          <Card className="border-slate-200 bg-white shadow-2xs">
-            <CardHeader className="pb-3 border-b border-slate-100">
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
-                    <Sliders className="w-4 h-4 text-blue-600" />
-                    <span>Phễu Chuyển đổi Khách hàng Tiếp thị (Full-Funnel Marketing Attribution)</span>
-                  </CardTitle>
-                  <CardDescription className="text-xs text-slate-500">
-                    Theo dõi hành trình từ tiếp cận thương hiệu đến chốt hợp đồng và ghi nhận doanh thu
-                  </CardDescription>
-                </div>
-                <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 font-bold text-xs">
-                  Tỷ lệ chuyển đổi Lead - Deal: 28.7%
-                </Badge>
+          <Card className="border border-slate-200 bg-white shadow-none rounded-[4px]">
+            <CardHeader className="p-4 border-b border-slate-100 bg-[#F7F8F9] flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div>
+                <CardTitle className="text-xs font-bold text-slate-900 flex items-center gap-2">
+                  <Sliders className="w-4 h-4 text-blue-600" />
+                  <span>Full-Funnel Marketing Attribution Pipeline</span>
+                </CardTitle>
+                <CardDescription className="text-[11px] text-slate-500 mt-0.5">
+                  Track buyer journey velocity from impression reach through deal conversion
+                </CardDescription>
               </div>
+              <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 font-bold text-[10px] rounded-[3px]">
+                Lead-to-Deal Conversion: 28.7%
+              </Badge>
             </CardHeader>
-            <CardContent className="p-6">
-              <div className="space-y-4">
+            <CardContent className="p-5">
+              <div className="space-y-3">
                 {(analyticsData?.funnelStages || [
-                  { stageOrder: 1, stageKey: 'IMPRESSIONS', stageNameVi: 'Lượt tiếp cận / Impression', count: 48500, conversionRateFromPrevious: 100, dropoffRate: 0 },
-                  { stageOrder: 2, stageKey: 'CLICKS', stageNameVi: 'Lượt quan tâm & Nhấp / Clicks', count: 4200, conversionRateFromPrevious: 8.66, dropoffRate: 91.34 },
-                  { stageOrder: 3, stageKey: 'LEADS', stageNameVi: 'Khách hàng Tiềm năng (Leads Generated)', count: 285, conversionRateFromPrevious: 6.79, dropoffRate: 93.21 },
-                  { stageOrder: 4, stageKey: 'MQL_QUALIFIED', stageNameVi: 'Lead Đạt chuẩn Tiếp thị (MQL)', count: 164, conversionRateFromPrevious: 57.54, dropoffRate: 42.46 },
-                  { stageOrder: 5, stageKey: 'OPPORTUNITIES', stageNameVi: 'Cơ hội Bán hàng Khởi tạo (Sales Deals)', count: 82, conversionRateFromPrevious: 50.0, dropoffRate: 50.0 },
-                  { stageOrder: 6, stageKey: 'CLOSED_WON', stageNameVi: 'Khách hàng Ký Hợp đồng (Closed Won)', count: 37, conversionRateFromPrevious: 45.12, dropoffRate: 54.88 },
+                  { stageOrder: 1, stageKey: 'IMPRESSIONS', stageNameVi: 'Brand Reach & Impressions', count: 48500, conversionRateFromPrevious: 100, dropoffRate: 0 },
+                  { stageOrder: 2, stageKey: 'CLICKS', stageNameVi: 'Engaged Inbound Clicks', count: 4200, conversionRateFromPrevious: 8.66, dropoffRate: 91.34 },
+                  { stageOrder: 3, stageKey: 'LEADS', stageNameVi: 'Captured Leads Generated', count: 285, conversionRateFromPrevious: 6.79, dropoffRate: 93.21 },
+                  { stageOrder: 4, stageKey: 'MQL_QUALIFIED', stageNameVi: 'Marketing Qualified Leads (MQL)', count: 164, conversionRateFromPrevious: 57.54, dropoffRate: 42.46 },
+                  { stageOrder: 5, stageKey: 'OPPORTUNITIES', stageNameVi: 'Commercial Sales Opportunities', count: 82, conversionRateFromPrevious: 50.0, dropoffRate: 50.0 },
+                  { stageOrder: 6, stageKey: 'CLOSED_WON', stageNameVi: 'Contracted Revenue (Closed Won)', count: 37, conversionRateFromPrevious: 45.12, dropoffRate: 54.88 },
                 ]).map((stage, idx) => {
                   const widthPercent = Math.max(15, 100 - idx * 16);
                   return (
-                    <div key={stage.stageKey} className="space-y-1.5">
+                    <div key={stage.stageKey} className="space-y-1">
                       <div className="flex items-center justify-between text-xs">
-                        <span className="font-bold text-slate-700 flex items-center gap-2">
-                          <span className="w-5 h-5 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-[10px] font-black">
+                        <span className="font-semibold text-slate-700 flex items-center gap-2">
+                          <span className="w-4 h-4 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-[10px] font-bold">
                             {stage.stageOrder}
                           </span>
                           <span>{stage.stageNameVi}</span>
                         </span>
-                        <div className="flex items-center gap-4">
-                          <span className="font-black text-slate-900 text-sm">{stage.count.toLocaleString('vi-VN')}</span>
+                        <div className="flex items-center gap-3">
+                          <span className="font-mono font-bold text-slate-900 text-xs">{stage.count.toLocaleString('en-US')}</span>
                           {idx > 0 && (
-                            <span className="text-[11px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                              Chuyển đổi: {stage.conversionRateFromPrevious}%
+                            <span className="text-[10px] font-semibold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                              Conversion: {stage.conversionRateFromPrevious}%
                             </span>
                           )}
                         </div>
                       </div>
-                      <div className="w-full bg-slate-100 rounded-full h-3.5 overflow-hidden p-0.5">
+                      <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden p-0.5">
                         <div
-                          className="h-full rounded-full transition-all duration-500 bg-gradient-to-r from-blue-600 to-indigo-600"
+                          className="h-full rounded-full transition-all duration-500 bg-blue-600"
                           style={{ width: `${widthPercent}%` }}
                         />
                       </div>
@@ -767,42 +739,42 @@ export const CampaignsPage: React.FC = () => {
           </Card>
 
           {/* Channel Performance Breakdown Table */}
-          <Card className="border-slate-200 bg-white shadow-2xs">
-            <CardHeader className="pb-3 border-b border-slate-100">
-              <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
+          <Card className="border border-slate-200 bg-white shadow-none rounded-[4px] overflow-hidden">
+            <CardHeader className="p-4 border-b border-slate-100 bg-[#F7F8F9]">
+              <CardTitle className="text-xs font-bold text-slate-900 flex items-center gap-2">
                 <Share2 className="w-4 h-4 text-indigo-600" />
-                <span>Hiệu quả Chi tiết theo Kênh Tiếp thị (Channel Attribution Matrix)</span>
+                <span>Channel Performance Attribution Matrix</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
               <Table>
-                <TableHeader className="bg-slate-50/75">
-                  <TableRow>
-                    <TableHead className="font-bold text-slate-700">Kênh Tiếp thị</TableHead>
-                    <TableHead className="font-bold text-slate-700">Chi phí Đã chi</TableHead>
-                    <TableHead className="font-bold text-slate-700">Số Leads</TableHead>
-                    <TableHead className="font-bold text-slate-700">Chi phí / Lead (CPL)</TableHead>
-                    <TableHead className="font-bold text-slate-700">Chuyển đổi HĐ</TableHead>
-                    <TableHead className="font-bold text-slate-700">Doanh thu Thu về</TableHead>
-                    <TableHead className="font-bold text-slate-700 text-right">Tỷ lệ ROI</TableHead>
+                <TableHeader className="bg-[#F7F8F9] border-b border-slate-200">
+                  <TableRow className="hover:bg-[#F7F8F9]">
+                    <TableHead className="text-[11px] font-semibold text-slate-600 uppercase py-2.5 px-3">Channel</TableHead>
+                    <TableHead className="text-[11px] font-semibold text-slate-600 uppercase py-2.5 px-3">Spend</TableHead>
+                    <TableHead className="text-[11px] font-semibold text-slate-600 uppercase py-2.5 px-3">Leads Volume</TableHead>
+                    <TableHead className="text-[11px] font-semibold text-slate-600 uppercase py-2.5 px-3">Cost / Lead (CPL)</TableHead>
+                    <TableHead className="text-[11px] font-semibold text-slate-600 uppercase py-2.5 px-3">Deals Won</TableHead>
+                    <TableHead className="text-[11px] font-semibold text-slate-600 uppercase py-2.5 px-3">Revenue Value</TableHead>
+                    <TableHead className="text-[11px] font-semibold text-slate-600 uppercase py-2.5 px-3 text-right pr-4">ROI Yield</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {(analyticsData?.channelPerformances || [
-                    { channelType: 'WEBINAR', channelNameVi: 'Hội thảo Trực tuyến (Webinar)', spend: 35000000, leadsCount: 142, costPerLead: 246479, conversionsCount: 18, wonRevenue: 550000000, roiPercent: 1471.43 },
-                    { channelType: 'SOCIAL_ADS', channelNameVi: 'Quảng cáo MXH (Meta / LinkedIn)', spend: 28000000, leadsCount: 89, costPerLead: 314607, conversionsCount: 7, wonRevenue: 420000000, roiPercent: 1400.00 },
-                    { channelType: 'EMAIL', channelNameVi: 'Email Marketing & Nuôi dưỡng', spend: 12000000, leadsCount: 54, costPerLead: 222222, conversionsCount: 12, wonRevenue: 310000000, roiPercent: 2483.33 },
-                    { channelType: 'EVENT', channelNameVi: 'Triển lãm & Sự kiện Offline', spend: 0, leadsCount: 0, costPerLead: 0, conversionsCount: 0, wonRevenue: 0, roiPercent: 0 },
+                    { channelType: 'WEBINAR', channelNameVi: 'Webinars & Virtual Roundtables', spend: 35000000, leadsCount: 142, costPerLead: 246479, conversionsCount: 18, wonRevenue: 550000000, roiPercent: 1471.43 },
+                    { channelType: 'SOCIAL_ADS', channelNameVi: 'Paid Social (LinkedIn & Meta)', spend: 28000000, leadsCount: 89, costPerLead: 314607, conversionsCount: 7, wonRevenue: 420000000, roiPercent: 1400.00 },
+                    { channelType: 'EMAIL', channelNameVi: 'Outbound Email & Nurturing', spend: 12000000, leadsCount: 54, costPerLead: 222222, conversionsCount: 12, wonRevenue: 310000000, roiPercent: 2483.33 },
+                    { channelType: 'EVENT', channelNameVi: 'Industry Conferences & Summits', spend: 0, leadsCount: 0, costPerLead: 0, conversionsCount: 0, wonRevenue: 0, roiPercent: 0 },
                   ]).map((item) => (
-                    <TableRow key={item.channelType} className="hover:bg-slate-50/80">
-                      <TableCell className="font-bold text-slate-900">{item.channelNameVi}</TableCell>
-                      <TableCell className="font-semibold text-slate-700">{formatVND(item.spend)}</TableCell>
-                      <TableCell className="font-bold text-blue-600">{item.leadsCount} Leads</TableCell>
-                      <TableCell className="text-slate-600">{formatVND(item.costPerLead)}</TableCell>
-                      <TableCell className="font-bold text-emerald-600">{item.conversionsCount} Hợp đồng</TableCell>
-                      <TableCell className="font-bold text-slate-900">{formatVND(item.wonRevenue)}</TableCell>
-                      <TableCell className="text-right">
-                        <Badge className={`font-black text-xs ${item.roiPercent > 0 ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-600'}`}>
+                    <TableRow key={item.channelType} className="hover:bg-[#F1F2F4] border-b border-[#EBECF0] text-xs">
+                      <TableCell className="py-2 px-3 font-semibold text-slate-900">{item.channelNameVi}</TableCell>
+                      <TableCell className="py-2 px-3 font-mono text-slate-700">{formatVND(item.spend)}</TableCell>
+                      <TableCell className="py-2 px-3 font-bold text-blue-600 font-mono">{item.leadsCount} Leads</TableCell>
+                      <TableCell className="py-2 px-3 font-mono text-slate-600">{formatVND(item.costPerLead)}</TableCell>
+                      <TableCell className="py-2 px-3 font-bold text-emerald-600 font-mono">{item.conversionsCount} Deals</TableCell>
+                      <TableCell className="py-2 px-3 font-mono font-bold text-slate-900">{formatVND(item.wonRevenue)}</TableCell>
+                      <TableCell className="text-right pr-4 py-2 px-3">
+                        <Badge className={`font-mono text-[10px] rounded-[2px] shadow-none ${item.roiPercent > 0 ? 'bg-[#E3FCEF] text-[#006644] border-emerald-300' : 'bg-slate-100 text-slate-600'}`}>
                           {item.roiPercent > 0 ? `+${item.roiPercent.toFixed(1)}%` : '0%'}
                         </Badge>
                       </TableCell>
@@ -814,77 +786,75 @@ export const CampaignsPage: React.FC = () => {
           </Card>
         </TabsContent>
 
-        {/* ========================================================================= */}
-        {/* TAB 2: CAMPAIGNS MANAGEMENT                                              */}
-        {/* ========================================================================= */}
-        <TabsContent value="campaigns" className="space-y-6">
+        {/* TAB 2: CAMPAIGNS MANAGEMENT */}
+        <TabsContent value="campaigns" className="space-y-3">
           {/* Filters Bar */}
-          <div className="flex flex-col sm:flex-row gap-3 bg-white p-4 rounded-xl border border-slate-200 shadow-2xs">
+          <div className="flex flex-col sm:flex-row gap-2 bg-white p-3 rounded-[4px] border border-slate-200 shadow-none">
             <div className="relative flex-1">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <Input
-                placeholder="Tìm kiếm chiến dịch theo tên hoặc người phụ trách..."
+                placeholder="Search campaigns by title or owner..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 h-10 text-xs border-slate-200"
+                className="pl-8 h-8 text-xs border-slate-200 rounded-[3px]"
               />
             </div>
 
-            <div className="w-full sm:w-48">
+            <div className="w-full sm:w-44">
               <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-                <SelectTrigger className="h-10 text-xs border-slate-200">
-                  <SelectValue placeholder="Trạng thái" />
+                <SelectTrigger className="h-8 text-xs border-slate-200 rounded-[3px]">
+                  <SelectValue placeholder="Status" />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ALL">Tất cả trạng thái</SelectItem>
-                  <SelectItem value="PLANNING">Đang lên kế hoạch</SelectItem>
-                  <SelectItem value="ACTIVE">Đang chạy</SelectItem>
-                  <SelectItem value="COMPLETED">Đã hoàn thành</SelectItem>
-                  <SelectItem value="CANCELLED">Đã hủy bỏ</SelectItem>
+                <SelectContent className="rounded-[3px]">
+                  <SelectItem value="ALL">All Statuses</SelectItem>
+                  <SelectItem value="PLANNING">Planning</SelectItem>
+                  <SelectItem value="ACTIVE">Active</SelectItem>
+                  <SelectItem value="COMPLETED">Completed</SelectItem>
+                  <SelectItem value="CANCELLED">Cancelled</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
-            <div className="w-full sm:w-56">
+            <div className="w-full sm:w-48">
               <Select value={selectedType} onValueChange={setSelectedType}>
-                <SelectTrigger className="h-10 text-xs border-slate-200">
-                  <SelectValue placeholder="Loại chiến dịch" />
+                <SelectTrigger className="h-8 text-xs border-slate-200 rounded-[3px]">
+                  <SelectValue placeholder="Channel Type" />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ALL">Tất cả hình thức</SelectItem>
+                <SelectContent className="rounded-[3px]">
+                  <SelectItem value="ALL">All Channels</SelectItem>
                   <SelectItem value="EMAIL">Email Marketing</SelectItem>
-                  <SelectItem value="WEBINAR">Hội thảo Trực tuyến (Webinar)</SelectItem>
-                  <SelectItem value="EVENT">Triển lãm / Sự kiện Offline</SelectItem>
-                  <SelectItem value="SOCIAL_ADS">Quảng cáo MXH</SelectItem>
-                  <SelectItem value="DIRECT_MAIL">Thư ngỏ trực tiếp</SelectItem>
+                  <SelectItem value="WEBINAR">Virtual Webinar</SelectItem>
+                  <SelectItem value="EVENT">Trade Summit / Offline</SelectItem>
+                  <SelectItem value="SOCIAL_ADS">Paid Social Ads</SelectItem>
+                  <SelectItem value="DIRECT_MAIL">Direct Mail</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
 
           {/* Campaigns Table */}
-          <Card className="border-slate-200 bg-white shadow-2xs">
+          <Card className="border border-slate-200 bg-white shadow-none rounded-[4px] overflow-hidden">
             <CardContent className="p-0">
               {campaigns.length === 0 ? (
                 <EmptyState
                   icon={Megaphone}
-                  title="Không tìm thấy chiến dịch tiếp thị"
-                  description="Thử thay đổi bộ lọc hoặc tạo chiến dịch tiếp thị mới để bắt đầu theo dõi hiệu quả."
-                  actionLabel="Tạo Chiến dịch Mới"
+                  title="No campaigns found"
+                  description="Adjust filter criteria or create a new campaign to track lead generation."
+                  actionLabel="Create Campaign"
                   onAction={handleOpenCreateCampaign}
                 />
               ) : (
                 <Table>
-                  <TableHeader className="bg-slate-50/75">
-                    <TableRow>
-                      <TableHead className="font-bold text-slate-700">Tên Chiến dịch</TableHead>
-                      <TableHead className="font-bold text-slate-700">Hình thức</TableHead>
-                      <TableHead className="font-bold text-slate-700">Trạng thái</TableHead>
-                      <TableHead className="font-bold text-slate-700">Ngân sách / Thực chi</TableHead>
-                      <TableHead className="font-bold text-slate-700">Leads / Chuyển đổi</TableHead>
-                      <TableHead className="font-bold text-slate-700">Thời gian</TableHead>
-                      <TableHead className="font-bold text-slate-700">Phụ trách</TableHead>
-                      <TableHead className="font-bold text-slate-700 text-right">Thao tác</TableHead>
+                  <TableHeader className="bg-[#F7F8F9] border-b border-slate-200">
+                    <TableRow className="hover:bg-[#F7F8F9]">
+                      <TableHead className="text-[11px] font-semibold text-slate-600 uppercase py-2.5 px-3">Campaign Name</TableHead>
+                      <TableHead className="text-[11px] font-semibold text-slate-600 uppercase py-2.5 px-3">Channel</TableHead>
+                      <TableHead className="text-[11px] font-semibold text-slate-600 uppercase py-2.5 px-3">Status</TableHead>
+                      <TableHead className="text-[11px] font-semibold text-slate-600 uppercase py-2.5 px-3">Budget / Spend</TableHead>
+                      <TableHead className="text-[11px] font-semibold text-slate-600 uppercase py-2.5 px-3">Leads / Won</TableHead>
+                      <TableHead className="text-[11px] font-semibold text-slate-600 uppercase py-2.5 px-3">Timeline</TableHead>
+                      <TableHead className="text-[11px] font-semibold text-slate-600 uppercase py-2.5 px-3">Owner</TableHead>
+                      <TableHead className="text-[11px] font-semibold text-slate-600 uppercase py-2.5 px-3 text-right pr-4">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -892,59 +862,59 @@ export const CampaignsPage: React.FC = () => {
                       const statusCfg = CAMPAIGN_STATUS_CONFIG[c.status] || { label: c.status, className: 'bg-slate-100 text-slate-700' };
                       const typeCfg = CAMPAIGN_TYPE_CONFIG[c.type] || { label: c.type, className: 'bg-slate-100 text-slate-700' };
                       return (
-                        <TableRow key={c.id} className="hover:bg-slate-50/80">
-                          <TableCell>
+                        <TableRow key={c.id} className="hover:bg-[#F1F2F4] border-b border-[#EBECF0] transition-colors text-xs">
+                          <TableCell className="py-2 px-3">
                             <div>
-                              <p className="font-bold text-slate-900 hover:text-blue-600 cursor-pointer">{c.name}</p>
+                              <p className="font-semibold text-slate-900 hover:text-blue-600 cursor-pointer">{c.name}</p>
                               {c.description && <p className="text-[11px] text-slate-500 line-clamp-1 mt-0.5">{c.description}</p>}
                             </div>
                           </TableCell>
-                          <TableCell>
-                            <Badge className={`text-[11px] font-semibold ${typeCfg.className}`}>
+                          <TableCell className="py-2 px-3">
+                            <Badge className={`text-[10px] font-semibold rounded-[2px] shadow-none ${typeCfg.className}`}>
                               {typeCfg.label}
                             </Badge>
                           </TableCell>
-                          <TableCell>
-                            <Badge className={`text-[11px] ${statusCfg.className}`}>
+                          <TableCell className="py-2 px-3">
+                            <Badge className={`text-[10px] font-bold rounded-[2px] shadow-none ${statusCfg.className}`}>
                               {statusCfg.label}
                             </Badge>
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="py-2 px-3 font-mono">
                             <div>
                               <p className="font-bold text-slate-900">{formatVND(c.budget)}</p>
-                              <p className="text-[11px] text-indigo-600 font-semibold">Đã chi: {formatVND(c.actualCost)}</p>
+                              <p className="text-[10px] text-indigo-600 font-semibold">Spend: {formatVND(c.actualCost)}</p>
                             </div>
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="py-2 px-3 font-mono">
                             <div>
                               <span className="font-bold text-blue-600">{c.leadsGenerated || 0} Leads</span>
                               <span className="text-slate-400 mx-1">/</span>
-                              <span className="font-bold text-emerald-600">{c.conversionsCount || 0} HĐ</span>
+                              <span className="font-bold text-emerald-600">{c.conversionsCount || 0} Won</span>
                             </div>
                           </TableCell>
-                          <TableCell className="text-xs text-slate-600">
-                            {c.startDate ? `${c.startDate} → ${c.endDate || '...'}` : 'Chưa định'}
+                          <TableCell className="py-2 px-3 text-xs text-slate-600 font-mono">
+                            {c.startDate ? `${c.startDate} → ${c.endDate || '...'}` : 'Not set'}
                           </TableCell>
-                          <TableCell className="text-xs font-semibold text-slate-700">
-                            {c.assignedTo || 'Chưa phân công'}
+                          <TableCell className="py-2 px-3 text-xs font-medium text-slate-700">
+                            {c.assignedTo || 'Unassigned'}
                           </TableCell>
-                          <TableCell className="text-right">
+                          <TableCell className="text-right pr-4 py-2 px-3">
                             <div className="flex items-center justify-end gap-1">
                               <Button
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => handleOpenEditCampaign(c)}
-                                className="h-8 w-8 p-0 text-slate-600 hover:text-blue-600"
+                                className="h-7 w-7 p-0 text-slate-600 hover:text-blue-600 rounded-[3px]"
                               >
-                                <Edit className="w-4 h-4" />
+                                <Edit className="w-3.5 h-3.5" />
                               </Button>
                               <Button
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => handleDeleteCampaign(c.id, c.name)}
-                                className="h-8 w-8 p-0 text-slate-600 hover:text-rose-600"
+                                className="h-7 w-7 p-0 text-slate-600 hover:text-rose-600 rounded-[3px]"
                               >
-                                <Trash2 className="w-4 h-4" />
+                                <Trash2 className="w-3.5 h-3.5" />
                               </Button>
                             </div>
                           </TableCell>
@@ -955,57 +925,34 @@ export const CampaignsPage: React.FC = () => {
                 </Table>
               )}
 
-              {/* Pagination */}
-              <div className="flex items-center justify-between p-4 border-t border-slate-100 text-xs text-slate-500">
-                <div>
-                  Hiển thị <span className="font-bold text-slate-800">{campaigns.length}</span> / <span className="font-bold text-slate-800">{totalElements}</span> chiến dịch
-                </div>
-                {totalPages > 1 && (
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={page === 0}
-                      onClick={() => setPage((p) => Math.max(0, p - 1))}
-                      className="h-7 text-xs"
-                    >
-                      Trang trước
-                    </Button>
-                    <span className="text-xs font-mono">
-                      {page + 1} / {totalPages}
-                    </span>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={page >= totalPages - 1}
-                      onClick={() => setPage((p) => p + 1)}
-                      className="h-7 text-xs"
-                    >
-                      Trang sau
-                    </Button>
-                  </div>
-                )}
-              </div>
+              {/* Standard Pagination */}
+              <StandardPagination
+                currentPage={page + 1}
+                totalPages={totalPages}
+                totalElements={totalElements}
+                pageSize={pageSize}
+                onPageChange={(p) => setPage(p - 1)}
+                onPageSizeChange={setPageSize}
+                itemLabel="campaigns"
+              />
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* ========================================================================= */}
-        {/* TAB 3: DRIP AUTOMATION SEQUENCES                                         */}
-        {/* ========================================================================= */}
-        <TabsContent value="automation" className="space-y-6">
-          <div className="grid grid-cols-1 gap-6">
+        {/* TAB 3: DRIP AUTOMATION SEQUENCES */}
+        <TabsContent value="automation" className="space-y-4">
+          <div className="grid grid-cols-1 gap-4">
             {dripCampaigns.map((drip) => (
-              <Card key={drip.id} className="border-slate-200 bg-white shadow-2xs overflow-hidden">
-                <div className="p-6 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2.5 flex-wrap">
-                      <h3 className="text-lg font-black text-slate-900">{drip.name}</h3>
-                      <Badge className={`text-xs font-bold ${drip.status === 'ACTIVE' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>
-                        {drip.status === 'ACTIVE' ? 'Đang hoạt động (ACTIVE)' : 'Tạm dừng (PAUSED)'}
+              <Card key={drip.id} className="border border-slate-200 bg-white shadow-none rounded-[4px] overflow-hidden">
+                <div className="p-4 border-b border-slate-100 bg-[#F7F8F9] flex flex-col md:flex-row md:items-center justify-between gap-3">
+                  <div className="space-y-0.5">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="text-sm font-bold text-slate-900">{drip.name}</h3>
+                      <Badge className={`text-[10px] font-bold rounded-[2px] shadow-none ${drip.status === 'ACTIVE' ? 'bg-[#E3FCEF] text-[#006644] border-emerald-300' : 'bg-[#FFFAE6] text-[#974F0C] border-amber-200'}`}>
+                        {drip.status === 'ACTIVE' ? 'ACTIVE' : 'PAUSED'}
                       </Badge>
-                      <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200 text-xs font-semibold">
-                        Sự kiện kích hoạt: {drip.triggerEvent}
+                      <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200 text-[10px] font-semibold rounded-[2px]">
+                        Trigger: {drip.triggerEvent}
                       </Badge>
                     </div>
                     <p className="text-xs text-slate-500">{drip.description}</p>
@@ -1016,17 +963,17 @@ export const CampaignsPage: React.FC = () => {
                       variant="outline"
                       size="sm"
                       onClick={() => handleToggleDripStatus(drip.id, drip.status)}
-                      className="h-8 text-xs font-semibold gap-1.5"
+                      className="h-8 text-xs font-semibold gap-1.5 rounded-[3px]"
                     >
                       {drip.status === 'ACTIVE' ? (
                         <>
                           <Pause className="w-3.5 h-3.5 text-amber-600" />
-                          <span>Tạm dừng</span>
+                          <span>Pause</span>
                         </>
                       ) : (
                         <>
                           <Play className="w-3.5 h-3.5 text-emerald-600" />
-                          <span>Kích hoạt</span>
+                          <span>Activate</span>
                         </>
                       )}
                     </Button>
@@ -1035,87 +982,87 @@ export const CampaignsPage: React.FC = () => {
                       variant="outline"
                       size="sm"
                       onClick={() => handleOpenStepAnalytics(drip)}
-                      className="h-8 text-xs font-semibold gap-1.5 border-blue-200 text-blue-700 bg-blue-50/50 hover:bg-blue-50"
+                      className="h-8 text-xs font-semibold gap-1.5 border-blue-200 text-blue-700 bg-blue-50/50 hover:bg-blue-50 rounded-[3px]"
                     >
                       <BarChart2 className="w-3.5 h-3.5" />
-                      <span>Phân tích Phễu Bước</span>
+                      <span>Step Funnel</span>
                     </Button>
 
                     <Button
                       size="sm"
                       onClick={() => handleOpenEnrollModal(drip.id)}
-                      className="h-8 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white gap-1.5 shadow-2xs"
+                      className="h-8 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white gap-1.5 shadow-none rounded-[3px]"
                     >
                       <UserPlus className="w-3.5 h-3.5" />
-                      <span>Ghi danh Lead</span>
+                      <span>Enroll Lead</span>
                     </Button>
                   </div>
                 </div>
 
                 {/* Drip Stats Bar */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 bg-slate-50/60 p-4 border-b border-slate-100 text-center gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-4 bg-white p-3 border-b border-slate-100 text-center gap-2 text-xs">
                   <div>
-                    <span className="text-[11px] uppercase font-bold text-slate-500">Tổng Ghi danh</span>
-                    <p className="text-lg font-black text-slate-900 mt-0.5">{drip.totalEnrolled} Leads</p>
+                    <span className="text-[10px] uppercase font-bold text-slate-500">Total Enrolled</span>
+                    <p className="text-sm font-black text-slate-900 mt-0.5 font-mono">{drip.totalEnrolled} Leads</p>
                   </div>
                   <div>
-                    <span className="text-[11px] uppercase font-bold text-slate-500">Đang Trong Chuỗi</span>
-                    <p className="text-lg font-black text-blue-600 mt-0.5">{drip.activeSubscribers} Đang chạy</p>
+                    <span className="text-[10px] uppercase font-bold text-slate-500">Active In Sequence</span>
+                    <p className="text-sm font-black text-blue-600 mt-0.5 font-mono">{drip.activeSubscribers} Running</p>
                   </div>
                   <div>
-                    <span className="text-[11px] uppercase font-bold text-slate-500">Đã Hoàn thành</span>
-                    <p className="text-lg font-black text-emerald-600 mt-0.5">{drip.completedSubscribers} Đã xong</p>
+                    <span className="text-[10px] uppercase font-bold text-slate-500">Completed</span>
+                    <p className="text-sm font-black text-emerald-600 mt-0.5 font-mono">{drip.completedSubscribers} Done</p>
                   </div>
                   <div>
-                    <span className="text-[11px] uppercase font-bold text-slate-500">Tổng Số Bước</span>
-                    <p className="text-lg font-black text-purple-600 mt-0.5">{drip.stepCount} Bước</p>
+                    <span className="text-[10px] uppercase font-bold text-slate-500">Total Sequence Steps</span>
+                    <p className="text-sm font-black text-purple-600 mt-0.5 font-mono">{drip.stepCount} Steps</p>
                   </div>
                 </div>
 
                 {/* Visual Step Timeline */}
-                <div className="p-6">
-                  <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-4 flex items-center gap-1.5">
+                <div className="p-4">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-1.5">
                     <Layers className="w-3.5 h-3.5 text-indigo-500" />
-                    <span>Sơ đồ Quy trình Nuôi dưỡng Tự động (Visual Step Workflow)</span>
+                    <span>Visual Workflow Sequence</span>
                   </p>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 relative">
                     {(drip.steps || [
-                      { stepOrder: 1, stepType: 'EMAIL', name: 'Email Chào mừng & Hồ sơ Năng lực', delayDays: 0 },
-                      { stepOrder: 2, stepType: 'SMS', name: 'SMS Mời Trải nghiệm Bản Demo', delayDays: 2 },
-                      { stepOrder: 3, stepType: 'EMAIL', name: 'Email Case Study Doanh nghiệp', delayDays: 4 },
-                      { stepOrder: 4, stepType: 'CREATE_TASK', name: 'Phân công Sales Gọi Tư vấn', delayDays: 6 },
+                      { stepOrder: 1, stepType: 'EMAIL', name: 'Welcome & Enterprise Capabilities', delayDays: 0 },
+                      { stepOrder: 2, stepType: 'SMS', name: 'SMS Architecture Demo Invite', delayDays: 2 },
+                      { stepOrder: 3, stepType: 'EMAIL', name: 'Industry Case Study', delayDays: 4 },
+                      { stepOrder: 4, stepType: 'CREATE_TASK', name: 'Sales Discovery Call Task', delayDays: 6 },
                     ]).map((step, idx) => (
                       <div
                         key={step.stepOrder}
-                        className="p-4 rounded-xl border border-slate-200 bg-gradient-to-b from-white to-slate-50/50 shadow-2xs space-y-2 relative"
+                        className="p-3 rounded-[4px] border border-slate-200 bg-slate-50/50 shadow-none space-y-1.5 relative text-xs"
                       >
                         <div className="flex items-center justify-between">
-                          <span className="w-6 h-6 rounded-full bg-indigo-600 text-white font-black text-xs flex items-center justify-center shadow-xs">
+                          <span className="w-5 h-5 rounded-full bg-indigo-600 text-white font-black text-[10px] flex items-center justify-center">
                             {step.stepOrder}
                           </span>
-                          <Badge variant="outline" className="text-[10px] font-bold text-slate-500 flex items-center gap-1 bg-white">
+                          <Badge variant="outline" className="text-[10px] font-semibold text-slate-500 flex items-center gap-1 bg-white rounded-[2px]">
                             <Clock className="w-3 h-3" />
-                            <span>{step.delayDays === 0 ? 'Kích hoạt ngay' : `Sau ${step.delayDays} ngày`}</span>
+                            <span>{step.delayDays === 0 ? 'Immediate' : `After ${step.delayDays}d`}</span>
                           </Badge>
                         </div>
 
-                        <div className="pt-1">
-                          <div className="flex items-center gap-1.5 text-xs font-bold text-indigo-700">
-                            {step.stepType === 'EMAIL' && <Mail className="w-3.5 h-3.5" />}
-                            {step.stepType === 'SMS' && <MessageSquare className="w-3.5 h-3.5" />}
-                            {step.stepType === 'CREATE_TASK' && <CheckSquare className="w-3.5 h-3.5 text-emerald-600" />}
+                        <div className="pt-0.5">
+                          <div className="flex items-center gap-1.5 text-[11px] font-bold text-indigo-700">
+                            {step.stepType === 'EMAIL' && <Mail className="w-3 h-3" />}
+                            {step.stepType === 'SMS' && <MessageSquare className="w-3 h-3" />}
+                            {step.stepType === 'CREATE_TASK' && <CheckSquare className="w-3 h-3 text-emerald-600" />}
                             <span>{step.stepType}</span>
                           </div>
-                          <p className="text-xs font-bold text-slate-800 mt-1 line-clamp-2">{step.name}</p>
+                          <p className="font-semibold text-slate-800 mt-1 line-clamp-2">{step.name}</p>
                           {step.templateSubject && (
-                            <p className="text-[11px] text-slate-500 mt-1 italic line-clamp-1">"{step.templateSubject}"</p>
+                            <p className="text-[10px] text-slate-500 mt-0.5 italic line-clamp-1">"{step.templateSubject}"</p>
                           )}
                         </div>
 
                         {idx < 3 && (
                           <div className="hidden lg:block absolute -right-2 top-1/2 -translate-y-1/2 z-10 text-slate-300">
-                            <ArrowRight className="w-4 h-4" />
+                            <ArrowRight className="w-3.5 h-3.5" />
                           </div>
                         )}
                       </div>
@@ -1127,39 +1074,37 @@ export const CampaignsPage: React.FC = () => {
           </div>
         </TabsContent>
 
-        {/* ========================================================================= */}
-        {/* TAB 4: MARKETING CONTENT TEMPLATES                                       */}
-        {/* ========================================================================= */}
-        <TabsContent value="templates" className="space-y-6">
+        {/* TAB 4: MARKETING CONTENT TEMPLATES */}
+        <TabsContent value="templates" className="space-y-4">
           {/* Filter Bar */}
-          <div className="flex flex-col sm:flex-row gap-3 bg-white p-4 rounded-xl border border-slate-200 shadow-2xs">
-            <div className="w-full sm:w-56">
+          <div className="flex flex-col sm:flex-row gap-2 bg-white p-3 rounded-[4px] border border-slate-200 shadow-none">
+            <div className="w-full sm:w-52">
               <Select value={templateChannelFilter} onValueChange={setTemplateChannelFilter}>
-                <SelectTrigger className="h-10 text-xs border-slate-200">
-                  <SelectValue placeholder="Kênh gửi" />
+                <SelectTrigger className="h-8 text-xs border-slate-200 rounded-[3px]">
+                  <SelectValue placeholder="Channel" />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ALL">Tất cả kênh (All Channels)</SelectItem>
+                <SelectContent className="rounded-[3px]">
+                  <SelectItem value="ALL">All Channels</SelectItem>
                   <SelectItem value="EMAIL">Email Marketing</SelectItem>
-                  <SelectItem value="SMS">Tin nhắn SMS Brandname</SelectItem>
+                  <SelectItem value="SMS">SMS Brandname</SelectItem>
                   <SelectItem value="ZALO_ZNS">Zalo Notification (ZNS)</SelectItem>
-                  <SelectItem value="IN_APP">Thông báo In-App</SelectItem>
+                  <SelectItem value="IN_APP">In-App Notification</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
-            <div className="w-full sm:w-56">
+            <div className="w-full sm:w-52">
               <Select value={templateCategoryFilter} onValueChange={setTemplateCategoryFilter}>
-                <SelectTrigger className="h-10 text-xs border-slate-200">
-                  <SelectValue placeholder="Danh mục mẫu" />
+                <SelectTrigger className="h-8 text-xs border-slate-200 rounded-[3px]">
+                  <SelectValue placeholder="Category" />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ALL">Tất cả danh mục</SelectItem>
-                  <SelectItem value="WELCOME">Chào mừng (Welcome)</SelectItem>
-                  <SelectItem value="NURTURE">Nuôi dưỡng (Nurture)</SelectItem>
-                  <SelectItem value="PROMOTION">Khuyến mãi (Promotion)</SelectItem>
-                  <SelectItem value="RE_ENGAGEMENT">Tái kích hoạt (Re-engage)</SelectItem>
-                  <SelectItem value="EVENT">Thư mời sự kiện (Event)</SelectItem>
+                <SelectContent className="rounded-[3px]">
+                  <SelectItem value="ALL">All Categories</SelectItem>
+                  <SelectItem value="WELCOME">Welcome</SelectItem>
+                  <SelectItem value="NURTURE">Nurture</SelectItem>
+                  <SelectItem value="PROMOTION">Promotion</SelectItem>
+                  <SelectItem value="RE_ENGAGEMENT">Re-engagement</SelectItem>
+                  <SelectItem value="EVENT">Event Invitation</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -1168,142 +1113,138 @@ export const CampaignsPage: React.FC = () => {
           {/* Templates Grid */}
           {loadingTemplates ? (
             <div className="py-12 text-center text-slate-400">
-              <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto" />
-              <p className="text-xs mt-2 font-medium">Đang tải danh sách mẫu nội dung...</p>
+              <Loader2 className="w-7 h-7 animate-spin text-blue-600 mx-auto" />
+              <p className="text-xs mt-2 font-medium">Loading templates...</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {templates.map((tpl) => (
-              <Card key={tpl.id} className="border-slate-200 bg-white shadow-2xs flex flex-col justify-between hover:border-blue-300 transition-all">
-                <CardHeader className="pb-3 border-b border-slate-100">
-                  <div className="flex items-center justify-between">
-                    <Badge className={`text-xs font-bold ${tpl.channel === 'EMAIL' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-blue-50 text-blue-700 border-blue-200'}`}>
-                      {tpl.channel === 'EMAIL' ? '✉️ EMAIL' : '📱 SMS'}
-                    </Badge>
-                    <Badge variant="outline" className="text-[10px] font-semibold text-slate-500 bg-slate-50">
-                      Dùng {tpl.usageCount} lần
-                    </Badge>
-                  </div>
-                  <CardTitle className="text-base font-bold text-slate-900 mt-2">{tpl.name}</CardTitle>
-                  {tpl.subject && (
-                    <CardDescription className="text-xs text-blue-700 font-medium line-clamp-1">
-                      Tiêu đề: {tpl.subject}
-                    </CardDescription>
-                  )}
-                </CardHeader>
-
-                <CardContent className="p-4 space-y-3 flex-1">
-                  <div className="bg-slate-50 p-3 rounded-lg border border-slate-100 text-xs text-slate-700 font-mono line-clamp-4 whitespace-pre-line">
-                    {tpl.content}
-                  </div>
-
-                  {tpl.variables && tpl.variables.length > 0 && (
-                    <div className="space-y-1">
-                      <span className="text-[10px] uppercase font-bold text-slate-400">Biến cá nhân hóa (Merge Tags):</span>
-                      <div className="flex flex-wrap gap-1">
-                        {tpl.variables.map((v) => (
-                          <span key={v} className="text-[10px] font-mono bg-purple-50 text-purple-700 border border-purple-200 px-1.5 py-0.5 rounded">
-                            {`{{${v}}}`}
-                          </span>
-                        ))}
-                      </div>
+                <Card key={tpl.id} className="border border-slate-200 bg-white shadow-none rounded-[4px] flex flex-col justify-between hover:border-blue-300 transition-all">
+                  <CardHeader className="p-3.5 pb-2 border-b border-slate-100 bg-[#F7F8F9]">
+                    <div className="flex items-center justify-between">
+                      <Badge className={`text-[10px] font-bold rounded-[2px] shadow-none ${tpl.channel === 'EMAIL' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-blue-50 text-blue-700 border-blue-200'}`}>
+                        {tpl.channel === 'EMAIL' ? 'EMAIL' : 'SMS'}
+                      </Badge>
+                      <Badge variant="outline" className="text-[9px] font-semibold text-slate-500 bg-white rounded-[2px]">
+                        Used {tpl.usageCount} times
+                      </Badge>
                     </div>
-                  )}
-                </CardContent>
+                    <CardTitle className="text-xs font-bold text-slate-900 mt-1.5">{tpl.name}</CardTitle>
+                    {tpl.subject && (
+                      <CardDescription className="text-[11px] text-blue-700 font-medium line-clamp-1">
+                        Subject: {tpl.subject}
+                      </CardDescription>
+                    )}
+                  </CardHeader>
 
-                <div className="p-4 pt-0 flex items-center justify-between border-t border-slate-100 mt-auto">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handlePreviewTemplate(tpl)}
-                    className="h-8 text-xs font-semibold gap-1 text-slate-700 border-slate-200"
-                  >
-                    <Eye className="w-3.5 h-3.5 text-blue-600" />
-                    <span>Xem trước</span>
-                  </Button>
+                  <CardContent className="p-3.5 space-y-2.5 flex-1">
+                    <div className="bg-slate-50 p-2.5 rounded-[3px] border border-slate-100 text-xs text-slate-700 font-mono line-clamp-4 whitespace-pre-line">
+                      {tpl.content}
+                    </div>
 
-                  <div className="flex items-center gap-1">
+                    {tpl.variables && tpl.variables.length > 0 && (
+                      <div className="space-y-1">
+                        <span className="text-[9px] uppercase font-bold text-slate-400">Merge Tags:</span>
+                        <div className="flex flex-wrap gap-1">
+                          {tpl.variables.map((v) => (
+                            <span key={v} className="text-[9px] font-mono bg-purple-50 text-purple-700 border border-purple-200 px-1 py-0.2 rounded-[2px]">
+                              {`{{${v}}}`}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+
+                  <div className="p-3 pt-0 flex items-center justify-between border-t border-slate-100 mt-auto">
                     <Button
-                      variant="ghost"
+                      variant="outline"
                       size="sm"
-                      onClick={() => handleOpenEditTemplate(tpl)}
-                      className="h-8 w-8 p-0 text-slate-600 hover:text-blue-600"
+                      onClick={() => handlePreviewTemplate(tpl)}
+                      className="h-7 text-xs font-medium gap-1 text-slate-700 border-slate-200 rounded-[3px]"
                     >
-                      <Edit className="w-4 h-4" />
+                      <Eye className="w-3 h-3 text-blue-600" />
+                      <span>Preview</span>
                     </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDeleteTemplate(tpl.id, tpl.name)}
-                      className="h-8 w-8 p-0 text-slate-600 hover:text-rose-600"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
+
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleOpenEditTemplate(tpl)}
+                        className="h-7 w-7 p-0 text-slate-600 hover:text-blue-600 rounded-[3px]"
+                      >
+                        <Edit className="w-3.5 h-3.5" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeleteTemplate(tpl.id, tpl.name)}
+                        className="h-7 w-7 p-0 text-slate-600 hover:text-rose-600 rounded-[3px]"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              </Card>
-            ))}
+                </Card>
+              ))}
             </div>
           )}
         </TabsContent>
       </Tabs>
 
-      {/* ========================================================================= */}
-      {/* MODALS & DIALOGS                                                          */}
-      {/* ========================================================================= */}
-
       {/* 1. Create/Edit Campaign Modal */}
       <Dialog open={isCampaignModalOpen} onOpenChange={setIsCampaignModalOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle className="text-lg font-bold text-slate-900">
-              {editingCampaign ? 'Chỉnh sửa Chiến dịch Tiếp thị' : 'Tạo Chiến dịch Tiếp thị Mới'}
+            <DialogTitle className="text-base font-bold text-slate-900">
+              {editingCampaign ? 'Edit Marketing Campaign' : 'Create New Marketing Campaign'}
             </DialogTitle>
             <DialogDescription className="text-xs text-slate-500">
-              Điền thông tin ngân sách, mục tiêu doanh thu và phân công phụ trách cho chiến dịch
+              Define campaign targets, channel parameters, budget allocations and assigned owners
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleSaveCampaign} className="space-y-4 pt-2">
+          <form onSubmit={handleSaveCampaign} className="space-y-3.5 pt-2 text-xs">
             <div className="space-y-1.5">
-              <Label className="text-xs font-bold text-slate-700">Tên chiến dịch *</Label>
+              <Label className="text-xs font-semibold text-slate-700">Campaign Title *</Label>
               <Input
-                placeholder="VD: Hội thảo Chuyển đổi số B2B 2026"
+                placeholder="e.g. Enterprise Digital Transformation Summit 2026"
                 value={campName}
                 onChange={(e) => setCampName(e.target.value)}
                 required
-                className="h-9 text-xs"
+                className="h-8 text-xs"
               />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label className="text-xs font-bold text-slate-700">Hình thức chiến dịch</Label>
+                <Label className="text-xs font-semibold text-slate-700">Campaign Channel</Label>
                 <Select value={campType} onValueChange={(val: CampaignType) => setCampType(val)}>
-                  <SelectTrigger className="h-9 text-xs">
+                  <SelectTrigger className="h-8 text-xs">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="WEBINAR">Hội thảo Trực tuyến (Webinar)</SelectItem>
-                    <SelectItem value="SOCIAL_ADS">Quảng cáo MXH (Meta / LinkedIn)</SelectItem>
+                    <SelectItem value="WEBINAR">Virtual Webinar</SelectItem>
+                    <SelectItem value="SOCIAL_ADS">Paid Social (LinkedIn / Meta)</SelectItem>
                     <SelectItem value="EMAIL">Email Marketing</SelectItem>
-                    <SelectItem value="EVENT">Triển lãm / Sự kiện Offline</SelectItem>
-                    <SelectItem value="DIRECT_MAIL">Thư ngỏ trực tiếp</SelectItem>
+                    <SelectItem value="EVENT">Trade Summit / Offline</SelectItem>
+                    <SelectItem value="DIRECT_MAIL">Direct Mail Outreach</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-xs font-bold text-slate-700">Trạng thái</Label>
+                <Label className="text-xs font-semibold text-slate-700">Operational Status</Label>
                 <Select value={campStatus} onValueChange={(val: CampaignStatus) => setCampStatus(val)}>
-                  <SelectTrigger className="h-9 text-xs">
+                  <SelectTrigger className="h-8 text-xs">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="PLANNING">Đang lên kế hoạch (Planning)</SelectItem>
-                    <SelectItem value="ACTIVE">Đang chạy (Active)</SelectItem>
-                    <SelectItem value="COMPLETED">Đã hoàn thành (Completed)</SelectItem>
-                    <SelectItem value="CANCELLED">Đã hủy bỏ (Cancelled)</SelectItem>
+                    <SelectItem value="PLANNING">Planning</SelectItem>
+                    <SelectItem value="ACTIVE">Active</SelectItem>
+                    <SelectItem value="COMPLETED">Completed</SelectItem>
+                    <SelectItem value="CANCELLED">Cancelled</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -1311,31 +1252,31 @@ export const CampaignsPage: React.FC = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label className="text-xs font-bold text-slate-700">Ngân sách dự kiến (VND)</Label>
+                <Label className="text-xs font-semibold text-slate-700">Budget Allocation (₫)</Label>
                 <Input
                   type="number"
                   placeholder="50000000"
                   value={campBudget}
                   onChange={(e) => setCampBudget(e.target.value)}
-                  className="h-9 text-xs"
+                  className="h-8 text-xs"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-xs font-bold text-slate-700">Doanh thu kỳ vọng (VND)</Label>
+                <Label className="text-xs font-semibold text-slate-700">Target Revenue Expected (₫)</Label>
                 <Input
                   type="number"
                   placeholder="500000000"
                   value={campExpectedRevenue}
                   onChange={(e) => setCampExpectedRevenue(e.target.value)}
-                  className="h-9 text-xs"
+                  className="h-8 text-xs"
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label className="text-xs font-bold text-slate-700">Ngày bắt đầu</Label>
+                <Label className="text-xs font-semibold text-slate-700">Start Date</Label>
                 <DatePicker
                   value={campStartDate}
                   onChange={(val) => setCampStartDate(val || '')}
@@ -1344,7 +1285,7 @@ export const CampaignsPage: React.FC = () => {
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-xs font-bold text-slate-700">Ngày kết thúc</Label>
+                <Label className="text-xs font-semibold text-slate-700">End Date</Label>
                 <DatePicker
                   value={campEndDate}
                   onChange={(val) => setCampEndDate(val || '')}
@@ -1354,31 +1295,31 @@ export const CampaignsPage: React.FC = () => {
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-bold text-slate-700">Người phụ trách chính</Label>
+              <Label className="text-xs font-semibold text-slate-700">Campaign Lead Owner</Label>
               <Input
-                placeholder="Trần Thị Mai"
+                placeholder="Sarah Jenkins"
                 value={campAssignedTo}
                 onChange={(e) => setCampAssignedTo(e.target.value)}
-                className="h-9 text-xs"
+                className="h-8 text-xs"
               />
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-bold text-slate-700">Mô tả mục tiêu chiến dịch</Label>
+              <Label className="text-xs font-semibold text-slate-700">Strategic Objectives &amp; Description</Label>
               <Input
-                placeholder="Ghi chú chi tiết về đối tượng khách hàng mục tiêu và KPI..."
+                placeholder="Strategic target audience notes, buyer persona and success metrics..."
                 value={campDescription}
                 onChange={(e) => setCampDescription(e.target.value)}
-                className="h-9 text-xs"
+                className="h-8 text-xs"
               />
             </div>
 
             <DialogFooter className="pt-3">
-              <Button type="button" variant="outline" size="sm" onClick={() => setIsCampaignModalOpen(false)}>
-                Hủy bỏ
+              <Button type="button" variant="outline" size="sm" onClick={() => setIsCampaignModalOpen(false)} className="text-xs">
+                Cancel
               </Button>
-              <Button type="submit" size="sm" disabled={isCampaignSubmitting} className="bg-blue-600 hover:bg-blue-700 text-white font-bold">
-                {isCampaignSubmitting ? 'Đang lưu...' : 'Lưu Chiến dịch'}
+              <Button type="submit" size="sm" disabled={isCampaignSubmitting} className="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs">
+                {isCampaignSubmitting ? 'Saving...' : 'Save Campaign'}
               </Button>
             </DialogFooter>
           </form>
@@ -1389,65 +1330,65 @@ export const CampaignsPage: React.FC = () => {
       <Dialog open={isDripModalOpen} onOpenChange={setIsDripModalOpen}>
         <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-lg font-bold text-slate-900 flex items-center gap-2">
+            <DialogTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
               <Zap className="w-5 h-5 text-indigo-600" />
-              <span>Thiết lập Kịch bản Nuôi dưỡng Tự động (Drip Automation Workflow)</span>
+              <span>Configure Drip Nurturing Automation Workflow</span>
             </DialogTitle>
             <DialogDescription className="text-xs text-slate-500">
-              Cấu hình sự kiện kích hoạt và các bước gửi email/sms tự động tuần tự
+              Configure event triggers and automated multi-step touchpoint sequences
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleSaveDripCampaign} className="space-y-4 pt-2">
+          <form onSubmit={handleSaveDripCampaign} className="space-y-3.5 pt-2 text-xs">
             <div className="space-y-1.5">
-              <Label className="text-xs font-bold text-slate-700">Tên kịch bản nuôi dưỡng *</Label>
+              <Label className="text-xs font-semibold text-slate-700">Sequence Name *</Label>
               <Input
-                placeholder="VD: Chuỗi Chào mừng & Chăm sóc Lead Đăng ký Web"
+                placeholder="e.g. Inbound Demo Lead Nurturing & Activation"
                 value={dripName}
                 onChange={(e) => setDripName(e.target.value)}
                 required
-                className="h-9 text-xs"
+                className="h-8 text-xs"
               />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label className="text-xs font-bold text-slate-700">Sự kiện kích hoạt (Trigger)</Label>
+                <Label className="text-xs font-semibold text-slate-700">Trigger Event</Label>
                 <Select value={dripTrigger} onValueChange={setDripTrigger}>
-                  <SelectTrigger className="h-9 text-xs">
+                  <SelectTrigger className="h-8 text-xs">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="LEAD_CREATED">Khách hàng Tiềm năng Mới tạo (Lead Created)</SelectItem>
-                    <SelectItem value="FORM_SUBMITTED">Khách hàng Điền Form Đăng ký (Form Submitted)</SelectItem>
-                    <SelectItem value="CONTRACT_SIGNED">Ký kết Hợp đồng Thành công (Contract Signed)</SelectItem>
-                    <SelectItem value="DEAL_LOST">Cơ hội bị Thất bại / Tạm dừng (Deal Lost)</SelectItem>
+                    <SelectItem value="LEAD_CREATED">New Lead Created</SelectItem>
+                    <SelectItem value="FORM_SUBMITTED">Website Form Submitted</SelectItem>
+                    <SelectItem value="CONTRACT_SIGNED">Contract Signed</SelectItem>
+                    <SelectItem value="DEAL_LOST">Opportunity Closed Lost</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-xs font-bold text-slate-700">Tệp đối tượng áp dụng</Label>
+                <Label className="text-xs font-semibold text-slate-700">Target Audience Scope</Label>
                 <Select value={dripAudience} onValueChange={setDripAudience}>
-                  <SelectTrigger className="h-9 text-xs">
+                  <SelectTrigger className="h-8 text-xs">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="ALL_LEADS">Tất cả Leads mới</SelectItem>
-                    <SelectItem value="EXISTING_CUSTOMERS">Khách hàng hiện hữu</SelectItem>
-                    <SelectItem value="LOST_LEADS">Lead tạm dừng quá 30 ngày</SelectItem>
+                    <SelectItem value="ALL_LEADS">All New Inbound Leads</SelectItem>
+                    <SelectItem value="EXISTING_CUSTOMERS">Existing Customer Accounts</SelectItem>
+                    <SelectItem value="LOST_LEADS">Dormant Leads (&gt;30 days)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-bold text-slate-700">Mô tả kịch bản</Label>
+              <Label className="text-xs font-semibold text-slate-700">Workflow Description</Label>
               <Input
-                placeholder="Mô tả mục đích của kịch bản chăm sóc..."
+                placeholder="Operational purpose of this nurturing flow..."
                 value={dripDescription}
                 onChange={(e) => setDripDescription(e.target.value)}
-                className="h-9 text-xs"
+                className="h-8 text-xs"
               />
             </div>
 
@@ -1456,19 +1397,19 @@ export const CampaignsPage: React.FC = () => {
               <div className="flex items-center justify-between">
                 <Label className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
                   <Layers className="w-4 h-4 text-indigo-600" />
-                  <span>Danh sách Các bước Thực thi ({dripSteps.length} bước)</span>
+                  <span>Action Steps ({dripSteps.length} steps)</span>
                 </Label>
                 <Button type="button" variant="outline" size="sm" onClick={handleAddDripStep} className="h-7 text-xs gap-1">
                   <Plus className="w-3.5 h-3.5" />
-                  <span>Thêm bước mới</span>
+                  <span>Add Action Step</span>
                 </Button>
               </div>
 
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {dripSteps.map((step, idx) => (
-                  <div key={idx} className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                  <div key={idx} className="p-3 bg-slate-50 rounded-[4px] border border-slate-200 space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-indigo-700">Bước {idx + 1}</span>
+                      <span className="text-xs font-bold text-indigo-700">Step {idx + 1}</span>
                       <Button
                         type="button"
                         variant="ghost"
@@ -1482,7 +1423,7 @@ export const CampaignsPage: React.FC = () => {
 
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                       <div className="space-y-1">
-                        <Label className="text-[11px] font-semibold text-slate-600">Loại hành động</Label>
+                        <Label className="text-[11px] font-semibold text-slate-600">Action Type</Label>
                         <Select
                           value={step.stepType}
                           onValueChange={(val: any) => {
@@ -1495,15 +1436,15 @@ export const CampaignsPage: React.FC = () => {
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="EMAIL">Gửi Email</SelectItem>
-                            <SelectItem value="SMS">Gửi SMS</SelectItem>
-                            <SelectItem value="CREATE_TASK">Tạo Task Gọi Điện</SelectItem>
+                            <SelectItem value="EMAIL">Send Email</SelectItem>
+                            <SelectItem value="SMS">Send SMS</SelectItem>
+                            <SelectItem value="CREATE_TASK">Create Phone Call Task</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
 
                       <div className="space-y-1">
-                        <Label className="text-[11px] font-semibold text-slate-600">Thời gian trễ (Số ngày sau)</Label>
+                        <Label className="text-[11px] font-semibold text-slate-600">Delay (Days After)</Label>
                         <Input
                           type="number"
                           value={step.delayDays}
@@ -1517,7 +1458,7 @@ export const CampaignsPage: React.FC = () => {
                       </div>
 
                       <div className="space-y-1">
-                        <Label className="text-[11px] font-semibold text-slate-600">Tên mô tả bước</Label>
+                        <Label className="text-[11px] font-semibold text-slate-600">Step Description</Label>
                         <Input
                           value={step.name}
                           onChange={(e) => {
@@ -1534,12 +1475,12 @@ export const CampaignsPage: React.FC = () => {
               </div>
             </div>
 
-            <DialogFooter className="pt-4">
-              <Button type="button" variant="outline" size="sm" onClick={() => setIsDripModalOpen(false)}>
-                Hủy bỏ
+            <DialogFooter className="pt-3">
+              <Button type="button" variant="outline" size="sm" onClick={() => setIsDripModalOpen(false)} className="text-xs">
+                Cancel
               </Button>
-              <Button type="submit" size="sm" disabled={isDripSubmitting} className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold">
-                {isDripSubmitting ? 'Đang lưu...' : 'Tạo Kịch bản'}
+              <Button type="submit" size="sm" disabled={isDripSubmitting} className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs">
+                {isDripSubmitting ? 'Saving...' : 'Save Sequence'}
               </Button>
             </DialogFooter>
           </form>
@@ -1550,57 +1491,57 @@ export const CampaignsPage: React.FC = () => {
       <Dialog open={isAnalyticsModalOpen} onOpenChange={setIsAnalyticsModalOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle className="text-lg font-bold text-slate-900 flex items-center gap-2">
+            <DialogTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
               <BarChart2 className="w-5 h-5 text-indigo-600" />
-              <span>Báo cáo Tỷ lệ Chuyển đổi Qua Từng Bước Kịch bản</span>
+              <span>Step Conversion &amp; Open Rate Analytics</span>
             </DialogTitle>
             <DialogDescription className="text-xs text-slate-500">
-              {selectedDripAnalytics?.campaignName || 'Chi tiết hiệu suất gửi và tương tác'}
+              {selectedDripAnalytics?.campaignName || 'Touchpoint performance breakdown'}
             </DialogDescription>
           </DialogHeader>
 
           {loadingStepAnalytics ? (
-            <div className="py-8 text-center text-xs text-slate-500">Đang tải phân tích...</div>
+            <div className="py-8 text-center text-xs text-slate-500">Loading step metrics...</div>
           ) : (
-            <div className="space-y-4 pt-2">
-              <div className="flex items-center justify-between bg-indigo-50 p-3 rounded-xl border border-indigo-100">
+            <div className="space-y-3 pt-2 text-xs">
+              <div className="flex items-center justify-between bg-indigo-50 p-3 rounded-[4px] border border-indigo-100">
                 <div>
-                  <span className="text-xs font-bold text-indigo-900">Tổng số Lead đã tham gia:</span>
-                  <span className="ml-2 font-black text-indigo-700 text-sm">{selectedDripAnalytics?.totalEnrolled}</span>
+                  <span className="font-semibold text-indigo-900">Total Enrolled Leads:</span>
+                  <span className="ml-2 font-black text-indigo-700 font-mono text-sm">{selectedDripAnalytics?.totalEnrolled}</span>
                 </div>
                 <div>
-                  <span className="text-xs font-bold text-indigo-900">Tỷ lệ hoàn thành mục tiêu:</span>
-                  <span className="ml-2 font-black text-emerald-600 text-sm">+{selectedDripAnalytics?.overallConversionRate}%</span>
+                  <span className="font-semibold text-indigo-900">Target Conversion Rate:</span>
+                  <span className="ml-2 font-black text-emerald-600 font-mono text-sm">+{selectedDripAnalytics?.overallConversionRate}%</span>
                 </div>
               </div>
 
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {selectedDripAnalytics?.stepAnalytics.map((step) => (
-                  <div key={step.stepOrder} className="p-3 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-2">
+                  <div key={step.stepOrder} className="p-3 bg-white rounded-[4px] border border-slate-200 shadow-none space-y-2">
                     <div className="flex items-center justify-between text-xs">
-                      <span className="font-bold text-slate-800 flex items-center gap-2">
-                        <span className="w-5 h-5 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px] font-bold">
+                      <span className="font-semibold text-slate-800 flex items-center gap-2">
+                        <span className="w-4 h-4 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px] font-bold">
                           {step.stepOrder}
                         </span>
                         <span>{step.stepName}</span>
                       </span>
-                      <Badge className="bg-blue-50 text-blue-700 text-[10px] font-bold">
-                        Tỷ lệ mở: {step.openRatePercent}%
+                      <Badge className="bg-blue-50 text-blue-700 text-[10px] font-bold rounded-[2px] shadow-none">
+                        Open Rate: {step.openRatePercent}%
                       </Badge>
                     </div>
 
-                    <div className="grid grid-cols-3 text-center text-[11px] bg-slate-50 p-2 rounded-lg gap-2">
+                    <div className="grid grid-cols-3 text-center text-[11px] bg-slate-50 p-2 rounded-[3px] gap-2 font-mono">
                       <div>
-                        <span className="text-slate-400">Đã gửi</span>
-                        <p className="font-black text-slate-700 mt-0.5">{step.sentCount}</p>
+                        <span className="text-slate-400">Dispatched</span>
+                        <p className="font-bold text-slate-700 mt-0.5">{step.sentCount}</p>
                       </div>
                       <div>
-                        <span className="text-slate-400">Đã mở xem</span>
-                        <p className="font-black text-blue-600 mt-0.5">{step.openCount}</p>
+                        <span className="text-slate-400">Opened</span>
+                        <p className="font-bold text-blue-600 mt-0.5">{step.openCount}</p>
                       </div>
                       <div>
-                        <span className="text-slate-400">Tương tác nhấp / Chuyển đổi</span>
-                        <p className="font-black text-emerald-600 mt-0.5">{step.clickCount} ({step.conversionRatePercent}%)</p>
+                        <span className="text-slate-400">Clicked / Converted</span>
+                        <p className="font-bold text-emerald-600 mt-0.5">{step.clickCount} ({step.conversionRatePercent}%)</p>
                       </div>
                     </div>
                   </div>
@@ -1610,8 +1551,8 @@ export const CampaignsPage: React.FC = () => {
           )}
 
           <DialogFooter className="pt-3">
-            <Button size="sm" onClick={() => setIsAnalyticsModalOpen(false)}>
-              Đóng
+            <Button size="sm" onClick={() => setIsAnalyticsModalOpen(false)} className="text-xs">
+              Close
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1621,54 +1562,54 @@ export const CampaignsPage: React.FC = () => {
       <Dialog open={isEnrollModalOpen} onOpenChange={setIsEnrollModalOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-lg font-bold text-slate-900 flex items-center gap-2">
+            <DialogTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
               <UserPlus className="w-5 h-5 text-indigo-600" />
-              <span>Ghi danh Lead vào Chuỗi Nuôi dưỡng</span>
+              <span>Enroll Lead into Sequence</span>
             </DialogTitle>
             <DialogDescription className="text-xs text-slate-500">
-              Kích hoạt quy trình gửi thông điệp tự động cho khách hàng tiềm năng
+              Initiate automated messaging triggers for target prospective contact
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleEnrollSubmit} className="space-y-3 pt-2">
+          <form onSubmit={handleEnrollSubmit} className="space-y-3 pt-2 text-xs">
             <div className="space-y-1">
-              <Label className="text-xs font-bold text-slate-700">Họ và tên khách hàng *</Label>
+              <Label className="text-xs font-semibold text-slate-700">Contact Full Name *</Label>
               <Input
-                placeholder="Vũ Văn Minh"
+                placeholder="Alex Morgan"
                 value={enrollName}
                 onChange={(e) => setEnrollName(e.target.value)}
                 required
-                className="h-9 text-xs"
+                className="h-8 text-xs"
               />
             </div>
 
             <div className="space-y-1">
-              <Label className="text-xs font-bold text-slate-700">Địa chỉ Email</Label>
+              <Label className="text-xs font-semibold text-slate-700">Email Address</Label>
               <Input
                 type="email"
-                placeholder="minh.vu@techcorp.vn"
+                placeholder="alex.morgan@apextechnologies.com"
                 value={enrollEmail}
                 onChange={(e) => setEnrollEmail(e.target.value)}
-                className="h-9 text-xs"
+                className="h-8 text-xs"
               />
             </div>
 
             <div className="space-y-1">
-              <Label className="text-xs font-bold text-slate-700">Số điện thoại nhận SMS</Label>
+              <Label className="text-xs font-semibold text-slate-700">SMS Phone Number</Label>
               <Input
-                placeholder="0912 345 678"
+                placeholder="+1 555 0192"
                 value={enrollPhone}
                 onChange={(e) => setEnrollPhone(e.target.value)}
-                className="h-9 text-xs"
+                className="h-8 text-xs"
               />
             </div>
 
             <DialogFooter className="pt-3">
-              <Button type="button" variant="outline" size="sm" onClick={() => setIsEnrollModalOpen(false)}>
-                Hủy bỏ
+              <Button type="button" variant="outline" size="sm" onClick={() => setIsEnrollModalOpen(false)} className="text-xs">
+                Cancel
               </Button>
-              <Button type="submit" size="sm" className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold">
-                Kích hoạt Ngay
+              <Button type="submit" size="sm" className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs">
+                Enroll Now
               </Button>
             </DialogFooter>
           </form>
@@ -1679,54 +1620,54 @@ export const CampaignsPage: React.FC = () => {
       <Dialog open={isTemplateModalOpen} onOpenChange={setIsTemplateModalOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle className="text-lg font-bold text-slate-900">
-              {editingTemplate ? 'Chỉnh sửa Mẫu Tiếp thị' : 'Tạo Mẫu Tiếp thị Mới'}
+            <DialogTitle className="text-base font-bold text-slate-900">
+              {editingTemplate ? 'Edit Marketing Template' : 'Create New Marketing Template'}
             </DialogTitle>
             <DialogDescription className="text-xs text-slate-500">
-              Soạn thảo nội dung Email/SMS có gắn biến cá nhân hóa (Merge Tags)
+              Compose Email or SMS message templates with dynamic merge tags
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleSaveTemplate} className="space-y-3 pt-2">
+          <form onSubmit={handleSaveTemplate} className="space-y-3 pt-2 text-xs">
             <div className="space-y-1">
-              <Label className="text-xs font-bold text-slate-700">Tên mẫu nội dung *</Label>
+              <Label className="text-xs font-semibold text-slate-700">Template Title *</Label>
               <Input
-                placeholder="VD: Email Chào mừng Sau Sự kiện Demo"
+                placeholder="e.g. Welcome Email After Product Demo"
                 value={templateName}
                 onChange={(e) => setTemplateName(e.target.value)}
                 required
-                className="h-9 text-xs"
+                className="h-8 text-xs"
               />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1">
-                <Label className="text-xs font-bold text-slate-700">Kênh gửi</Label>
+                <Label className="text-xs font-semibold text-slate-700">Channel</Label>
                 <Select value={templateChannel} onValueChange={(val: any) => setTemplateChannel(val)}>
-                  <SelectTrigger className="h-9 text-xs">
+                  <SelectTrigger className="h-8 text-xs">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="EMAIL">Email Marketing</SelectItem>
-                    <SelectItem value="SMS">Tin nhắn SMS Brandname</SelectItem>
+                    <SelectItem value="SMS">SMS Brandname</SelectItem>
                     <SelectItem value="ZALO_ZNS">Zalo Notification (ZNS)</SelectItem>
-                    <SelectItem value="IN_APP">Thông báo In-App</SelectItem>
+                    <SelectItem value="IN_APP">In-App Notification</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-1">
-                <Label className="text-xs font-bold text-slate-700">Phân loại</Label>
+                <Label className="text-xs font-semibold text-slate-700">Category</Label>
                 <Select value={templateCategory} onValueChange={(val: any) => setTemplateCategory(val)}>
-                  <SelectTrigger className="h-9 text-xs">
+                  <SelectTrigger className="h-8 text-xs">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="WELCOME">Chào mừng (Welcome)</SelectItem>
-                    <SelectItem value="NURTURE">Nuôi dưỡng (Nurture)</SelectItem>
-                    <SelectItem value="PROMOTION">Khuyến mãi (Promotion)</SelectItem>
-                    <SelectItem value="RE_ENGAGEMENT">Tái kích hoạt (Re-engage)</SelectItem>
-                    <SelectItem value="EVENT">Thư mời sự kiện (Event)</SelectItem>
+                    <SelectItem value="WELCOME">Welcome</SelectItem>
+                    <SelectItem value="NURTURE">Nurture</SelectItem>
+                    <SelectItem value="PROMOTION">Promotion</SelectItem>
+                    <SelectItem value="RE_ENGAGEMENT">Re-engagement</SelectItem>
+                    <SelectItem value="EVENT">Event Invitation</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -1734,21 +1675,21 @@ export const CampaignsPage: React.FC = () => {
 
             {templateChannel === 'EMAIL' && (
               <div className="space-y-1">
-                <Label className="text-xs font-bold text-slate-700">Tiêu đề Email (Subject)</Label>
+                <Label className="text-xs font-semibold text-slate-700">Email Subject</Label>
                 <Input
-                  placeholder="VD: Chào mừng {{lead.name}} đến với CRM"
+                  placeholder="e.g. Welcome {{lead.name}} to our platform"
                   value={templateSubject}
                   onChange={(e) => setTemplateSubject(e.target.value)}
-                  className="h-9 text-xs"
+                  className="h-8 text-xs"
                 />
               </div>
             )}
 
             <div className="space-y-1">
               <div className="flex items-center justify-between">
-                <Label className="text-xs font-bold text-slate-700">Nội dung mẫu *</Label>
+                <Label className="text-xs font-semibold text-slate-700">Template Body *</Label>
                 <div className="flex items-center gap-1">
-                  <span className="text-[10px] text-slate-400">Chèn nhanh:</span>
+                  <span className="text-[10px] text-slate-400">Insert tag:</span>
                   {['lead.name', 'lead.company', 'consultant.name', 'promo.code'].map((tag) => (
                     <button
                       key={tag}
@@ -1765,18 +1706,18 @@ export const CampaignsPage: React.FC = () => {
                 rows={6}
                 value={templateContent}
                 onChange={(e) => setTemplateContent(e.target.value)}
-                placeholder="Nhập nội dung mẫu tiếp thị tại đây..."
+                placeholder="Enter template body text..."
                 required
-                className="w-full rounded-md border border-slate-200 bg-white p-3 text-xs font-mono focus:outline-hidden focus:ring-2 focus:ring-blue-500"
+                className="w-full rounded-[3px] border border-slate-200 bg-white p-2.5 text-xs font-mono focus:outline-hidden focus:ring-2 focus:ring-blue-500"
               />
             </div>
 
             <DialogFooter className="pt-3">
-              <Button type="button" variant="outline" size="sm" onClick={() => setIsTemplateModalOpen(false)}>
-                Hủy bỏ
+              <Button type="button" variant="outline" size="sm" onClick={() => setIsTemplateModalOpen(false)} className="text-xs">
+                Cancel
               </Button>
-              <Button type="submit" size="sm" disabled={isTemplateSubmitting} className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold">
-                {isTemplateSubmitting ? 'Đang lưu...' : 'Lưu Mẫu Tiếp thị'}
+              <Button type="submit" size="sm" disabled={isTemplateSubmitting} className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs">
+                {isTemplateSubmitting ? 'Saving...' : 'Save Template'}
               </Button>
             </DialogFooter>
           </form>
@@ -1787,19 +1728,19 @@ export const CampaignsPage: React.FC = () => {
       <Dialog open={isPreviewModalOpen} onOpenChange={setIsPreviewModalOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle className="text-lg font-bold text-slate-900 flex items-center gap-2">
+            <DialogTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
               <Eye className="w-5 h-5 text-blue-600" />
-              <span>Xem Trước Mẫu Nội dung Tiếp thị (Live Preview)</span>
+              <span>Live Template Preview</span>
             </DialogTitle>
             <DialogDescription className="text-xs text-slate-500">
-              Kiểm tra khả năng thay thế biến merge tags với dữ liệu khách hàng thực tế
+              Verify merge tag variable resolution with sample customer records
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 pt-2">
-            <div className="grid grid-cols-2 gap-2 bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-xs">
+          <div className="space-y-3 pt-2 text-xs">
+            <div className="grid grid-cols-2 gap-2 bg-slate-50 p-2.5 rounded-[3px] border border-slate-200">
               <div>
-                <span className="text-[10px] font-bold uppercase text-slate-500">Tên khách hàng mẫu:</span>
+                <span className="text-[10px] font-bold uppercase text-slate-500">Sample Contact:</span>
                 <Input
                   value={previewSampleName}
                   onChange={(e) => setPreviewSampleName(e.target.value)}
@@ -1807,7 +1748,7 @@ export const CampaignsPage: React.FC = () => {
                 />
               </div>
               <div>
-                <span className="text-[10px] font-bold uppercase text-slate-500">Công ty mẫu:</span>
+                <span className="text-[10px] font-bold uppercase text-slate-500">Sample Company:</span>
                 <Input
                   value={previewSampleCompany}
                   onChange={(e) => setPreviewSampleCompany(e.target.value)}
@@ -1818,24 +1759,24 @@ export const CampaignsPage: React.FC = () => {
 
             {(previewRendered?.renderedSubject || previewRendered?.subject) && (
               <div className="space-y-1">
-                <span className="text-xs font-bold text-slate-600">Tiêu đề gửi đi:</span>
-                <div className="p-2.5 bg-blue-50 rounded-lg border border-blue-200 text-xs font-bold text-blue-900">
+                <span className="text-xs font-semibold text-slate-600">Dispatched Subject:</span>
+                <div className="p-2.5 bg-blue-50 rounded-[3px] border border-blue-200 text-xs font-bold text-blue-900">
                   {previewRendered?.renderedSubject || previewRendered?.subject}
                 </div>
               </div>
             )}
 
             <div className="space-y-1">
-              <span className="text-xs font-bold text-slate-600">Nội dung hiển thị cho người nhận:</span>
-              <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-2xs text-xs text-slate-800 whitespace-pre-line leading-relaxed font-sans">
+              <span className="text-xs font-semibold text-slate-600">Rendered Content Body:</span>
+              <div className="p-3 bg-white rounded-[3px] border border-slate-200 shadow-none text-xs text-slate-800 whitespace-pre-line leading-relaxed font-sans">
                 {previewRendered?.renderedContent || previewRendered?.content}
               </div>
             </div>
           </div>
 
           <DialogFooter className="pt-3">
-            <Button size="sm" onClick={() => setIsPreviewModalOpen(false)}>
-              Đóng xem trước
+            <Button size="sm" onClick={() => setIsPreviewModalOpen(false)} className="text-xs">
+              Close Preview
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1843,3 +1784,5 @@ export const CampaignsPage: React.FC = () => {
     </div>
   );
 };
+
+export default CampaignsPage;

@@ -1,76 +1,58 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
-  <rect width="1200" height="630" fill="#F5F8FC"/>
+  <rect width="1200" height="630" fill="#F6F9FC"/>
   
   <!-- Left Side: Brand & Headline -->
-  <g transform="translate(80, 80)">
+  <g transform="translate(100, 120)">
     <!-- Logo Badge -->
-    <rect width="56" height="56" rx="12" fill="#07182B"/>
-    <path d="M13 15h8l7 19 7-19h8L32 42H24L13 15Z" fill="#FFFFFF"/>
-    <path d="M42 11h6v6h-6z" fill="#085AC0"/>
+    <rect width="64" height="64" rx="14" fill="#07182B"/>
+    <text x="32" y="44" font-family="Plus Jakarta Sans, sans-serif" font-size="34" font-weight="900" fill="#FFFFFF" text-anchor="middle">V</text>
     
-    <text x="72" y="38" font-family="Plus Jakarta Sans, sans-serif" font-size="28" font-weight="bold" fill="#07182B">VUM CRM</text>
+    <text x="84" y="44" font-family="Plus Jakarta Sans, sans-serif" font-size="32" font-weight="800" fill="#07182B">VUM CRM</text>
     
     <!-- Headline -->
     <text x="0" y="160" font-family="Plus Jakarta Sans, sans-serif" font-size="52" font-weight="800" fill="#07182B" letter-spacing="-1.5">
-      <tspan x="0" dy="0">Kiểm soát toàn bộ</tspan>
-      <tspan x="0" dy="64">quy trình bán hàng</tspan>
+      <tspan x="0" dy="0">Một hệ thống cho toàn bộ</tspan>
+      <tspan x="0" dy="64">chu kỳ bán hàng B2B</tspan>
     </text>
     
-    <!-- Subtitle -->
-    <text x="0" y="320" font-family="Be Vietnam Pro, sans-serif" font-size="22" font-weight="500" fill="#52647A">
-      Khách hàng 360° · Pipeline · Báo giá · Hợp đồng · Quản trị dữ liệu
+    <!-- Subtitle / Lifecycle stages -->
+    <text x="0" y="320" font-family="Be Vietnam Pro, sans-serif" font-size="22" font-weight="600" fill="#085AC0">
+      Lead · Khách hàng · Cơ hội · Báo giá · Phê duyệt · Hợp đồng
     </text>
-
-    <!-- Badges -->
-    <g transform="translate(0, 390)">
-      <rect width="140" height="38" rx="6" fill="#EDE9FE"/>
-      <text x="14" y="24" font-family="Be Vietnam Pro, sans-serif" font-size="14" font-weight="700" fill="#6B21A8">TIỀM NĂNG</text>
-      
-      <rect x="156" width="140" height="38" rx="6" fill="#DBEAFE"/>
-      <text x="170" y="24" font-family="Be Vietnam Pro, sans-serif" font-size="14" font-weight="700" fill="#1D4ED8">ĐẠT CHUẨN</text>
-      
-      <rect x="312" width="160" height="38" rx="6" fill="#D1FAE5"/>
-      <text x="326" y="24" font-family="Be Vietnam Pro, sans-serif" font-size="14" font-weight="700" fill="#047857">KHÁCH HÀNG</text>
-    </g>
   </g>
   
-  <!-- Right Side: Clean Modern Card Mockup -->
-  <g transform="translate(680, 80)">
-    <rect width="440" height="470" rx="16" fill="#FFFFFF" stroke="#DCE5F0" stroke-width="2"/>
+  <!-- Right Side: Abstract Minimal Product Silhouette -->
+  <g transform="translate(740, 110)">
+    <rect width="380" height="420" rx="20" fill="#FFFFFF" stroke="#DCE5F0" stroke-width="2"/>
+    <line x1="0" y1="56" x2="380" y2="56" stroke="#DCE5F0" stroke-width="1.5"/>
+    <circle cx="32" cy="28" r="5" fill="#CBD5E1"/>
+    <circle cx="48" cy="28" r="5" fill="#CBD5E1"/>
+    <circle cx="64" cy="28" r="5" fill="#CBD5E1"/>
     
-    <!-- Header of Mockup -->
-    <rect width="440" height="56" rx="16" fill="#F8FAFC"/>
-    <circle cx="30" cy="28" r="6" fill="#EF4444"/>
-    <circle cx="48" cy="28" r="6" fill="#F59E0B"/>
-    <circle cx="66" cy="28" r="6" fill="#10B981"/>
-    <text x="96" y="34" font-family="Plus Jakarta Sans, sans-serif" font-size="14" font-weight="600" fill="#07182B">Tổng quan Cơ hội Doanh thu</text>
-    
-    <!-- Kanban Card 1 -->
-    <g transform="translate(24, 80)">
-      <rect width="392" height="100" rx="10" fill="#F8FAFC" stroke="#E2E8F0"/>
-      <text x="16" y="32" font-family="Plus Jakarta Sans, sans-serif" font-size="16" font-weight="700" fill="#07182B">Gói CRM Enterprise 200 users</text>
-      <text x="16" y="56" font-family="Be Vietnam Pro, sans-serif" font-size="13" fill="#64748B">Tập đoàn Vinahome</text>
-      <text x="16" y="82" font-family="Plus Jakarta Sans, sans-serif" font-size="15" font-weight="700" fill="#085AC0">750.000.000 đ</text>
-      <rect x="290" y="64" width="86" height="24" rx="4" fill="#DBEAFE"/>
-      <text x="300" y="80" font-family="Be Vietnam Pro, sans-serif" font-size="11" font-weight="700" fill="#1D4ED8">ĐÀM PHÁN</text>
+    <!-- Abstract workflow rows -->
+    <g transform="translate(28, 86)">
+      <rect width="324" height="52" rx="10" fill="#F6F9FC" stroke="#E2E8F0"/>
+      <rect x="16" y="16" width="120" height="10" rx="3" fill="#085AC0"/>
+      <rect x="16" y="32" width="80" height="6" rx="2" fill="#94A3B8"/>
+      <rect x="240" y="16" width="68" height="20" rx="6" fill="#EAF2FC"/>
     </g>
-
-    <!-- Kanban Card 2 -->
-    <g transform="translate(24, 196)">
-      <rect width="392" height="100" rx="10" fill="#F8FAFC" stroke="#E2E8F0"/>
-      <text x="16" y="32" font-family="Plus Jakarta Sans, sans-serif" font-size="16" font-weight="700" fill="#07182B">Quản lý Hợp đồng &amp; Báo giá số</text>
-      <text x="16" y="56" font-family="Be Vietnam Pro, sans-serif" font-size="13" fill="#64748B">An Phát Logistics</text>
-      <text x="16" y="82" font-family="Plus Jakarta Sans, sans-serif" font-size="15" font-weight="700" fill="#085AC0">1.850.000.000 đ</text>
-      <rect x="270" y="64" width="106" height="24" rx="4" fill="#D1FAE5"/>
-      <text x="280" y="80" font-family="Be Vietnam Pro, sans-serif" font-size="11" font-weight="700" fill="#047857">HOÀN TẤT KÝ</text>
+    <g transform="translate(28, 154)">
+      <rect width="324" height="52" rx="10" fill="#F6F9FC" stroke="#E2E8F0"/>
+      <rect x="16" y="16" width="140" height="10" rx="3" fill="#07182B"/>
+      <rect x="16" y="32" width="90" height="6" rx="2" fill="#94A3B8"/>
+      <rect x="240" y="16" width="68" height="20" rx="6" fill="#EAF2FC"/>
     </g>
-
-    <!-- Metrics Strip -->
-    <g transform="translate(24, 316)">
-      <rect width="392" height="120" rx="10" fill="#07182B"/>
-      <text x="20" y="36" font-family="Be Vietnam Pro, sans-serif" font-size="13" fill="#94A3B8">Tổng Pipeline Đang Quản Lý</text>
-      <text x="20" y="74" font-family="Plus Jakarta Sans, sans-serif" font-size="28" font-weight="800" fill="#FFFFFF">4.220.000.000 đ</text>
-      <text x="20" y="102" font-family="Be Vietnam Pro, sans-serif" font-size="12" fill="#34D399">↑ 100% dữ liệu thống nhất theo thời gian thực</text>
+    <g transform="translate(28, 222)">
+      <rect width="324" height="52" rx="10" fill="#F6F9FC" stroke="#E2E8F0"/>
+      <rect x="16" y="16" width="110" height="10" rx="3" fill="#07182B"/>
+      <rect x="16" y="32" width="70" height="6" rx="2" fill="#94A3B8"/>
+      <rect x="240" y="16" width="68" height="20" rx="6" fill="#EAF2FC"/>
+    </g>
+    <g transform="translate(28, 290)">
+      <rect width="324" height="96" rx="10" fill="#07182B"/>
+      <rect x="20" y="24" width="100" height="8" rx="2" fill="#64748B"/>
+      <rect x="20" y="44" width="180" height="16" rx="3" fill="#FFFFFF"/>
+      <rect x="20" y="70" width="130" height="8" rx="2" fill="#38BDF8"/>
     </g>
   </g>
 </svg>

@@ -15,6 +15,7 @@ import {
   Dialog,
   DialogContent,
 } from '@/components/ui/dialog';
+import { ActionTooltip } from '@/components/ui/action-tooltip';
 import {
   Table,
   TableBody,
@@ -32,20 +33,16 @@ import {
 } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { DocumentPreviewModal } from '@/features/sales/templates/DocumentPreviewModal';
+import { StandardPageHeader } from '@/components/common/StandardPageHeader';
+import { StandardFilterBar, ViewTabItem } from '@/components/common/StandardFilterBar';
+import { StandardPagination } from '@/components/common/StandardPagination';
 import {
   FileText,
-  Search,
   Plus,
   RefreshCw,
   Edit,
   Trash2,
   Loader2,
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
-  X,
-  RotateCcw,
   DollarSign,
   Building2,
   CheckCircle2,
@@ -78,7 +75,7 @@ export const QuotesPage: React.FC = () => {
   const [discountPercent, setDiscountPercent] = useState('0');
   const [status, setStatus] = useState<QuoteStatus>('SENT');
   const [validUntil, setValidUntil] = useState('');
-  const [assignedTo, setAssignedTo] = useState('Phạm Tuấn Vũ');
+  const [assignedTo, setAssignedTo] = useState('Alex Nguyen');
 
   const fetchQuotes = useCallback(async () => {
     setLoading(true);
@@ -93,7 +90,7 @@ export const QuotesPage: React.FC = () => {
       setTotalPages(res.totalPages);
       setTotalElements(res.totalElements);
     } catch {
-      toast.error('Không thể tải danh sách báo giá');
+      toast.error('Unable to load quotations list from server');
     } finally {
       setLoading(false);
     }
@@ -117,8 +114,9 @@ export const QuotesPage: React.FC = () => {
     setContactName('');
     setTotalAmount('');
     setDiscountPercent('0');
-    setStatus('SENT');
+    setStatus('DRAFT');
     setValidUntil(new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0]);
+    setAssignedTo('Alex Nguyen');
     setIsModalOpen(true);
   };
 
@@ -127,23 +125,23 @@ export const QuotesPage: React.FC = () => {
     setTitle(quote.title || '');
     setAccountName(quote.accountName || '');
     setContactName(quote.contactName || '');
-    setTotalAmount((quote.totalAmount || 0).toString());
-    setDiscountPercent('0');
+    setTotalAmount(quote.totalAmount ? quote.totalAmount.toString() : '');
+    setDiscountPercent(quote.discountAmount && quote.totalAmount ? Math.round((quote.discountAmount / quote.totalAmount) * 100).toString() : '0');
     setStatus(quote.status);
-    setValidUntil(quote.validUntil || '');
+    setValidUntil(quote.validUntil ? quote.validUntil.split('T')[0] : '');
     setAssignedTo(quote.assignedTo || '');
     setIsModalOpen(true);
   };
 
   const handleSaveQuote = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !totalAmount.trim()) {
-      toast.error('Vui lòng nhập tiêu đề báo giá và tổng số tiền');
+    if (!title.trim() || !totalAmount) {
+      toast.error('Please enter Quotation Title and Total Amount');
       return;
     }
 
-    const tAmount = parseFloat(totalAmount);
     setIsSubmitting(true);
+    const tAmount = parseFloat(totalAmount);
     try {
       if (editingQuote) {
         await quoteApi.update(editingQuote.id, {
@@ -156,37 +154,37 @@ export const QuotesPage: React.FC = () => {
           validUntil,
           assignedTo,
         });
-        toast.success('Đã cập nhật báo giá thành công!');
+        toast.success('Quotation updated successfully!');
       } else {
         await quoteApi.create({
           title,
           accountId: 'acc-custom',
-          accountName: accountName || 'Khách hàng',
-          contactName: contactName || 'Người liên hệ',
+          accountName: accountName || 'Commercial Client',
+          contactName: contactName || 'Authorized Contact',
           totalAmount: tAmount,
           status,
           validUntil: validUntil || new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0],
-          assignedTo: assignedTo || 'Phạm Tuấn Vũ',
+          assignedTo: assignedTo || 'Alex Nguyen',
         });
-        toast.success('Đã thêm báo giá mới thành công!');
+        toast.success('New quotation created successfully!');
       }
       setIsModalOpen(false);
       fetchQuotes();
     } catch {
-      toast.error('Không thể lưu thông tin báo giá');
+      toast.error('Unable to save quotation details');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleDelete = async (id: string, name: string) => {
-    if (!window.confirm(`Bạn có chắc chắn muốn xóa báo giá "${name}"?`)) return;
+    if (!window.confirm(`Are you sure you want to delete quotation "${name}"?`)) return;
     try {
       await quoteApi.delete(id);
-      toast.success(`Đã xóa báo giá "${name}"`);
+      toast.success(`Deleted quotation "${name}"`);
       fetchQuotes();
     } catch {
-      toast.error('Không thể xóa báo giá');
+      toast.error('Unable to delete quotation');
     }
   };
 
@@ -200,158 +198,149 @@ export const QuotesPage: React.FC = () => {
     (searchQuery ? 1 : 0) +
     (selectedStatus !== 'ALL' ? 1 : 0);
 
+  // View Tabs Config
+  const viewTabs: ViewTabItem[] = [
+    { id: 'ALL', label: 'All', count: totalElements },
+    { id: 'SENT', label: 'Sent to Client', count: sentCount, icon: Send, dotColor: 'bg-purple-500' },
+    { id: 'ACCEPTED', label: 'Accepted', count: acceptedList.length, icon: CheckCircle2, dotColor: 'bg-emerald-500' },
+  ];
+
+  const currentActiveTab = selectedStatus === 'SENT' ? 'SENT' : selectedStatus === 'ACCEPTED' ? 'ACCEPTED' : 'ALL';
+
+  const handleTabChange = (tabId: string) => {
+    if (tabId === 'SENT') {
+      setSelectedStatus('SENT');
+    } else if (tabId === 'ACCEPTED') {
+      setSelectedStatus('ACCEPTED');
+    } else {
+      setSelectedStatus('ALL');
+    }
+    setPage(0);
+  };
+
   return (
-    <div className="space-y-5 pb-12 font-sans w-full">
-      {/* ── Page Header ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-bold text-slate-900 flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shadow-xs shrink-0">
-              <FileText className="w-4.5 h-4.5 text-white" />
-            </div>
-            Quản lý Báo giá (Sales Quotes)
-          </h1>
-          <p className="text-xs text-slate-500 mt-1 ml-10.5">
-            Soạn thảo bảng chào giá, áp dụng chiết khấu &amp; theo dõi tiến độ phê duyệt hợp đồng
-          </p>
-        </div>
+    <div className="space-y-4 pb-12 font-sans w-full">
+      {/* Standard Page Header */}
+      <StandardPageHeader
+        title="Sales Quotations (CPQ)"
+        subtitle="Configure commercial proposals, pricing terms, volume discounts &amp; multi-tier approvals"
+        icon={FileText}
+        badgeCount={totalElements}
+        badgeLabel="quotes"
+        actions={
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={fetchQuotes}
+              disabled={loading}
+              className="text-xs font-medium text-slate-700 bg-white border-slate-200 hover:bg-slate-50 gap-1.5 h-8 rounded-[3px]"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+              <span>Refresh</span>
+            </Button>
 
-        <div className="flex items-center gap-2 shrink-0">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={fetchQuotes}
-            disabled={loading}
-            className="text-xs gap-1.5 border-slate-200 h-8"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-            <span>Làm mới</span>
-          </Button>
+            <Button
+              size="sm"
+              onClick={handleOpenCreate}
+              className="text-xs font-semibold bg-[#0C66E4] hover:bg-[#0052CC] text-white gap-1.5 shadow-none h-8 rounded-[3px]"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>New Quotation</span>
+            </Button>
+          </>
+        }
+      />
 
-          <Button
-            size="sm"
-            onClick={handleOpenCreate}
-            className="text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white gap-1.5 shadow-xs h-8"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Tạo Báo Giá Mới</span>
-          </Button>
-        </div>
-      </div>
-
-      {/* ── Quick Stat Cards ── */}
+      {/* KPI Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="bg-white rounded-xl border border-slate-200 px-4 py-3 flex items-center gap-3 shadow-xs hover:shadow-sm transition-shadow">
+        <div className="bg-white rounded-[4px] border border-slate-200 px-4 py-3 flex items-center gap-3 shadow-none">
           <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
             <FileText className="w-4.5 h-4.5 text-blue-600" />
           </div>
           <div>
-            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Tổng Báo giá</div>
+            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Total Quotes</div>
             <div className="text-lg font-black text-slate-900 leading-tight">{totalElements}</div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-indigo-100 px-4 py-3 flex items-center gap-3 shadow-xs hover:shadow-sm transition-shadow">
+        <div className="bg-white rounded-[4px] border border-indigo-100 px-4 py-3 flex items-center gap-3 shadow-none">
           <div className="w-9 h-9 rounded-lg bg-indigo-50 flex items-center justify-center shrink-0">
             <DollarSign className="w-4.5 h-4.5 text-indigo-600" />
           </div>
           <div>
-            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Tổng Giá trị Chào</div>
+            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Gross Quoted Value</div>
             <div className="text-lg font-black text-indigo-700 leading-tight">
-              {(totalQuoteValue / 1_000_000).toFixed(0)} Tr ₫
+              {(totalQuoteValue / 1_000_000).toFixed(0)}M VND
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-emerald-100 px-4 py-3 flex items-center gap-3 shadow-xs hover:shadow-sm transition-shadow">
+        <div className="bg-white rounded-[4px] border border-emerald-100 px-4 py-3 flex items-center gap-3 shadow-none">
           <div className="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center shrink-0">
             <CheckCircle2 className="w-4.5 h-4.5 text-emerald-600" />
           </div>
           <div>
-            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Đã chấp thuận</div>
+            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Accepted Value</div>
             <div className="text-lg font-black text-emerald-700 leading-tight">
-              {(acceptedValue / 1_000_000).toFixed(0)} Tr ₫
+              {(acceptedValue / 1_000_000).toFixed(0)}M VND
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-purple-100 px-4 py-3 flex items-center gap-3 shadow-xs hover:shadow-sm transition-shadow">
+        <div className="bg-white rounded-[4px] border border-purple-100 px-4 py-3 flex items-center gap-3 shadow-none">
           <div className="w-9 h-9 rounded-lg bg-purple-50 flex items-center justify-center shrink-0">
             <Send className="w-4.5 h-4.5 text-purple-600" />
           </div>
           <div>
-            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Đã gửi khách hàng</div>
+            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Sent to Clients</div>
             <div className="text-lg font-black text-purple-700 leading-tight">{sentCount}</div>
           </div>
         </div>
       </div>
 
-      {/* ── Search & Filter Toolbar ── */}
-      <Card className="p-3.5 bg-white border border-slate-200 rounded-xl shadow-xs space-y-3">
-        <div className="flex flex-col md:flex-row gap-2.5 items-stretch md:items-center justify-between">
-          <div className="relative flex-1">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-            <Input
-              placeholder="Tìm kiếm theo tiêu đề báo giá, mã hiệu, khách hàng..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 pr-8 text-xs h-8.5 bg-slate-50/60 focus:bg-white border-slate-200 rounded-lg"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
+      {/* Standard Filter Bar */}
+      <StandardFilterBar
+        searchQuery={searchQuery}
+        onSearchChange={(val) => { setSearchQuery(val); setPage(0); }}
+        searchPlaceholder="Search quotation title, code, account name..."
+        viewTabs={viewTabs}
+        activeTab={currentActiveTab}
+        onTabChange={handleTabChange}
+        activeFiltersCount={activeFiltersCount}
+        onResetFilters={handleResetFilters}
+        filterControls={
+          <div className="w-48">
+            <Select value={selectedStatus} onValueChange={(val) => { setSelectedStatus(val); setPage(0); }}>
+              <SelectTrigger className="h-8 text-xs bg-white border-slate-200 rounded-[3px]">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent className="rounded-[3px]">
+                <SelectItem value="ALL">All Statuses</SelectItem>
+                <SelectItem value="DRAFT">DRAFT</SelectItem>
+                <SelectItem value="SENT">SENT</SelectItem>
+                <SelectItem value="ACCEPTED">ACCEPTED</SelectItem>
+                <SelectItem value="REJECTED">REJECTED</SelectItem>
+                <SelectItem value="EXPIRED">EXPIRED</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
+        }
+      />
 
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="w-44">
-              <Select value={selectedStatus} onValueChange={(val) => { setSelectedStatus(val); setPage(0); }}>
-                <SelectTrigger className="h-8.5 text-xs bg-slate-50/60 border-slate-200 rounded-lg">
-                  <SelectValue placeholder="Trạng thái" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ALL">Tất cả trạng thái</SelectItem>
-                  <SelectItem value="DRAFT">Bản nháp (Draft)</SelectItem>
-                  <SelectItem value="SENT">Đã gửi khách</SelectItem>
-                  <SelectItem value="ACCEPTED">Đã chấp thuận</SelectItem>
-                  <SelectItem value="REJECTED">Từ chối</SelectItem>
-                  <SelectItem value="EXPIRED">Đã hết hạn</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {activeFiltersCount > 0 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleResetFilters}
-                className="text-xs text-slate-500 hover:text-slate-800 gap-1 h-8.5 px-2"
-              >
-                <RotateCcw className="w-3 h-3" />
-                <span>Đặt lại ({activeFiltersCount})</span>
-              </Button>
-            )}
-          </div>
-        </div>
-      </Card>
-
-      {/* ── Quotes Table ── */}
-      <Card className="overflow-hidden border border-slate-200 rounded-xl bg-white shadow-xs">
+      {/* Quotes Table */}
+      <Card className="overflow-hidden border border-slate-200 rounded-[4px] bg-white shadow-none">
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
-              <TableRow className="bg-slate-50/80 hover:bg-slate-50/80 border-b border-slate-200">
-                <TableHead className="text-[11px] font-bold text-slate-600 uppercase tracking-wider py-3 pl-4">Báo giá &amp; Mã số</TableHead>
-                <TableHead className="text-[11px] font-bold text-slate-600 uppercase tracking-wider py-3">Doanh nghiệp khách hàng</TableHead>
-                <TableHead className="text-[11px] font-bold text-slate-600 uppercase tracking-wider py-3">Tổng giá trị</TableHead>
-                <TableHead className="text-[11px] font-bold text-slate-600 uppercase tracking-wider py-3">Chiết khấu</TableHead>
-                <TableHead className="text-[11px] font-bold text-slate-600 uppercase tracking-wider py-3">Trạng thái</TableHead>
-                <TableHead className="text-[11px] font-bold text-slate-600 uppercase tracking-wider py-3">Hiệu lực đến</TableHead>
-                <TableHead className="text-[11px] font-bold text-slate-600 uppercase tracking-wider py-3 text-right pr-4">Thao tác</TableHead>
+              <TableRow className="bg-[#F7F8F9] border-b border-slate-200 hover:bg-[#F7F8F9]">
+                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Quotation &amp; Code</TableHead>
+                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Client Organization</TableHead>
+                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Total Value</TableHead>
+                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Discount</TableHead>
+                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Status</TableHead>
+                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Valid Until</TableHead>
+                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3 text-right pr-4">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -360,7 +349,7 @@ export const QuotesPage: React.FC = () => {
                   <TableCell colSpan={7} className="h-48 text-center">
                     <div className="flex flex-col items-center justify-center gap-2 text-slate-500">
                       <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
-                      <span className="text-xs">Đang tải danh sách báo giá...</span>
+                      <span className="text-xs">Loading quotations...</span>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -369,9 +358,9 @@ export const QuotesPage: React.FC = () => {
                   <TableCell colSpan={7} className="p-0">
                     <EmptyState
                       icon={FileText}
-                      title="Không tìm thấy báo giá nào"
-                      description="Hãy thử thay đổi điều kiện lọc hoặc tạo mới bảng chào giá."
-                      actionLabel="Tạo Báo Giá"
+                      title="No quotations found"
+                      description="Try adjusting your filter criteria or generate a new CPQ proposal."
+                      actionLabel="Create Quotation"
                       onAction={handleOpenCreate}
                     />
                   </TableCell>
@@ -381,24 +370,24 @@ export const QuotesPage: React.FC = () => {
                   const statusInfo = QUOTE_STATUS_CONFIG[quote.status] || { label: quote.status, className: 'bg-slate-100 text-slate-700' };
 
                   return (
-                    <TableRow key={quote.id} className="hover:bg-slate-50/80 transition-colors border-b border-slate-100 text-xs">
-                      {/* Cột 1: Tiêu đề */}
-                      <TableCell className="pl-4 py-3">
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 border border-blue-100 shadow-2xs">
-                            <FileText className="w-4 h-4" />
+                    <TableRow key={quote.id} className="hover:bg-[#F1F2F4] transition-colors border-b border-[#EBECF0] text-xs">
+                      {/* Title */}
+                      <TableCell className="py-2 px-3">
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-[3px] bg-[#E9F2FF] text-[#0C66E4] border border-[#C0D9FF] font-bold text-xs flex items-center justify-center shrink-0">
+                            <FileText className="w-3.5 h-3.5" />
                           </div>
                           <div>
-                            <div className="font-bold text-slate-900">{quote.title}</div>
-                            <div className="text-[11px] text-slate-400 mt-0.5 font-mono">{quote.quoteNumber}</div>
+                            <div className="font-semibold text-slate-900">{quote.title}</div>
+                            <div className="text-[11px] text-slate-400 font-mono">{quote.quoteNumber}</div>
                           </div>
                         </div>
                       </TableCell>
 
-                      {/* Cột 2: Khách hàng */}
-                      <TableCell>
+                      {/* Account */}
+                      <TableCell className="py-2 px-3">
                         <div>
-                          <div className="font-semibold text-slate-800 flex items-center gap-1">
+                          <div className="font-medium text-slate-800 flex items-center gap-1">
                             <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                             <span>{quote.accountName}</span>
                           </div>
@@ -408,69 +397,75 @@ export const QuotesPage: React.FC = () => {
                         </div>
                       </TableCell>
 
-                      {/* Cột 3: Tổng tiền */}
-                      <TableCell>
-                        <div className="font-bold text-slate-900 font-mono text-xs">
-                          {quote.totalAmount.toLocaleString('vi-VN')} ₫
+                      {/* Total Value */}
+                      <TableCell className="py-2 px-3">
+                        <div className="font-semibold text-slate-900 font-mono text-xs">
+                          {quote.totalAmount.toLocaleString('en-US')} ₫
                         </div>
                       </TableCell>
 
-                      {/* Cột 4: Chiết khấu */}
-                      <TableCell className="font-mono text-slate-600 text-[11px]">
+                      {/* Discount */}
+                      <TableCell className="py-2 px-3 font-mono text-slate-600 text-[11px]">
                         {(quote.discountAmount || 0) > 0 ? (
                           <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px] font-bold">
-                            -{quote.discountAmount?.toLocaleString('vi-VN')} ₫
+                            -{quote.discountAmount?.toLocaleString('en-US')} ₫
                           </Badge>
                         ) : (
                           '0 ₫'
                         )}
                       </TableCell>
 
-                      {/* Cột 5: Trạng thái */}
-                      <TableCell>
-                        <Badge className={`${statusInfo.className} text-[11px]`}>
+                      {/* Status */}
+                      <TableCell className="py-2 px-3">
+                        <Badge className={`${statusInfo.className} text-[11px] rounded-[3px]`}>
                           {statusInfo.label}
                         </Badge>
                       </TableCell>
 
-                      {/* Cột 6: Hiệu lực */}
-                      <TableCell className="font-mono text-slate-600 text-[11px]">
-                        {quote.validUntil ? new Date(quote.validUntil).toLocaleDateString('vi-VN') : '-'}
+                      {/* Valid Until */}
+                      <TableCell className="py-2 px-3 font-mono text-slate-600 text-[11px]">
+                        {quote.validUntil ? new Date(quote.validUntil).toLocaleDateString('en-US') : '-'}
                       </TableCell>
 
-                      {/* Cột 7: Thao tác */}
-                      <TableCell className="text-right pr-4">
+                      {/* Actions */}
+                      <TableCell className="py-2 px-3 text-right pr-4">
                         <div className="flex items-center justify-end gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => {
-                              setPreviewQuote(quote);
-                              setShowPrintModal(true);
-                            }}
-                            className="h-7 w-7 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                            title="Xem bản in & Xuất PDF"
-                          >
-                            <Printer className="w-3.5 h-3.5" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleOpenEdit(quote)}
-                            className="h-7 w-7 text-slate-600 hover:text-blue-600 hover:bg-blue-50"
-                            title="Chỉnh sửa báo giá"
-                          >
-                            <Edit className="w-3.5 h-3.5" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleDelete(quote.id, quote.title || quote.quoteNumber)}
-                            className="h-7 w-7 text-slate-600 hover:text-red-600 hover:bg-red-50"
-                            title="Xóa báo giá"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </Button>
+                          <ActionTooltip label="In / Xuất PDF">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => {
+                                setPreviewQuote(quote);
+                                setShowPrintModal(true);
+                              }}
+                              className="h-7 w-7 rounded-[3px] text-[#0C66E4] hover:text-[#0052CC] hover:bg-[#E9F2FF]"
+                              aria-label="Print Preview & PDF Export"
+                            >
+                              <Printer className="w-3.5 h-3.5" />
+                            </Button>
+                          </ActionTooltip>
+                          <ActionTooltip label="Chỉnh sửa báo giá">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleOpenEdit(quote)}
+                              className="h-7 w-7 rounded-[3px] text-slate-600 hover:text-[#0C66E4] hover:bg-[#E9F2FF]"
+                              aria-label="Edit Quotation"
+                            >
+                              <Edit className="w-3.5 h-3.5" />
+                            </Button>
+                          </ActionTooltip>
+                          <ActionTooltip label="Xóa báo giá">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDelete(quote.id, quote.title || quote.quoteNumber)}
+                              className="h-7 w-7 rounded-[3px] text-slate-600 hover:text-red-600 hover:bg-red-50"
+                              aria-label="Delete Quotation"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
+                          </ActionTooltip>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -481,60 +476,20 @@ export const QuotesPage: React.FC = () => {
           </Table>
         </div>
 
-        {/* ── Pagination Bar ── */}
-        {!loading && quotes.length > 0 && (
-          <div className="px-4 py-3 bg-slate-50/50 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
-            <div>
-              Hiển thị <span className="font-bold text-slate-800">{page * pageSize + 1}</span> -{' '}
-              <span className="font-bold text-slate-800">{Math.min((page + 1) * pageSize, totalElements)}</span> trong tổng số{' '}
-              <span className="font-bold text-slate-800">{totalElements}</span> báo giá
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-7 w-7 border-slate-200"
-                onClick={() => setPage(0)}
-                disabled={page === 0}
-              >
-                <ChevronsLeft className="w-3.5 h-3.5" />
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-7 w-7 border-slate-200"
-                onClick={() => setPage((p) => Math.max(p - 1, 0))}
-                disabled={page === 0}
-              >
-                <ChevronLeft className="w-3.5 h-3.5" />
-              </Button>
-              <div className="px-2 font-medium text-slate-700">
-                Trang {page + 1} / {Math.max(totalPages, 1)}
-              </div>
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-7 w-7 border-slate-200"
-                onClick={() => setPage((p) => p + 1)}
-                disabled={page >= totalPages - 1}
-              >
-                <ChevronRight className="w-3.5 h-3.5" />
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-7 w-7 border-slate-200"
-                onClick={() => setPage(totalPages - 1)}
-                disabled={page >= totalPages - 1}
-              >
-                <ChevronsRight className="w-3.5 h-3.5" />
-              </Button>
-            </div>
-          </div>
+        {/* Standard Pagination Bar */}
+        {!loading && (
+          <StandardPagination
+            currentPage={page + 1}
+            totalPages={Math.max(totalPages, 1)}
+            totalElements={totalElements}
+            pageSize={pageSize}
+            onPageChange={(p) => setPage(p - 1)}
+            itemLabel="quotes"
+          />
         )}
       </Card>
 
-      {/* ── Create / Edit Quote Modal ── */}
+      {/* Create / Edit Quote Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0 rounded-2xl border border-slate-200 shadow-xl">
           <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-5 text-white">
@@ -545,10 +500,10 @@ export const QuotesPage: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="font-bold text-base">
-                    {editingQuote ? 'Chỉnh sửa Báo giá' : 'Tạo Báo Giá Mới'}
+                    {editingQuote ? 'Edit Quotation Details' : 'Create New Quotation'}
                   </h3>
                   <p className="text-xs text-blue-100 mt-0.5">
-                    {editingQuote ? `Mã: ${editingQuote.quoteNumber}` : 'Thiết lập bảng giá, chiết khấu và điều khoản thanh toán'}
+                    {editingQuote ? `Quote ID: ${editingQuote.quoteNumber}` : 'Specify pricing table, volume discount & commercial terms'}
                   </p>
                 </div>
               </div>
@@ -558,11 +513,11 @@ export const QuotesPage: React.FC = () => {
           <form onSubmit={handleSaveQuote} className="p-6 space-y-4">
             <div>
               <Label className="text-xs font-semibold text-slate-700">
-                Tiêu đề bảng báo giá <span className="text-rose-500">*</span>
+                Quotation Title <span className="text-rose-500">*</span>
               </Label>
               <Input
                 required
-                placeholder="Ví dụ: Báo giá Gói Phần Mềm Quản Trị Khách Hàng Q3/2026"
+                placeholder="e.g. CRM Enterprise Multi-Year License Proposal Q3/2026"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 className="h-9 text-xs border-slate-200 mt-1"
@@ -571,18 +526,18 @@ export const QuotesPage: React.FC = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <Label className="text-xs font-semibold text-slate-700">Doanh nghiệp khách hàng</Label>
+                <Label className="text-xs font-semibold text-slate-700">Client Organization</Label>
                 <Input
-                  placeholder="Nhập tên doanh nghiệp..."
+                  placeholder="Enter client company..."
                   value={accountName}
                   onChange={(e) => setAccountName(e.target.value)}
                   className="h-9 text-xs border-slate-200 mt-1"
                 />
               </div>
               <div>
-                <Label className="text-xs font-semibold text-slate-700">Người liên hệ nhận báo giá</Label>
+                <Label className="text-xs font-semibold text-slate-700">Authorized Contact</Label>
                 <Input
-                  placeholder="Nhập người đại diện..."
+                  placeholder="Enter representative..."
                   value={contactName}
                   onChange={(e) => setContactName(e.target.value)}
                   className="h-9 text-xs border-slate-200 mt-1"
@@ -593,7 +548,7 @@ export const QuotesPage: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
                 <Label className="text-xs font-semibold text-slate-700">
-                  Tổng giá trị (VNĐ) <span className="text-rose-500">*</span>
+                  Total Value (VND) <span className="text-rose-500">*</span>
                 </Label>
                 <Input
                   required
@@ -606,7 +561,7 @@ export const QuotesPage: React.FC = () => {
               </div>
 
               <div>
-                <Label className="text-xs font-semibold text-slate-700">Chiết khấu (%)</Label>
+                <Label className="text-xs font-semibold text-slate-700">Discount (%)</Label>
                 <Input
                   type="number"
                   min="0"
@@ -618,17 +573,17 @@ export const QuotesPage: React.FC = () => {
               </div>
 
               <div>
-                <Label className="text-xs font-semibold text-slate-700">Trạng thái</Label>
+                <Label className="text-xs font-semibold text-slate-700">Status</Label>
                 <Select value={status} onValueChange={(val: any) => setStatus(val)}>
                   <SelectTrigger className="h-9 text-xs border-slate-200 mt-1">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="DRAFT">Bản nháp (Draft)</SelectItem>
-                    <SelectItem value="SENT">Đã gửi khách</SelectItem>
-                    <SelectItem value="ACCEPTED">Đã chấp thuận</SelectItem>
-                    <SelectItem value="REJECTED">Bị từ chối</SelectItem>
-                    <SelectItem value="EXPIRED">Đã hết hạn</SelectItem>
+                    <SelectItem value="DRAFT">DRAFT</SelectItem>
+                    <SelectItem value="SENT">SENT</SelectItem>
+                    <SelectItem value="ACCEPTED">ACCEPTED</SelectItem>
+                    <SelectItem value="REJECTED">REJECTED</SelectItem>
+                    <SelectItem value="EXPIRED">EXPIRED</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -636,7 +591,7 @@ export const QuotesPage: React.FC = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <Label className="text-xs font-semibold text-slate-700">Hiệu lực đến ngày</Label>
+                <Label className="text-xs font-semibold text-slate-700">Valid Until</Label>
                 <Input
                   type="date"
                   value={validUntil}
@@ -645,9 +600,9 @@ export const QuotesPage: React.FC = () => {
                 />
               </div>
               <div>
-                <Label className="text-xs font-semibold text-slate-700">Chuyên viên phụ trách</Label>
+                <Label className="text-xs font-semibold text-slate-700">Commercial Account Rep</Label>
                 <Input
-                  placeholder="Phạm Tuấn Vũ"
+                  placeholder="Alex Nguyen"
                   value={assignedTo}
                   onChange={(e) => setAssignedTo(e.target.value)}
                   className="h-9 text-xs border-slate-200 mt-1"
@@ -662,7 +617,7 @@ export const QuotesPage: React.FC = () => {
                 onClick={() => setIsModalOpen(false)}
                 className="text-xs border-slate-200 h-9"
               >
-                Hủy bỏ
+                Cancel
               </Button>
               <Button
                 type="submit"
@@ -670,7 +625,7 @@ export const QuotesPage: React.FC = () => {
                 className="text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white gap-1.5 shadow-xs h-9"
               >
                 {isSubmitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
-                <span>{editingQuote ? 'Lưu Thay Đổi' : 'Tạo Báo Giá'}</span>
+                <span>{editingQuote ? 'Save Changes' : 'Create Quotation'}</span>
               </Button>
             </div>
           </form>
@@ -687,15 +642,15 @@ export const QuotesPage: React.FC = () => {
           }}
           documentType="QUOTE"
           documentNumber={previewQuote.quoteNumber}
-          documentDate={previewQuote.createdAt ? new Date(previewQuote.createdAt).toLocaleDateString('vi-VN') : new Date().toLocaleDateString('vi-VN')}
-          validUntilDate={previewQuote.validUntil ? new Date(previewQuote.validUntil).toLocaleDateString('vi-VN') : undefined}
+          documentDate={previewQuote.createdAt ? new Date(previewQuote.createdAt).toLocaleDateString('en-US') : new Date().toLocaleDateString('en-US')}
+          validUntilDate={previewQuote.validUntil ? new Date(previewQuote.validUntil).toLocaleDateString('en-US') : undefined}
           clientName={previewQuote.accountName || ''}
           clientRepresentative={previewQuote.contactName || ''}
           items={[
             {
               name: previewQuote.title || previewQuote.quoteNumber,
               quantity: 1,
-              unit: 'Gói',
+              unit: 'Package',
               unitPrice: previewQuote.totalAmount,
               discountAmount: previewQuote.discountAmount || 0,
               totalAmount: previewQuote.totalAmount - (previewQuote.discountAmount || 0),
@@ -709,3 +664,5 @@ export const QuotesPage: React.FC = () => {
     </div>
   );
 };
+
+export default QuotesPage;

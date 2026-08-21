@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { ExtendedPermission } from '../RolesPage';
+import { ExtendedPermission } from '../model/roleTypes';
 import { Search, Key, Check } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -52,7 +52,7 @@ export const PermissionGroupSelector: React.FC<PermissionGroupSelectorProps> = (
     filteredPermissions.forEach((perm) => {
       if (!perm) return;
       const code = perm.moduleCode || 'other';
-      const name = perm.moduleNameVi || 'Phân hệ khác';
+      const name = perm.moduleNameVi || 'System';
       if (!map.has(code)) {
         map.set(code, { moduleCode: code, moduleNameVi: name, items: [] });
       }
@@ -88,10 +88,8 @@ export const PermissionGroupSelector: React.FC<PermissionGroupSelectorProps> = (
     const allSelected = moduleCodes.every((c) => safeSelectedPermissions.includes(c));
 
     if (allSelected) {
-      // Uncheck all in this module
       onChange(safeSelectedPermissions.filter((c) => !moduleCodes.includes(c)));
     } else {
-      // Check all in this module
       const combined = new Set([...safeSelectedPermissions, ...moduleCodes]);
       onChange(Array.from(combined));
     }
@@ -111,21 +109,21 @@ export const PermissionGroupSelector: React.FC<PermissionGroupSelectorProps> = (
   const renderRiskBadge = (riskLevel?: string) => {
     if (riskLevel === 'PRIVILEGED') {
       return (
-        <Badge variant="outline" className="bg-rose-50 text-rose-700 border-rose-200 text-[10px] font-bold px-1.5 py-0.5">
-          Quyền Cao cấp
+        <Badge variant="outline" className="bg-rose-50 text-rose-700 border-rose-200 text-[10px] font-bold px-1.5 py-0.5 rounded-[2px]">
+          PRIVILEGED
         </Badge>
       );
     }
     if (riskLevel === 'SENSITIVE') {
       return (
-        <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 text-[10px] font-semibold px-1.5 py-0.5">
-          Nhạy cảm
+        <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 text-[10px] font-semibold px-1.5 py-0.5 rounded-[2px]">
+          SENSITIVE
         </Badge>
       );
     }
     return (
-      <Badge variant="outline" className="bg-slate-100 text-slate-600 border-slate-200 text-[10px] font-normal px-1.5 py-0.5">
-        Thông thường
+      <Badge variant="outline" className="bg-slate-100 text-slate-600 border-slate-200 text-[10px] font-normal px-1.5 py-0.5 rounded-[2px]">
+        NORMAL
       </Badge>
     );
   };
@@ -137,7 +135,7 @@ export const PermissionGroupSelector: React.FC<PermissionGroupSelectorProps> = (
         <div className="relative flex-1">
           <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400" />
           <Input
-            placeholder="Tìm kiếm quyền theo mã, tên hoặc phân hệ..."
+            placeholder="Search permissions by code, label or module..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-8 text-xs h-8 bg-white border-slate-200"
@@ -153,7 +151,7 @@ export const PermissionGroupSelector: React.FC<PermissionGroupSelectorProps> = (
               onClick={handleSelectAllGlobal}
               className="h-8 text-xs font-medium text-blue-700 border-blue-200 hover:bg-blue-50"
             >
-              Chọn tất cả ({permissions.length})
+              Select All ({permissions.length})
             </Button>
             <Button
               type="button"
@@ -162,7 +160,7 @@ export const PermissionGroupSelector: React.FC<PermissionGroupSelectorProps> = (
               onClick={handleDeselectAllGlobal}
               className="h-8 text-xs font-medium text-slate-600 hover:bg-slate-200"
             >
-              Bỏ chọn
+              Clear
             </Button>
           </div>
         )}
@@ -178,7 +176,7 @@ export const PermissionGroupSelector: React.FC<PermissionGroupSelectorProps> = (
               : 'bg-slate-100 text-slate-600 hover:bg-slate-200 border-slate-200'
           }`}
         >
-          Tất cả Phân hệ ({safePermissions.length})
+          All Modules ({safePermissions.length})
         </Badge>
         {allModules.map((mod) => {
           const countInMod = safePermissions.filter((p) => p && p.moduleCode === mod.code).length;
@@ -208,7 +206,7 @@ export const PermissionGroupSelector: React.FC<PermissionGroupSelectorProps> = (
       <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
         {groupedPermissions.length === 0 ? (
           <div className="text-center py-8 bg-slate-50 rounded-xl border border-slate-200 text-slate-500 text-xs">
-            Không tìm thấy quyền phù hợp với từ khóa tìm kiếm.
+            No permissions matching search criteria.
           </div>
         ) : (
           groupedPermissions.map((group) => {
@@ -228,13 +226,13 @@ export const PermissionGroupSelector: React.FC<PermissionGroupSelectorProps> = (
                     <span className="font-bold text-slate-900 text-xs">{group.moduleNameVi}</span>
                     <Badge
                       variant="outline"
-                      className={`text-[10px] font-bold px-2 py-0.5 ${
+                      className={`text-[10px] font-bold px-2 py-0.5 rounded-[3px] ${
                         selectedCount > 0
                           ? 'bg-blue-50 text-blue-700 border-blue-200'
                           : 'bg-slate-100 text-slate-500 border-slate-200'
                       }`}
                     >
-                      {selectedCount} / {group.items.length} đã chọn
+                      {selectedCount} / {group.items.length} selected
                     </Badge>
                   </div>
 
@@ -247,7 +245,7 @@ export const PermissionGroupSelector: React.FC<PermissionGroupSelectorProps> = (
                       className="h-7 text-[11px] font-semibold text-blue-600 hover:text-blue-800 hover:bg-blue-50 px-2 gap-1"
                     >
                       <Check className="w-3 h-3" />
-                      <span>{isAllSelected ? 'Bỏ chọn nhóm' : 'Chọn cả nhóm'}</span>
+                      <span>{isAllSelected ? 'Deselect Module' : 'Select All in Module'}</span>
                     </Button>
                   )}
                 </div>

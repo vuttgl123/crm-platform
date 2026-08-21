@@ -56,11 +56,12 @@ import {
   ShieldAlert,
   PhoneCall,
 } from 'lucide-react';
+import { ActionTooltip } from '@/components/ui/action-tooltip';
 
 const RATING_CONFIG: Record<string, { label: string; className: string; icon: any }> = {
-  HOT: { label: 'NÓNG (Hot)', className: 'bg-rose-50 text-rose-700 border-rose-200 font-bold', icon: Flame },
-  WARM: { label: 'ẤM (Warm)', className: 'bg-amber-50 text-amber-700 border-amber-200 font-semibold', icon: TrendingUp },
-  COLD: { label: 'LẠNH (Cold)', className: 'bg-slate-100 text-slate-600 border-slate-200', icon: Target },
+  HOT: { label: 'HOT', className: 'bg-rose-50 text-rose-700 border-rose-200 font-bold', icon: Flame },
+  WARM: { label: 'WARM', className: 'bg-amber-50 text-amber-700 border-amber-200 font-semibold', icon: TrendingUp },
+  COLD: { label: 'COLD', className: 'bg-slate-100 text-slate-600 border-slate-200', icon: Target },
 };
 
 export const LeadsPage: React.FC = () => {
@@ -97,9 +98,9 @@ export const LeadsPage: React.FC = () => {
   const [status, setStatus] = useState<'NEW' | 'CONTACTED' | 'QUALIFIED' | 'CONVERTED' | 'UNQUALIFIED'>('NEW');
   const [rating, setRating] = useState<'HOT' | 'WARM' | 'COLD'>('HOT');
   const [estimatedRevenue, setEstimatedRevenue] = useState('');
-  const [assignedTo, setAssignedTo] = useState('Phạm Tuấn Vũ');
+  const [assignedTo, setAssignedTo] = useState('Alex Nguyen');
   const [notes, setNotes] = useState('');
-  const [city, setCity] = useState('Hà Nội');
+  const [city, setCity] = useState('Hanoi');
 
   const handleCalculateScore = async (lead: LeadItem) => {
     setIsScoringLoading(true);
@@ -108,7 +109,7 @@ export const LeadsPage: React.FC = () => {
       const res = await leadApi.calculateScore(lead.id);
       setScoringResult(res);
     } catch {
-      toast.error('Không thể tính toán điểm Lead Score');
+      toast.error('Unable to compute Lead Score');
       setShowScoringModal(false);
     } finally {
       setIsScoringLoading(false);
@@ -118,10 +119,10 @@ export const LeadsPage: React.FC = () => {
   const handleAutoAssign = async (lead: LeadItem) => {
     try {
       await leadApi.autoAssign(lead.id);
-      toast.success(`Đã tự động phân bổ Lead "${lead.fullName}" theo cơ chế Round-Robin`);
+      toast.success(`Lead "${lead.fullName}" auto-assigned via Round-Robin`);
       fetchLeads();
     } catch {
-      toast.error('Không thể tự động phân bổ Lead');
+      toast.error('Unable to auto-assign lead');
     }
   };
 
@@ -140,7 +141,7 @@ export const LeadsPage: React.FC = () => {
       setTotalPages(res.totalPages);
       setTotalElements(res.totalElements);
     } catch {
-      toast.error('Không thể tải danh sách khách hàng tiềm năng');
+      toast.error('Unable to load lead list from server');
     } finally {
       setLoading(false);
     }
@@ -171,7 +172,7 @@ export const LeadsPage: React.FC = () => {
     setRating('HOT');
     setEstimatedRevenue('');
     setNotes('');
-    setCity('Hà Nội');
+    setCity('Hanoi');
     setIsModalOpen(true);
   };
 
@@ -195,7 +196,7 @@ export const LeadsPage: React.FC = () => {
   const handleSaveLead = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!fullName.trim() || !email.trim()) {
-      toast.error('Vui lòng nhập họ tên và email');
+      toast.error('Please provide both Full Name and Email Address');
       return;
     }
 
@@ -216,52 +217,52 @@ export const LeadsPage: React.FC = () => {
           notes,
           city,
         });
-        toast.success('Đã cập nhật thông tin tiềm năng thành công!');
+        toast.success('Lead updated successfully!');
       } else {
         await leadApi.create({
           fullName,
-          companyName: companyName || 'Khách hàng cá nhân',
-          jobTitle: jobTitle || 'Đại diện',
+          companyName: companyName || 'Individual Prospect',
+          jobTitle: jobTitle || 'Contact',
           email,
           phone,
           leadSource,
           status,
           rating,
           estimatedRevenue: estimatedRevenue ? parseFloat(estimatedRevenue) : 0,
-          assignedTo: assignedTo || 'Phạm Tuấn Vũ',
+          assignedTo: assignedTo || 'Alex Nguyen',
           notes,
-          city: city || 'Hà Nội',
+          city: city || 'Hanoi',
         });
-        toast.success('Đã thêm khách hàng tiềm năng mới thành công!');
+        toast.success('New lead created successfully!');
       }
       setIsModalOpen(false);
       fetchLeads();
     } catch {
-      toast.error('Không thể lưu thông tin');
+      toast.error('Unable to save lead details');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleDelete = async (id: string, name: string) => {
-    if (!window.confirm(`Bạn có chắc chắn muốn xóa khách hàng tiềm năng "${name}"?`)) return;
+    if (!window.confirm(`Are you sure you want to delete lead "${name}"?`)) return;
     try {
       await leadApi.delete(id);
-      toast.success(`Đã xóa tiềm năng "${name}"`);
+      toast.success(`Deleted lead "${name}"`);
       fetchLeads();
     } catch {
-      toast.error('Không thể xóa tiềm năng');
+      toast.error('Unable to delete lead');
     }
   };
 
   const handleConvert = async (lead: LeadItem) => {
-    if (!window.confirm(`Chuyển đổi tiềm năng "${lead.fullName}" thành Khách hàng chính thức & Cơ hội?`)) return;
+    if (!window.confirm(`Convert lead "${lead.fullName}" into Customer Account & Deal?`)) return;
     try {
       await leadApi.convert(lead.id);
-      toast.success(`Đã chuyển đổi thành công "${lead.fullName}" sang Khách hàng chính thức!`);
+      toast.success(`Lead "${lead.fullName}" converted successfully to Customer!`);
       fetchLeads();
     } catch {
-      toast.error('Chuyển đổi thất bại');
+      toast.error('Lead conversion failed');
     }
   };
 
@@ -272,10 +273,10 @@ export const LeadsPage: React.FC = () => {
 
   // View Tabs Config
   const viewTabs: ViewTabItem[] = [
-    { id: 'ALL', label: 'Tất cả', count: totalElements },
-    { id: 'HOT', label: 'Nóng (Hot)', count: hotCount, icon: Flame, dotColor: 'bg-rose-500' },
-    { id: 'QUALIFIED', label: 'Đạt chuẩn', count: qualifiedCount, icon: Target, dotColor: 'bg-emerald-500' },
-    { id: 'CONVERTED', label: 'Đã chuyển đổi', count: convertedCount, icon: Sparkles, dotColor: 'bg-indigo-500' },
+    { id: 'ALL', label: 'All', count: totalElements },
+    { id: 'HOT', label: 'Hot', count: hotCount, icon: Flame, dotColor: 'bg-rose-500' },
+    { id: 'QUALIFIED', label: 'Qualified', count: qualifiedCount, icon: Target, dotColor: 'bg-emerald-500' },
+    { id: 'CONVERTED', label: 'Converted', count: convertedCount, icon: Sparkles, dotColor: 'bg-indigo-500' },
   ];
 
   const currentActiveTab = selectedRating === 'HOT' ? 'HOT' : selectedStatus === 'QUALIFIED' ? 'QUALIFIED' : selectedStatus === 'CONVERTED' ? 'CONVERTED' : 'ALL';
@@ -307,11 +308,11 @@ export const LeadsPage: React.FC = () => {
     <div className="space-y-4 pb-12 font-sans w-full">
       {/* Standard Page Header */}
       <StandardPageHeader
-        title="Quản lý Khách hàng Tiềm năng"
-        subtitle="Thu thập, phân loại mức độ quan tâm (Hot / Warm / Cold), chấm điểm AI và chuyển đổi thành Khách hàng"
+        title="Inbound &amp; Sales Leads"
+        subtitle="Lead capture, engagement rating (Hot / Warm / Cold), AI propensity scoring &amp; account conversion"
         icon={UserPlus}
         badgeCount={totalElements}
-        badgeLabel="lead"
+        badgeLabel="leads"
         actions={
           <>
             <Button
@@ -322,7 +323,7 @@ export const LeadsPage: React.FC = () => {
               className="text-xs font-medium text-slate-700 bg-white border-slate-200 hover:bg-slate-50 gap-1.5 h-8 rounded-[3px]"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-              <span>Làm mới</span>
+              <span>Refresh</span>
             </Button>
 
             <Button
@@ -331,7 +332,7 @@ export const LeadsPage: React.FC = () => {
               className="text-xs font-semibold bg-[#0C66E4] hover:bg-[#0052CC] text-white gap-1.5 shadow-none h-8 rounded-[3px]"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>Thêm Tiềm Năng</span>
+              <span>New Lead</span>
             </Button>
           </>
         }
@@ -341,7 +342,7 @@ export const LeadsPage: React.FC = () => {
       <StandardFilterBar
         searchQuery={searchQuery}
         onSearchChange={(val) => { setSearchQuery(val); setPage(0); }}
-        searchPlaceholder="Tìm kiếm theo họ tên, công ty, email, SĐT..."
+        searchPlaceholder="Search by name, company, email, phone..."
         viewTabs={viewTabs}
         activeTab={currentActiveTab}
         onTabChange={handleTabChange}
@@ -352,15 +353,15 @@ export const LeadsPage: React.FC = () => {
             <div className="w-36">
               <Select value={selectedStatus} onValueChange={(val) => { setSelectedStatus(val); setPage(0); }}>
                 <SelectTrigger className="h-8 text-xs bg-white border-slate-200 rounded-[3px]">
-                  <SelectValue placeholder="Trạng thái" />
+                  <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent className="rounded-[3px]">
-                  <SelectItem value="ALL">Tất cả trạng thái</SelectItem>
-                  <SelectItem value="NEW">Mới tiếp nhận</SelectItem>
-                  <SelectItem value="CONTACTED">Đã liên hệ</SelectItem>
-                  <SelectItem value="QUALIFIED">Đạt chuẩn</SelectItem>
-                  <SelectItem value="CONVERTED">Đã chuyển đổi</SelectItem>
-                  <SelectItem value="UNQUALIFIED">Không đạt</SelectItem>
+                  <SelectItem value="ALL">All Statuses</SelectItem>
+                  <SelectItem value="NEW">New</SelectItem>
+                  <SelectItem value="CONTACTED">Contacted</SelectItem>
+                  <SelectItem value="QUALIFIED">Qualified</SelectItem>
+                  <SelectItem value="CONVERTED">Converted</SelectItem>
+                  <SelectItem value="UNQUALIFIED">Unqualified</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -368,24 +369,24 @@ export const LeadsPage: React.FC = () => {
             <div className="w-36">
               <Select value={selectedRating} onValueChange={(val) => { setSelectedRating(val); setPage(0); }}>
                 <SelectTrigger className="h-8 text-xs bg-white border-slate-200 rounded-[3px]">
-                  <SelectValue placeholder="Đánh giá" />
+                  <SelectValue placeholder="Rating" />
                 </SelectTrigger>
                 <SelectContent className="rounded-[3px]">
-                  <SelectItem value="ALL">Tất cả đánh giá</SelectItem>
-                  <SelectItem value="HOT">NÓNG (Hot)</SelectItem>
-                  <SelectItem value="WARM">ẤM (Warm)</SelectItem>
-                  <SelectItem value="COLD">LẠNH (Cold)</SelectItem>
+                  <SelectItem value="ALL">All Ratings</SelectItem>
+                  <SelectItem value="HOT">HOT</SelectItem>
+                  <SelectItem value="WARM">WARM</SelectItem>
+                  <SelectItem value="COLD">COLD</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
-            <div className="w-36">
+            <div className="w-40">
               <Select value={selectedSource} onValueChange={(val) => { setSelectedSource(val); setPage(0); }}>
                 <SelectTrigger className="h-8 text-xs bg-white border-slate-200 rounded-[3px]">
-                  <SelectValue placeholder="Nguồn" />
+                  <SelectValue placeholder="Source" />
                 </SelectTrigger>
                 <SelectContent className="rounded-[3px]">
-                  <SelectItem value="ALL">Tất cả nguồn</SelectItem>
+                  <SelectItem value="ALL">All Sources</SelectItem>
                   {Object.entries(LEAD_SOURCE_CONFIG).map(([k, v]) => (
                     <SelectItem key={k} value={k}>{v.label}</SelectItem>
                   ))}
@@ -396,19 +397,19 @@ export const LeadsPage: React.FC = () => {
         }
       />
 
-      {/* ── Leads Table ── */}
+      {/* Leads Table */}
       <Card className="overflow-hidden border border-slate-200 rounded-[4px] bg-white shadow-none">
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow className="bg-[#F7F8F9] border-b border-slate-200 hover:bg-[#F7F8F9]">
-                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Khách hàng Tiềm năng</TableHead>
-                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Công ty &amp; Chức danh</TableHead>
-                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Mức độ (Rating)</TableHead>
-                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Trạng thái</TableHead>
-                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Doanh thu dự kiến</TableHead>
-                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Nguồn</TableHead>
-                <TableHead className="text-[11px] font-bold text-slate-600 uppercase tracking-wider py-3 text-right pr-4">Thao tác</TableHead>
+                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Lead Contact</TableHead>
+                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Company &amp; Job Title</TableHead>
+                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Rating</TableHead>
+                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Status</TableHead>
+                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Est. Value</TableHead>
+                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Source</TableHead>
+                <TableHead className="text-[11px] font-bold text-slate-600 uppercase tracking-wider py-3 text-right pr-4">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -417,7 +418,7 @@ export const LeadsPage: React.FC = () => {
                   <TableCell colSpan={7} className="h-48 text-center">
                     <div className="flex flex-col items-center justify-center gap-2 text-slate-500">
                       <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
-                      <span className="text-xs">Đang tải danh sách tiềm năng...</span>
+                      <span className="text-xs">Loading leads...</span>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -426,9 +427,9 @@ export const LeadsPage: React.FC = () => {
                   <TableCell colSpan={7} className="p-0">
                     <EmptyState
                       icon={UserPlus}
-                      title="Không tìm thấy khách hàng tiềm năng nào"
-                      description="Hãy thử thay đổi điều kiện lọc hoặc thêm tiềm năng mới."
-                      actionLabel="Thêm Tiềm Năng"
+                      title="No leads found"
+                      description="Try adjusting your filter criteria or create a new lead."
+                      actionLabel="Create New Lead"
                       onAction={handleOpenCreate}
                     />
                   </TableCell>
@@ -437,10 +438,10 @@ export const LeadsPage: React.FC = () => {
                 leads.map((lead) => {
                   const ratingInfo = (lead.rating && RATING_CONFIG[lead.rating]) ? RATING_CONFIG[lead.rating] : RATING_CONFIG.HOT;
                   const RatingIcon = ratingInfo.icon;
-                  const fullName = lead.fullName || lead.displayName || 'Tiềm năng';
+                  const fullName = lead.fullName || lead.displayName || 'Lead';
                   return (
                     <TableRow key={lead.id} className="hover:bg-[#F1F2F4] transition-colors border-b border-[#EBECF0] text-xs">
-                      {/* Cột 1: Họ tên */}
+                      {/* Contact */}
                       <TableCell className="py-2 px-3">
                         <div className="flex items-center gap-2">
                           <div className="w-6 h-6 rounded-[3px] bg-[#EAE6FF] text-[#403294] border border-[#D3C7FF] font-bold text-xs flex items-center justify-center shrink-0">
@@ -457,7 +458,7 @@ export const LeadsPage: React.FC = () => {
                         </div>
                       </TableCell>
 
-                      {/* Cột 2: Công ty & Chức vụ */}
+                      {/* Company & Job Title */}
                       <TableCell className="py-2 px-3">
                         <div>
                           <div className="font-medium text-slate-800 flex items-center gap-1">
@@ -468,7 +469,7 @@ export const LeadsPage: React.FC = () => {
                         </div>
                       </TableCell>
 
-                      {/* Cột 3: Rating */}
+                      {/* Rating */}
                       <TableCell className="py-2 px-3">
                         <Badge className={`${ratingInfo.className} gap-1 text-[11px] px-1.5 py-0.5 rounded-[3px]`}>
                           <RatingIcon className="w-3 h-3" />
@@ -476,26 +477,26 @@ export const LeadsPage: React.FC = () => {
                         </Badge>
                       </TableCell>
 
-                      {/* Cột 4: Trạng thái */}
+                      {/* Status */}
                       <TableCell className="py-2 px-3">
                         {renderLeadStatusBadge(lead.status)}
                       </TableCell>
 
-                      {/* Cột 5: Doanh thu dự kiến */}
+                      {/* Estimated Value */}
                       <TableCell className="py-2 px-3">
                         <div className="font-semibold text-slate-900 font-mono text-xs">
-                          {lead.estimatedRevenue ? `${lead.estimatedRevenue.toLocaleString('vi-VN')} ₫` : '—'}
+                          {lead.estimatedRevenue ? `${lead.estimatedRevenue.toLocaleString('en-US')} ₫` : '—'}
                         </div>
                       </TableCell>
 
-                      {/* Cột 6: Nguồn */}
+                      {/* Source */}
                       <TableCell className="py-2 px-3">
                         <span className="bg-[#EBECF0] text-[#42526E] font-semibold text-[11px] uppercase tracking-wider px-1.5 py-0.5 rounded-[3px]">
-                          {(lead.leadSource && LEAD_SOURCE_CONFIG[lead.leadSource]) ? LEAD_SOURCE_CONFIG[lead.leadSource].label : (lead.leadSource || 'Khác')}
+                          {(lead.leadSource && LEAD_SOURCE_CONFIG[lead.leadSource]) ? LEAD_SOURCE_CONFIG[lead.leadSource].label : (lead.leadSource || 'Other')}
                         </span>
                       </TableCell>
 
-                      {/* Cột 7: Thao tác */}
+                      {/* Actions */}
                       <TableCell className="py-2 px-3 text-right pr-4">
                         <div className="flex items-center justify-end gap-1">
                           <Button
@@ -506,7 +507,7 @@ export const LeadsPage: React.FC = () => {
                               setIsCallModalOpen(true);
                             }}
                             className="h-7 w-7 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
-                            title="Gọi nhanh & Ghi nhận nhật ký cuộc gọi"
+                            title="Quick Call & Log Activity"
                           >
                             <PhoneCall className="w-3.5 h-3.5" />
                           </Button>
@@ -515,7 +516,7 @@ export const LeadsPage: React.FC = () => {
                             size="icon"
                             onClick={() => handleCalculateScore(lead)}
                             className="h-7 w-7 text-purple-600 hover:text-purple-700 hover:bg-purple-50"
-                            title="Đánh giá & Chấm điểm tiềm năng (Lead Scoring)"
+                            title="Calculate AI Lead Propensity Score"
                           >
                             <Sparkles className="w-3.5 h-3.5" />
                           </Button>
@@ -524,7 +525,7 @@ export const LeadsPage: React.FC = () => {
                             size="icon"
                             onClick={() => handleAutoAssign(lead)}
                             className="h-7 w-7 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                            title="Tự động phân bổ Lead (Round-Robin)"
+                            title="Auto-assign Lead (Round-Robin)"
                           >
                             <UserCheck className="w-3.5 h-3.5" />
                           </Button>
@@ -534,29 +535,33 @@ export const LeadsPage: React.FC = () => {
                               size="icon"
                               onClick={() => handleConvert(lead)}
                               className="h-7 w-7 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
-                              title="Chuyển đổi thành Khách hàng chính thức"
+                              title="Convert to Customer Account & Opportunity"
                             >
                               <ArrowRightCircle className="w-3.5 h-3.5" />
                             </Button>
                           )}
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleOpenEdit(lead)}
-                            className="h-7 w-7 text-slate-600 hover:text-blue-600 hover:bg-blue-50"
-                            title="Chỉnh sửa thông tin"
-                          >
-                            <Edit className="w-3.5 h-3.5" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleDelete(lead.id, lead.fullName || lead.displayName || lead.leadNumber)}
-                            className="h-7 w-7 text-slate-600 hover:text-red-600 hover:bg-red-50"
-                            title="Xóa tiềm năng"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </Button>
+                          <ActionTooltip label="Chỉnh sửa lead">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleOpenEdit(lead)}
+                              className="h-7 w-7 text-slate-600 hover:text-blue-600 hover:bg-blue-50"
+                              aria-label="Edit Lead Details"
+                            >
+                              <Edit className="w-3.5 h-3.5" />
+                            </Button>
+                          </ActionTooltip>
+                          <ActionTooltip label="Xóa lead">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDelete(lead.id, lead.fullName || lead.displayName || lead.leadNumber)}
+                              className="h-7 w-7 text-slate-600 hover:text-red-600 hover:bg-red-50"
+                              aria-label="Delete Lead"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
+                          </ActionTooltip>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -567,7 +572,7 @@ export const LeadsPage: React.FC = () => {
           </Table>
         </div>
 
-        {/* ── Standard Pagination Bar ── */}
+        {/* Standard Pagination Bar */}
         {!loading && (
           <StandardPagination
             currentPage={page + 1}
@@ -575,12 +580,12 @@ export const LeadsPage: React.FC = () => {
             totalElements={totalElements}
             pageSize={pageSize}
             onPageChange={(p) => setPage(p - 1)}
-            itemLabel="tiềm năng"
+            itemLabel="leads"
           />
         )}
       </Card>
 
-      {/* ── Create / Edit Lead Modal ── */}
+      {/* Create / Edit Lead Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0 rounded-2xl border border-slate-200 shadow-xl">
           <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-5 text-white">
@@ -591,10 +596,10 @@ export const LeadsPage: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="font-bold text-base">
-                    {editingLead ? 'Chỉnh sửa Khách hàng Tiềm năng' : 'Thêm Tiềm Năng Mới'}
+                    {editingLead ? 'Edit Lead Profile' : 'Create New Lead'}
                   </h3>
                   <p className="text-xs text-blue-100 mt-0.5">
-                    {editingLead ? `Mã: ${editingLead.id.toUpperCase()}` : 'Ghi nhận thông tin đầu mối kinh doanh và phân loại'}
+                    {editingLead ? `Lead ID: ${editingLead.id.toUpperCase()}` : 'Capture prospective contact details & commercial interest'}
                   </p>
                 </div>
               </div>
@@ -605,20 +610,20 @@ export const LeadsPage: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <Label className="text-xs font-semibold text-slate-700">
-                  Họ và tên người liên hệ <span className="text-rose-500">*</span>
+                  Full Name <span className="text-rose-500">*</span>
                 </Label>
                 <Input
                   required
-                  placeholder="Ví dụ: Trần Quốc Toản"
+                  placeholder="e.g. Alex Toan Tran"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   className="h-9 text-xs border-slate-200 mt-1"
                 />
               </div>
               <div>
-                <Label className="text-xs font-semibold text-slate-700">Tên Doanh nghiệp / Tổ chức</Label>
+                <Label className="text-xs font-semibold text-slate-700">Company / Organization</Label>
                 <Input
-                  placeholder="Ví dụ: Công ty CP Công Nghệ ABC"
+                  placeholder="e.g. ABC Technologies Corp"
                   value={companyName}
                   onChange={(e) => setCompanyName(e.target.value)}
                   className="h-9 text-xs border-slate-200 mt-1"
@@ -628,18 +633,18 @@ export const LeadsPage: React.FC = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <Label className="text-xs font-semibold text-slate-700">Chức vụ</Label>
+                <Label className="text-xs font-semibold text-slate-700">Job Title</Label>
                 <Input
-                  placeholder="Ví dụ: Giám đốc Điều hành (CEO)"
+                  placeholder="e.g. Chief Executive Officer (CEO)"
                   value={jobTitle}
                   onChange={(e) => setJobTitle(e.target.value)}
                   className="h-9 text-xs border-slate-200 mt-1"
                 />
               </div>
               <div>
-                <Label className="text-xs font-semibold text-slate-700">Tỉnh / Thành phố</Label>
+                <Label className="text-xs font-semibold text-slate-700">City / Region</Label>
                 <Input
-                  placeholder="Ví dụ: TP. Hồ Chí Minh"
+                  placeholder="e.g. Hanoi / Ho Chi Minh City"
                   value={city}
                   onChange={(e) => setCity(e.target.value)}
                   className="h-9 text-xs border-slate-200 mt-1"
@@ -650,7 +655,7 @@ export const LeadsPage: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <Label className="text-xs font-semibold text-slate-700">
-                  Email <span className="text-rose-500">*</span>
+                  Email Address <span className="text-rose-500">*</span>
                 </Label>
                 <Input
                   required
@@ -662,9 +667,9 @@ export const LeadsPage: React.FC = () => {
                 />
               </div>
               <div>
-                <Label className="text-xs font-semibold text-slate-700">Số điện thoại</Label>
+                <Label className="text-xs font-semibold text-slate-700">Phone Number</Label>
                 <Input
-                  placeholder="0903 123 456"
+                  placeholder="+84 903 123 456"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   className="h-9 text-xs border-slate-200 mt-1 font-mono"
@@ -674,38 +679,38 @@ export const LeadsPage: React.FC = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
-                <Label className="text-xs font-semibold text-slate-700">Nguồn tiềm năng</Label>
+                <Label className="text-xs font-semibold text-slate-700">Lead Source</Label>
                 <Select value={leadSource} onValueChange={(val: any) => setLeadSource(val)}>
                   <SelectTrigger className="h-9 text-xs border-slate-200 mt-1">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="WEBSITE">Website</SelectItem>
-                    <SelectItem value="EVENT">Hội thảo / Sự kiện</SelectItem>
-                    <SelectItem value="REFERRAL">Giới thiệu</SelectItem>
-                    <SelectItem value="COLD_CALL">Telesales</SelectItem>
-                    <SelectItem value="SOCIAL">Mạng xã hội</SelectItem>
-                    <SelectItem value="PARTNER">Đối tác</SelectItem>
+                    <SelectItem value="WEBSITE">Website / Inbound</SelectItem>
+                    <SelectItem value="EVENT">Event / Conference</SelectItem>
+                    <SelectItem value="REFERRAL">Customer Referral</SelectItem>
+                    <SelectItem value="COLD_CALL">Outbound Telesales</SelectItem>
+                    <SelectItem value="SOCIAL">Social Media</SelectItem>
+                    <SelectItem value="PARTNER">Partner Channel</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div>
-                <Label className="text-xs font-semibold text-slate-700">Mức độ quan tâm</Label>
+                <Label className="text-xs font-semibold text-slate-700">Interest Rating</Label>
                 <Select value={rating} onValueChange={(val: any) => setRating(val)}>
                   <SelectTrigger className="h-9 text-xs border-slate-200 mt-1">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="HOT">NÓNG (Hot)</SelectItem>
-                    <SelectItem value="WARM">ẤM (Warm)</SelectItem>
-                    <SelectItem value="COLD">LẠNH (Cold)</SelectItem>
+                    <SelectItem value="HOT">HOT</SelectItem>
+                    <SelectItem value="WARM">WARM</SelectItem>
+                    <SelectItem value="COLD">COLD</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div>
-                <Label className="text-xs font-semibold text-slate-700">Doanh thu dự kiến (VNĐ)</Label>
+                <Label className="text-xs font-semibold text-slate-700">Estimated Value (VND)</Label>
                 <Input
                   type="number"
                   placeholder="50,000,000"
@@ -718,24 +723,24 @@ export const LeadsPage: React.FC = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <Label className="text-xs font-semibold text-slate-700">Trạng thái xử lý</Label>
+                <Label className="text-xs font-semibold text-slate-700">Lead Status</Label>
                 <Select value={status} onValueChange={(val: any) => setStatus(val)}>
                   <SelectTrigger className="h-9 text-xs border-slate-200 mt-1">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="NEW">Mới tiếp nhận</SelectItem>
-                    <SelectItem value="CONTACTED">Đã liên hệ</SelectItem>
-                    <SelectItem value="QUALIFIED">Đạt chuẩn tiềm năng</SelectItem>
-                    <SelectItem value="CONVERTED">Đã chuyển đổi</SelectItem>
-                    <SelectItem value="UNQUALIFIED">Không tiềm năng</SelectItem>
+                    <SelectItem value="NEW">New</SelectItem>
+                    <SelectItem value="CONTACTED">Contacted</SelectItem>
+                    <SelectItem value="QUALIFIED">Qualified</SelectItem>
+                    <SelectItem value="CONVERTED">Converted</SelectItem>
+                    <SelectItem value="UNQUALIFIED">Unqualified</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div>
-                <Label className="text-xs font-semibold text-slate-700">Nhân viên phụ trách</Label>
+                <Label className="text-xs font-semibold text-slate-700">Assigned Sales Rep</Label>
                 <Input
-                  placeholder="Phạm Tuấn Vũ"
+                  placeholder="Alex Nguyen"
                   value={assignedTo}
                   onChange={(e) => setAssignedTo(e.target.value)}
                   className="h-9 text-xs border-slate-200 mt-1"
@@ -744,10 +749,10 @@ export const LeadsPage: React.FC = () => {
             </div>
 
             <div>
-              <Label className="text-xs font-semibold text-slate-700">Ghi chú nhu cầu khách hàng</Label>
+              <Label className="text-xs font-semibold text-slate-700">Commercial Notes / Customer Needs</Label>
               <textarea
                 rows={3}
-                placeholder="Khách quan tâm gói Enterprise CRM và cần tư vấn trong tuần này..."
+                placeholder="Client interested in Enterprise CRM and requested an architecture consultation this week..."
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 className="w-full text-xs border border-slate-200 rounded-lg p-2.5 mt-1 focus:ring-1 focus:ring-blue-500 focus:outline-hidden"
@@ -761,7 +766,7 @@ export const LeadsPage: React.FC = () => {
                 onClick={() => setIsModalOpen(false)}
                 className="text-xs border-slate-200 h-9"
               >
-                Hủy bỏ
+                Cancel
               </Button>
               <Button
                 type="submit"
@@ -769,7 +774,7 @@ export const LeadsPage: React.FC = () => {
                 className="text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white gap-1.5 shadow-xs h-9"
               >
                 {isSubmitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
-                <span>{editingLead ? 'Lưu Thay Đổi' : 'Thêm Tiềm Năng'}</span>
+                <span>{editingLead ? 'Save Changes' : 'Create Lead'}</span>
               </Button>
             </div>
           </form>
@@ -786,8 +791,8 @@ export const LeadsPage: React.FC = () => {
                   <Sparkles className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-sm text-slate-900">Báo cáo Đánh giá Tiềm năng (Lead Scoring)</h3>
-                  <p className="text-[11px] text-slate-500">Phân tích đa chiều về ngân sách, thông tin & cơ hội chuyển đổi</p>
+                  <h3 className="font-bold text-sm text-slate-900">Lead Scoring Intelligence Report</h3>
+                  <p className="text-[11px] text-slate-500">Multi-dimensional analysis on budget, profile completeness &amp; conversion probability</p>
                 </div>
               </div>
               <button onClick={() => setShowScoringModal(false)} className="text-slate-400 hover:text-slate-600">
@@ -798,14 +803,14 @@ export const LeadsPage: React.FC = () => {
             {isScoringLoading ? (
               <div className="py-12 text-center text-slate-500 flex flex-col items-center justify-center gap-2">
                 <Loader2 className="w-6 h-6 animate-spin text-purple-600" />
-                <span className="text-xs font-semibold">Đang tổng hợp dữ liệu và chấm điểm...</span>
+                <span className="text-xs font-semibold">Aggregating customer signals and computing score...</span>
               </div>
             ) : scoringResult ? (
               <div className="space-y-4 text-xs">
-                {/* Big Score Card */}
+                {/* Score Card */}
                 <div className="p-4 rounded-xl bg-gradient-to-r from-purple-50 via-indigo-50 to-white border border-purple-200 flex items-center justify-between">
                   <div>
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-purple-600 block">Điểm số Tiềm năng</span>
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-purple-600 block">Propensity Score</span>
                     <div className="text-3xl font-black text-purple-900 tracking-tight mt-0.5">
                       {scoringResult.score} <span className="text-sm font-normal text-purple-600">/ 100</span>
                     </div>
@@ -815,14 +820,14 @@ export const LeadsPage: React.FC = () => {
                     scoringResult.grade === 'WARM' ? 'bg-amber-500 text-white shadow-xs' :
                     'bg-slate-500 text-white'
                   }`}>
-                    {scoringResult.grade === 'HOT' ? '🔥 HOT LEAD (Cực kỳ Tiềm năng)' :
-                     scoringResult.grade === 'WARM' ? '⚡ WARM LEAD (Tiềm năng)' : '❄ COLD LEAD (Nuôi dưỡng)'}
+                    {scoringResult.grade === 'HOT' ? '🔥 HOT LEAD (High Propensity)' :
+                     scoringResult.grade === 'WARM' ? '⚡ WARM LEAD (Engaged)' : '❄ COLD LEAD (Nurture)'}
                   </Badge>
                 </div>
 
                 {/* Factors list */}
                 <div className="space-y-2">
-                  <span className="font-bold text-slate-700 block">Các yếu tố cấu thành điểm số:</span>
+                  <span className="font-bold text-slate-700 block">Key Scoring Drivers:</span>
                   <div className="space-y-1.5 bg-slate-50 p-3 rounded-xl border border-slate-200/80">
                     {scoringResult.scoringFactors.map((f, i) => (
                       <div key={i} className="flex items-center gap-2 text-slate-700 text-xs">
@@ -837,7 +842,7 @@ export const LeadsPage: React.FC = () => {
                 <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl space-y-1">
                   <span className="font-bold text-amber-900 flex items-center gap-1.5">
                     <ShieldAlert className="w-3.5 h-3.5 text-amber-700" />
-                    Đề xuất hành động kinh doanh:
+                    Recommended Next Action:
                   </span>
                   <p className="text-amber-800 leading-relaxed text-xs">
                     {scoringResult.recommendedAction}
@@ -848,7 +853,7 @@ export const LeadsPage: React.FC = () => {
 
             <div className="flex justify-end pt-3 border-t border-slate-100">
               <Button size="sm" onClick={() => setShowScoringModal(false)} className="h-8 text-xs font-semibold bg-slate-900 text-white">
-                Đóng
+                Close
               </Button>
             </div>
           </div>
@@ -863,7 +868,7 @@ export const LeadsPage: React.FC = () => {
             setIsCallModalOpen(false);
             setCallingLead(null);
           }}
-          targetName={callingLead.fullName || callingLead.displayName || 'Tiềm năng'}
+          targetName={callingLead.fullName || callingLead.displayName || 'Lead'}
           targetPhone={callingLead.phone || ''}
           entityType="LEAD"
           entityId={callingLead.id}
@@ -873,3 +878,5 @@ export const LeadsPage: React.FC = () => {
     </div>
   );
 };
+
+export default LeadsPage;

@@ -18,6 +18,7 @@ import {
   Dialog,
   DialogContent,
 } from '@/components/ui/dialog';
+import { ActionTooltip } from '@/components/ui/action-tooltip';
 import {
   Table,
   TableBody,
@@ -34,28 +35,25 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from 'sonner';
+import { StandardPageHeader } from '@/components/common/StandardPageHeader';
+import { StandardFilterBar, ViewTabItem } from '@/components/common/StandardFilterBar';
+import { StandardPagination } from '@/components/common/StandardPagination';
 import {
   Calendar,
   CheckCircle2,
   Clock,
-  Search,
   Plus,
   RefreshCw,
   Edit,
   Trash2,
   Loader2,
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
-  X,
-  RotateCcw,
   Building2,
   Phone,
   Mail,
   Users,
   CheckSquare,
   CalendarCheck,
+  RotateCcw,
 } from 'lucide-react';
 
 const TYPE_ICON_MAP: Record<ActivityType, any> = {
@@ -70,12 +68,12 @@ const TYPE_ICON_MAP: Record<ActivityType, any> = {
 };
 
 const STATUS_CONFIG: Record<ActivityStatus, { label: string; className: string }> = {
-  PLANNED: { label: 'Đã lên lịch', className: 'bg-blue-50 text-blue-700 border-blue-200 font-semibold' },
-  IN_PROGRESS: { label: 'Đang thực hiện', className: 'bg-indigo-50 text-indigo-700 border-indigo-200 font-semibold' },
-  PENDING: { label: 'Chờ xử lý', className: 'bg-amber-50 text-amber-700 border-amber-200 font-semibold' },
-  COMPLETED: { label: 'Hoàn thành', className: 'bg-emerald-50 text-emerald-700 border-emerald-200 font-bold' },
-  CANCELLED: { label: 'Đã hủy', className: 'bg-rose-50 text-rose-700 border-rose-200 font-semibold' },
-  DEFERRED: { label: 'Tạm hoãn', className: 'bg-slate-100 text-slate-700 border-slate-200 font-semibold' },
+  PLANNED: { label: 'PLANNED', className: 'bg-blue-50 text-blue-700 border-blue-200 font-semibold' },
+  IN_PROGRESS: { label: 'IN PROGRESS', className: 'bg-indigo-50 text-indigo-700 border-indigo-200 font-semibold' },
+  PENDING: { label: 'PENDING', className: 'bg-amber-50 text-amber-700 border-amber-200 font-semibold' },
+  COMPLETED: { label: 'COMPLETED', className: 'bg-emerald-50 text-emerald-700 border-emerald-200 font-bold' },
+  CANCELLED: { label: 'CANCELLED', className: 'bg-rose-50 text-rose-700 border-rose-200 font-semibold' },
+  DEFERRED: { label: 'DEFERRED', className: 'bg-slate-100 text-slate-700 border-slate-200 font-semibold' },
 };
 
 export const ActivitiesPage: React.FC = () => {
@@ -104,7 +102,7 @@ export const ActivitiesPage: React.FC = () => {
   const [dueTime, setDueTime] = useState('09:00');
   const [accountName, setAccountName] = useState('');
   const [contactName, setContactName] = useState('');
-  const [assignedTo, setAssignedTo] = useState('Phạm Tuấn Vũ');
+  const [assignedTo, setAssignedTo] = useState('Alex Nguyen');
   const [description, setDescription] = useState('');
 
   const fetchActivities = useCallback(async () => {
@@ -122,7 +120,7 @@ export const ActivitiesPage: React.FC = () => {
       setTotalPages(res.totalPages);
       setTotalElements(res.totalElements);
     } catch {
-      toast.error('Không thể tải danh sách hoạt động');
+      toast.error('Unable to load activities list');
     } finally {
       setLoading(false);
     }
@@ -173,7 +171,7 @@ export const ActivitiesPage: React.FC = () => {
   const handleSaveActivity = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!subject.trim()) {
-      toast.error('Vui lòng nhập tiêu đề hoạt động');
+      toast.error('Please enter Activity Subject');
       return;
     }
 
@@ -193,7 +191,7 @@ export const ActivitiesPage: React.FC = () => {
           assignedTo,
           description,
         });
-        toast.success('Đã cập nhật hoạt động thành công!');
+        toast.success('Activity updated successfully!');
       } else {
         await activityApi.create({
           subject,
@@ -202,17 +200,17 @@ export const ActivitiesPage: React.FC = () => {
           status,
           dueDate: dueDate || new Date().toISOString().split('T')[0],
           dueTime: dueTime || '09:00',
-          accountName: accountName || 'Khách hàng',
-          contactName: contactName || 'Người liên hệ',
-          assignedTo: assignedTo || 'Phạm Tuấn Vũ',
+          accountName: accountName || 'Client Account',
+          contactName: contactName || 'Contact Representative',
+          assignedTo: assignedTo || 'Alex Nguyen',
           description,
         });
-        toast.success('Đã thêm hoạt động mới thành công!');
+        toast.success('New activity task created successfully!');
       }
       setIsModalOpen(false);
       fetchActivities();
     } catch {
-      toast.error('Không thể lưu thông tin');
+      toast.error('Unable to save activity');
     } finally {
       setIsSubmitting(false);
     }
@@ -221,21 +219,21 @@ export const ActivitiesPage: React.FC = () => {
   const handleToggleComplete = async (act: ActivityItem) => {
     try {
       await activityApi.complete(act.id, act.version || 1);
-      toast.success(`Đã cập nhật trạng thái: "${act.subject}"`);
+      toast.success(`Updated status for "${act.subject}"`);
       fetchActivities();
     } catch {
-      toast.error('Không thể cập nhật trạng thái');
+      toast.error('Unable to update activity status');
     }
   };
 
   const handleDelete = async (id: string, sub: string) => {
-    if (!window.confirm(`Bạn có chắc chắn muốn xóa hoạt động "${sub}"?`)) return;
+    if (!window.confirm(`Are you sure you want to delete activity "${sub}"?`)) return;
     try {
       await activityApi.delete(id);
-      toast.success(`Đã xóa hoạt động "${sub}"`);
+      toast.success(`Deleted activity "${sub}"`);
       fetchActivities();
     } catch {
-      toast.error('Không thể xóa hoạt động');
+      toast.error('Unable to delete activity');
     }
   };
 
@@ -250,181 +248,181 @@ export const ActivitiesPage: React.FC = () => {
     (selectedPriority !== 'ALL' ? 1 : 0) +
     (selectedStatus !== 'ALL' ? 1 : 0);
 
+  // View Tabs Config
+  const viewTabs: ViewTabItem[] = [
+    { id: 'ALL', label: 'All Activities', count: totalElements },
+    { id: 'CALL', label: 'Telesales Calls', count: callsCount, icon: Phone, dotColor: 'bg-emerald-500' },
+    { id: 'MEETING', label: 'Demos & Meetings', count: meetingsCount, icon: Users, dotColor: 'bg-purple-500' },
+    { id: 'PENDING', label: 'Pending Action', count: pendingCount, icon: Clock, dotColor: 'bg-amber-500' },
+  ];
+
+  const currentActiveTab = selectedType === 'CALL' ? 'CALL' : selectedType === 'MEETING' ? 'MEETING' : selectedStatus === 'PENDING' ? 'PENDING' : 'ALL';
+
+  const handleTabChange = (tabId: string) => {
+    if (tabId === 'CALL') {
+      setSelectedType('CALL');
+      setSelectedStatus('ALL');
+    } else if (tabId === 'MEETING') {
+      setSelectedType('MEETING');
+      setSelectedStatus('ALL');
+    } else if (tabId === 'PENDING') {
+      setSelectedStatus('PENDING');
+      setSelectedType('ALL');
+    } else {
+      setSelectedType('ALL');
+      setSelectedStatus('ALL');
+    }
+    setPage(0);
+  };
+
   return (
-    <div className="space-y-5 pb-12 font-sans w-full">
-      {/* ── Page Header ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-bold text-slate-900 flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shadow-xs shrink-0">
-              <Calendar className="w-4.5 h-4.5 text-white" />
-            </div>
-            Quản lý Hoạt động &amp; Công việc (Activities)
-          </h1>
-          <p className="text-xs text-slate-500 mt-1 ml-10.5">
-            Lên lịch cuộc gọi, sự kiện hội họp, gửi email và nhiệm vụ chăm sóc khách hàng
-          </p>
-        </div>
+    <div className="space-y-4 pb-12 font-sans w-full">
+      {/* Standard Page Header */}
+      <StandardPageHeader
+        title="Activities &amp; Task Management"
+        subtitle="Schedule sales calls, client presentations, follow-up emails &amp; customer engagement milestones"
+        icon={Calendar}
+        badgeCount={totalElements}
+        badgeLabel="activities"
+        actions={
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={fetchActivities}
+              disabled={loading}
+              className="text-xs font-medium text-slate-700 bg-white border-slate-200 hover:bg-slate-50 gap-1.5 h-8 rounded-[3px]"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+              <span>Refresh</span>
+            </Button>
 
-        <div className="flex items-center gap-2 shrink-0">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={fetchActivities}
-            disabled={loading}
-            className="text-xs gap-1.5 border-slate-200 h-8"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-            <span>Làm mới</span>
-          </Button>
+            <Button
+              size="sm"
+              onClick={handleOpenCreate}
+              className="text-xs font-semibold bg-[#0C66E4] hover:bg-[#0052CC] text-white gap-1.5 shadow-none h-8 rounded-[3px]"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>New Activity</span>
+            </Button>
+          </>
+        }
+      />
 
-          <Button
-            size="sm"
-            onClick={handleOpenCreate}
-            className="text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white gap-1.5 shadow-xs h-8"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Thêm Hoạt Động Mới</span>
-          </Button>
-        </div>
-      </div>
-
-      {/* ── Quick Stat Cards ── */}
+      {/* KPI Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="bg-white rounded-xl border border-slate-200 px-4 py-3 flex items-center gap-3 shadow-xs hover:shadow-sm transition-shadow">
+        <div className="bg-white rounded-[4px] border border-slate-200 px-4 py-3 flex items-center gap-3 shadow-none">
           <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
             <CalendarCheck className="w-4.5 h-4.5 text-blue-600" />
           </div>
           <div>
-            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Tổng Hoạt động</div>
+            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Total Tasks</div>
             <div className="text-lg font-black text-slate-900 leading-tight">{totalElements}</div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-emerald-100 px-4 py-3 flex items-center gap-3 shadow-xs hover:shadow-sm transition-shadow">
+        <div className="bg-white rounded-[4px] border border-emerald-100 px-4 py-3 flex items-center gap-3 shadow-none">
           <div className="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center shrink-0">
             <Phone className="w-4.5 h-4.5 text-emerald-600" />
           </div>
           <div>
-            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Cuộc gọi Telesales</div>
+            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Outbound Calls</div>
             <div className="text-lg font-black text-emerald-700 leading-tight">{callsCount}</div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-purple-100 px-4 py-3 flex items-center gap-3 shadow-xs hover:shadow-sm transition-shadow">
+        <div className="bg-white rounded-[4px] border border-purple-100 px-4 py-3 flex items-center gap-3 shadow-none">
           <div className="w-9 h-9 rounded-lg bg-purple-50 flex items-center justify-center shrink-0">
             <Users className="w-4.5 h-4.5 text-purple-600" />
           </div>
           <div>
-            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Lịch họp &amp; Demo</div>
+            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Demos &amp; Meetings</div>
             <div className="text-lg font-black text-purple-700 leading-tight">{meetingsCount}</div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-amber-100 px-4 py-3 flex items-center gap-3 shadow-xs hover:shadow-sm transition-shadow">
+        <div className="bg-white rounded-[4px] border border-amber-100 px-4 py-3 flex items-center gap-3 shadow-none">
           <div className="w-9 h-9 rounded-lg bg-amber-50 flex items-center justify-center shrink-0">
             <Clock className="w-4.5 h-4.5 text-amber-600" />
           </div>
           <div>
-            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Đang chờ xử lý</div>
+            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Pending Execution</div>
             <div className="text-lg font-black text-amber-700 leading-tight">{pendingCount}</div>
           </div>
         </div>
       </div>
 
-      {/* ── Search & Filter Toolbar ── */}
-      <Card className="p-3.5 bg-white border border-slate-200 rounded-xl shadow-xs space-y-3">
-        <div className="flex flex-col md:flex-row gap-2.5 items-stretch md:items-center justify-between">
-          <div className="relative flex-1">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-            <Input
-              placeholder="Tìm kiếm theo tiêu đề hoạt động, khách hàng, nội dung..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 pr-8 text-xs h-8.5 bg-slate-50/60 focus:bg-white border-slate-200 rounded-lg"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
+      {/* Standard Filter Bar */}
+      <StandardFilterBar
+        searchQuery={searchQuery}
+        onSearchChange={(val) => { setSearchQuery(val); setPage(0); }}
+        searchPlaceholder="Search activity subject, account, description..."
+        viewTabs={viewTabs}
+        activeTab={currentActiveTab}
+        onTabChange={handleTabChange}
+        activeFiltersCount={activeFiltersCount}
+        onResetFilters={handleResetFilters}
+        filterControls={
+          <>
             <div className="w-36">
               <Select value={selectedType} onValueChange={(val) => { setSelectedType(val); setPage(0); }}>
-                <SelectTrigger className="h-8.5 text-xs bg-slate-50/60 border-slate-200 rounded-lg">
-                  <SelectValue placeholder="Loại hình" />
+                <SelectTrigger className="h-8 text-xs bg-white border-slate-200 rounded-[3px]">
+                  <SelectValue placeholder="Activity Type" />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ALL">Tất cả loại</SelectItem>
-                  <SelectItem value="CALL">Cuộc gọi</SelectItem>
-                  <SelectItem value="MEETING">Lịch họp</SelectItem>
-                  <SelectItem value="TASK">Nhiệm vụ</SelectItem>
-                  <SelectItem value="EMAIL">Gửi Email</SelectItem>
+                <SelectContent className="rounded-[3px]">
+                  <SelectItem value="ALL">All Types</SelectItem>
+                  <SelectItem value="CALL">Call</SelectItem>
+                  <SelectItem value="MEETING">Meeting</SelectItem>
+                  <SelectItem value="TASK">Task</SelectItem>
+                  <SelectItem value="EMAIL">Email</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="w-36">
               <Select value={selectedStatus} onValueChange={(val) => { setSelectedStatus(val); setPage(0); }}>
-                <SelectTrigger className="h-8.5 text-xs bg-slate-50/60 border-slate-200 rounded-lg">
-                  <SelectValue placeholder="Trạng thái" />
+                <SelectTrigger className="h-8 text-xs bg-white border-slate-200 rounded-[3px]">
+                  <SelectValue placeholder="Status" />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ALL">Tất cả trạng thái</SelectItem>
-                  <SelectItem value="PENDING">Chờ xử lý</SelectItem>
-                  <SelectItem value="COMPLETED">Hoàn thành</SelectItem>
-                  <SelectItem value="CANCELLED">Đã hủy</SelectItem>
+                <SelectContent className="rounded-[3px]">
+                  <SelectItem value="ALL">All Statuses</SelectItem>
+                  <SelectItem value="PENDING">PENDING</SelectItem>
+                  <SelectItem value="COMPLETED">COMPLETED</SelectItem>
+                  <SelectItem value="CANCELLED">CANCELLED</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="w-36">
               <Select value={selectedPriority} onValueChange={(val) => { setSelectedPriority(val); setPage(0); }}>
-                <SelectTrigger className="h-8.5 text-xs bg-slate-50/60 border-slate-200 rounded-lg">
-                  <SelectValue placeholder="Độ ưu tiên" />
+                <SelectTrigger className="h-8 text-xs bg-white border-slate-200 rounded-[3px]">
+                  <SelectValue placeholder="Priority" />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ALL">Tất cả ưu tiên</SelectItem>
-                  <SelectItem value="HIGH">Cao (High)</SelectItem>
-                  <SelectItem value="MEDIUM">Trung bình</SelectItem>
-                  <SelectItem value="LOW">Thấp (Low)</SelectItem>
+                <SelectContent className="rounded-[3px]">
+                  <SelectItem value="ALL">All Priorities</SelectItem>
+                  <SelectItem value="HIGH">HIGH</SelectItem>
+                  <SelectItem value="MEDIUM">MEDIUM</SelectItem>
+                  <SelectItem value="LOW">LOW</SelectItem>
                 </SelectContent>
               </Select>
             </div>
+          </>
+        }
+      />
 
-            {activeFiltersCount > 0 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleResetFilters}
-                className="text-xs text-slate-500 hover:text-slate-800 gap-1 h-8.5 px-2"
-              >
-                <RotateCcw className="w-3 h-3" />
-                <span>Đặt lại ({activeFiltersCount})</span>
-              </Button>
-            )}
-          </div>
-        </div>
-      </Card>
-
-      {/* ── Activities Table ── */}
-      <Card className="overflow-hidden border border-slate-200 rounded-xl bg-white shadow-xs">
+      {/* Activities Table */}
+      <Card className="overflow-hidden border border-slate-200 rounded-[4px] bg-white shadow-none">
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
-              <TableRow className="bg-slate-50/80 hover:bg-slate-50/80 border-b border-slate-200">
-                <TableHead className="text-[11px] font-bold text-slate-600 uppercase tracking-wider py-3 pl-4">Tiêu đề Hoạt động</TableHead>
-                <TableHead className="text-[11px] font-bold text-slate-600 uppercase tracking-wider py-3">Loại hình</TableHead>
-                <TableHead className="text-[11px] font-bold text-slate-600 uppercase tracking-wider py-3">Doanh nghiệp / Khách hàng</TableHead>
-                <TableHead className="text-[11px] font-bold text-slate-600 uppercase tracking-wider py-3">Thời hạn (Due Date)</TableHead>
-                <TableHead className="text-[11px] font-bold text-slate-600 uppercase tracking-wider py-3">Ưu tiên</TableHead>
-                <TableHead className="text-[11px] font-bold text-slate-600 uppercase tracking-wider py-3">Trạng thái</TableHead>
-                <TableHead className="text-[11px] font-bold text-slate-600 uppercase tracking-wider py-3 text-right pr-4">Thao tác</TableHead>
+              <TableRow className="bg-[#F7F8F9] border-b border-slate-200 hover:bg-[#F7F8F9]">
+                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Activity Subject</TableHead>
+                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Type</TableHead>
+                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Organization &amp; Contact</TableHead>
+                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Due Date</TableHead>
+                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Priority</TableHead>
+                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Status</TableHead>
+                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3 text-right pr-4">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -433,7 +431,7 @@ export const ActivitiesPage: React.FC = () => {
                   <TableCell colSpan={7} className="h-48 text-center">
                     <div className="flex flex-col items-center justify-center gap-2 text-slate-500">
                       <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
-                      <span className="text-xs">Đang tải danh sách hoạt động...</span>
+                      <span className="text-xs">Loading activities...</span>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -442,9 +440,9 @@ export const ActivitiesPage: React.FC = () => {
                   <TableCell colSpan={7} className="p-0">
                     <EmptyState
                       icon={Calendar}
-                      title="Không tìm thấy hoạt động nào"
-                      description="Hãy thử thay đổi điều kiện lọc hoặc tạo thêm hoạt động chăm sóc mới."
-                      actionLabel="Thêm Hoạt Động"
+                      title="No activities found"
+                      description="Try adjusting your filter criteria or schedule a new customer engagement task."
+                      actionLabel="Create Activity"
                       onAction={handleOpenCreate}
                     />
                   </TableCell>
@@ -456,15 +454,15 @@ export const ActivitiesPage: React.FC = () => {
                   const statusInfo = STATUS_CONFIG[act.status] || STATUS_CONFIG.PENDING;
 
                   return (
-                    <TableRow key={act.id} className="hover:bg-slate-50/80 transition-colors border-b border-slate-100 text-xs">
-                      {/* Cột 1: Tiêu đề */}
-                      <TableCell className="pl-4 py-3">
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 border border-blue-100 shadow-2xs">
-                            <TypeIcon className="w-4 h-4" />
+                    <TableRow key={act.id} className="hover:bg-[#F1F2F4] transition-colors border-b border-[#EBECF0] text-xs">
+                      {/* Subject */}
+                      <TableCell className="py-2 px-3">
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-[3px] bg-[#E9F2FF] text-[#0C66E4] border border-[#C0D9FF] font-bold text-xs flex items-center justify-center shrink-0">
+                            <TypeIcon className="w-3.5 h-3.5" />
                           </div>
                           <div>
-                            <div className="font-bold text-slate-900">{act.subject}</div>
+                            <div className="font-semibold text-slate-900">{act.subject}</div>
                             {act.description && (
                               <div className="text-[11px] text-slate-500 line-clamp-1 mt-0.5">{act.description}</div>
                             )}
@@ -472,19 +470,19 @@ export const ActivitiesPage: React.FC = () => {
                         </div>
                       </TableCell>
 
-                      {/* Cột 2: Loại hình */}
-                      <TableCell>
-                        <Badge className={`${typeInfo.className} text-[10px] px-2 py-0.5 font-bold`}>
+                      {/* Type */}
+                      <TableCell className="py-2 px-3">
+                        <Badge className={`${typeInfo.className} text-[10px] px-1.5 py-0.5 rounded-[3px] font-bold`}>
                           {typeInfo.label}
                         </Badge>
                       </TableCell>
 
-                      {/* Cột 3: Khách hàng */}
-                      <TableCell>
+                      {/* Account */}
+                      <TableCell className="py-2 px-3">
                         <div>
-                          <div className="font-semibold text-slate-800 flex items-center gap-1">
+                          <div className="font-medium text-slate-800 flex items-center gap-1">
                             <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                            <span>{act.accountName || 'Khách hàng'}</span>
+                            <span>{act.accountName || 'Client'}</span>
                           </div>
                           {act.contactName && (
                             <div className="text-[11px] text-slate-500 mt-0.5">{act.contactName}</div>
@@ -492,56 +490,60 @@ export const ActivitiesPage: React.FC = () => {
                         </div>
                       </TableCell>
 
-                      {/* Cột 4: Hạn chót */}
-                      <TableCell className="font-mono text-slate-600 text-[11px]">
+                      {/* Due Date */}
+                      <TableCell className="py-2 px-3 font-mono text-slate-600 text-[11px]">
                         <div>{act.dueDate}</div>
                         {act.dueTime && <div className="text-slate-400 text-[10px]">{act.dueTime}</div>}
                       </TableCell>
 
-                      {/* Cột 5: Ưu tiên */}
-                      <TableCell>
+                      {/* Priority */}
+                      <TableCell className="py-2 px-3">
                         {renderPriorityBadge(act.priority)}
                       </TableCell>
 
-                      {/* Cột 6: Trạng thái */}
-                      <TableCell>
-                        <Badge className={`${statusInfo.className} text-[11px]`}>
+                      {/* Status */}
+                      <TableCell className="py-2 px-3">
+                        <Badge className={`${statusInfo.className} text-[11px] rounded-[3px]`}>
                           {statusInfo.label}
                         </Badge>
                       </TableCell>
 
-                      {/* Cột 7: Thao tác */}
-                      <TableCell className="text-right pr-4">
+                      {/* Actions */}
+                      <TableCell className="py-2 px-3 text-right pr-4">
                         <div className="flex items-center justify-end gap-1">
                           {act.status !== 'COMPLETED' && (
                             <Button
                               variant="ghost"
                               size="icon"
                               onClick={() => handleToggleComplete(act)}
-                              className="h-7 w-7 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
-                              title="Đánh dấu hoàn thành"
+                              className="h-7 w-7 rounded-[3px] text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                              title="Mark as Completed"
                             >
                               <CheckCircle2 className="w-3.5 h-3.5" />
                             </Button>
                           )}
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleOpenEdit(act)}
-                            className="h-7 w-7 text-slate-600 hover:text-blue-600 hover:bg-blue-50"
-                            title="Chỉnh sửa"
-                          >
-                            <Edit className="w-3.5 h-3.5" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleDelete(act.id, act.subject)}
-                            className="h-7 w-7 text-slate-600 hover:text-red-600 hover:bg-red-50"
-                            title="Xóa hoạt động"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </Button>
+                          <ActionTooltip label="Chỉnh sửa hoạt động">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleOpenEdit(act)}
+                              className="h-7 w-7 rounded-[3px] text-slate-600 hover:text-[#0C66E4] hover:bg-[#E9F2FF]"
+                              aria-label="Edit Activity"
+                            >
+                              <Edit className="w-3.5 h-3.5" />
+                            </Button>
+                          </ActionTooltip>
+                          <ActionTooltip label="Xóa hoạt động">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDelete(act.id, act.subject)}
+                              className="h-7 w-7 rounded-[3px] text-slate-600 hover:text-red-600 hover:bg-red-50"
+                              aria-label="Delete Activity"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
+                          </ActionTooltip>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -552,60 +554,20 @@ export const ActivitiesPage: React.FC = () => {
           </Table>
         </div>
 
-        {/* ── Pagination Bar ── */}
-        {!loading && activities.length > 0 && (
-          <div className="px-4 py-3 bg-slate-50/50 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
-            <div>
-              Hiển thị <span className="font-bold text-slate-800">{page * pageSize + 1}</span> -{' '}
-              <span className="font-bold text-slate-800">{Math.min((page + 1) * pageSize, totalElements)}</span> trong tổng số{' '}
-              <span className="font-bold text-slate-800">{totalElements}</span> hoạt động
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-7 w-7 border-slate-200"
-                onClick={() => setPage(0)}
-                disabled={page === 0}
-              >
-                <ChevronsLeft className="w-3.5 h-3.5" />
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-7 w-7 border-slate-200"
-                onClick={() => setPage((p) => Math.max(p - 1, 0))}
-                disabled={page === 0}
-              >
-                <ChevronLeft className="w-3.5 h-3.5" />
-              </Button>
-              <div className="px-2 font-medium text-slate-700">
-                Trang {page + 1} / {Math.max(totalPages, 1)}
-              </div>
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-7 w-7 border-slate-200"
-                onClick={() => setPage((p) => p + 1)}
-                disabled={page >= totalPages - 1}
-              >
-                <ChevronRight className="w-3.5 h-3.5" />
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-7 w-7 border-slate-200"
-                onClick={() => setPage(totalPages - 1)}
-                disabled={page >= totalPages - 1}
-              >
-                <ChevronsRight className="w-3.5 h-3.5" />
-              </Button>
-            </div>
-          </div>
+        {/* Standard Pagination Bar */}
+        {!loading && (
+          <StandardPagination
+            currentPage={page + 1}
+            totalPages={Math.max(totalPages, 1)}
+            totalElements={totalElements}
+            pageSize={pageSize}
+            onPageChange={(p) => setPage(p - 1)}
+            itemLabel="activities"
+          />
         )}
       </Card>
 
-      {/* ── Create / Edit Activity Modal ── */}
+      {/* Create / Edit Activity Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0 rounded-2xl border border-slate-200 shadow-xl">
           <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-5 text-white">
@@ -616,10 +578,10 @@ export const ActivitiesPage: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="font-bold text-base">
-                    {editingAct ? 'Chỉnh sửa Hoạt động' : 'Thêm Hoạt Động Mới'}
+                    {editingAct ? 'Edit Activity Details' : 'Create New Activity'}
                   </h3>
                   <p className="text-xs text-blue-100 mt-0.5">
-                    Lên lịch cuộc gọi, sự kiện hội họp hoặc nhiệm vụ chăm sóc
+                    Schedule client calls, demonstration meetings or follow-up milestones
                   </p>
                 </div>
               </div>
@@ -629,11 +591,11 @@ export const ActivitiesPage: React.FC = () => {
           <form onSubmit={handleSaveActivity} className="p-6 space-y-4">
             <div>
               <Label className="text-xs font-semibold text-slate-700">
-                Tiêu đề hoạt động <span className="text-rose-500">*</span>
+                Activity Subject <span className="text-rose-500">*</span>
               </Label>
               <Input
                 required
-                placeholder="Ví dụ: Gọi điện thảo luận hợp đồng bản quyền phần mềm"
+                placeholder="e.g. Schedule architecture review call with CTO"
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
                 className="h-9 text-xs border-slate-200 mt-1"
@@ -642,44 +604,44 @@ export const ActivitiesPage: React.FC = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
-                <Label className="text-xs font-semibold text-slate-700">Loại hình</Label>
+                <Label className="text-xs font-semibold text-slate-700">Type</Label>
                 <Select value={type} onValueChange={(val: any) => setType(val)}>
                   <SelectTrigger className="h-9 text-xs border-slate-200 mt-1">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="CALL">Cuộc gọi (Call)</SelectItem>
-                    <SelectItem value="MEETING">Lịch họp (Meeting)</SelectItem>
-                    <SelectItem value="TASK">Nhiệm vụ (Task)</SelectItem>
-                    <SelectItem value="EMAIL">Gửi Email</SelectItem>
+                    <SelectItem value="CALL">Call</SelectItem>
+                    <SelectItem value="MEETING">Meeting</SelectItem>
+                    <SelectItem value="TASK">Task</SelectItem>
+                    <SelectItem value="EMAIL">Email</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div>
-                <Label className="text-xs font-semibold text-slate-700">Mức độ ưu tiên</Label>
+                <Label className="text-xs font-semibold text-slate-700">Priority Level</Label>
                 <Select value={priority} onValueChange={(val: any) => setPriority(val)}>
                   <SelectTrigger className="h-9 text-xs border-slate-200 mt-1">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="HIGH">Cao (High)</SelectItem>
-                    <SelectItem value="MEDIUM">Trung bình</SelectItem>
-                    <SelectItem value="LOW">Thấp (Low)</SelectItem>
+                    <SelectItem value="HIGH">HIGH</SelectItem>
+                    <SelectItem value="MEDIUM">MEDIUM</SelectItem>
+                    <SelectItem value="LOW">LOW</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div>
-                <Label className="text-xs font-semibold text-slate-700">Trạng thái</Label>
+                <Label className="text-xs font-semibold text-slate-700">Status</Label>
                 <Select value={status} onValueChange={(val: any) => setStatus(val)}>
                   <SelectTrigger className="h-9 text-xs border-slate-200 mt-1">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="PENDING">Chờ xử lý</SelectItem>
-                    <SelectItem value="COMPLETED">Hoàn thành</SelectItem>
-                    <SelectItem value="CANCELLED">Đã hủy</SelectItem>
+                    <SelectItem value="PENDING">PENDING</SelectItem>
+                    <SelectItem value="COMPLETED">COMPLETED</SelectItem>
+                    <SelectItem value="CANCELLED">CANCELLED</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -687,7 +649,7 @@ export const ActivitiesPage: React.FC = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <Label className="text-xs font-semibold text-slate-700">Ngày đến hạn</Label>
+                <Label className="text-xs font-semibold text-slate-700">Due Date</Label>
                 <Input
                   type="date"
                   value={dueDate}
@@ -696,7 +658,7 @@ export const ActivitiesPage: React.FC = () => {
                 />
               </div>
               <div>
-                <Label className="text-xs font-semibold text-slate-700">Thời gian</Label>
+                <Label className="text-xs font-semibold text-slate-700">Time</Label>
                 <Input
                   type="time"
                   value={dueTime}
@@ -708,18 +670,18 @@ export const ActivitiesPage: React.FC = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <Label className="text-xs font-semibold text-slate-700">Doanh nghiệp liên quan</Label>
+                <Label className="text-xs font-semibold text-slate-700">Client Organization</Label>
                 <Input
-                  placeholder="Nhập tên doanh nghiệp..."
+                  placeholder="Enter company..."
                   value={accountName}
                   onChange={(e) => setAccountName(e.target.value)}
                   className="h-9 text-xs border-slate-200 mt-1"
                 />
               </div>
               <div>
-                <Label className="text-xs font-semibold text-slate-700">Người liên hệ</Label>
+                <Label className="text-xs font-semibold text-slate-700">Contact Representative</Label>
                 <Input
-                  placeholder="Nhập người đại diện..."
+                  placeholder="Enter representative..."
                   value={contactName}
                   onChange={(e) => setContactName(e.target.value)}
                   className="h-9 text-xs border-slate-200 mt-1"
@@ -728,10 +690,10 @@ export const ActivitiesPage: React.FC = () => {
             </div>
 
             <div>
-              <Label className="text-xs font-semibold text-slate-700">Mô tả &amp; Chi tiết nội dung</Label>
+              <Label className="text-xs font-semibold text-slate-700">Commercial Notes &amp; Scope</Label>
               <textarea
                 rows={3}
-                placeholder="Chuẩn bị tài liệu slide giới thiệu và demo tính năng quản trị bảo mật..."
+                placeholder="Prepare solution architecture overview deck and demo key security controls..."
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 className="w-full text-xs border border-slate-200 rounded-lg p-2.5 mt-1 focus:ring-1 focus:ring-blue-500 focus:outline-hidden"
@@ -745,7 +707,7 @@ export const ActivitiesPage: React.FC = () => {
                 onClick={() => setIsModalOpen(false)}
                 className="text-xs border-slate-200 h-9"
               >
-                Hủy bỏ
+                Cancel
               </Button>
               <Button
                 type="submit"
@@ -753,7 +715,7 @@ export const ActivitiesPage: React.FC = () => {
                 className="text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white gap-1.5 shadow-xs h-9"
               >
                 {isSubmitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
-                <span>{editingAct ? 'Lưu Thay Đổi' : 'Tạo Hoạt Động'}</span>
+                <span>{editingAct ? 'Save Changes' : 'Create Activity'}</span>
               </Button>
             </div>
           </form>
@@ -762,3 +724,5 @@ export const ActivitiesPage: React.FC = () => {
     </div>
   );
 };
+
+export default ActivitiesPage;

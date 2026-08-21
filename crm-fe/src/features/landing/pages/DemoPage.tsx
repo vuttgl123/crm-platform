@@ -30,66 +30,66 @@ export const DemoPage: React.FC = () => {
   const hasDirectContact = Boolean(env.salesEmail || env.salesPhone);
 
   return (
-    <div className="py-6 sm:py-10 lg:py-14 bg-radial-hero">
+    <div className="py-6 sm:py-10 lg:py-14 bg-[var(--landing-canvas)]">
       <div className="landing-container">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-start">
           {/* Left Column: Context & Proof */}
           <div className="lg:col-span-5 space-y-6">
             <div className="space-y-3">
               {/* Kicker Pill */}
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-50/90 border border-blue-200/80 text-[#085AC0] text-xs font-bold tracking-wide shadow-xs">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[var(--landing-blue-soft)] border border-blue-200/80 text-[var(--landing-blue)] text-xs font-bold tracking-wide shadow-2xs">
                 <span className="relative flex h-2 w-2">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-[#085AC0]"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-[var(--landing-blue)]"></span>
                 </span>
                 <span className="uppercase tracking-wider font-extrabold">{t('landing.demo.heroKicker')}</span>
               </div>
 
-              <h1 className="text-2xl sm:text-3xl lg:text-[36px] font-extrabold text-[#07182B] landing-display leading-[1.2] tracking-tight">
+              <h1 className="text-2xl sm:text-3xl lg:text-[36px] font-extrabold text-[var(--landing-ink)] landing-display leading-[1.2] tracking-tight">
                 {t('landing.demo.heroTitle')}
               </h1>
 
-              <p className="text-sm sm:text-base text-slate-600 leading-relaxed font-normal">
+              <p className="text-sm sm:text-base text-[var(--landing-muted)] leading-relaxed font-normal">
                 {t('landing.demo.heroDescription')}
               </p>
             </div>
 
             {/* Quick Proof Metrics */}
             <div className="grid grid-cols-3 gap-2.5 pt-1">
-              <div className="p-3 bg-white rounded-xl border border-slate-200/90 shadow-2xs text-center">
-                <span className="text-[10px] font-bold text-slate-500 uppercase block">Phản hồi</span>
-                <span className="text-sm sm:text-base font-extrabold text-[#085AC0] landing-display">
+              <div className="p-3 bg-white rounded-xl border border-[var(--landing-line)] shadow-2xs text-center">
+                <span className="text-[10px] font-bold text-[var(--landing-muted)] uppercase block">Query Speed</span>
+                <span className="text-sm sm:text-base font-extrabold text-[var(--landing-blue)] landing-display">
                   <AnimatedCounter end={150} prefix="< " suffix="ms" duration={1200} />
                 </span>
               </div>
-              <div className="p-3 bg-white rounded-xl border border-slate-200/90 shadow-2xs text-center">
-                <span className="text-[10px] font-bold text-slate-500 uppercase block">Kiểm toán</span>
+              <div className="p-3 bg-white rounded-xl border border-[var(--landing-line)] shadow-2xs text-center">
+                <span className="text-[10px] font-bold text-[var(--landing-muted)] uppercase block">Audit Trails</span>
                 <span className="text-sm sm:text-base font-extrabold text-emerald-600 landing-display">
                   <AnimatedCounter end={100} suffix="%" duration={1400} />
                 </span>
               </div>
-              <div className="p-3 bg-white rounded-xl border border-slate-200/90 shadow-2xs text-center">
-                <span className="text-[10px] font-bold text-slate-500 uppercase block">Tốc độ chốt</span>
-                <span className="text-sm sm:text-base font-extrabold text-[#07182B] landing-display">
+              <div className="p-3 bg-white rounded-xl border border-[var(--landing-line)] shadow-2xs text-center">
+                <span className="text-[10px] font-bold text-[var(--landing-muted)] uppercase block">Closing Velocity</span>
+                <span className="text-sm sm:text-base font-extrabold text-[var(--landing-ink)] landing-display">
                   <AnimatedCounter end={3.2} decimals={1} suffix="x" duration={1300} />
                 </span>
               </div>
             </div>
 
             {/* 4 Key Consultation Agenda Points */}
-            <div className="p-5 rounded-2xl bg-white border border-[#E2E8F0] space-y-3.5 shadow-xs">
-              <h2 className="text-xs font-bold text-[#07182B] uppercase tracking-wider flex items-center gap-2">
-                <CalendarCheck className="w-4 h-4 text-[#085AC0]" />
-                Nội dung trong buổi tư vấn trực tiếp
+            <div className="p-5 rounded-2xl bg-white border border-[var(--landing-line)] space-y-3.5 shadow-2xs">
+              <h2 className="text-xs font-bold text-[var(--landing-ink)] uppercase tracking-wider flex items-center gap-2">
+                <CalendarCheck className="w-4 h-4 text-[var(--landing-blue)]" />
+                Live Consultation Agenda
               </h2>
               <div className="space-y-2.5">
                 {[
-                  'Khảo sát mô hình kinh doanh và dòng chảy dữ liệu khách hàng',
-                  'Trải nghiệm thực tế phân hệ Pipeline, Báo giá và Hợp đồng',
-                  'Đề xuất cấu trúc phân quyền 4 cấp dữ liệu (RBAC) tối ưu',
-                  'Tư vấn kế hoạch chuyển đổi dữ liệu và cam kết thời gian triển khai',
+                  'Assess current commercial workflows and customer data flow',
+                  'Interactive walkthrough of Pipelines, Quoting, and Contracts',
+                  'Recommend optimal 4-tier data scoping architecture (RBAC)',
+                  'Discuss data migration roadmap and deployment timeline commitments',
                 ].map((item, index) => (
-                  <div key={index} className="flex items-start gap-2.5 text-xs sm:text-sm text-slate-700 font-medium leading-relaxed">
+                  <div key={index} className="flex items-start gap-2.5 text-xs sm:text-sm text-[var(--landing-ink)] font-medium leading-relaxed">
                     <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
                     <span>{item}</span>
                   </div>
@@ -98,17 +98,20 @@ export const DemoPage: React.FC = () => {
             </div>
 
             {/* Direct Contact Card */}
-            <div className="p-4 rounded-xl bg-blue-50/70 border border-blue-100 flex items-center gap-3.5">
-              <div className="w-10 h-10 rounded-lg bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-xs">
-                <Headphones className="w-5 h-5" />
+            {hasDirectContact && (
+              <div className="p-4 rounded-xl bg-[var(--landing-blue-soft)] border border-[var(--landing-line)] flex items-center gap-3.5">
+                <div className="w-10 h-10 rounded-lg bg-[var(--landing-blue)] text-white flex items-center justify-center shrink-0 shadow-2xs">
+                  <Headphones className="w-5 h-5" />
+                </div>
+                <div>
+                  <h2 className="text-xs font-bold text-[var(--landing-ink)]">Need urgent technical consultation?</h2>
+                  <p className="text-xs text-[var(--landing-muted)] mt-0.5">
+                    {env.salesPhone && <span>Phone: <strong className="text-[var(--landing-blue)]">{env.salesPhone}</strong> • </span>}
+                    {env.salesEmail && <span>Email: <strong className="text-[var(--landing-blue)]">{env.salesEmail}</strong></span>}
+                  </p>
+                </div>
               </div>
-              <div>
-                <h2 className="text-xs font-bold text-[#07182B]">Cần hỗ trợ kỹ thuật hoặc tư vấn gấp?</h2>
-                <p className="text-xs text-slate-600 mt-0.5">
-                  Hotline: <strong className="text-[#085AC0]">{env.salesPhone || '1900 6868'}</strong> • Email: <strong className="text-[#085AC0]">{env.salesEmail || 'sales@vum.vn'}</strong>
-                </p>
-              </div>
-            </div>
+            )}
           </div>
 
           {/* Right Column: Form or Contact Fallback */}
@@ -120,15 +123,15 @@ export const DemoPage: React.FC = () => {
                 salesPhone={env.salesPhone}
               />
             ) : hasDirectContact ? (
-              <div className="bg-white border border-[#E2E8F0] rounded-2xl p-6 sm:p-10 shadow-lg shadow-blue-900/5 space-y-6">
+              <div className="bg-white border border-[var(--landing-line)] rounded-2xl p-6 sm:p-10 shadow-lg space-y-6">
                 <div className="space-y-2">
-                  <span className="text-[10px] font-extrabold text-[#085AC0] bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-200 uppercase">
-                    Liên hệ trực tiếp
+                  <span className="text-[10px] font-bold text-[var(--landing-blue)] bg-[var(--landing-blue-soft)] px-2.5 py-0.5 rounded-full uppercase">
+                    Direct Contact
                   </span>
-                  <h2 className="text-xl sm:text-2xl font-extrabold text-[#07182B] landing-display">
+                  <h2 className="text-xl sm:text-2xl font-extrabold text-[var(--landing-ink)] landing-display">
                     {t('landing.demo.contact.title')}
                   </h2>
-                  <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-normal">
+                  <p className="text-xs sm:text-sm text-[var(--landing-muted)] leading-relaxed font-normal">
                     {t('landing.demo.contact.description')}
                   </p>
                 </div>
@@ -137,16 +140,16 @@ export const DemoPage: React.FC = () => {
                   {env.salesEmail && (
                     <a
                       href={`mailto:${env.salesEmail}`}
-                      className="flex items-center gap-3.5 p-4 rounded-xl border border-slate-200 hover:border-blue-300 hover:bg-blue-50/50 transition-all group"
+                      className="flex items-center gap-3.5 p-4 rounded-xl border border-[var(--landing-line)] hover:border-[var(--landing-blue)] hover:bg-[var(--landing-blue-soft)] transition-colors group"
                     >
-                      <div className="w-10 h-10 rounded-lg bg-blue-50 text-[#085AC0] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                      <div className="w-10 h-10 rounded-lg bg-[var(--landing-blue-soft)] text-[var(--landing-blue)] flex items-center justify-center shrink-0">
                         <Mail className="w-5 h-5" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-[11px] font-bold text-slate-500 uppercase">
+                        <p className="text-[11px] font-bold text-[var(--landing-muted)] uppercase">
                           {t('landing.demo.contact.email')}
                         </p>
-                        <p className="text-sm font-bold text-[#07182B] truncate group-hover:text-[#085AC0]">
+                        <p className="text-sm font-bold text-[var(--landing-ink)] truncate group-hover:text-[var(--landing-blue)]">
                           {env.salesEmail}
                         </p>
                       </div>
@@ -156,16 +159,16 @@ export const DemoPage: React.FC = () => {
                   {env.salesPhone && (
                     <a
                       href={`tel:${env.salesPhone}`}
-                      className="flex items-center gap-3.5 p-4 rounded-xl border border-slate-200 hover:border-blue-300 hover:bg-blue-50/50 transition-all group"
+                      className="flex items-center gap-3.5 p-4 rounded-xl border border-[var(--landing-line)] hover:border-[var(--landing-blue)] hover:bg-[var(--landing-blue-soft)] transition-colors group"
                     >
-                      <div className="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                      <div className="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
                         <Phone className="w-5 h-5" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-[11px] font-bold text-slate-500 uppercase">
+                        <p className="text-[11px] font-bold text-[var(--landing-muted)] uppercase">
                           {t('landing.demo.contact.phone')}
                         </p>
-                        <p className="text-sm font-bold text-[#07182B] truncate group-hover:text-emerald-700">
+                        <p className="text-sm font-bold text-[var(--landing-ink)] truncate group-hover:text-emerald-700">
                           {env.salesPhone}
                         </p>
                       </div>
@@ -173,26 +176,26 @@ export const DemoPage: React.FC = () => {
                   )}
                 </div>
 
-                <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 flex items-center gap-3">
-                  <ShieldCheck className="w-5 h-5 text-[#085AC0] shrink-0" />
-                  <p className="text-xs text-slate-600 leading-relaxed">
-                    Đội ngũ chuyên gia VUM CRM cam kết phản hồi trong vòng 2 giờ làm việc.
+                <div className="p-4 rounded-xl bg-[var(--landing-canvas)] border border-[var(--landing-line)] flex items-center gap-3">
+                  <ShieldCheck className="w-5 h-5 text-[var(--landing-blue)] shrink-0" />
+                  <p className="text-xs text-[var(--landing-muted)] leading-relaxed">
+                    VUM CRM solution architects will respond within 2 business hours.
                   </p>
                 </div>
               </div>
             ) : (
-              <div className="bg-white border border-[#E2E8F0] rounded-2xl p-6 sm:p-10 shadow-lg text-center space-y-4">
-                <ShieldCheck className="w-12 h-12 text-[#085AC0] mx-auto" />
-                <h2 className="text-xl font-bold text-[#07182B]">Đang cập nhật kênh liên hệ</h2>
-                <p className="text-xs sm:text-sm text-slate-600 max-w-md mx-auto">
-                  Kênh tiếp nhận demo tự động đang được bảo trì. Vui lòng quay lại sau hoặc đăng nhập vào hệ thống dùng thử.
+              <div className="bg-white border border-[var(--landing-line)] rounded-2xl p-6 sm:p-10 shadow-lg text-center space-y-4">
+                <ShieldCheck className="w-12 h-12 text-[var(--landing-blue)] mx-auto" />
+                <h2 className="text-xl font-bold text-[var(--landing-ink)]">Contact Channel Updating</h2>
+                <p className="text-xs sm:text-sm text-[var(--landing-muted)] max-w-md mx-auto">
+                  The automated demo registration endpoint is currently under maintenance. Please visit again shortly or create a trial account.
                 </p>
                 <div className="pt-2">
                   <Link
                     to="/register"
-                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[#085AC0] text-white text-xs font-semibold hover:bg-[#06499D] transition-colors"
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[var(--landing-blue)] text-white text-xs font-semibold hover:bg-[var(--landing-blue-hover)] transition-colors"
                   >
-                    <span>Dùng thử VUM CRM</span>
+                    <span>Create VUM CRM Account</span>
                     <ArrowRight className="w-3.5 h-3.5" />
                   </Link>
                 </div>

@@ -13,12 +13,14 @@ export function AuthPageHeader({
 
   return (
     <div className="space-y-1.5 mb-6 text-left">
-      <h1 className="text-2xl sm:text-3xl font-extrabold text-[#07182B] auth-display leading-tight">
+      <h1 className="text-2xl sm:text-3xl font-extrabold text-[var(--auth-ink)] auth-display leading-tight">
         {t(titleKey)}
       </h1>
-      <p className="text-sm text-slate-500 leading-relaxed font-normal">
+      <p className="text-sm text-[var(--auth-muted)] leading-relaxed font-normal">
         {t(descriptionKey)}
       </p>
     </div>
   );
 }
+
+export default AuthPageHeader;

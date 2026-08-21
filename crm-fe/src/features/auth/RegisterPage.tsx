@@ -122,7 +122,7 @@ export const RegisterPage: React.FC = () => {
         <div className="mb-4 text-left">
           <Link
             to="/demo"
-            className="inline-flex items-center gap-1 text-xs font-semibold text-[#085AC0] hover:underline"
+            className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--auth-blue)] hover:underline"
           >
             <span>{t('auth.gateway.common.openDemo')}</span>
             <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
@@ -134,7 +134,7 @@ export const RegisterPage: React.FC = () => {
         <div className="mb-4 text-left">
           <Link
             to="/login"
-            className="inline-flex items-center gap-1 text-xs font-semibold text-[#085AC0] hover:underline"
+            className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--auth-blue)] hover:underline"
           >
             <span>{t('auth.gateway.common.openLogin')}</span>
             <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
@@ -146,7 +146,7 @@ export const RegisterPage: React.FC = () => {
         <div className="mb-4 text-left">
           <Link
             to="/app/pending-approval"
-            className="inline-flex items-center gap-1 text-xs font-semibold text-[#085AC0] hover:underline"
+            className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--auth-blue)] hover:underline"
           >
             <span>{t('auth.gateway.pending.title')}</span>
             <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
@@ -157,7 +157,7 @@ export const RegisterPage: React.FC = () => {
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 text-left" noValidate>
         {/* Full Name */}
         <div className="space-y-1.5">
-          <label htmlFor="register-name" className="text-xs font-semibold text-[#07182B]">
+          <label htmlFor="register-name" className="text-xs font-semibold text-[var(--auth-ink)]">
             {t('auth.gateway.register.fullNameLabel')}
           </label>
           <div className="relative">
@@ -168,8 +168,8 @@ export const RegisterPage: React.FC = () => {
               placeholder={t('auth.gateway.register.fullNamePlaceholder')}
               aria-invalid={Boolean(errors.displayName)}
               aria-describedby={errors.displayName ? 'register-name-error' : undefined}
-              className={`auth-control auth-interactive flex w-full border bg-white px-3.5 pl-10 text-sm text-[#07182B] placeholder:text-slate-400 focus-visible:border-[#085AC0] ${
-                errors.displayName ? 'border-rose-400 focus-visible:ring-rose-500' : 'border-[#DCE5F0]'
+              className={`auth-control auth-interactive flex w-full border bg-white px-3.5 pl-10 text-sm text-[var(--auth-ink)] placeholder:text-slate-400 focus-visible:border-[var(--auth-blue)] ${
+                errors.displayName ? 'border-rose-400 focus-visible:ring-rose-500' : 'border-[var(--auth-line)]'
               }`}
               {...register('displayName')}
             />
@@ -187,7 +187,7 @@ export const RegisterPage: React.FC = () => {
 
         {/* Work Email */}
         <div className="space-y-1.5">
-          <label htmlFor="register-email" className="text-xs font-semibold text-[#07182B]">
+          <label htmlFor="register-email" className="text-xs font-semibold text-[var(--auth-ink)]">
             {t('auth.gateway.register.emailLabel')}
           </label>
           <div className="relative">
@@ -200,8 +200,8 @@ export const RegisterPage: React.FC = () => {
               placeholder={t('auth.gateway.register.emailPlaceholder')}
               aria-invalid={Boolean(errors.email)}
               aria-describedby={errors.email ? 'register-email-error' : undefined}
-              className={`auth-control auth-interactive flex w-full border bg-white px-3.5 pl-10 text-sm text-[#07182B] placeholder:text-slate-400 focus-visible:border-[#085AC0] ${
-                errors.email ? 'border-rose-400 focus-visible:ring-rose-500' : 'border-[#DCE5F0]'
+              className={`auth-control auth-interactive flex w-full border bg-white px-3.5 pl-10 text-sm text-[var(--auth-ink)] placeholder:text-slate-400 focus-visible:border-[var(--auth-blue)] ${
+                errors.email ? 'border-rose-400 focus-visible:ring-rose-500' : 'border-[var(--auth-line)]'
               }`}
               {...register('email')}
             />
@@ -219,7 +219,7 @@ export const RegisterPage: React.FC = () => {
 
         {/* Tenant Code */}
         <div className="space-y-1.5">
-          <label htmlFor="register-tenant" className="text-xs font-semibold text-[#07182B]">
+          <label htmlFor="register-tenant" className="text-xs font-semibold text-[var(--auth-ink)]">
             {t('auth.gateway.register.tenantCodeLabel')}
           </label>
           <div className="relative">
@@ -235,8 +235,8 @@ export const RegisterPage: React.FC = () => {
                   ? 'register-tenant-error'
                   : 'register-tenant-help'
               }
-              className={`auth-control auth-interactive flex w-full border bg-white px-3.5 pl-10 text-sm text-[#07182B] placeholder:text-slate-400 focus-visible:border-[#085AC0] ${
-                errors.tenantCode ? 'border-rose-400 focus-visible:ring-rose-500' : 'border-[#DCE5F0]'
+              className={`auth-control auth-interactive flex w-full border bg-white px-3.5 pl-10 text-sm text-[var(--auth-ink)] placeholder:text-slate-400 focus-visible:border-[var(--auth-blue)] ${
+                errors.tenantCode ? 'border-rose-400 focus-visible:ring-rose-500' : 'border-[var(--auth-line)]'
               }`}
               {...register('tenantCode')}
             />
@@ -250,7 +250,7 @@ export const RegisterPage: React.FC = () => {
               {errors.tenantCode.message}
             </p>
           ) : (
-            <p id="register-tenant-help" className="text-xs text-slate-500 mt-1">
+            <p id="register-tenant-help" className="text-xs text-[var(--auth-muted)] mt-1">
               {t('auth.gateway.register.tenantCodeHelper')}
             </p>
           )}
@@ -280,13 +280,13 @@ export const RegisterPage: React.FC = () => {
                   onCheckedChange={(checked) => field.onChange(checked === true)}
                   aria-invalid={Boolean(errors.legalConsent)}
                   aria-describedby={errors.legalConsent ? 'legalConsent-error' : undefined}
-                  className="mt-0.5 border-[#DCE5F0] data-[state=checked]:bg-[#085AC0] data-[state=checked]:border-[#085AC0]"
+                  className="mt-0.5 border-[var(--auth-line)] data-[state=checked]:bg-[var(--auth-blue)] data-[state=checked]:border-[var(--auth-blue)]"
                 />
               )}
             />
             <label
               htmlFor="legalConsent"
-              className="text-xs text-slate-600 leading-relaxed cursor-pointer select-none font-normal"
+              className="text-xs text-[var(--auth-muted)] leading-relaxed cursor-pointer select-none font-normal"
             >
               {t('auth.gateway.register.consentPrefix')}{' '}
               {env.termsUrl ? (
@@ -294,12 +294,12 @@ export const RegisterPage: React.FC = () => {
                   href={env.termsUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-[#085AC0] font-semibold underline hover:text-[#06499D]"
+                  className="text-[var(--auth-blue)] font-semibold underline hover:text-[var(--auth-blue-hover)]"
                 >
                   {t('auth.gateway.register.terms')}
                 </a>
               ) : (
-                <span className="font-semibold text-slate-700">{t('auth.gateway.register.terms')}</span>
+                <span className="font-semibold text-[var(--auth-ink)]">{t('auth.gateway.register.terms')}</span>
               )}{' '}
               {t('auth.gateway.register.connector')}{' '}
               {env.privacyPolicyUrl ? (
@@ -307,12 +307,12 @@ export const RegisterPage: React.FC = () => {
                   href={env.privacyPolicyUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-[#085AC0] font-semibold underline hover:text-[#06499D]"
+                  className="text-[var(--auth-blue)] font-semibold underline hover:text-[var(--auth-blue-hover)]"
                 >
                   {t('auth.gateway.register.privacy')}
                 </a>
               ) : (
-                <span className="font-semibold text-slate-700">{t('auth.gateway.register.privacy')}</span>
+                <span className="font-semibold text-[var(--auth-ink)]">{t('auth.gateway.register.privacy')}</span>
               )}{' '}
               {t('auth.gateway.register.consentSuffix')}
             </label>
@@ -329,7 +329,7 @@ export const RegisterPage: React.FC = () => {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="auth-control auth-interactive w-full bg-[#085AC0] hover:bg-[#06499D] text-white font-semibold text-sm shadow-sm flex items-center justify-center gap-2 disabled:opacity-60"
+            className="auth-control auth-interactive w-full bg-[var(--auth-blue)] hover:bg-[var(--auth-blue-hover)] text-white font-semibold text-sm shadow-xs flex items-center justify-center gap-2 disabled:opacity-60"
           >
             {isSubmitting ? (
               <>
@@ -343,22 +343,22 @@ export const RegisterPage: React.FC = () => {
         </div>
 
         {/* Already Have Account */}
-        <div className="pt-2 text-center text-xs text-slate-500">
+        <div className="pt-2 text-center text-xs text-[var(--auth-muted)]">
           <span>{t('auth.gateway.register.hasAccount')} </span>
           <Link
             to="/login"
-            className="font-semibold text-[#085AC0] hover:underline"
+            className="font-semibold text-[var(--auth-blue)] hover:underline"
           >
             {t('auth.gateway.register.loginLink')}
           </Link>
         </div>
 
         {/* New Organization Help */}
-        <div className="pt-3 border-t border-[#DCE5F0] text-center text-xs text-slate-500">
+        <div className="pt-3 border-t border-[var(--auth-line)] text-center text-xs text-[var(--auth-muted)]">
           <span>{t('auth.gateway.register.organizationHelp')} </span>
           <Link
             to="/demo"
-            className="font-semibold text-[#085AC0] hover:underline"
+            className="font-semibold text-[var(--auth-blue)] hover:underline"
           >
             {t('auth.gateway.register.demoLink')}
           </Link>

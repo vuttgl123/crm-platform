@@ -152,12 +152,12 @@ export interface LeadSearchParams {
 }
 
 export const LEAD_SOURCE_CONFIG: Record<string, { label: string; className: string }> = {
-  WEBSITE: { label: 'Website / Landing Page', className: 'bg-blue-50 text-blue-700 border-blue-200' },
-  EVENT: { label: 'Sự kiện / Hội thảo', className: 'bg-purple-50 text-purple-700 border-purple-200' },
-  REFERRAL: { label: 'Khách hàng giới thiệu', className: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-  COLD_CALL: { label: 'Telesale / Gọi điện', className: 'bg-amber-50 text-amber-700 border-amber-200' },
-  SOCIAL: { label: 'Mạng xã hội (LinkedIn/FB)', className: 'bg-sky-50 text-sky-700 border-sky-200' },
-  PARTNER: { label: 'Kênh đối tác', className: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
+  WEBSITE: { label: 'Website / Inbound', className: 'bg-blue-50 text-blue-700 border-blue-200' },
+  EVENT: { label: 'Event / Conference', className: 'bg-purple-50 text-purple-700 border-purple-200' },
+  REFERRAL: { label: 'Customer Referral', className: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+  COLD_CALL: { label: 'Outbound Telesales', className: 'bg-amber-50 text-amber-700 border-amber-200' },
+  SOCIAL: { label: 'Social Media (LinkedIn)', className: 'bg-sky-50 text-sky-700 border-sky-200' },
+  PARTNER: { label: 'Partner Channel', className: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
 };
 
 function normalizeLead<T extends Partial<LeadItem>>(item: T): T & LeadItem {

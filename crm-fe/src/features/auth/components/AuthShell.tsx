@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { env } from '@/config/env';
 import { AuthBrandPanel } from './AuthBrandPanel';
-import { AuthLanguageMenu } from './AuthLanguageMenu';
 import '../auth.css';
 
 export interface AuthShellProps {
@@ -29,33 +28,31 @@ export function AuthShell({
       {/* Accessibility Skip Link */}
       <a
         href="#auth-main"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 z-50 bg-[#085AC0] text-white px-4 py-2 rounded-md font-semibold text-xs shadow-md"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 z-50 bg-[var(--auth-blue)] text-white px-4 py-2 rounded-md font-semibold text-xs shadow-md"
       >
         {t('auth.gateway.common.skipToContent')}
       </a>
 
       {/* Top Header Utilities */}
-      <div className="w-full max-w-[73.75rem] mx-auto px-4 sm:px-6 mb-4 flex items-center justify-between">
+      <div className="w-full max-w-[74rem] mx-auto px-4 sm:px-6 mb-4 flex items-center justify-between">
         {utilityLink ? (
           <Link
             to={utilityLink.to}
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-[#085AC0] transition-colors"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--auth-muted)] hover:text-[var(--auth-blue)] transition-colors min-h-[44px]"
           >
-            {utilityLink.direction === 'back' && <ArrowLeft className="w-3.5 h-3.5" />}
+            {utilityLink.direction === 'back' && <ArrowLeft className="w-3.5 h-3.5" aria-hidden="true" />}
             <span>{t(utilityLink.labelKey)}</span>
-            {utilityLink.direction === 'forward' && <ArrowRight className="w-3.5 h-3.5" />}
+            {utilityLink.direction === 'forward' && <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />}
           </Link>
         ) : (
           <Link
             to="/"
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-[#085AC0] transition-colors"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--auth-muted)] hover:text-[var(--auth-blue)] transition-colors min-h-[44px]"
           >
-            <ArrowLeft className="w-3.5 h-3.5" />
+            <ArrowLeft className="w-3.5 h-3.5" aria-hidden="true" />
             <span>{t('auth.gateway.common.backHome')}</span>
           </Link>
         )}
-
-        <AuthLanguageMenu />
       </div>
 
       {/* Main Form Frame */}
@@ -70,7 +67,7 @@ export function AuthShell({
       </div>
 
       {/* Footer Legal & Copyright */}
-      <footer className="w-full max-w-[73.75rem] mx-auto px-4 sm:px-6 mt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
+      <footer className="w-full max-w-[74rem] mx-auto px-4 sm:px-6 mt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-[var(--auth-muted)]">
         <p translate="no">
           © {new Date().getFullYear()} {t('auth.gateway.footer.copyright')}
         </p>
@@ -81,7 +78,7 @@ export function AuthShell({
               href={env.termsUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:text-slate-800 transition-colors"
+              className="hover:text-[var(--auth-ink)] transition-colors"
             >
               {t('auth.gateway.register.terms')}
             </a>
@@ -91,7 +88,7 @@ export function AuthShell({
               href={env.privacyPolicyUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:text-slate-800 transition-colors"
+              className="hover:text-[var(--auth-ink)] transition-colors"
             >
               {t('auth.gateway.register.privacy')}
             </a>

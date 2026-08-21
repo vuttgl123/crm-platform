@@ -18,77 +18,77 @@ const scopingFactors = [
   {
     key: 'scale',
     icon: Users,
-    badge: 'Linh hoạt mở rộng',
-    title: 'Quy Mô Người Dùng & Chi Nhánh',
-    description: 'Chi phí được tối ưu theo số lượng nhân viên bán hàng và cơ cấu phòng ban thực tế của doanh nghiệp.',
+    badge: 'Scale Flexibility',
+    title: 'User Scale & Organization Hierarchy',
+    description: 'Cost is calibrated to active commercial seats and actual departmental hierarchy without artificial minimums.',
     criteria: [
-      'Số lượng tài khoản sử dụng theo từng phòng ban',
-      'Cơ cấu chi nhánh và cây sơ đồ đội nhóm (TEAM_TREE)',
-      'Tùy chọn mở rộng số lượng user linh hoạt theo giai đoạn',
+      'Active commercial seats across sales and management roles',
+      'Regional branches and hierarchical team trees (TEAM_TREE)',
+      'Flexible seat expansion as your revenue team grows',
     ],
   },
   {
     key: 'process',
     icon: Workflow,
-    badge: 'Chuẩn hóa nghiệp vụ',
-    title: 'Độ Phức Tạp Quy Trình B2B',
-    description: 'Tùy biến số lượng phễu Pipeline, luồng phê duyệt báo giá và hệ thống chiết khấu thương mại.',
+    badge: 'Workflow Complexity',
+    title: 'B2B Process & Quoting Depth',
+    description: 'Configurable pipeline stages, multi-tier CPQ discount approvals, and custom document generation.',
     criteria: [
-      'Số lượng phễu bán hàng theo từng dòng sản phẩm',
-      'Quy trình duyệt Báo giá, Đơn hàng và Hợp đồng nhiều cấp',
-      'Mẫu in báo giá và tài liệu nghiệm thu theo chuẩn công ty',
+      'Number of distinct pipeline funnels by product line or business unit',
+      'Multi-level approval workflows for quotes, orders, and contracts',
+      'Standardized quotation templates and legal contract templates',
     ],
   },
   {
     key: 'integration',
     icon: Database,
-    badge: 'Đồng bộ hệ thống',
-    title: 'Tích Hợp Dữ Liệu & Hệ Sinh Thái',
-    description: 'Kết nối an toàn với phần mềm Kế toán, ERP nội bộ, cổng Webhooks và các nguồn thu thập Lead.',
+    badge: 'Ecosystem Sync',
+    title: 'System Integration & Data Ecosystem',
+    description: 'Secure bidirectional sync with ERP, internal databases, webhook endpoints, and inbound lead channels.',
     criteria: [
-      'Đồng bộ 2 chiều dữ liệu khách hàng và hóa đơn',
-      'Cổng Webhooks nhận lead tự động từ Website, Quảng cáo',
-      'Hỗ trợ chuyển đổi và làm sạch dữ liệu cũ (Excel/CRM cũ)',
+      'Two-way synchronization for accounts, contacts, and invoices',
+      'Inbound and outbound webhooks for real-time CRM event dispatch',
+      'Data migration and cleansing assistance for legacy spreadsheet records',
     ],
   },
   {
     key: 'governance',
     icon: ShieldCheck,
-    badge: 'Tiêu chuẩn Enterprise',
-    title: 'Quản Trị, Bảo Mật & Hỗ Trợ SLA',
-    description: 'Bảo mật dữ liệu nhiều cấp, nhật ký kiểm toán toàn diện và cam kết hỗ trợ kỹ thuật trực tiếp 1:1.',
+    badge: 'Enterprise Standard',
+    title: 'Governance, Security & SLA Support',
+    description: 'Multi-tier data scoping, complete immutable audit trails, and dedicated SLA commitments.',
     criteria: [
-      'Phân quyền 4 cấp phạm vi dữ liệu (RBAC) nghiêm ngặt',
-      'Ghi nhận 100% nhật ký kiểm toán (Audit Trails) theo thời gian thực',
-      'Cam kết sẵn sàng hạ tầng SLA 99.9% và hỗ trợ kỹ thuật tận nơi',
+      'Strict 4-tier data scope enforcement (TENANT, TEAM_TREE, TEAM, OWN)',
+      '100% immutable real-time audit logging for compliance',
+      '99.9% uptime SLA guarantee and dedicated technical support',
     ],
   },
 ];
 
 const includedFeatures = [
-  'Đầy đủ 7 phân hệ cốt lõi từ Lead đến Hợp đồng',
-  'Hồ sơ Customer 360° không giới hạn bản ghi',
-  'Phân quyền bảo mật 4 cấp dữ liệu (RBAC)',
-  'Nhật ký kiểm toán (Audit Trails) chi tiết',
-  'Đồng bộ Webhooks & REST API chuẩn hóa',
-  'Đào tạo và bàn giao tài liệu vận hành đầy đủ',
+  'All 7 core modules from Lead to Contract',
+  'Unlimited Customer 360° company profiles',
+  '4-tier role-based access control (RBAC)',
+  'Detailed immutable audit trail logging',
+  'Standardized REST APIs and Webhook engine',
+  'Comprehensive onboarding and documentation',
 ];
 
 const deploymentSteps = [
   {
     step: '01',
-    title: 'Khảo sát nhu cầu (30 Phút)',
-    desc: 'Trao đổi cùng chuyên gia VUM về mô hình kinh doanh và điểm nghẽn quy trình.',
+    title: 'Discovery Consultation (30 min)',
+    desc: 'Review your commercial structure, sales workflow bottlenecks, and data integration requirements.',
   },
   {
     step: '02',
-    title: 'Xây dựng bản Demo mẫu (1-3 Ngày)',
-    desc: 'Thiết lập luồng bán hàng mẫu trên hệ thống VUM với dữ liệu mô phỏng của bạn.',
+    title: 'Tailored Solution Walkthrough (1–3 Days)',
+    desc: 'Explore a tailored sandbox environment configured with your pipeline stages and sample data.',
   },
   {
     step: '03',
-    title: 'Bàn giao & Đào tạo thực chiến',
-    desc: 'Cung cấp báo giá chính xác, hỗ trợ chuyển đổi dữ liệu và đào tạo đội ngũ sử dụng.',
+    title: 'Onboarding & Deployment',
+    desc: 'Receive transparent scoped pricing, migration assistance, and user training for your teams.',
   },
 ];
 
@@ -102,14 +102,13 @@ export const PricingPage: React.FC = () => {
   });
 
   return (
-    <div className="py-6 sm:py-10 lg:py-14 bg-radial-hero">
+    <div className="py-6 sm:py-10 lg:py-14 bg-[var(--landing-canvas)]">
       <LandingSection contained className="pt-0">
         {/* Header */}
         <SectionHeading
           as="h1"
-
-          title="Định Hướng Quy Mô Triển Khai Cho Doanh Nghiệp"
-          description="Không chi phí ẩn, không ép gói tính năng. Chi phí được tư vấn chính xác theo nhu cầu thực tế."
+          title="Enterprise Commercial Scoping Model"
+          description="Transparent, scope-based implementation without artificial feature paywalls or hidden fees."
           align="left"
         />
 
@@ -120,29 +119,29 @@ export const PricingPage: React.FC = () => {
             return (
               <div
                 key={f.key}
-                className="bg-white border border-[#E2E8F0] rounded-2xl p-6 sm:p-8 space-y-4 shadow-xs hover:border-blue-300 hover:shadow-lg hover:shadow-blue-900/5 transition-all duration-200 flex flex-col justify-between group"
+                className="bg-white border border-[var(--landing-line)] rounded-2xl p-6 sm:p-8 space-y-4 shadow-2xs hover:border-[var(--landing-blue)] transition-colors flex flex-col justify-between group"
               >
                 <div className="space-y-3.5">
                   <div className="flex items-center justify-between">
-                    <div className="w-11 h-11 rounded-xl bg-blue-50 text-[#085AC0] flex items-center justify-center border border-blue-100 shadow-2xs group-hover:scale-105 transition-transform">
+                    <div className="w-11 h-11 rounded-xl bg-[var(--landing-blue-soft)] text-[var(--landing-blue)] flex items-center justify-center">
                       <Icon className="w-5 h-5" />
                     </div>
-                    <span className="text-[10px] font-extrabold text-[#085AC0] bg-blue-50/90 px-2.5 py-0.5 rounded-full border border-blue-200/60 uppercase">
+                    <span className="text-[10px] font-bold text-[var(--landing-blue)] bg-[var(--landing-blue-soft)] px-2.5 py-0.5 rounded-full uppercase">
                       {f.badge}
                     </span>
                   </div>
 
-                  <h2 className="text-lg sm:text-xl font-extrabold text-[#07182B] landing-display">
+                  <h2 className="text-lg sm:text-xl font-extrabold text-[var(--landing-ink)] landing-display">
                     {f.title}
                   </h2>
 
-                  <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-normal">
+                  <p className="text-xs sm:text-sm text-[var(--landing-muted)] leading-relaxed font-normal">
                     {f.description}
                   </p>
 
-                  <div className="space-y-2 pt-1 border-t border-slate-100">
+                  <div className="space-y-2 pt-1 border-t border-[var(--landing-line)]">
                     {f.criteria.map((crit, idx) => (
-                      <div key={idx} className="flex items-start gap-2 text-xs sm:text-sm text-slate-700 font-medium leading-relaxed">
+                      <div key={idx} className="flex items-start gap-2 text-xs sm:text-sm text-[var(--landing-ink)] font-medium leading-relaxed">
                         <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
                         <span>{crit}</span>
                       </div>
@@ -155,15 +154,15 @@ export const PricingPage: React.FC = () => {
         </div>
 
         {/* All Plans Include Strip */}
-        <div className="mt-12 bg-white border border-[#E2E8F0] rounded-2xl p-6 sm:p-10 shadow-xs space-y-6">
-          <div className="flex items-center gap-3 pb-2 border-b border-slate-100">
-            <CheckCircle2 className="w-6 h-6 text-[#085AC0] shrink-0" />
+        <div className="mt-12 bg-white border border-[var(--landing-line)] rounded-2xl p-6 sm:p-10 shadow-2xs space-y-6">
+          <div className="flex items-center gap-3 pb-2 border-b border-[var(--landing-line)]">
+            <CheckCircle2 className="w-6 h-6 text-[var(--landing-blue)] shrink-0" />
             <div>
-              <h2 className="text-xl sm:text-2xl font-extrabold text-[#07182B] landing-display">
-                Mọi Gói Triển Khai Đều Có Sẵn Nền Tảng Cốt Lõi
+              <h2 className="text-xl sm:text-2xl font-extrabold text-[var(--landing-ink)] landing-display">
+                Included in Every Implementation Scope
               </h2>
-              <p className="text-xs sm:text-sm text-slate-500 font-medium mt-0.5">
-                Đảm bảo doanh nghiệp vận hành ổn định mà không lo phát sinh phụ phí
+              <p className="text-xs sm:text-sm text-[var(--landing-muted)] font-medium mt-0.5">
+                Full core enterprise infrastructure without unexpected per-feature add-on fees
               </p>
             </div>
           </div>
@@ -172,9 +171,9 @@ export const PricingPage: React.FC = () => {
             {includedFeatures.map((item, index) => (
               <div
                 key={index}
-                className="p-3.5 rounded-xl bg-[#F8FAFD] border border-slate-200/80 flex items-center gap-3 text-xs sm:text-sm font-semibold text-[#07182B]"
+                className="p-3.5 rounded-xl bg-[var(--landing-canvas)] border border-[var(--landing-line)] flex items-center gap-3 text-xs sm:text-sm font-semibold text-[var(--landing-ink)]"
               >
-                <span className="w-2 h-2 rounded-full bg-[#085AC0] shrink-0" />
+                <span className="w-2 h-2 rounded-full bg-[var(--landing-blue)] shrink-0" />
                 <span>{item}</span>
               </div>
             ))}
@@ -182,41 +181,40 @@ export const PricingPage: React.FC = () => {
         </div>
 
         {/* 3 Step Deployment Flow */}
-        <div className="mt-12 bg-[#F8FAFD] border border-blue-100 rounded-2xl p-6 sm:p-10 space-y-6">
+        <div className="mt-12 bg-[var(--landing-blue-soft)] border border-[var(--landing-line)] rounded-2xl p-6 sm:p-10 space-y-6">
           <div className="text-center space-y-1">
-            <span className="text-xs font-bold text-[#085AC0] uppercase tracking-wider">Quy trình làm việc rõ ràng</span>
-            <h3 className="text-xl sm:text-2xl font-extrabold text-[#07182B] landing-display">
-              3 Bước Để Sở Hữu Giải Pháp CRM Phù Hợp Nhất
+            <span className="text-xs font-bold text-[var(--landing-blue)] uppercase tracking-wider">Transparent Process</span>
+            <h3 className="text-xl sm:text-2xl font-extrabold text-[var(--landing-ink)] landing-display">
+              3 Steps to Deploying Your Enterprise CRM
             </h3>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
             {deploymentSteps.map((s, idx) => (
-              <div key={idx} className="bg-white p-5 rounded-xl border border-slate-200/80 space-y-2 shadow-2xs">
-                <span className="text-xs font-mono font-bold text-[#085AC0] bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
-                  Bước {s.step}
+              <div key={idx} className="bg-white p-5 rounded-xl border border-[var(--landing-line)] space-y-2 shadow-2xs">
+                <span className="text-xs font-mono font-bold text-[var(--landing-blue)] bg-[var(--landing-blue-soft)] px-2 py-0.5 rounded border border-blue-200">
+                  Step {s.step}
                 </span>
-                <h4 className="text-sm font-bold text-[#07182B]">{s.title}</h4>
-                <p className="text-xs text-slate-600 leading-relaxed font-normal">{s.desc}</p>
+                <h4 className="text-sm font-bold text-[var(--landing-ink)]">{s.title}</h4>
+                <p className="text-xs text-[var(--landing-muted)] leading-relaxed font-normal">{s.desc}</p>
               </div>
             ))}
           </div>
         </div>
 
         {/* Consultation CTA Banner */}
-        <div className="mt-16 bg-[#07182B] rounded-2xl p-8 sm:p-12 text-white text-center space-y-6 relative overflow-hidden">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[250px] bg-blue-600/20 blur-[100px] pointer-events-none rounded-full" />
-          <div className="relative z-10 space-y-4 max-w-2xl mx-auto">
+        <div className="mt-16 bg-[var(--landing-ink)] rounded-2xl p-8 sm:p-12 text-white text-center space-y-6">
+          <div className="space-y-4 max-w-2xl mx-auto">
             <h2 className="text-2xl sm:text-3xl font-extrabold landing-display">
               {t('landing.pricing.ctaTitle')}
             </h2>
             <p className="text-slate-300 text-sm sm:text-base">
-              Đội ngũ chuyên gia VUM sẽ làm việc trực tiếp cùng bạn để xác định mô hình tối ưu chi phí và hiệu quả nhất.
+              Our enterprise solution team will work with you to determine the most effective deployment roadmap for your sales organization.
             </p>
             <div className="pt-2">
               <Button
                 asChild
-                className="h-12 px-8 bg-[#085AC0] hover:bg-[#06499D] text-white font-semibold text-base shadow-md transition-colors"
+                className="h-12 px-8 bg-[var(--landing-blue)] hover:bg-[var(--landing-blue-hover)] text-white font-semibold text-base shadow-md transition-colors"
               >
                 <Link to="/demo">
                   <span>{t('landing.pricing.ctaAction')}</span>

@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ShieldCheck, RefreshCw, Loader2, CheckCircle2, XCircle, Mail } from 'lucide-react';
+import { StandardPageHeader } from '@/components/common/StandardPageHeader';
 
 export const PrivacyConsentPage: React.FC = () => {
   const [consents, setConsents] = useState<ConsentItem[]>([]);
@@ -23,70 +24,75 @@ export const PrivacyConsentPage: React.FC = () => {
   }, []);
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-black tracking-tight text-slate-900 flex items-center gap-2">
-            <ShieldCheck className="w-7 h-7 text-blue-600" />
-            <span>Đồng thuận Quyền riêng tư (Privacy Consent)</span>
-          </h1>
-          <p className="text-sm text-slate-500 mt-1">
-            Quản lý việc thu thập và rút lại sự đồng ý tiếp thị theo Nghị định 13/2023/NĐ-CP về Bảo vệ dữ liệu cá nhân
-          </p>
-        </div>
-        <Button variant="outline" size="sm" onClick={fetchConsents} disabled={loading} className="h-9 px-3 text-xs font-semibold gap-1.5 border-slate-200">
-          <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-          <span>Làm mới</span>
-        </Button>
-      </div>
+    <div className="space-y-4 pb-12 font-sans w-full">
+      {/* Standard Page Header */}
+      <StandardPageHeader
+        title="Privacy Consent Management"
+        subtitle="Manage opt-in consent records, data processing purposes &amp; revocation trails (GDPR / Decree 13 Compliance)"
+        icon={ShieldCheck}
+        badgeCount={consents.length}
+        badgeLabel="records"
+        actions={
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={fetchConsents}
+            disabled={loading}
+            className="h-8 px-3 text-xs font-medium text-slate-700 bg-white border-slate-200 hover:bg-slate-50 gap-1.5 rounded-[3px]"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+            <span>Refresh</span>
+          </Button>
+        }
+      />
 
-      <Card className="border-slate-200 shadow-2xs bg-white overflow-hidden">
+      <Card className="border border-slate-200 shadow-none bg-white rounded-[4px] overflow-hidden">
         {loading ? (
           <div className="py-20 flex flex-col items-center justify-center text-slate-400 gap-2">
             <Loader2 className="w-7 h-7 animate-spin text-blue-600" />
-            <span className="text-xs font-semibold">Đang tải dữ liệu đồng thuận...</span>
+            <span className="text-xs font-semibold">Loading privacy consent data...</span>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <Table>
-              <TableHeader className="bg-slate-50/80 border-b border-slate-200">
-                <TableRow>
-                  <TableHead className="text-xs font-bold text-slate-700 py-3.5 pl-5">Chủ thể Dữ liệu</TableHead>
-                  <TableHead className="text-xs font-bold text-slate-700 py-3.5">Mục đích Xử lý Dữ liệu</TableHead>
-                  <TableHead className="text-xs font-bold text-slate-700 py-3.5">Thời điểm Cung cấp / Rút lại</TableHead>
-                  <TableHead className="text-xs font-bold text-slate-700 py-3.5">Địa chỉ IP ghi nhận</TableHead>
-                  <TableHead className="text-xs font-bold text-slate-700 py-3.5 text-right pr-5">Trạng thái Đồng thuận</TableHead>
+              <TableHeader className="bg-[#F7F8F9] border-b border-slate-200">
+                <TableRow className="hover:bg-[#F7F8F9]">
+                  <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Data Subject</TableHead>
+                  <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Processing Purpose</TableHead>
+                  <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Granted / Revoked Timestamp</TableHead>
+                  <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Audit IP Address</TableHead>
+                  <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3 text-right pr-4">Consent Status</TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody className="divide-y divide-slate-100">
+              <TableBody>
                 {consents.map((c) => (
-                  <TableRow key={c.id} className="hover:bg-slate-50/70 transition-colors">
-                    <TableCell className="pl-5 py-3.5">
-                      <span className="font-bold text-slate-900 text-xs block">{c.contactName}</span>
-                      <span className="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5">
-                        <Mail className="w-3 h-3" /> {c.email}
+                  <TableRow key={c.id} className="hover:bg-[#F1F2F4] border-b border-[#EBECF0] transition-colors text-xs">
+                    <TableCell className="py-2 px-3">
+                      <span className="font-semibold text-slate-900 text-xs block">{c.contactName}</span>
+                      <span className="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5 font-mono">
+                        <Mail className="w-3 h-3 text-slate-400" /> {c.email}
                       </span>
                     </TableCell>
-                    <TableCell className="py-3.5 text-xs text-slate-700 max-w-[300px]">
+                    <TableCell className="py-2 px-3 text-xs text-slate-700 max-w-[300px]">
                       {c.purpose}
                     </TableCell>
-                    <TableCell className="py-3.5 text-xs text-slate-600">
-                      <div>Đồng ý: {c.grantedAt}</div>
-                      {c.revokedAt && <div className="text-rose-600 font-semibold mt-0.5">Đã rút: {c.revokedAt}</div>}
+                    <TableCell className="py-2 px-3 text-xs text-slate-600 font-mono">
+                      <div>Granted: {c.grantedAt}</div>
+                      {c.revokedAt && <div className="text-rose-600 font-semibold mt-0.5">Revoked: {c.revokedAt}</div>}
                     </TableCell>
-                    <TableCell className="py-3.5 font-mono text-[11px] text-slate-500">
+                    <TableCell className="py-2 px-3 font-mono text-[11px] text-slate-500">
                       {c.ipAddress}
                     </TableCell>
-                    <TableCell className="text-right pr-5 py-3.5">
+                    <TableCell className="text-right pr-4 py-2 px-3">
                       {c.status === 'GRANTED' ? (
-                        <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 font-bold text-xs gap-1">
-                          <CheckCircle2 className="w-3 h-3" />
-                          <span>Đang đồng thuận</span>
+                        <Badge variant="outline" className="bg-[#E3FCEF] text-[#006644] border-emerald-300 font-bold text-[10px] gap-1 shadow-none rounded-[3px]">
+                          <CheckCircle2 className="w-3 h-3 text-[#006644]" />
+                          <span>GRANTED</span>
                         </Badge>
                       ) : (
-                        <Badge variant="outline" className="bg-rose-50 text-rose-700 border-rose-200 font-bold text-xs gap-1">
-                          <XCircle className="w-3 h-3" />
-                          <span>Đã hủy bỏ</span>
+                        <Badge variant="outline" className="bg-[#FFEBE6] text-[#DE350B] border-rose-200 font-bold text-[10px] gap-1 shadow-none rounded-[3px]">
+                          <XCircle className="w-3 h-3 text-[#DE350B]" />
+                          <span>REVOKED</span>
                         </Badge>
                       )}
                     </TableCell>
@@ -100,3 +106,5 @@ export const PrivacyConsentPage: React.FC = () => {
     </div>
   );
 };
+
+export default PrivacyConsentPage;

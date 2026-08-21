@@ -28,7 +28,7 @@ export const StandardPagination: React.FC<StandardPaginationProps> = ({
   onPageChange,
   onPageSizeChange,
   pageSizeOptions = [10, 20, 50, 100],
-  itemLabel = 'bản ghi',
+  itemLabel = 'records',
 }) => {
   if (totalElements === 0) return null;
 
@@ -39,12 +39,12 @@ export const StandardPagination: React.FC<StandardPaginationProps> = ({
     <div className="px-4 py-2.5 bg-[#FAFBFC] border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
       <div className="flex items-center gap-4 text-slate-600 flex-wrap">
         <span>
-          Hiển thị <strong className="text-slate-800 font-semibold">{startItem} - {endItem}</strong> trong tổng số <strong className="text-slate-800 font-semibold">{totalElements}</strong> {itemLabel}
+          Showing <strong className="text-slate-800 font-semibold">{startItem} - {endItem}</strong> of <strong className="text-slate-800 font-semibold">{totalElements}</strong> {itemLabel}
         </span>
 
         {onPageSizeChange && (
           <div className="flex items-center gap-1.5">
-            <span className="text-slate-400">Số hàng:</span>
+            <span className="text-slate-400">Rows:</span>
             <Select
               value={String(pageSize)}
               onValueChange={(val) => {
@@ -74,7 +74,7 @@ export const StandardPagination: React.FC<StandardPaginationProps> = ({
           onClick={() => onPageChange(1)}
           disabled={currentPage <= 1}
           className="h-7 w-7 p-0 border-slate-200 bg-white hover:bg-slate-100 rounded-[3px]"
-          title="Trang đầu"
+          title="First Page"
         >
           <ChevronsLeft className="w-3.5 h-3.5" />
         </Button>
@@ -86,7 +86,7 @@ export const StandardPagination: React.FC<StandardPaginationProps> = ({
           className="h-7 px-2 text-xs border-slate-200 bg-white hover:bg-slate-100 gap-1 rounded-[3px]"
         >
           <ChevronLeft className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">Trước</span>
+          <span className="hidden sm:inline">Prev</span>
         </Button>
 
         <div className="flex items-center gap-1 px-1.5 font-medium text-slate-700">
@@ -102,7 +102,7 @@ export const StandardPagination: React.FC<StandardPaginationProps> = ({
           disabled={currentPage >= totalPages}
           className="h-7 px-2 text-xs border-slate-200 bg-white hover:bg-slate-100 gap-1 rounded-[3px]"
         >
-          <span className="hidden sm:inline">Sau</span>
+          <span className="hidden sm:inline">Next</span>
           <ChevronRight className="w-3.5 h-3.5" />
         </Button>
         <Button
@@ -111,7 +111,7 @@ export const StandardPagination: React.FC<StandardPaginationProps> = ({
           onClick={() => onPageChange(totalPages)}
           disabled={currentPage >= totalPages}
           className="h-7 w-7 p-0 border-slate-200 bg-white hover:bg-slate-100 rounded-[3px]"
-          title="Trang cuối"
+          title="Last Page"
         >
           <ChevronsRight className="w-3.5 h-3.5" />
         </Button>

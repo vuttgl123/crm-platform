@@ -13,23 +13,12 @@ import {
   UserCheck,
   X,
   RotateCcw,
-  ChevronsLeft,
-  ChevronsRight,
-  ChevronLeft,
-  ChevronRight,
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from '@/components/ui/select';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import {
   Table,
@@ -40,6 +29,8 @@ import {
   TableCell,
 } from '@/components/ui/table';
 import { EmptyState } from '@/components/common/EmptyState';
+import { StandardPageHeader } from '@/components/common/StandardPageHeader';
+import { StandardPagination } from '@/components/common/StandardPagination';
 import { useAuth } from '@/core/session/useAuth';
 import { CreateUserWizardModal } from './components/CreateUserWizardModal';
 import {
@@ -98,67 +89,74 @@ export const UsersPage: React.FC = () => {
   const fetchMembershipRequests = useCallback(async () => {
     setLoading(true);
     try {
-      const [pendingRes, approvedRes] = await Promise.all([
-        membershipApi.searchRequests('PENDING').catch(() => ({ items: [], page: 0, size: 10, totalElements: 0, totalPages: 0 })),
-        membershipApi.searchRequests('APPROVED').catch(() => ({ items: [], page: 0, size: 10, totalElements: 0, totalPages: 0 })),
-      ]);
+      const res = await membershipApi.searchRequests();
+      const allRequests: MembershipRequestItem[] = res?.items || (Array.isArray(res) ? res : []);
 
-      const pendingItems = pendingRes.items || [];
-      setPendingRequests(pendingItems);
+      // 1. Filter PENDING requests
+      const pending = allRequests.filter((r) => r.status === 'PENDING');
+      setPendingRequests(pending);
 
-      const approvedItems = approvedRes.items || [];
-      const membersMap = new Map<string, ActiveUser>();
+      // Auto-assign default role ID in state for pending items
+      const initialRoleMap: Record<string, string> = {};
+      pending.forEach((req) => {
+        initialRoleMap[req.id] = roles[0]?.id || '';
+      });
+      setSelectedRoleIds((prev) => ({ ...initialRoleMap, ...prev }));
 
-      // 1. Logged-in Tenant Admin / User from Auth Session
-      if (session?.user) {
-        membersMap.set(session.user.id, {
-          id: session.user.id,
-          displayName: session.user.display_name || session.user.email,
-          email: session.user.email,
-          roleId: session.activeRole?.id || '',
-          roleName: session.membership?.is_tenant_admin
-            ? 'Quản trị viên Tập đoàn (Tenant Admin)'
-            : (session.activeRole?.name || 'Thành viên Tập đoàn'),
+      // 2. Filter APPROVED requests -> Active Users
+      const approved = allRequests.filter((r) => r.status === 'APPROVED');
+      const realActiveUsers: ActiveUser[] = approved.map((req) => {
+        return {
+          id: req.requester.id,
+          displayName: req.requester.displayName || req.requester.email.split('@')[0],
+          email: req.requester.email,
+          roleId: roles[0]?.id || 'role-member',
+          roleName: 'Enterprise Member',
           status: 'ACTIVE',
-          joinedAt: session.user.created_at || new Date().toISOString(),
-          isTenantAdmin: Boolean(session.membership?.is_tenant_admin),
-        });
-      }
-
-      // 2. Approved Membership Requests strictly from PostgreSQL DB
-      approvedItems.forEach((req) => {
-        if (!membersMap.has(req.requester.id)) {
-          const savedRoleId = localStorage.getItem(`user_role_${req.requester.id}`) || '';
-          const matchedRole = roles.find((r) => r.id === savedRoleId || r.roleCode === savedRoleId);
-
-          membersMap.set(req.requester.id, {
-            id: req.requester.id,
-            displayName: req.requester.displayName || req.requester.email,
-            email: req.requester.email,
-            roleId: savedRoleId,
-            roleName: matchedRole ? matchedRole.name : 'Thành viên Tập đoàn',
-            status: 'ACTIVE',
-            joinedAt: req.reviewedAt || req.requestedAt || new Date().toISOString(),
-            isTenantAdmin: false,
-            requestId: req.id,
-            requestVersion: req.version,
-          });
-        }
+          joinedAt: req.reviewedAt || req.requestedAt || new Date().toISOString(),
+          isTenantAdmin: false,
+          requestId: req.id,
+          requestVersion: req.version,
+        };
       });
 
-      const activeList = Array.from(membersMap.values());
-      setActiveUsers(activeList);
-
-      if (pendingItems.length > 0 && activeList.length === 0) {
-        setActiveTab('pending');
+      // 3. Add Current Session User as Tenant Admin if not present
+      if (session?.user) {
+        const sessionUserId = session.user.id;
+        const exists = realActiveUsers.some((u) => u.id === sessionUserId || u.email === session.user?.email);
+        if (!exists) {
+          realActiveUsers.unshift({
+            id: sessionUserId,
+            displayName: session.user.display_name || session.user.email?.split('@')[0] || 'Administrator',
+            email: session.user.email || 'admin@enterprise.com',
+            roleId: 'role-admin',
+            roleName: session.membership?.is_tenant_admin ? 'Tenant Admin (Master)' : 'Platform Administrator',
+            status: 'ACTIVE',
+            joinedAt: new Date().toISOString(),
+            isTenantAdmin: Boolean(session.membership?.is_tenant_admin),
+          });
+        }
       }
+
+      // 4. Enrich with custom local demo accounts
+      const enrichedUsers = realActiveUsers.map((u) => {
+        const savedRoleId = localStorage.getItem(`user_role_${u.id}`);
+        if (savedRoleId) {
+          const match = roles.find((r) => r.id === savedRoleId);
+          if (match) {
+            return { ...u, roleId: match.id, roleName: match.name };
+          }
+        }
+        return u;
+      });
+
+      setActiveUsers(enrichedUsers);
     } catch {
-      setPendingRequests([]);
-      setActiveUsers([]);
+      toast.error('Unable to retrieve membership data from server');
     } finally {
       setLoading(false);
     }
-  }, [session, roles]);
+  }, [roles, session]);
 
   useEffect(() => {
     fetchRoles();
@@ -168,45 +166,36 @@ export const UsersPage: React.FC = () => {
     fetchMembershipRequests();
   }, [fetchMembershipRequests]);
 
-  const activePendingCount = pendingRequests.filter((r) => r.status === 'PENDING').length;
+  const activePendingCount = pendingRequests.length;
 
   const getEffectiveRoleId = (user: ActiveUser) => {
-    if (!roles || roles.length === 0) return '';
-    const exactMatch = roles.find((r) => r.id === user.roleId || r.roleCode === user.roleId);
-    if (exactMatch) return exactMatch.id;
-    return roles[0]?.id || '';
+    return user.roleId || (roles[0] ? roles[0].id : '');
   };
 
   const handleApprove = async (req: MembershipRequestItem) => {
     if (!hasManagePermission) {
-      toast.error('Bạn không có quyền platform_user.manage để phê duyệt tài khoản.');
+      toast.error('You do not have platform_user.manage permission to approve accounts.');
       return;
     }
 
     const selectedRoleId = selectedRoleIds[req.id] || (roles[0] ? roles[0].id : '');
-    if (!selectedRoleId) {
-      toast.error('Vui lòng chọn vai trò để gán cho thành viên.');
-      return;
-    }
-
     const assignedRole = roles.find((r) => r.id === selectedRoleId);
 
     setActionLoadingId(req.id);
     try {
       await membershipApi.approveRequest(req.id, {
         version: req.version,
-        roleIds: [selectedRoleId],
-        reviewNote: `Đã phê duyệt gia nhập Tập đoàn ${session?.tenant.display_name || ''}`,
+        roleIds: selectedRoleId ? [selectedRoleId] : [],
       });
 
-      toast.success(`Đã phê duyệt tài khoản "${req.requester.displayName || req.requester.email}" gia nhập Tập đoàn thành công!`);
+      toast.success(`Approved account "${req.requester.displayName || req.requester.email}" successfully!`);
 
       const approvedUser: ActiveUser = {
         id: req.requester.id,
         displayName: req.requester.displayName || req.requester.email,
         email: req.requester.email,
         roleId: selectedRoleId,
-        roleName: assignedRole?.name || 'Thành viên Tập đoàn',
+        roleName: assignedRole?.name || 'Enterprise Member',
         status: 'ACTIVE',
         joinedAt: new Date().toISOString(),
         isTenantAdmin: false,
@@ -217,7 +206,7 @@ export const UsersPage: React.FC = () => {
       setActiveUsers((prev) => [approvedUser, ...prev.filter((u) => u.id !== approvedUser.id)]);
       fetchMembershipRequests();
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Không thể phê duyệt yêu cầu gia nhập.';
+      const msg = err instanceof Error ? err.message : 'Unable to approve membership request.';
       toast.error(msg);
     } finally {
       setActionLoadingId(null);
@@ -239,33 +228,33 @@ export const UsersPage: React.FC = () => {
 
     try {
       await membershipApi.updateMemberRoles(userId, [newRoleId]);
-      toast.success(`Đã lưu vai trò mới [${selectedRole.name}] cho [${user.displayName}] vào CSDL PostgreSQL!`);
+      toast.success(`Updated role [${selectedRole.name}] for [${user.displayName}]!`);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Không thể lưu vai trò mới vào CSDL.';
+      const msg = err instanceof Error ? err.message : 'Unable to save updated role.';
       toast.error(msg);
     }
   };
 
   const handleReject = async (req: MembershipRequestItem) => {
     if (!hasManagePermission) {
-      toast.error('Bạn không có quyền platform_user.manage để từ chối tài khoản.');
+      toast.error('You do not have platform_user.manage permission to reject accounts.');
       return;
     }
 
-    const reason = window.prompt(`Nhập lý do từ chối yêu cầu của "${req.requester.displayName || req.requester.email}":`);
+    const reason = window.prompt(`Enter rejection reason for "${req.requester.displayName || req.requester.email}":`);
     if (reason === null) return;
 
     setActionLoadingId(req.id);
     try {
       await membershipApi.rejectRequest(req.id, {
         version: req.version,
-        reason: reason.trim() || 'Không phù hợp với yêu cầu nhân sự Tập đoàn.',
+        reason: reason.trim() || 'Declined per tenant administrative policy.',
       });
 
-      toast.info(`Đã từ chối yêu cầu gia nhập của "${req.requester.displayName || req.requester.email}".`);
+      toast.info(`Declined membership request for "${req.requester.displayName || req.requester.email}".`);
       fetchMembershipRequests();
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Không thể từ chối yêu cầu.';
+      const msg = err instanceof Error ? err.message : 'Unable to decline request.';
       toast.error(msg);
     } finally {
       setActionLoadingId(null);
@@ -311,100 +300,81 @@ export const UsersPage: React.FC = () => {
     setCurrentPage(1);
   };
 
-  const getVisiblePageNumbers = () => {
-    const pages: number[] = [];
-    const maxButtons = 5;
-    let start = Math.max(1, currentPage - Math.floor(maxButtons / 2));
-    let end = Math.min(totalPages, start + maxButtons - 1);
-    if (end - start + 1 < maxButtons) {
-      start = Math.max(1, end - maxButtons + 1);
-    }
-    for (let i = start; i <= end; i++) {
-      pages.push(i);
-    }
-    return pages;
-  };
-
   return (
-    <div className="space-y-5 pb-12 font-sans w-full">
-      {/* ── Page Header ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-bold text-slate-900 flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shadow-sm shrink-0">
-              <Users className="w-4.5 h-4.5 text-white" />
-            </div>
-            Quản lý Người dùng &amp; Thành viên
-          </h1>
-          <p className="text-xs text-slate-500 mt-1 ml-10.5">
-            Phê duyệt yêu cầu gia nhập và phân bổ vai trò quyền hạn thành viên tổ chức
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2 shrink-0">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={fetchMembershipRequests}
-            disabled={loading}
-            className="text-xs gap-1.5 border-slate-200 h-8"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-            <span>Làm mới</span>
-          </Button>
-          {hasManagePermission && (
+    <div className="space-y-4 pb-12 font-sans w-full">
+      {/* Standard Page Header */}
+      <StandardPageHeader
+        title="Users &amp; Tenant Membership"
+        subtitle="Approve inbound access requests, provision workforce seats &amp; assign security permissions"
+        icon={Users}
+        badgeCount={activeUsers.length}
+        badgeLabel="members"
+        actions={
+          <>
             <Button
+              variant="outline"
               size="sm"
-              onClick={() => setIsCreateWizardOpen(true)}
-              className="text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white gap-1.5 shadow-xs h-8"
+              onClick={fetchMembershipRequests}
+              disabled={loading}
+              className="text-xs font-medium text-slate-700 bg-white border-slate-200 hover:bg-slate-50 gap-1.5 h-8 rounded-[3px]"
             >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Thêm Thành viên Mới</span>
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+              <span>Refresh</span>
             </Button>
-          )}
-        </div>
-      </div>
+            {hasManagePermission && (
+              <Button
+                size="sm"
+                onClick={() => setIsCreateWizardOpen(true)}
+                className="text-xs font-semibold bg-[#0C66E4] hover:bg-[#0052CC] text-white gap-1.5 shadow-none h-8 rounded-[3px]"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>New Member</span>
+              </Button>
+            )}
+          </>
+        }
+      />
 
-      {/* ── Quick Stat KPI Cards ── */}
+      {/* Quick Stat KPI Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="bg-white rounded-xl border border-slate-200 px-4 py-3 flex items-center gap-3 shadow-xs hover:shadow-sm transition-shadow">
+        <div className="bg-white rounded-[4px] border border-slate-200 px-4 py-3 flex items-center gap-3 shadow-none">
           <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
             <Users className="w-4.5 h-4.5 text-blue-600" />
           </div>
           <div>
-            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Tổng Thành viên</div>
+            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Total Members</div>
             <div className="text-lg font-black text-slate-900 leading-tight">{activeUsers.length}</div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-amber-100 px-4 py-3 flex items-center gap-3 shadow-xs hover:shadow-sm transition-shadow">
+        <div className="bg-white rounded-[4px] border border-amber-100 px-4 py-3 flex items-center gap-3 shadow-none">
           <div className="w-9 h-9 rounded-lg bg-amber-50 flex items-center justify-center shrink-0">
             <Clock className="w-4.5 h-4.5 text-amber-600" />
           </div>
           <div>
-            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Chờ phê duyệt</div>
+            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Pending Approval</div>
             <div className="text-lg font-black text-amber-700 leading-tight">{pendingRequests.length}</div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-emerald-100 px-4 py-3 flex items-center gap-3 shadow-xs hover:shadow-sm transition-shadow">
+        <div className="bg-white rounded-[4px] border border-emerald-100 px-4 py-3 flex items-center gap-3 shadow-none">
           <div className="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center shrink-0">
             <UserCheck className="w-4.5 h-4.5 text-emerald-600" />
           </div>
           <div>
-            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Đang hoạt động</div>
+            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Active Members</div>
             <div className="text-lg font-black text-emerald-700 leading-tight">
               {activeUsers.filter((u) => u.status === 'ACTIVE').length}
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-purple-100 px-4 py-3 flex items-center gap-3 shadow-xs hover:shadow-sm transition-shadow">
+        <div className="bg-white rounded-[4px] border border-purple-100 px-4 py-3 flex items-center gap-3 shadow-none">
           <div className="w-9 h-9 rounded-lg bg-purple-50 flex items-center justify-center shrink-0">
             <Shield className="w-4.5 h-4.5 text-purple-600" />
           </div>
           <div>
-            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Quản trị viên</div>
+            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Administrators</div>
             <div className="text-lg font-black text-purple-700 leading-tight">
               {activeUsers.filter((u) => u.isTenantAdmin).length}
             </div>
@@ -412,16 +382,16 @@ export const UsersPage: React.FC = () => {
         </div>
       </div>
 
-      {/* ── Main Tabs Component ── */}
+      {/* Main Tabs Component */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList className="bg-slate-100 p-1 border border-slate-200">
           <TabsTrigger value="active" className="text-xs font-semibold gap-2">
             <UserCheck className="w-3.5 h-3.5 text-emerald-600" />
-            <span>Thành viên Hoạt động ({activeUsers.length})</span>
+            <span>Active Members ({activeUsers.length})</span>
           </TabsTrigger>
           <TabsTrigger value="pending" className="text-xs font-semibold gap-2 relative">
             <Clock className="w-3.5 h-3.5 text-amber-600" />
-            <span>Yêu cầu Chờ Phê duyệt</span>
+            <span>Pending Requests</span>
             {activePendingCount > 0 && (
               <Badge className="bg-amber-500 text-white font-bold text-[10px] px-1.5 h-4 rounded-full">
                 {activePendingCount}
@@ -432,21 +402,21 @@ export const UsersPage: React.FC = () => {
 
         {/* TAB 1: ACTIVE MEMBERS */}
         <TabsContent value="active" className="space-y-4">
-          {/* ── Filter & Search Bar ── */}
-          <Card className="shadow-xs border-slate-200 w-full">
-            <CardContent className="py-3 px-4">
-              <div className="flex flex-col md:flex-row items-center gap-2.5">
+          {/* Filter Bar */}
+          <Card className="shadow-none border-slate-200 w-full rounded-[4px]">
+            <CardContent className="py-2.5 px-3">
+              <div className="flex flex-col md:flex-row items-center gap-2">
                 {/* Search Input */}
                 <div className="relative w-full md:w-[280px] shrink-0">
                   <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400" />
                   <Input
-                    placeholder="Tìm theo tên thành viên, email..."
+                    placeholder="Search by name, work email..."
                     value={searchQuery}
                     onChange={(e) => {
                       setSearchQuery(e.target.value);
                       setCurrentPage(1);
                     }}
-                    className="pl-8 pr-8 text-xs h-9 border-slate-200"
+                    className="pl-8 pr-8 text-xs h-8 border-slate-200 rounded-[3px]"
                   />
                   {searchQuery && (
                     <button
@@ -454,7 +424,7 @@ export const UsersPage: React.FC = () => {
                         setSearchQuery('');
                         setCurrentPage(1);
                       }}
-                      className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600"
+                      className="absolute right-2.5 top-2 text-slate-400 hover:text-slate-600"
                     >
                       <X className="w-3.5 h-3.5" />
                     </button>
@@ -465,7 +435,7 @@ export const UsersPage: React.FC = () => {
                 <div className="flex items-center gap-2 w-full md:w-auto flex-wrap">
                   <SearchableSelect
                     options={[
-                      { value: 'ALL', label: `Tất cả vai trò (${roles.length})` },
+                      { value: 'ALL', label: `All Roles (${roles.length})` },
                       ...roles.map((r) => ({
                         value: r.id,
                         label: r.name,
@@ -478,24 +448,24 @@ export const UsersPage: React.FC = () => {
                       setSelectedRoleFilter(val);
                       setCurrentPage(1);
                     }}
-                    placeholder="Tất cả vai trò"
-                    searchPlaceholder="Tìm kiếm vai trò..."
+                    placeholder="All Roles"
+                    searchPlaceholder="Search roles..."
                     className="w-[200px]"
                   />
 
                   <SearchableSelect
                     options={[
-                      { value: 'ALL', label: 'Tất cả trạng thái' },
-                      { value: 'ACTIVE', label: 'Đang hoạt động' },
-                      { value: 'ADMIN', label: 'Quản trị viên' },
+                      { value: 'ALL', label: 'All Statuses' },
+                      { value: 'ACTIVE', label: 'Active' },
+                      { value: 'ADMIN', label: 'Administrator' },
                     ]}
                     value={statusFilter}
                     onValueChange={(val) => {
                       setStatusFilter(val);
                       setCurrentPage(1);
                     }}
-                    placeholder="Tất cả trạng thái"
-                    searchPlaceholder="Tìm trạng thái..."
+                    placeholder="All Statuses"
+                    searchPlaceholder="Filter status..."
                     className="w-[170px]"
                   />
 
@@ -505,10 +475,10 @@ export const UsersPage: React.FC = () => {
                       variant="ghost"
                       size="sm"
                       onClick={handleResetFilters}
-                      className="h-9 px-2 text-xs text-slate-500 hover:text-red-600 gap-1"
+                      className="h-8 px-2 text-xs text-slate-500 hover:text-red-600 gap-1"
                     >
                       <RotateCcw className="w-3.5 h-3.5" />
-                      <span>Đặt lại ({activeFiltersCount})</span>
+                      <span>Reset ({activeFiltersCount})</span>
                     </Button>
                   )}
                 </div>
@@ -517,15 +487,15 @@ export const UsersPage: React.FC = () => {
           </Card>
 
           {/* Table Card */}
-          <Card className="shadow-xs border-slate-200 w-full overflow-hidden">
+          <Card className="shadow-none border-slate-200 w-full overflow-hidden rounded-[4px]">
             <Table>
-              <TableHeader className="bg-slate-50/90">
+              <TableHeader className="bg-[#F7F8F9] border-b border-slate-200">
                 <TableRow className="text-xs">
-                  <TableHead className="font-bold text-slate-900">Họ và Tên</TableHead>
-                  <TableHead className="font-bold text-slate-900">Email Công vụ</TableHead>
-                  <TableHead className="font-bold text-slate-900">Vai trò &amp; Quyền hạn</TableHead>
-                  <TableHead className="font-bold text-slate-900">Trạng thái</TableHead>
-                  <TableHead className="font-bold text-slate-900">Ngày gia nhập</TableHead>
+                  <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Member Name</TableHead>
+                  <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Work Email</TableHead>
+                  <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Assigned Role</TableHead>
+                  <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Status</TableHead>
+                  <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Joined Date</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody className="text-xs">
@@ -533,7 +503,7 @@ export const UsersPage: React.FC = () => {
                   <TableRow>
                     <TableCell colSpan={5} className="h-36 text-center text-slate-500">
                       <Loader2 className="w-5 h-5 animate-spin mx-auto text-blue-600 mb-2" />
-                      <span>Đang tải dữ liệu thành viên từ Backend...</span>
+                      <span>Loading team members from backend...</span>
                     </TableCell>
                   </TableRow>
                 ) : filteredActiveUsers.length === 0 ? (
@@ -541,9 +511,9 @@ export const UsersPage: React.FC = () => {
                     <TableCell colSpan={5} className="p-6">
                       <EmptyState
                         icon={Users}
-                        title={searchQuery || activeFiltersCount > 0 ? 'Không tìm thấy thành viên phù hợp' : 'Chưa có thành viên nào'}
-                        description={searchQuery || activeFiltersCount > 0 ? 'Vui lòng thử tìm kiếm với bộ lọc hoặc từ khóa khác.' : 'Bắt đầu bằng cách thêm thành viên mới hoặc duyệt yêu cầu gia nhập.'}
-                        actionLabel={activeFiltersCount > 0 ? undefined : 'Thêm Thành viên Mới'}
+                        title={searchQuery || activeFiltersCount > 0 ? 'No members matching filter' : 'No team members registered'}
+                        description={searchQuery || activeFiltersCount > 0 ? 'Try searching with different keywords or clearing active filters.' : 'Get started by inviting team members or approving join requests.'}
+                        actionLabel={activeFiltersCount > 0 ? undefined : 'Add Member'}
                         onAction={activeFiltersCount > 0 ? undefined : () => setIsCreateWizardOpen(true)}
                       />
                     </TableCell>
@@ -552,23 +522,23 @@ export const UsersPage: React.FC = () => {
                   paginatedUsers.map((user) => {
                     const effectiveRoleId = getEffectiveRoleId(user);
                     return (
-                      <TableRow key={user.id} className="hover:bg-slate-50/80 transition-colors">
-                        <TableCell className="font-bold text-slate-900 text-xs">
+                      <TableRow key={user.id} className="hover:bg-[#F1F2F4] transition-colors border-b border-[#EBECF0]">
+                        <TableCell className="font-semibold text-slate-900 text-xs py-2 px-3">
                           <div className="flex items-center gap-2">
                             <span>{user.displayName}</span>
                             {user.isTenantAdmin && (
-                              <Badge className="bg-blue-600 text-white font-bold text-[9px] px-1.5 py-0">
-                                Admin
+                              <Badge className="bg-blue-600 text-white font-bold text-[9px] px-1.5 py-0 rounded-[2px]">
+                                ADMIN
                               </Badge>
                             )}
                           </div>
                         </TableCell>
-                        <TableCell className="text-xs text-slate-600 font-mono">
+                        <TableCell className="text-xs text-slate-600 font-mono py-2 px-3">
                           {user.email}
                         </TableCell>
-                        <TableCell className="text-xs">
+                        <TableCell className="text-xs py-2 px-3">
                           {user.isTenantAdmin ? (
-                            <div className="flex items-center gap-1.5 text-xs font-bold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-md border border-blue-200 w-fit">
+                            <div className="flex items-center gap-1.5 text-xs font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-[3px] border border-blue-200 w-fit">
                               <Shield className="w-3.5 h-3.5 text-blue-600 shrink-0" />
                               <span>{user.roleName}</span>
                             </div>
@@ -581,20 +551,20 @@ export const UsersPage: React.FC = () => {
                               }))}
                               value={effectiveRoleId}
                               onValueChange={(val) => handleChangeMemberRole(user.id, val)}
-                              placeholder="Chọn vai trò..."
-                              searchPlaceholder="Tìm vai trò..."
-                              triggerClassName="h-8 font-semibold"
+                              placeholder="Select role..."
+                              searchPlaceholder="Search roles..."
+                              triggerClassName="h-7 text-xs font-semibold rounded-[3px]"
                               className="w-56"
                             />
                           )}
                         </TableCell>
-                        <TableCell className="text-xs">
-                          <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 font-semibold text-[10px]">
-                            Đang hoạt động
+                        <TableCell className="text-xs py-2 px-3">
+                          <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 font-bold text-[10px] rounded-[3px]">
+                            ACTIVE
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-xs text-slate-500">
-                          {new Date(user.joinedAt).toLocaleDateString('vi-VN')}
+                        <TableCell className="text-xs text-slate-500 font-mono py-2 px-3">
+                          {new Date(user.joinedAt).toLocaleDateString('en-US')}
                         </TableCell>
                       </TableRow>
                     );
@@ -603,111 +573,32 @@ export const UsersPage: React.FC = () => {
               </TableBody>
             </Table>
 
-            {/* Pagination Controls Bar */}
+            {/* Standard Pagination Bar */}
             {!loading && filteredActiveUsers.length > 0 && (
-              <div className="px-4 py-3 bg-slate-50/80 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
-                <div className="flex items-center gap-4 text-slate-600">
-                  <span>
-                    Hiển thị <strong className="text-slate-900 font-bold">{Math.min((currentPage - 1) * pageSize + 1, filteredActiveUsers.length)} - {Math.min(currentPage * pageSize, filteredActiveUsers.length)}</strong> trên tổng số <strong className="text-slate-900 font-bold">{filteredActiveUsers.length}</strong> thành viên
-                  </span>
-
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-slate-500">Số hàng:</span>
-                    <Select
-                      value={String(pageSize)}
-                      onValueChange={(v) => {
-                        setPageSize(Number(v));
-                        setCurrentPage(1);
-                      }}
-                    >
-                      <SelectTrigger className="h-7 w-16 text-xs bg-white border-slate-200">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="5">5</SelectItem>
-                        <SelectItem value="10">10</SelectItem>
-                        <SelectItem value="20">20</SelectItem>
-                        <SelectItem value="50">50</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-1">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage(1)}
-                    disabled={currentPage === 1}
-                    className="h-8 px-2 text-xs border-slate-200"
-                    title="Trang đầu"
-                  >
-                    <ChevronsLeft className="w-3.5 h-3.5" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-                    disabled={currentPage === 1}
-                    className="h-8 px-2 text-xs border-slate-200"
-                    title="Trang trước"
-                  >
-                    <ChevronLeft className="w-3.5 h-3.5" />
-                  </Button>
-
-                  {getVisiblePageNumbers().map((pageNum) => (
-                    <Button
-                      key={pageNum}
-                      variant={currentPage === pageNum ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => setCurrentPage(pageNum)}
-                      className={`h-8 w-8 text-xs font-semibold p-0 ${
-                        currentPage === pageNum
-                          ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                          : 'border-slate-200 text-slate-700 hover:bg-slate-100'
-                      }`}
-                    >
-                      {pageNum}
-                    </Button>
-                  ))}
-
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
-                    disabled={currentPage === totalPages}
-                    className="h-8 px-2 text-xs border-slate-200"
-                    title="Trang tiếp"
-                  >
-                    <ChevronRight className="w-3.5 h-3.5" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage(totalPages)}
-                    disabled={currentPage === totalPages}
-                    className="h-8 px-2 text-xs border-slate-200"
-                    title="Trang cuối"
-                  >
-                    <ChevronsRight className="w-3.5 h-3.5" />
-                  </Button>
-                </div>
-              </div>
+              <StandardPagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalElements={filteredActiveUsers.length}
+                pageSize={pageSize}
+                onPageChange={setCurrentPage}
+                onPageSizeChange={setPageSize}
+                itemLabel="members"
+              />
             )}
           </Card>
         </TabsContent>
 
         {/* TAB 2: PENDING MEMBERSHIP REQUESTS */}
         <TabsContent value="pending" className="space-y-4">
-          <Card className="shadow-xs border-slate-200 w-full overflow-hidden">
+          <Card className="shadow-none border-slate-200 w-full overflow-hidden rounded-[4px]">
             <Table>
-              <TableHeader className="bg-slate-50/90">
+              <TableHeader className="bg-[#F7F8F9] border-b border-slate-200">
                 <TableRow className="text-xs">
-                  <TableHead className="font-bold text-slate-900">Người đăng ký</TableHead>
-                  <TableHead className="font-bold text-slate-900">Email Công vụ</TableHead>
-                  <TableHead className="font-bold text-slate-900">Thời gian đăng ký</TableHead>
-                  <TableHead className="font-bold text-slate-900">Chọn Vai trò Gán</TableHead>
-                  <TableHead className="font-bold text-slate-900 text-right pr-6">Thao tác Phê duyệt</TableHead>
+                  <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Requester</TableHead>
+                  <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Work Email</TableHead>
+                  <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Requested At</TableHead>
+                  <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">Assign Security Role</TableHead>
+                  <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3 text-right pr-4">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody className="text-xs">
@@ -715,7 +606,7 @@ export const UsersPage: React.FC = () => {
                   <TableRow>
                     <TableCell colSpan={5} className="h-36 text-center text-slate-500">
                       <Loader2 className="w-5 h-5 animate-spin mx-auto text-blue-600 mb-2" />
-                      <span>Đang tải danh sách đơn đăng ký từ máy chủ...</span>
+                      <span>Loading registration requests from server...</span>
                     </TableCell>
                   </TableRow>
                 ) : pendingRequests.length === 0 ? (
@@ -723,24 +614,24 @@ export const UsersPage: React.FC = () => {
                     <TableCell colSpan={5} className="p-6">
                       <EmptyState
                         icon={CheckCircle2}
-                        title="Không có yêu cầu gia nhập nào đang chờ duyệt"
-                        description="Tất cả tài khoản đăng ký gia nhập Tập đoàn đã được xử lý hoàn tất."
+                        title="No pending membership requests"
+                        description="All access requests to join this organization have been reviewed."
                       />
                     </TableCell>
                   </TableRow>
                 ) : (
                   pendingRequests.map((req) => (
-                    <TableRow key={req.id} className="hover:bg-slate-50/80 transition-colors">
-                      <TableCell className="font-bold text-slate-900 text-xs">
+                    <TableRow key={req.id} className="hover:bg-[#F1F2F4] transition-colors border-b border-[#EBECF0]">
+                      <TableCell className="font-semibold text-slate-900 text-xs py-2 px-3">
                         {req.requester.displayName || req.requester.email}
                       </TableCell>
-                      <TableCell className="text-xs text-slate-600 font-mono">
+                      <TableCell className="text-xs text-slate-600 font-mono py-2 px-3">
                         {req.requester.email}
                       </TableCell>
-                      <TableCell className="text-xs text-slate-500">
-                        {new Date(req.requestedAt).toLocaleString('vi-VN')}
+                      <TableCell className="text-xs text-slate-500 font-mono py-2 px-3">
+                        {new Date(req.requestedAt).toLocaleString('en-US')}
                       </TableCell>
-                      <TableCell className="text-xs">
+                      <TableCell className="text-xs py-2 px-3">
                         <SearchableSelect
                           options={roles.map((r) => ({
                             value: r.id,
@@ -749,26 +640,26 @@ export const UsersPage: React.FC = () => {
                           }))}
                           value={selectedRoleIds[req.id] || (roles[0] ? roles[0].id : '')}
                           onValueChange={(val) => setSelectedRoleIds((prev) => ({ ...prev, [req.id]: val }))}
-                          placeholder="Chọn vai trò gán..."
-                          searchPlaceholder="Tìm vai trò gán..."
-                          triggerClassName="h-8 font-medium"
+                          placeholder="Select role..."
+                          searchPlaceholder="Search roles..."
+                          triggerClassName="h-7 text-xs font-medium rounded-[3px]"
                           className="w-56"
                         />
                       </TableCell>
-                      <TableCell className="text-right pr-6">
+                      <TableCell className="text-right pr-4 py-2 px-3">
                         <div className="flex items-center justify-end gap-2">
                           <Button
                             size="sm"
                             onClick={() => handleApprove(req)}
                             disabled={actionLoadingId === req.id}
-                            className="h-8 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white gap-1"
+                            className="h-7 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white gap-1 rounded-[3px]"
                           >
                             {actionLoadingId === req.id ? (
                               <Loader2 className="w-3.5 h-3.5 animate-spin" />
                             ) : (
                               <CheckCircle2 className="w-3.5 h-3.5" />
                             )}
-                            Phê duyệt
+                            Approve
                           </Button>
 
                           <Button
@@ -776,10 +667,10 @@ export const UsersPage: React.FC = () => {
                             size="sm"
                             onClick={() => handleReject(req)}
                             disabled={actionLoadingId === req.id}
-                            className="h-8 text-xs font-semibold text-rose-600 hover:text-rose-700 hover:bg-rose-50 border-rose-200 gap-1"
+                            className="h-7 text-xs font-semibold text-rose-600 hover:text-rose-700 hover:bg-rose-50 border-rose-200 gap-1 rounded-[3px]"
                           >
                             <XCircle className="w-3.5 h-3.5" />
-                            Từ chối
+                            Decline
                           </Button>
                         </div>
                       </TableCell>
@@ -802,3 +693,5 @@ export const UsersPage: React.FC = () => {
     </div>
   );
 };
+
+export default UsersPage;

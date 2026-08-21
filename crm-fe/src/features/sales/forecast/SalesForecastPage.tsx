@@ -3,7 +3,7 @@ import {
   forecastApi,
   SalesForecastSummary,
 } from '@/services/api/forecastApi';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -22,6 +22,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { toast } from 'sonner';
+import { StandardPageHeader } from '@/components/common/StandardPageHeader';
 import {
   TrendingUp,
   Target,
@@ -46,7 +47,7 @@ export const SalesForecastPage: React.FC = () => {
       const data = await forecastApi.getForecastSummary(period);
       setSummary(data);
     } catch {
-      toast.error('Không thể tải dữ liệu dự báo doanh số');
+      toast.error('Unable to load revenue forecast data');
     } finally {
       setLoading(false);
     }
@@ -66,256 +67,239 @@ export const SalesForecastPage: React.FC = () => {
   const projectedAttainment = targetQuota > 0 ? (weightedTotal / targetQuota) * 100 : 0;
 
   return (
-    <div className="space-y-6 pb-12 font-sans w-full max-w-7xl mx-auto">
-      {/* ── Page Header ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-bold text-slate-900 flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shadow-xs shrink-0">
-              <TrendingUp className="w-4.5 h-4.5 text-white" />
+    <div className="space-y-4 pb-12 font-sans w-full">
+      {/* Standard Page Header */}
+      <StandardPageHeader
+        title="Revenue Forecasting &amp; Quota Attainment"
+        subtitle="Predictive revenue intelligence across Commit, Best Case, Pipeline categories &amp; rep attainment metrics"
+        icon={TrendingUp}
+        actions={
+          <div className="flex items-center gap-2.5">
+            <div className="w-48">
+              <Select
+                value={period}
+                onValueChange={(val) => setPeriod(val as any)}
+              >
+                <SelectTrigger className="h-8 text-xs font-semibold bg-white border-slate-200 shadow-none rounded-[3px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="rounded-[3px]">
+                  <SelectItem value="THIS_MONTH">This Month</SelectItem>
+                  <SelectItem value="THIS_QUARTER">This Quarter (Q3)</SelectItem>
+                  <SelectItem value="THIS_YEAR">Full Fiscal Year</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-            Dự báo Doanh số & Hiệu suất Bán hàng (Revenue Forecast)
-          </h1>
-          <p className="text-xs text-slate-500 mt-1 ml-10.5">
-            Mô hình dự báo doanh thu thông minh theo nhóm cam kết (Commit, Best Case, Pipeline) và hiệu suất KPI
-          </p>
-        </div>
 
-        <div className="flex items-center gap-2.5 shrink-0">
-          <div className="w-44">
-            <Select
-              value={period}
-              onValueChange={(val) => setPeriod(val as any)}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={fetchForecast}
+              disabled={loading}
+              className="h-8 px-3 text-xs border-slate-200 bg-white hover:bg-slate-50 gap-1.5 shadow-none text-slate-700 font-medium rounded-[3px]"
             >
-              <SelectTrigger className="h-9 text-xs font-semibold bg-white border-slate-200 shadow-2xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="THIS_MONTH">Tháng này (08/2026)</SelectItem>
-                <SelectItem value="THIS_QUARTER">Quý này (Q3/2026)</SelectItem>
-                <SelectItem value="THIS_YEAR">Năm nay (2026)</SelectItem>
-              </SelectContent>
-            </Select>
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+              <span>Refresh</span>
+            </Button>
           </div>
+        }
+      />
 
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={fetchForecast}
-            disabled={loading}
-            className="h-9 px-3 text-xs border-slate-200 bg-white hover:bg-slate-50 gap-1.5 shadow-2xs text-slate-700 font-semibold"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-            <span>Làm mới</span>
-          </Button>
-        </div>
-      </div>
-
-      {/* ── Forecast Waterfall KPI Cards ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
+      {/* Forecast Waterfall KPI Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
         {/* 1. Closed Won */}
-        <Card className="border border-emerald-200 bg-gradient-to-br from-emerald-50/70 to-white shadow-xs">
-          <CardContent className="p-4 space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-800">Đã Chốt (Won)</span>
-              <div className="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center">
-                <CheckCircle2 className="w-4 h-4" />
-              </div>
+        <div className="border border-emerald-200 bg-white rounded-[4px] shadow-none p-3.5 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-800">Closed Won</span>
+            <div className="w-6 h-6 rounded bg-emerald-100 text-emerald-700 flex items-center justify-center">
+              <CheckCircle2 className="w-3.5 h-3.5" />
             </div>
-            <div className="text-xl font-black text-emerald-950 font-mono">
-              {(closedWon / 1_000_000).toLocaleString('vi-VN')} <span className="text-xs font-normal">Tr ₫</span>
-            </div>
-            <div className="text-[11px] text-emerald-700 flex items-center gap-1 font-medium">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
-              Độ tin cậy: 100%
-            </div>
-          </CardContent>
-        </Card>
+          </div>
+          <div className="text-lg font-black text-emerald-950 font-mono">
+            {(closedWon / 1_000_000).toLocaleString('en-US')} <span className="text-xs font-normal">M ₫</span>
+          </div>
+          <div className="text-[10px] text-emerald-700 flex items-center gap-1 font-medium">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+            Confidence: 100%
+          </div>
+        </div>
 
         {/* 2. Commit */}
-        <Card className="border border-blue-200 bg-gradient-to-br from-blue-50/70 to-white shadow-xs">
-          <CardContent className="p-4 space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-blue-800">Cam Kết (Commit)</span>
-              <div className="w-7 h-7 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center">
-                <Target className="w-4 h-4" />
-              </div>
+        <div className="border border-blue-200 bg-white rounded-[4px] shadow-none p-3.5 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-blue-800">Commit</span>
+            <div className="w-6 h-6 rounded bg-blue-100 text-blue-700 flex items-center justify-center">
+              <Target className="w-3.5 h-3.5" />
             </div>
-            <div className="text-xl font-black text-blue-950 font-mono">
-              {(commit / 1_000_000).toLocaleString('vi-VN')} <span className="text-xs font-normal">Tr ₫</span>
-            </div>
-            <div className="text-[11px] text-blue-700 flex items-center gap-1 font-medium">
-              <span className="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
-              Xác suất ≥ 80%
-            </div>
-          </CardContent>
-        </Card>
+          </div>
+          <div className="text-lg font-black text-blue-950 font-mono">
+            {(commit / 1_000_000).toLocaleString('en-US')} <span className="text-xs font-normal">M ₫</span>
+          </div>
+          <div className="text-[10px] text-blue-700 flex items-center gap-1 font-medium">
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
+            Probability ≥ 80%
+          </div>
+        </div>
 
         {/* 3. Best Case */}
-        <Card className="border border-purple-200 bg-gradient-to-br from-purple-50/70 to-white shadow-xs">
-          <CardContent className="p-4 space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-purple-800">Khả Quan (Best Case)</span>
-              <div className="w-7 h-7 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center">
-                <ArrowUpRight className="w-4 h-4" />
-              </div>
+        <div className="border border-purple-200 bg-white rounded-[4px] shadow-none p-3.5 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-purple-800">Best Case</span>
+            <div className="w-6 h-6 rounded bg-purple-100 text-purple-700 flex items-center justify-center">
+              <ArrowUpRight className="w-3.5 h-3.5" />
             </div>
-            <div className="text-xl font-black text-purple-950 font-mono">
-              {(bestCase / 1_000_000).toLocaleString('vi-VN')} <span className="text-xs font-normal">Tr ₫</span>
-            </div>
-            <div className="text-[11px] text-purple-700 flex items-center gap-1 font-medium">
-              <span className="w-1.5 h-1.5 rounded-full bg-purple-600"></span>
-              Xác suất 50% - 79%
-            </div>
-          </CardContent>
-        </Card>
+          </div>
+          <div className="text-lg font-black text-purple-950 font-mono">
+            {(bestCase / 1_000_000).toLocaleString('en-US')} <span className="text-xs font-normal">M ₫</span>
+          </div>
+          <div className="text-[10px] text-purple-700 flex items-center gap-1 font-medium">
+            <span className="w-1.5 h-1.5 rounded-full bg-purple-600"></span>
+            Probability 50% - 79%
+          </div>
+        </div>
 
         {/* 4. Pipeline */}
-        <Card className="border border-amber-200 bg-gradient-to-br from-amber-50/70 to-white shadow-xs">
-          <CardContent className="p-4 space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-amber-800">Dự Phòng (Pipeline)</span>
-              <div className="w-7 h-7 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center">
-                <Layers className="w-4 h-4" />
-              </div>
+        <div className="border border-amber-200 bg-white rounded-[4px] shadow-none p-3.5 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800">Pipeline</span>
+            <div className="w-6 h-6 rounded bg-amber-100 text-amber-700 flex items-center justify-center">
+              <Layers className="w-3.5 h-3.5" />
             </div>
-            <div className="text-xl font-black text-amber-950 font-mono">
-              {(pipeline / 1_000_000).toLocaleString('vi-VN')} <span className="text-xs font-normal">Tr ₫</span>
-            </div>
-            <div className="text-[11px] text-amber-700 flex items-center gap-1 font-medium">
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-600"></span>
-              Xác suất &lt; 50%
-            </div>
-          </CardContent>
-        </Card>
+          </div>
+          <div className="text-lg font-black text-amber-950 font-mono">
+            {(pipeline / 1_000_000).toLocaleString('en-US')} <span className="text-xs font-normal">M ₫</span>
+          </div>
+          <div className="text-[10px] text-amber-700 flex items-center gap-1 font-medium">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-600"></span>
+            Probability &lt; 50%
+          </div>
+        </div>
 
         {/* 5. Weighted Forecast Total */}
-        <Card className="border border-slate-900 bg-slate-900 text-white shadow-md">
-          <CardContent className="p-4 space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-blue-300">Dự Báo Trọng Số</span>
-              <div className="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center">
-                <DollarSign className="w-4 h-4" />
-              </div>
+        <div className="border border-slate-900 bg-slate-900 text-white rounded-[4px] shadow-none p-3.5 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-blue-300">Weighted Forecast</span>
+            <div className="w-6 h-6 rounded bg-blue-600 text-white flex items-center justify-center">
+              <DollarSign className="w-3.5 h-3.5" />
             </div>
-            <div className="text-xl font-black text-white font-mono">
-              {(weightedTotal / 1_000_000).toLocaleString('vi-VN')} <span className="text-xs font-normal text-slate-400">Tr ₫</span>
-            </div>
-            <div className="text-[11px] text-slate-300 flex items-center gap-1">
-              <span>Đạt dự kiến:</span>
-              <strong className="text-emerald-400">{projectedAttainment.toFixed(1)}% KPI</strong>
-            </div>
-          </CardContent>
-        </Card>
+          </div>
+          <div className="text-lg font-black text-white font-mono">
+            {(weightedTotal / 1_000_000).toLocaleString('en-US')} <span className="text-xs font-normal text-slate-400">M ₫</span>
+          </div>
+          <div className="text-[10px] text-slate-300 flex items-center gap-1">
+            <span>Projected:</span>
+            <strong className="text-emerald-400 font-bold">{projectedAttainment.toFixed(1)}% Quota</strong>
+          </div>
+        </div>
       </div>
 
-      {/* ── Quota Attainment Progress & Win Rate ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <Card className="lg:col-span-2 border border-slate-200 bg-white shadow-xs p-5 space-y-4">
+      {/* Quota Attainment Progress & Win Rate */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+        <Card className="lg:col-span-2 border border-slate-200 bg-white shadow-none rounded-[4px] p-4 space-y-3">
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <h3 className="font-bold text-sm text-slate-900 flex items-center gap-2">
+              <h3 className="font-bold text-xs text-slate-900 flex items-center gap-2">
                 <Target className="w-4 h-4 text-blue-600" />
-                Tiến độ Hoàn thành Chỉ tiêu Doanh số Toàn đội (Quota Progress)
+                Team Quota Progress
               </h3>
-              <p className="text-xs text-slate-500">
-                Chỉ tiêu kỳ này: <strong className="text-slate-800 font-mono">{(targetQuota / 1_000_000).toLocaleString('vi-VN')} Tr ₫</strong>
+              <p className="text-[11px] text-slate-500">
+                Period Quota Target: <strong className="text-slate-800 font-mono">{(targetQuota / 1_000_000).toLocaleString('en-US')} M ₫</strong>
               </p>
             </div>
-            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 font-mono font-bold">
-              {quotaAttainment.toFixed(1)}% Thực Đạt
+            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 font-mono font-bold text-xs rounded-[3px]">
+              {quotaAttainment.toFixed(1)}% Attained
             </Badge>
           </div>
 
           {/* Multi-segment Progress Bar */}
           <div className="space-y-2">
-            <div className="h-4 w-full bg-slate-100 rounded-full overflow-hidden flex shadow-inner">
+            <div className="h-3 w-full bg-slate-100 rounded-full overflow-hidden flex">
               <div
                 style={{ width: `${Math.min(quotaAttainment, 100)}%` }}
                 className="bg-emerald-500 transition-all duration-500"
-                title={`Đã chốt: ${(closedWon / 1_000_000).toFixed(0)} Tr`}
+                title={`Closed Won: ${(closedWon / 1_000_000).toFixed(0)} M`}
               />
               <div
                 style={{ width: `${Math.min((commit / targetQuota) * 100, 100 - quotaAttainment)}%` }}
                 className="bg-blue-500 transition-all duration-500"
-                title={`Cam kết: ${(commit / 1_000_000).toFixed(0)} Tr`}
+                title={`Commit: ${(commit / 1_000_000).toFixed(0)} M`}
               />
               <div
                 style={{ width: `${Math.min((bestCase / targetQuota) * 100, 100 - (quotaAttainment + (commit / targetQuota) * 100))}%` }}
                 className="bg-purple-400 transition-all duration-500"
-                title={`Khả quan: ${(bestCase / 1_000_000).toFixed(0)} Tr`}
+                title={`Best Case: ${(bestCase / 1_000_000).toFixed(0)} M`}
               />
             </div>
 
             <div className="flex flex-wrap items-center justify-between text-[11px] text-slate-600 pt-1">
               <div className="flex items-center gap-4">
                 <span className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
-                  Đã chốt: <strong>{(closedWon / 1_000_000).toFixed(0)} Tr</strong>
+                  <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                  Won: <strong>{(closedWon / 1_000_000).toFixed(0)} M</strong>
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-blue-500"></span>
-                  Cam kết: <strong>{(commit / 1_000_000).toFixed(0)} Tr</strong>
+                  <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                  Commit: <strong>{(commit / 1_000_000).toFixed(0)} M</strong>
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-purple-400"></span>
-                  Khả quan: <strong>{(bestCase / 1_000_000).toFixed(0)} Tr</strong>
+                  <span className="w-2 h-2 rounded-full bg-purple-400"></span>
+                  Best Case: <strong>{(bestCase / 1_000_000).toFixed(0)} M</strong>
                 </span>
               </div>
               <span className="font-semibold text-slate-800">
-                Khoảng cách KPI: {Math.max((targetQuota - closedWon) / 1_000_000, 0).toFixed(0)} Tr ₫
+                Gap to Quota: {Math.max((targetQuota - closedWon) / 1_000_000, 0).toFixed(0)} M ₫
               </span>
             </div>
           </div>
         </Card>
 
         {/* Win / Loss Ratio Card */}
-        <Card className="border border-slate-200 bg-white shadow-xs p-5 flex flex-col justify-between">
+        <Card className="border border-slate-200 bg-white shadow-none rounded-[4px] p-4 flex flex-col justify-between">
           <div className="space-y-1">
-            <h3 className="font-bold text-sm text-slate-900 flex items-center gap-2">
+            <h3 className="font-bold text-xs text-slate-900 flex items-center gap-2">
               <PieChart className="w-4 h-4 text-emerald-600" />
-              Tỷ lệ Thắng Deal (Win Rate)
+              Win Rate Efficiency
             </h3>
-            <p className="text-xs text-slate-500">Dựa trên các cơ hội đã đóng</p>
+            <p className="text-[11px] text-slate-500">Based on closed opportunity deals</p>
           </div>
 
-          <div className="my-4 text-center">
-            <div className="text-4xl font-black text-slate-900 font-mono">
+          <div className="my-3 text-center">
+            <div className="text-3xl font-black text-slate-900 font-mono">
               {(summary?.winRatePercent || 75.0).toFixed(1)}%
             </div>
-            <div className="text-xs text-emerald-700 font-bold mt-1">
-              Hiệu suất chuyển đổi rất cao
+            <div className="text-[11px] text-emerald-700 font-bold mt-1">
+              High Pipeline Velocity
             </div>
           </div>
 
-          <div className="text-xs text-slate-500 bg-slate-50 p-2.5 rounded-lg border border-slate-100 flex items-center justify-between">
-            <span>Tổng số Deals trong phễu:</span>
+          <div className="text-xs text-slate-500 bg-slate-50 p-2 rounded-[3px] border border-slate-100 flex items-center justify-between">
+            <span>Total Deals in Pipeline:</span>
             <strong className="text-slate-800 font-mono">{summary?.totalDealsCount || 18} Deals</strong>
           </div>
         </Card>
       </div>
 
-      {/* ── Sales Rep Leaderboard ── */}
-      <Card className="border border-slate-200 bg-white rounded-xl shadow-xs overflow-hidden">
-        <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+      {/* Sales Rep Leaderboard */}
+      <Card className="border border-slate-200 bg-white rounded-[4px] shadow-none overflow-hidden">
+        <div className="p-3.5 border-b border-slate-100 flex items-center justify-between bg-[#F7F8F9]">
           <div className="flex items-center gap-2">
             <Trophy className="w-4 h-4 text-amber-500" />
-            <h3 className="font-bold text-sm text-slate-900">Bảng Thành tích Nhân viên Kinh doanh (Sales Leaderboard)</h3>
+            <h3 className="font-bold text-xs text-slate-900">Commercial Account Executive Leaderboard</h3>
           </div>
-          <Badge variant="outline" className="text-xs bg-slate-50 text-slate-700 border-slate-200">
-            {summary?.salesRepPerformance?.length || 3} Chuyên viên
+          <Badge variant="outline" className="text-[10px] bg-white text-slate-700 border-slate-200 rounded-[2px]">
+            {summary?.salesRepPerformance?.length || 3} Representatives
           </Badge>
         </div>
 
         <Table>
           <TableHeader>
-            <TableRow className="bg-slate-50/80 hover:bg-slate-50/80 text-[11px] font-bold text-slate-600 uppercase">
-              <TableHead className="py-3 pl-4">Hạng &amp; Nhân viên</TableHead>
-              <TableHead className="py-3">Doanh số Đã chốt (₫)</TableHead>
-              <TableHead className="py-3">Đang cam kết (₫)</TableHead>
-              <TableHead className="py-3">Chỉ tiêu KPI (₫)</TableHead>
-              <TableHead className="py-3">Tiến độ KPI</TableHead>
-              <TableHead className="py-3 text-right pr-4">Tỷ lệ Thắng/Thua</TableHead>
+            <TableRow className="bg-[#F7F8F9] hover:bg-[#F7F8F9] text-[11px] font-semibold text-slate-600 uppercase border-b border-slate-200">
+              <TableHead className="py-2.5 px-3">Rank &amp; Representative</TableHead>
+              <TableHead className="py-2.5 px-3">Closed Won Value (₫)</TableHead>
+              <TableHead className="py-2.5 px-3">Committed Pipeline (₫)</TableHead>
+              <TableHead className="py-2.5 px-3">Quota Target (₫)</TableHead>
+              <TableHead className="py-2.5 px-3">Quota Attainment</TableHead>
+              <TableHead className="py-2.5 px-3 text-right pr-4">Won / Lost Ratio</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -324,11 +308,11 @@ export const SalesForecastPage: React.FC = () => {
               const isTop = idx === 0;
 
               return (
-                <TableRow key={idx} className="hover:bg-slate-50/80 transition-colors text-xs">
-                  <TableCell className="pl-4 py-3.5">
-                    <div className="flex items-center gap-2.5">
+                <TableRow key={idx} className="hover:bg-[#F1F2F4] transition-colors text-xs border-b border-[#EBECF0]">
+                  <TableCell className="py-2 px-3">
+                    <div className="flex items-center gap-2">
                       <div
-                        className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                        className={`w-5 h-5 rounded flex items-center justify-center text-xs font-bold ${
                           isTop
                             ? 'bg-amber-100 text-amber-800 border border-amber-300'
                             : 'bg-slate-100 text-slate-700'
@@ -337,7 +321,7 @@ export const SalesForecastPage: React.FC = () => {
                         {idx + 1}
                       </div>
                       <div>
-                        <div className="font-bold text-slate-900 flex items-center gap-1.5">
+                        <div className="font-semibold text-slate-900 flex items-center gap-1">
                           {rep.repName}
                           {isTop && <Award className="w-3.5 h-3.5 text-amber-500 inline" />}
                         </div>
@@ -345,23 +329,23 @@ export const SalesForecastPage: React.FC = () => {
                     </div>
                   </TableCell>
 
-                  <TableCell className="font-mono font-bold text-emerald-700">
-                    {rep.closedAmount.toLocaleString('vi-VN')} ₫
+                  <TableCell className="py-2 px-3 font-mono font-bold text-emerald-700">
+                    {rep.closedAmount.toLocaleString('en-US')} ₫
                   </TableCell>
 
-                  <TableCell className="font-mono text-blue-700 font-semibold">
-                    {rep.openAmount.toLocaleString('vi-VN')} ₫
+                  <TableCell className="py-2 px-3 font-mono text-blue-700 font-semibold">
+                    {rep.openAmount.toLocaleString('en-US')} ₫
                   </TableCell>
 
-                  <TableCell className="font-mono text-slate-600">
-                    {rep.targetQuota.toLocaleString('vi-VN')} ₫
+                  <TableCell className="py-2 px-3 font-mono text-slate-600">
+                    {rep.targetQuota.toLocaleString('en-US')} ₫
                   </TableCell>
 
-                  <TableCell>
+                  <TableCell className="py-2 px-3">
                     <div className="flex items-center gap-2">
                       <Badge
                         variant="outline"
-                        className={`text-[10px] font-bold ${
+                        className={`text-[10px] font-bold rounded-[2px] ${
                           attainment >= 100
                             ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                             : attainment >= 80
@@ -371,7 +355,7 @@ export const SalesForecastPage: React.FC = () => {
                       >
                         {attainment.toFixed(1)}%
                       </Badge>
-                      <div className="w-20 h-2 bg-slate-100 rounded-full overflow-hidden">
+                      <div className="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden">
                         <div
                           style={{ width: `${Math.min(attainment, 100)}%` }}
                           className={`h-full ${attainment >= 100 ? 'bg-emerald-500' : 'bg-blue-500'}`}
@@ -380,7 +364,7 @@ export const SalesForecastPage: React.FC = () => {
                     </div>
                   </TableCell>
 
-                  <TableCell className="text-right pr-4 font-mono font-semibold">
+                  <TableCell className="py-2 px-3 text-right pr-4 font-mono font-semibold">
                     <span className="text-emerald-700">{rep.wonDealsCount} Won</span> /{' '}
                     <span className="text-slate-400">{rep.lostDealsCount} Lost</span>
                   </TableCell>
@@ -393,3 +377,5 @@ export const SalesForecastPage: React.FC = () => {
     </div>
   );
 };
+
+export default SalesForecastPage;

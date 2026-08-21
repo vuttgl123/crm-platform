@@ -58,10 +58,10 @@ export interface UpdateContractRequest {
 }
 
 export const CONTRACT_STATUS_CONFIG: Record<ContractStatus, { label: string; className: string }> = {
-  DRAFT: { label: 'Bản thảo', className: 'bg-slate-100 text-slate-600 border-slate-300 font-semibold' },
-  ACTIVE: { label: 'Đang hiệu lực', className: 'bg-emerald-50 text-emerald-700 border-emerald-200 font-bold' },
-  EXPIRED: { label: 'Đã hết hạn', className: 'bg-amber-50 text-amber-700 border-amber-200 font-semibold' },
-  TERMINATED: { label: 'Đã thanh lý', className: 'bg-rose-50 text-rose-700 border-rose-200 font-semibold' },
+  DRAFT: { label: 'DRAFT', className: 'bg-slate-100 text-slate-600 border-slate-300 font-semibold' },
+  ACTIVE: { label: 'ACTIVE', className: 'bg-emerald-50 text-emerald-700 border-emerald-200 font-bold' },
+  EXPIRED: { label: 'EXPIRED', className: 'bg-amber-50 text-amber-700 border-amber-200 font-semibold' },
+  TERMINATED: { label: 'TERMINATED', className: 'bg-rose-50 text-rose-700 border-rose-200 font-semibold' },
 };
 
 export const contractApi = {

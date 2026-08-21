@@ -13,12 +13,12 @@ export const ForbiddenPage: React.FC = () => {
           <ShieldX className="w-8 h-8" />
         </div>
         <h1 className="text-xl font-bold text-slate-900 mb-2">
-          {t('states.forbiddenTitle', '403 - Không có quyền truy cập')}
+          {t('states.forbiddenTitle', '403 - Access Denied')}
         </h1>
         <p className="text-sm text-slate-600 mb-6">
           {t(
             'states.forbiddenDesc',
-            'Tài khoản hoặc vai trò hiện tại của bạn không có đủ quyền hạn (permission code) hoặc phạm vi dữ liệu (data scope) để truy cập chức năng này.'
+            'Your current account role or data scope does not have the required permissions to access this feature.'
           )}
         </p>
         <Link
@@ -26,7 +26,7 @@ export const ForbiddenPage: React.FC = () => {
           className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors shadow-xs"
         >
           <ArrowLeft className="w-4 h-4" />
-          {t('common.backToOverview', 'Quay lại Tổng quan')}
+          {t('common.backToOverview', 'Back to Overview')}
         </Link>
       </div>
     </div>

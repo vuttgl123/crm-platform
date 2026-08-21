@@ -47,59 +47,58 @@ import {
   CollapsibleContent,
 } from '@/components/ui/collapsible';
 
-// Friendly operations permission metadata mapping
 interface PermissionMeta {
   id: string;
-  nameVi: string;
-  descVi: string;
+  name: string;
+  desc: string;
 }
 
-const PERMISSION_GROUPS: { module: string; titleVi: string; icon: React.ElementType; items: PermissionMeta[] }[] = [
+const PERMISSION_GROUPS: { module: string; title: string; icon: React.ElementType; items: PermissionMeta[] }[] = [
   {
     module: 'crm',
-    titleVi: 'Quản lý Khách hàng, Lead & Cơ hội (CRM)',
+    title: 'Customer, Lead & Opportunity Management (CRM)',
     icon: Users,
     items: [
-      { id: 'crm_account.read', nameVi: 'Xem danh sách & Chi tiết Khách hàng', descVi: 'Truy cập hồ sơ thông tin khách hàng doanh nghiệp và cá nhân' },
-      { id: 'crm_account.write', nameVi: 'Thêm mới & Cập nhật Khách hàng', descVi: 'Tạo mới, sửa đổi thông tin doanh nghiệp, mã định danh và địa chỉ' },
-      { id: 'crm_contact.read', nameVi: 'Xem thông tin Người liên hệ', descVi: 'Tra cứu danh sách đại diện kinh doanh và đầu mối liên hệ của đối tác' },
-      { id: 'crm_contact.write', nameVi: 'Tạo mới & Chỉnh sửa Người liên hệ', descVi: 'Cập nhật số điện thoại, email và chức danh người liên hệ' },
-      { id: 'crm_lead.read', nameVi: 'Xem dữ liệu Lead tiềm năng', descVi: 'Theo dõi nguồn lead thu thập từ website và các chiến dịch Marketing' },
-      { id: 'crm_lead.write', nameVi: 'Phân bổ & Xử lý Lead', descVi: 'Gán lead cho nhân viên tư vấn và cập nhật trạng thái liên hệ' },
-      { id: 'crm_opportunity.read', nameVi: 'Xem Pipeline Cơ hội bán hàng', descVi: 'Theo dõi các đợt đàm phán, quy mô hợp đồng và xác suất thành công' },
-      { id: 'crm_opportunity.write', nameVi: 'Cập nhật Giai đoạn Deal & Giá trị', descVi: 'Chuyển đổi giai đoạn đàm phán và giá trị doanh thu dự kiến' },
+      { id: 'crm_account.read', name: 'View Account List & Details', desc: 'Access business and individual customer profiles' },
+      { id: 'crm_account.write', name: 'Create & Update Accounts', desc: 'Create, edit company details, identifiers, and billing addresses' },
+      { id: 'crm_contact.read', name: 'View Contact Details', desc: 'Access partner and client contact representatives' },
+      { id: 'crm_contact.write', name: 'Create & Edit Contacts', desc: 'Update phone numbers, emails, and job titles' },
+      { id: 'crm_lead.read', name: 'View Inbound Leads', desc: 'Track leads collected from website and inbound marketing campaigns' },
+      { id: 'crm_lead.write', name: 'Assign & Qualify Leads', desc: 'Assign leads to sales reps and update qualification status' },
+      { id: 'crm_opportunity.read', name: 'View Opportunity Pipeline', desc: 'Track sales deals, deal values, and closing probabilities' },
+      { id: 'crm_opportunity.write', name: 'Update Deal Stages & Value', desc: 'Advance deal stages and modify expected revenue' },
     ],
   },
   {
     module: 'sales',
-    titleVi: 'Bán hàng, Báo giá & Đơn hàng',
+    title: 'Sales, Quotes & Orders',
     icon: FileText,
     items: [
-      { id: 'sales_quote.read', nameVi: 'Xem Báo giá & Điều khoản', descVi: 'Tra cứu chi tiết báo giá, chiết khấu và danh mục hàng hóa cung cấp' },
-      { id: 'sales_quote.write', nameVi: 'Lập & Soạn thảo Báo giá mới', descVi: 'Tạo mới bản thảo báo giá và gửi yêu cầu phê duyệt cho cấp quản lý' },
-      { id: 'sales_quote.approve', nameVi: 'Phê duyệt Báo giá & Chiết khấu', descVi: 'Quyền duyệt chính sách giá đặc biệt và tỷ lệ chiết khấu cho khách hàng' },
-      { id: 'sales_order.read', nameVi: 'Xem Đơn hàng & Hợp đồng', descVi: 'Tra cứu hợp đồng thương mại và tiến độ giao hàng' },
-      { id: 'sales_order.write', nameVi: 'Tạo Đơn hàng & Xác nhận', descVi: 'Lập đơn đặt hàng chính thức và gửi thông báo kinh doanh' },
+      { id: 'sales_quote.read', name: 'View Quotations & Terms', desc: 'Access quotation details, discount structures, and line items' },
+      { id: 'sales_quote.write', name: 'Create & Draft Quotations', desc: 'Generate new quote drafts and submit for approval' },
+      { id: 'sales_quote.approve', name: 'Approve Quotes & Discounts', desc: 'Authority to approve special discount tiers and custom pricing' },
+      { id: 'sales_order.read', name: 'View Sales Orders & Contracts', desc: 'Access commercial contracts and order fulfillment status' },
+      { id: 'sales_order.write', name: 'Create & Confirm Orders', desc: 'Generate official sales orders and dispatch confirmations' },
     ],
   },
   {
     module: 'service',
-    titleVi: 'Hỗ trợ & Chăm sóc Khách hàng',
+    title: 'Customer Service & Support',
     icon: LifeBuoy,
     items: [
-      { id: 'service_ticket.read', nameVi: 'Xem Yêu cầu Hỗ trợ (Tickets)', descVi: 'Theo dõi sự cố, phàn nàn và thắc mắc kỹ thuật từ phía khách hàng' },
-      { id: 'service_ticket.write', nameVi: 'Tiếp nhận & Xử lý Yêu cầu', descVi: 'Cập nhật trạng thái xử lý ticket và gửi câu trả lời phản hồi' },
+      { id: 'service_ticket.read', name: 'View Support Tickets', desc: 'Track customer incidents, issues, and inquiries' },
+      { id: 'service_ticket.write', name: 'Manage & Resolve Tickets', desc: 'Update resolution status and dispatch client responses' },
     ],
   },
   {
     module: 'platform',
-    titleVi: 'Bảo mật & Quản trị Hệ thống',
+    title: 'Security & Platform Administration',
     icon: ShieldCheck,
     items: [
-      { id: 'platform_user.manage', nameVi: 'Quản trị Tài khoản, Thành viên & Phân quyền', descVi: 'Thêm bớt người dùng, cấp vai trò và quản lý quyền hạn chi tiết' },
-      { id: 'audit_read', nameVi: 'Xem Nhật ký Kiểm toán (Audit Logs)', descVi: 'Truy xuất lịch sử thao tác dữ liệu của toàn bộ nhân sự trong tổ chức' },
-      { id: 'privacy_consent.read', nameVi: 'Xem Điều khoản Quyền riêng tư', descVi: 'Kiểm tra trạng thái đồng ý thu thập dữ liệu cá nhân (GDPR/NĐ13)' },
-      { id: 'privacy_consent.write', nameVi: 'Cập nhật Chính sách Bảo mật', descVi: 'Cập nhật các biểu mẫu cam kết bảo mật và quyền riêng tư' },
+      { id: 'platform_user.manage', name: 'Manage Users & Role Assignments', desc: 'Invite members, assign roles, and manage permissions' },
+      { id: 'audit_read', name: 'View Audit Logs', desc: 'Access immutable activity and data change history' },
+      { id: 'privacy_consent.read', name: 'View Privacy Consents', desc: 'Verify customer data processing consent status (Compliance/GDPR)' },
+      { id: 'privacy_consent.write', name: 'Update Privacy Policies', desc: 'Manage data protection agreements and consent forms' },
     ],
   },
 ];
@@ -113,10 +112,10 @@ export const UserProfilePage: React.FC = () => {
   const [phone, setPhone] = useState((session?.user as any)?.phone || '');
   const [jobTitle, setJobTitle] = useState(
     session?.membership?.is_tenant_admin
-      ? 'Quản trị viên Tập đoàn (Tenant Admin)'
-      : session?.activeRole?.name || 'Thành viên Tập đoàn'
+      ? 'Tenant Administrator'
+      : session?.activeRole?.name || 'Enterprise Member'
   );
-  const [department, setDepartment] = useState(session?.tenant?.display_name || 'Khối Điều hành Tập đoàn');
+  const [department, setDepartment] = useState(session?.tenant?.display_name || 'Executive Directorate');
   const [employeeCode] = useState(
     session?.membership?.user_id
       ? `EMP-${session.membership.user_id.replace(/[^a-zA-Z0-9]/g, '').slice(0, 6).toUpperCase()}`
@@ -131,7 +130,7 @@ export const UserProfilePage: React.FC = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isChangingPass, setIsChangingPass] = useState(false);
 
-  // Collapsible Open/Closed State for Permission Groups (DEFAULT: ALL CLOSED `{}`)
+  // Collapsible Open/Closed State for Permission Groups
   const [openGroupMap, setOpenGroupMap] = useState<Record<string, boolean>>({});
 
   if (!session) return null;
@@ -160,22 +159,22 @@ export const UserProfilePage: React.FC = () => {
     setIsSaving(true);
     setTimeout(() => {
       setIsSaving(false);
-      toast.success('Cập nhật hồ sơ cá nhân thành công!');
+      toast.success('Profile updated successfully!');
     }, 600);
   };
 
   const handleChangePassword = (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentPassword) {
-      toast.error('Vui lòng nhập mật khẩu hiện tại');
+      toast.error('Please enter your current password');
       return;
     }
     if (newPassword.length < 12) {
-      toast.error('Mật khẩu mới phải có ít nhất 12 ký tự');
+      toast.error('New password must contain at least 12 characters');
       return;
     }
     if (newPassword !== confirmPassword) {
-      toast.error('Mật khẩu mới và xác nhận mật khẩu không khớp');
+      toast.error('New password and confirmation do not match');
       return;
     }
 
@@ -185,7 +184,7 @@ export const UserProfilePage: React.FC = () => {
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
-      toast.success('Đổi mật khẩu tài khoản thành công!');
+      toast.success('Password updated successfully!');
     }, 600);
   };
 
@@ -202,13 +201,13 @@ export const UserProfilePage: React.FC = () => {
 
   return (
     <ProfileHeaderCard
-      coverTag="Tài khoản Xác thực Hệ thống"
+      coverTag="Verified System Identity"
       avatarText={getInitials(displayName)}
       avatarAction={
         <button
           type="button"
-          className="absolute bottom-0 right-0 p-2 rounded-full bg-white border border-slate-200 shadow-sm text-slate-600 hover:text-blue-600 hover:bg-slate-50 transition-colors"
-          title="Thay đổi ảnh đại diện"
+          className="absolute bottom-0 right-0 p-2 rounded-full bg-white border border-slate-200 shadow-xs text-slate-600 hover:text-blue-600 hover:bg-slate-50 transition-colors"
+          title="Change profile avatar"
         >
           <Camera className="w-4 h-4" />
         </button>
@@ -234,25 +233,24 @@ export const UserProfilePage: React.FC = () => {
         </>
       }
     >
-
       {/* Main Tabs Navigation */}
       <Tabs defaultValue="info" className="w-full">
         <TabsList className="bg-white border border-slate-200 p-1 shadow-2xs w-full justify-start flex-wrap sm:flex-nowrap h-auto overflow-hidden">
           <TabsTrigger value="info" className="gap-2 text-xs font-semibold py-2 px-4">
             <User className="w-4 h-4" />
-            <span>Thông tin Cá nhân</span>
+            <span>Personal Information</span>
           </TabsTrigger>
           <TabsTrigger value="security" className="gap-2 text-xs font-semibold py-2 px-4">
             <Key className="w-4 h-4" />
-            <span>Bảo mật & Mật khẩu</span>
+            <span>Security &amp; Password</span>
           </TabsTrigger>
           <TabsTrigger value="permissions" className="gap-2 text-xs font-semibold py-2 px-4">
             <Shield className="w-4 h-4" />
-            <span>Vai trò & Phân quyền Vận hành</span>
+            <span>Roles &amp; Permissions Matrix</span>
           </TabsTrigger>
           <TabsTrigger value="activity" className="gap-2 text-xs font-semibold py-2 px-4">
             <Clock className="w-4 h-4" />
-            <span>Nhật ký Hoạt động</span>
+            <span>Activity Log</span>
           </TabsTrigger>
         </TabsList>
 
@@ -261,9 +259,9 @@ export const UserProfilePage: React.FC = () => {
           <form onSubmit={handleSaveProfile}>
             <Card className="shadow-xs border-slate-200 w-full">
               <CardHeader className="pb-4 border-b border-slate-100">
-                <CardTitle className="text-base font-bold text-slate-900">Chi tiết Hồ sơ Người dùng</CardTitle>
+                <CardTitle className="text-base font-bold text-slate-900">User Profile Details</CardTitle>
                 <CardDescription className="text-xs text-slate-500">
-                  Cập nhật họ tên, thông tin liên hệ và cài đặt tài khoản cá nhân của bạn
+                  Manage your personal identity, contact channels, and system timezone
                 </CardDescription>
               </CardHeader>
               <CardContent className="pt-6 space-y-6">
@@ -271,20 +269,20 @@ export const UserProfilePage: React.FC = () => {
                   <div className="space-y-1.5">
                     <Label htmlFor="displayName" className="text-xs font-semibold flex items-center gap-1.5">
                       <User className="w-3.5 h-3.5 text-slate-400" />
-                      Họ và tên
+                      Full Name
                     </Label>
                     <Input
                       id="displayName"
                       value={displayName}
                       onChange={(e) => setDisplayName(e.target.value)}
-                      placeholder="Nguyễn Văn A"
+                      placeholder="Alex Nguyen"
                     />
                   </div>
 
                   <div className="space-y-1.5">
                     <Label htmlFor="email" className="text-xs font-semibold flex items-center gap-1.5">
                       <Mail className="w-3.5 h-3.5 text-slate-400" />
-                      Địa chỉ Email (Đăng nhập)
+                      Work Email (Login ID)
                     </Label>
                     <Input id="email" value={email} disabled className="bg-slate-50 font-mono text-slate-600" />
                   </div>
@@ -292,20 +290,20 @@ export const UserProfilePage: React.FC = () => {
                   <div className="space-y-1.5">
                     <Label htmlFor="phone" className="text-xs font-semibold flex items-center gap-1.5">
                       <Phone className="w-3.5 h-3.5 text-slate-400" />
-                      Số điện thoại di động
+                      Mobile Phone
                     </Label>
                     <Input
                       id="phone"
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
-                      placeholder="0988 xxx xxx"
+                      placeholder="+84 988 xxx xxx"
                     />
                   </div>
 
                   <div className="space-y-1.5">
                     <Label htmlFor="employeeCode" className="text-xs font-semibold flex items-center gap-1.5">
                       <Badge variant="outline" className="p-0 border-none text-slate-400">#</Badge>
-                      Mã Nhân viên
+                      Employee Code
                     </Label>
                     <Input id="employeeCode" value={employeeCode} disabled className="bg-slate-50 font-mono text-slate-600" />
                   </div>
@@ -313,33 +311,33 @@ export const UserProfilePage: React.FC = () => {
                   <div className="space-y-1.5">
                     <Label htmlFor="jobTitle" className="text-xs font-semibold flex items-center gap-1.5">
                       <Briefcase className="w-3.5 h-3.5 text-slate-400" />
-                      Chức danh công việc
+                      Job Title
                     </Label>
                     <Input
                       id="jobTitle"
                       value={jobTitle}
                       onChange={(e) => setJobTitle(e.target.value)}
-                      placeholder="Chức danh"
+                      placeholder="Commercial Director"
                     />
                   </div>
 
                   <div className="space-y-1.5">
                     <Label htmlFor="department" className="text-xs font-semibold flex items-center gap-1.5">
                       <Building className="w-3.5 h-3.5 text-slate-400" />
-                      Phòng ban / Bộ phận
+                      Department / Organization Unit
                     </Label>
                     <Input
                       id="department"
                       value={department}
                       onChange={(e) => setDepartment(e.target.value)}
-                      placeholder="Phòng ban"
+                      placeholder="Sales & Commercial Directorate"
                     />
                   </div>
 
                   <div className="space-y-1.5 md:col-span-2 lg:col-span-3">
                     <Label htmlFor="timezone" className="text-xs font-semibold flex items-center gap-1.5">
                       <Globe className="w-3.5 h-3.5 text-slate-400" />
-                      Múi giờ hệ thống
+                      System Timezone
                     </Label>
                     <Input
                       id="timezone"
@@ -356,31 +354,31 @@ export const UserProfilePage: React.FC = () => {
                   <div className="flex items-center justify-between">
                     <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                       <Building className="w-4 h-4 text-blue-600" />
-                      <span>Thông tin Tổ chức / Doanh nghiệp đang hoạt động</span>
+                      <span>Active Organization Profile</span>
                     </h3>
                     <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px] font-bold gap-1">
                       <Check className="w-3 h-3 text-emerald-600" />
-                      <span>Đã kích hoạt (ACTIVE)</span>
+                      <span>ACTIVE</span>
                     </Badge>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     <div className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/50 space-y-1">
-                      <div className="text-[11px] text-slate-400 font-semibold">Tên Doanh nghiệp / Tổ chức</div>
+                      <div className="text-[11px] text-slate-400 font-semibold">Legal Organization Name</div>
                       <div className="font-bold text-slate-900 text-sm">{session.tenant.display_name}</div>
                       {session.tenant.legal_name && <div className="text-[11px] text-slate-500">{session.tenant.legal_name}</div>}
                     </div>
 
                     <div className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/50 space-y-1">
-                      <div className="text-[11px] text-slate-400 font-semibold">Mã Định danh Tổ chức (Slug Code)</div>
+                      <div className="text-[11px] text-slate-400 font-semibold">Tenant Identifier (Slug Code)</div>
                       <div className="font-mono font-bold text-blue-600 text-sm">{session.tenant.tenant_code || session.tenant.id}</div>
                     </div>
 
                     <div className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/50 space-y-1">
-                      <div className="text-[11px] text-slate-400 font-semibold">Quyền hạn trong Tổ chức</div>
+                      <div className="text-[11px] text-slate-400 font-semibold">Tenant Authority Level</div>
                       <div className="font-bold text-slate-900 text-xs flex items-center gap-1.5 mt-0.5">
                         <ShieldCheck className="w-4 h-4 text-blue-600" />
-                        <span>{session.membership.is_tenant_admin ? 'Quản trị viên Cao nhất (Tenant Admin)' : 'Thành viên'}</span>
+                        <span>{session.membership.is_tenant_admin ? 'Tenant Administrator' : 'Member'}</span>
                       </div>
                     </div>
                   </div>
@@ -389,7 +387,7 @@ export const UserProfilePage: React.FC = () => {
               <CardFooter className="flex justify-end border-t border-slate-100 pt-4">
                 <Button type="submit" className="gap-2 font-semibold bg-blue-600 hover:bg-blue-700" disabled={isSaving}>
                   <Save className="w-4 h-4" />
-                  {isSaving ? 'Đang lưu...' : 'Lưu Thay đổi'}
+                  {isSaving ? 'Saving...' : 'Save Changes'}
                 </Button>
               </CardFooter>
             </Card>
@@ -404,15 +402,15 @@ export const UserProfilePage: React.FC = () => {
               <CardHeader className="pb-4 border-b border-slate-100">
                 <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
                   <Lock className="w-4 h-4 text-blue-600" />
-                  <span>Đổi Mật khẩu Tài khoản</span>
+                  <span>Change Password</span>
                 </CardTitle>
                 <CardDescription className="text-xs text-slate-500">
-                  Mật khẩu mới phải bao gồm tối thiểu 12 ký tự theo chính sách bảo mật
+                  New password must contain at least 12 characters under system security policy
                 </CardDescription>
               </CardHeader>
               <CardContent className="pt-6 space-y-4 max-w-xl">
                 <div className="space-y-1.5">
-                  <Label htmlFor="currentPassword">Mật khẩu hiện tại</Label>
+                  <Label htmlFor="currentPassword">Current Password</Label>
                   <Input
                     id="currentPassword"
                     type="password"
@@ -423,7 +421,7 @@ export const UserProfilePage: React.FC = () => {
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label htmlFor="newPassword">Mật khẩu mới (Tối thiểu 12 ký tự)</Label>
+                  <Label htmlFor="newPassword">New Password (Min. 12 characters)</Label>
                   <Input
                     id="newPassword"
                     type="password"
@@ -434,7 +432,7 @@ export const UserProfilePage: React.FC = () => {
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label htmlFor="confirmPassword">Xác nhận mật khẩu mới</Label>
+                  <Label htmlFor="confirmPassword">Confirm New Password</Label>
                   <Input
                     id="confirmPassword"
                     type="password"
@@ -447,7 +445,7 @@ export const UserProfilePage: React.FC = () => {
               <CardFooter className="flex justify-end border-t border-slate-100 pt-4">
                 <Button type="submit" className="gap-2 font-semibold bg-blue-600 hover:bg-blue-700" disabled={isChangingPass}>
                   <Key className="w-4 h-4" />
-                  {isChangingPass ? 'Đang cập nhật...' : 'Cập nhật Mật khẩu'}
+                  {isChangingPass ? 'Updating...' : 'Update Password'}
                 </Button>
               </CardFooter>
             </Card>
@@ -460,19 +458,19 @@ export const UserProfilePage: React.FC = () => {
                 <CardTitle className="text-sm font-bold text-slate-900 flex items-center justify-between">
                   <span className="flex items-center gap-2">
                     <Smartphone className="w-4 h-4 text-emerald-600" />
-                    Xác thực 2 Yếu tố (2FA)
+                    Two-Factor Authentication (2FA)
                   </span>
                   <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px]">
-                    Đã bật (Authenticator)
+                    Enabled (Authenticator)
                   </Badge>
                 </CardTitle>
               </CardHeader>
               <CardContent className="pt-4 text-xs text-slate-600 space-y-2">
                 <p>
-                  Tài khoản của bạn đã được bảo vệ bởi ứng dụng Google Authenticator. Mỗi lần đăng nhập thiết bị mới sẽ yêu cầu mã OTP 6 chữ số.
+                  Your account is protected by an Authenticator app. Each new device login requires a 6-digit OTP code.
                 </p>
                 <Button variant="outline" size="sm" className="text-xs mt-2">
-                  Cấu hình lại 2FA
+                  Reconfigure 2FA
                 </Button>
               </CardContent>
             </Card>
@@ -482,10 +480,10 @@ export const UserProfilePage: React.FC = () => {
                 <CardTitle className="text-sm font-bold text-slate-900 flex items-center justify-between">
                   <span className="flex items-center gap-2">
                     <Globe className="w-4 h-4 text-blue-600" />
-                    Phiên Đăng nhập Hiện tại
+                    Active Device Sessions
                   </span>
                   <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-[10px]">
-                    1 Thiết bị
+                    1 Active Session
                   </Badge>
                 </CardTitle>
               </CardHeader>
@@ -493,10 +491,10 @@ export const UserProfilePage: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="font-bold text-slate-900">Chrome on Windows 11</div>
-                    <div className="text-[11px] text-slate-500">IP: 14.225.21.18 • Hà Nội, Việt Nam</div>
+                    <div className="text-[11px] text-slate-500">Current Session • Verified</div>
                   </div>
                   <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">
-                    Đang hoạt động
+                    Active Now
                   </span>
                 </div>
               </CardContent>
@@ -504,17 +502,17 @@ export const UserProfilePage: React.FC = () => {
           </div>
         </TabsContent>
 
-        {/* Tab 3: Pure Operations RBAC Permissions Matrix */}
+        {/* Tab 3: RBAC Permissions Matrix */}
         <TabsContent value="permissions" className="mt-6 space-y-6">
           <Card className="shadow-xs border-slate-200 w-full">
             <CardHeader className="pb-4 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
                 <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
                   <Shield className="w-5 h-5 text-blue-600" />
-                  <span>Ma trận Phân quyền & Chức năng Vận hành</span>
+                  <span>Role &amp; Operations Permission Matrix</span>
                 </CardTitle>
                 <CardDescription className="text-xs text-slate-500 mt-0.5">
-                  Nhấp vào từng nhóm chức năng bên dưới để xem chi tiết danh sách quyền thao tác
+                  Click each functional module below to inspect granted action permissions and data scopes
                 </CardDescription>
               </div>
 
@@ -528,12 +526,12 @@ export const UserProfilePage: React.FC = () => {
                 {areAllOpen ? (
                   <>
                     <Minimize2 className="w-3.5 h-3.5 mr-1.5 text-slate-500" />
-                    Đóng tất cả
+                    Collapse All
                   </>
                 ) : (
                   <>
                     <Maximize2 className="w-3.5 h-3.5 mr-1.5 text-slate-500" />
-                    Mở tất cả
+                    Expand All
                   </>
                 )}
               </Button>
@@ -547,7 +545,7 @@ export const UserProfilePage: React.FC = () => {
                     <Building className="w-5 h-5" />
                   </div>
                   <div>
-                    <div className="text-[11px] font-bold text-blue-900/60 uppercase">Tổ chức Doanh nghiệp</div>
+                    <div className="text-[11px] font-bold text-blue-900/60 uppercase">Organization</div>
                     <div className="text-sm font-bold text-blue-950 mt-0.5">{session.tenant.display_name}</div>
                     <div className="text-[11px] text-blue-700 font-mono">Code: {session.tenant.tenant_code}</div>
                   </div>
@@ -558,9 +556,9 @@ export const UserProfilePage: React.FC = () => {
                     <Shield className="w-5 h-5" />
                   </div>
                   <div>
-                    <div className="text-[11px] font-bold text-purple-900/60 uppercase">Vai trò Đảm nhiệm</div>
+                    <div className="text-[11px] font-bold text-purple-900/60 uppercase">Assigned Role</div>
                     <div className="text-sm font-bold text-purple-950 mt-0.5">{session.activeRole.name}</div>
-                    <div className="text-[11px] text-purple-700 font-mono">RoleCode: {session.activeRole.role_code}</div>
+                    <div className="text-[11px] text-purple-700 font-mono">Code: {session.activeRole.role_code}</div>
                   </div>
                 </div>
 
@@ -569,16 +567,16 @@ export const UserProfilePage: React.FC = () => {
                     <CheckCircle2 className="w-5 h-5" />
                   </div>
                   <div>
-                    <div className="text-[11px] font-bold text-emerald-900/60 uppercase">Phạm vi Dữ liệu (Scope)</div>
+                    <div className="text-[11px] font-bold text-emerald-900/60 uppercase">Data Scope</div>
                     <div className="text-sm font-bold text-emerald-950 mt-0.5">{session.effectiveScopeType}</div>
-                    <div className="text-[11px] text-emerald-700">Truy cập toàn bộ dữ liệu tổ chức</div>
+                    <div className="text-[11px] text-emerald-700">Enforced by system RBAC</div>
                   </div>
                 </div>
               </div>
 
               <Separator />
 
-              {/* Collapsible Pure Operations Permission Matrix (DEFAULT: CLOSED) */}
+              {/* Collapsible Operations Permission Matrix */}
               <div className="space-y-3">
                 {PERMISSION_GROUPS.map((group) => {
                   const GroupIcon = group.icon;
@@ -601,14 +599,14 @@ export const UserProfilePage: React.FC = () => {
                               <GroupIcon className="w-4 h-4" />
                             </div>
                             <div>
-                              <h3 className="font-bold text-sm text-slate-900">{group.titleVi}</h3>
-                              <p className="text-[11px] text-slate-500">Bao gồm {group.items.length} quyền thao tác chi tiết</p>
+                              <h3 className="font-bold text-sm text-slate-900">{group.title}</h3>
+                              <p className="text-[11px] text-slate-500">Contains {group.items.length} granular operational permissions</p>
                             </div>
                           </div>
 
                           <div className="flex items-center gap-2">
                             <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-[10px] font-semibold">
-                              {group.items.length} quyền được cấp
+                              {group.items.length} Granted
                             </Badge>
                             <div className="p-1 text-slate-400 hover:text-slate-600 transition-transform">
                               {isOpen ? (
@@ -626,15 +624,15 @@ export const UserProfilePage: React.FC = () => {
                           <div key={item.id} className="p-3.5 hover:bg-slate-50/60 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                             <div className="space-y-0.5">
                               <h4 className="font-semibold text-xs text-slate-900">
-                                {item.nameVi}
+                                {item.name}
                               </h4>
-                              <p className="text-[11px] text-slate-500">{item.descVi}</p>
+                              <p className="text-[11px] text-slate-500">{item.desc}</p>
                             </div>
 
                             <div className="flex items-center gap-2 shrink-0">
                               <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-md">
                                 <Check className="w-3.5 h-3.5 text-emerald-600" />
-                                Được phép thao tác
+                                Granted
                               </span>
                             </div>
                           </div>
@@ -654,10 +652,10 @@ export const UserProfilePage: React.FC = () => {
             <CardHeader className="pb-4 border-b border-slate-100">
               <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
                 <Clock className="w-4 h-4 text-blue-600" />
-                <span>Nhật ký Thao tác & Phiên làm việc</span>
+                <span>Operational Audit &amp; Session Log</span>
               </CardTitle>
               <CardDescription className="text-xs text-slate-500">
-                Thông tin phiên đăng nhập hiện tại và bản ghi bảo mật tài khoản
+                Active session authentication metadata and security audit log
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-6">
@@ -667,12 +665,12 @@ export const UserProfilePage: React.FC = () => {
                     <Check className="w-3 h-3 text-white" />
                   </div>
                   <div>
-                    <h4 className="text-xs font-bold text-slate-900">Phiên làm việc hiện tại đang hoạt động</h4>
+                    <h4 className="text-xs font-bold text-slate-900">Active Authentication Session</h4>
                     <p className="text-[11px] text-slate-500 mt-0.5">
-                      Tài khoản {session.user.email} đang đăng nhập tại Tập đoàn {session.tenant.display_name}
+                      Account {session.user.email} signed into {session.tenant.display_name}
                     </p>
                     <span className="text-[10px] text-slate-400 font-mono mt-1 block">
-                      Thời hạn phiên: {session.expiresAt ? new Date(session.expiresAt).toLocaleString('vi-VN') : 'Đang duy trì'}
+                      Expires: {session.expiresAt ? new Date(session.expiresAt).toLocaleString('en-US') : 'Persistent'}
                     </span>
                   </div>
                 </div>
@@ -682,12 +680,12 @@ export const UserProfilePage: React.FC = () => {
                     <ShieldCheck className="w-3 h-3 text-white" />
                   </div>
                   <div>
-                    <h4 className="text-xs font-bold text-slate-900">Vai trò phân quyền đang kích hoạt</h4>
+                    <h4 className="text-xs font-bold text-slate-900">Assigned RBAC Security Role</h4>
                     <p className="text-[11px] text-slate-500 mt-0.5">
-                      {session.activeRole?.name || 'Thành viên'} (Phạm vi dữ liệu: {session.effectiveScopeType || 'OWN'})
+                      {session.activeRole?.name || 'Member'} (Data Scope: {session.effectiveScopeType || 'OWN'})
                     </p>
                     <span className="text-[10px] text-slate-400 font-mono mt-1 block">
-                      {session.grantedPermissions?.length || 0} quyền hạn chức năng được cấp
+                      {session.grantedPermissions?.length || 0} active permissions enforced
                     </span>
                   </div>
                 </div>
@@ -698,10 +696,10 @@ export const UserProfilePage: React.FC = () => {
                       <Key className="w-3 h-3 text-white" />
                     </div>
                     <div>
-                      <h4 className="text-xs font-bold text-slate-900">Hồ sơ người dùng trong hệ thống</h4>
-                      <p className="text-[11px] text-slate-500 mt-0.5">Hồ sơ người dùng {session.user.email} được ghi nhận trong cơ sở dữ liệu</p>
+                      <h4 className="text-xs font-bold text-slate-900">System User Record</h4>
+                      <p className="text-[11px] text-slate-500 mt-0.5">User profile record {session.user.email} indexed in database</p>
                       <span className="text-[10px] text-slate-400 font-mono mt-1 block">
-                        Ngày tạo: {new Date(session.user.created_at).toLocaleString('vi-VN')}
+                        Created: {new Date(session.user.created_at).toLocaleString('en-US')}
                       </span>
                     </div>
                   </div>
@@ -714,3 +712,5 @@ export const UserProfilePage: React.FC = () => {
     </ProfileHeaderCard>
   );
 };
+
+export default UserProfilePage;

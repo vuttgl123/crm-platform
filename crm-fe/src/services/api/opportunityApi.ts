@@ -151,12 +151,12 @@ export interface OpportunitySearchParams {
 }
 
 export const PIPELINE_STAGES: { id: OpportunityStage; title: string; defaultProb: number; colorClass: string }[] = [
-  { id: 'PROSPECTING', title: 'Khám phá nhu cầu', defaultProb: 15, colorClass: 'border-t-purple-500 bg-purple-50/20' },
-  { id: 'QUALIFICATION', title: 'Đánh giá giải pháp', defaultProb: 35, colorClass: 'border-t-blue-500 bg-blue-50/20' },
-  { id: 'PROPOSAL', title: 'Báo giá & Đề xuất', defaultProb: 60, colorClass: 'border-t-sky-500 bg-sky-50/20' },
-  { id: 'NEGOTIATION', title: 'Đàm phán hợp đồng', defaultProb: 80, colorClass: 'border-t-amber-500 bg-amber-50/20' },
-  { id: 'CLOSED_WON', title: 'Chốt thành công', defaultProb: 100, colorClass: 'border-t-emerald-500 bg-emerald-50/20' },
-  { id: 'CLOSED_LOST', title: 'Thất bại', defaultProb: 0, colorClass: 'border-t-rose-500 bg-rose-50/20' },
+  { id: 'PROSPECTING', title: 'Prospecting & Discovery', defaultProb: 15, colorClass: 'border-t-purple-500 bg-purple-50/20' },
+  { id: 'QUALIFICATION', title: 'Solution Qualification', defaultProb: 35, colorClass: 'border-t-blue-500 bg-blue-50/20' },
+  { id: 'PROPOSAL', title: 'Proposal & CPQ Quote', defaultProb: 60, colorClass: 'border-t-sky-500 bg-sky-50/20' },
+  { id: 'NEGOTIATION', title: 'Contract Negotiation', defaultProb: 80, colorClass: 'border-t-amber-500 bg-amber-50/20' },
+  { id: 'CLOSED_WON', title: 'Closed Won', defaultProb: 100, colorClass: 'border-t-emerald-500 bg-emerald-50/20' },
+  { id: 'CLOSED_LOST', title: 'Closed Lost', defaultProb: 0, colorClass: 'border-t-rose-500 bg-rose-50/20' },
 ];
 
 function normalizeOpportunity<T extends Partial<any>>(item: T): OpportunityItem {

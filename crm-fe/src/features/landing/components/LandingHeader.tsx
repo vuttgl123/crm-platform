@@ -21,6 +21,11 @@ export const LandingHeader: React.FC = () => {
     { key: 'demo', label: t('landing.nav.demo'), anchor: '#demo', to: '/demo' },
   ] as const;
 
+  const getScrollBehavior = (): ScrollBehavior =>
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      ? 'auto'
+      : 'smooth';
+
   // Scroll spy on Home page
   useEffect(() => {
     if (location.pathname !== '/') return;
@@ -58,7 +63,7 @@ export const LandingHeader: React.FC = () => {
       const target = document.querySelector(location.hash);
       if (target) {
         setTimeout(() => {
-          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          target.scrollIntoView({ behavior: getScrollBehavior(), block: 'start' });
         }, 80);
       }
     }
@@ -73,7 +78,7 @@ export const LandingHeader: React.FC = () => {
       e.preventDefault();
       const target = document.querySelector(anchor);
       if (target) {
-        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        target.scrollIntoView({ behavior: getScrollBehavior(), block: 'start' });
         window.history.pushState(null, '', anchor);
         setActiveSection(anchor.replace('#', ''));
       }
@@ -101,37 +106,37 @@ export const LandingHeader: React.FC = () => {
   }, [mobileMenuOpen]);
 
   return (
-    <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-lg border-b border-[#DCE5F0] transition-colors">
+    <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-[var(--landing-line)] transition-colors">
       <div className="landing-container">
-        <div className="flex items-center justify-between h-18 py-3">
+        <div className="flex items-center justify-between h-16 py-3">
           {/* Logo / Wordmark */}
           <Link
             to="/"
             onClick={() => {
               if (location.pathname === '/') {
-                window.scrollTo({ top: 0, behavior: 'smooth' });
+                window.scrollTo({ top: 0, behavior: getScrollBehavior() });
               }
             }}
             className="flex items-center gap-2.5 group"
             aria-label="VUM CRM Home"
           >
-            <div className="w-9 h-9 rounded-xl bg-[#07182B] flex items-center justify-center text-white shadow-sm group-hover:bg-[#085AC0] transition-colors">
-              <span className="font-extrabold text-lg tracking-tight" translate="no">
+            <div className="w-8 h-8 rounded-lg bg-[var(--landing-ink)] flex items-center justify-center text-white shadow-xs group-hover:bg-[var(--landing-blue)] transition-colors">
+              <span className="font-bold text-base tracking-tight" translate="no">
                 V
               </span>
             </div>
             <div className="flex flex-col">
-              <span className="font-extrabold text-lg tracking-tight text-[#07182B] leading-none" translate="no">
+              <span className="font-extrabold text-base tracking-tight text-[var(--landing-ink)] leading-none" translate="no">
                 VUM CRM
               </span>
-              <span className="text-[10px] font-bold text-[#52647A] tracking-wider uppercase mt-0.5">
+              <span className="text-[10px] font-bold text-[var(--landing-muted)] tracking-wider uppercase mt-0.5">
                 Enterprise
               </span>
             </div>
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-7" aria-label="Main Navigation">
+          <nav className="hidden md:flex items-center gap-6" aria-label="Main Navigation">
             {navItems.map((item) => {
               const isSectionActive =
                 location.pathname === '/'
@@ -144,10 +149,10 @@ export const LandingHeader: React.FC = () => {
                   href={item.anchor}
                   onClick={(e) => handleNavClick(e, item.anchor, item.to)}
                   aria-current={isSectionActive ? 'page' : undefined}
-                  className={`text-sm font-semibold transition-all py-1.5 px-2.5 rounded-lg ${
+                  className={`text-sm font-semibold py-1.5 px-2.5 rounded-lg min-h-[44px] inline-flex items-center transition-colors ${
                     isSectionActive
-                      ? 'text-[#085AC0] font-bold bg-blue-50/80 shadow-2xs'
-                      : 'text-[#52647A] hover:text-[#07182B] hover:bg-slate-50'
+                      ? 'text-[var(--landing-blue)] font-bold bg-[var(--landing-blue-soft)]'
+                      : 'text-[var(--landing-muted)] hover:text-[var(--landing-ink)] hover:bg-[var(--landing-canvas)]'
                   }`}
                 >
                   {item.label}
@@ -159,7 +164,7 @@ export const LandingHeader: React.FC = () => {
           {/* Desktop Action Buttons */}
           <div className="hidden md:flex items-center gap-3">
             {isAuthenticated ? (
-              <Button asChild className="h-10 px-5 bg-[#085AC0] hover:bg-[#06499D] text-white font-semibold text-sm shadow-xs transition-all">
+              <Button asChild className="h-10 px-5 bg-[var(--landing-blue)] hover:bg-[var(--landing-blue-hover)] text-white font-semibold text-sm shadow-xs transition-colors">
                 <Link to="/app/overview">
                   <span>{t('landing.nav.workspace')}</span>
                   <ArrowRight className="w-4 h-4 ml-1.5" />
@@ -167,10 +172,10 @@ export const LandingHeader: React.FC = () => {
               </Button>
             ) : (
               <>
-                <Button variant="ghost" asChild className="h-10 px-4 text-[#07182B] hover:text-[#085AC0] hover:bg-[#EAF2FC] font-semibold text-sm">
+                <Button variant="ghost" asChild className="h-10 px-4 text-[var(--landing-ink)] hover:text-[var(--landing-blue)] hover:bg-[var(--landing-blue-soft)] font-semibold text-sm">
                   <Link to="/login">{t('landing.nav.login')}</Link>
                 </Button>
-                <Button asChild className="h-10 px-5 bg-[#085AC0] hover:bg-[#06499D] text-white font-semibold text-sm shadow-md shadow-blue-600/15 transition-all">
+                <Button asChild className="h-10 px-5 bg-[var(--landing-blue)] hover:bg-[var(--landing-blue-hover)] text-white font-semibold text-sm shadow-xs transition-colors">
                   <a href="#demo" onClick={(e) => handleNavClick(e, '#demo', '/demo')}>
                     <span>{t('landing.nav.demo')}</span>
                     <ArrowRight className="w-4 h-4 ml-1.5" />
@@ -185,7 +190,7 @@ export const LandingHeader: React.FC = () => {
             <button
               type="button"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2.5 rounded-lg text-[#07182B] hover:bg-slate-100 min-h-[44px] min-w-[44px] flex items-center justify-center"
+              className="p-2.5 rounded-lg text-[var(--landing-ink)] hover:bg-[var(--landing-canvas)] min-h-[44px] min-w-[44px] flex items-center justify-center"
               aria-expanded={mobileMenuOpen}
               aria-controls="landing-mobile-nav"
               aria-label={
@@ -204,7 +209,7 @@ export const LandingHeader: React.FC = () => {
       {mobileMenuOpen && (
         <div
           id="landing-mobile-nav"
-          className="md:hidden border-t border-[#DCE5F0] bg-white px-4 pt-4 pb-6 space-y-4 shadow-lg animate-in slide-in-from-top-2 duration-200"
+          className="md:hidden border-t border-[var(--landing-line)] bg-white px-4 pt-4 pb-6 space-y-4 shadow-lg"
         >
           <nav className="space-y-1">
             {navItems.map((item) => {
@@ -220,8 +225,8 @@ export const LandingHeader: React.FC = () => {
                   onClick={(e) => handleNavClick(e, item.anchor, item.to)}
                   className={`block px-3 py-3 rounded-lg text-base font-semibold min-h-[44px] flex items-center ${
                     isSectionActive
-                      ? 'bg-[#EAF2FC] text-[#085AC0] font-bold'
-                      : 'text-[#07182B] hover:bg-slate-50'
+                      ? 'bg-[var(--landing-blue-soft)] text-[var(--landing-blue)] font-bold'
+                      : 'text-[var(--landing-ink)] hover:bg-[var(--landing-canvas)]'
                   }`}
                 >
                   {item.label}
@@ -230,9 +235,9 @@ export const LandingHeader: React.FC = () => {
             })}
           </nav>
 
-          <div className="pt-4 border-t border-slate-100 flex flex-col gap-2.5">
+          <div className="pt-4 border-t border-[var(--landing-line)] flex flex-col gap-2.5">
             {isAuthenticated ? (
-              <Button asChild className="w-full h-11 bg-[#085AC0] hover:bg-[#06499D] text-white font-semibold justify-center text-base">
+              <Button asChild className="w-full h-11 bg-[var(--landing-blue)] hover:bg-[var(--landing-blue-hover)] text-white font-semibold justify-center text-base">
                 <Link to="/app/overview">
                   <span>{t('landing.nav.workspace')}</span>
                   <ArrowRight className="w-4 h-4 ml-2" />
@@ -240,13 +245,13 @@ export const LandingHeader: React.FC = () => {
               </Button>
             ) : (
               <>
-                <Button asChild className="w-full h-11 bg-[#085AC0] hover:bg-[#06499D] text-white font-semibold justify-center text-base">
+                <Button asChild className="w-full h-11 bg-[var(--landing-blue)] hover:bg-[var(--landing-blue-hover)] text-white font-semibold justify-center text-base">
                   <a href="#demo" onClick={(e) => handleNavClick(e, '#demo', '/demo')}>
                     <span>{t('landing.nav.demo')}</span>
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </a>
                 </Button>
-                <Button variant="outline" asChild className="w-full h-11 border-slate-200 text-[#07182B] font-semibold justify-center text-base">
+                <Button variant="outline" asChild className="w-full h-11 border-[var(--landing-line)] text-[var(--landing-ink)] font-semibold justify-center text-base">
                   <Link to="/login">{t('landing.nav.login')}</Link>
                 </Button>
               </>

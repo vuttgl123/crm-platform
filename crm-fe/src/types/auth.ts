@@ -15,6 +15,7 @@ export interface DemoRoleDefinition {
   nameVi: string;
   nameEn: string;
   descriptionVi: string;
+  descriptionEn?: string;
   scopeType: DataScopeType;
   isTenantAdmin: boolean;
   permissions: string[];

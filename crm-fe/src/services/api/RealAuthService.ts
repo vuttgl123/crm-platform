@@ -84,7 +84,7 @@ export class RealAuthService implements IAuthService {
         }),
       });
     } catch (err) {
-      console.error('Không thể tạo đơn xin gia nhập với Backend PostgreSQL:', err);
+      console.error('Không thể tạo đơn xin gia nhập với Backend:', err);
     }
 
     const meResponse = await apiFetch<BackendMeResponse>('/auth/me', {
@@ -143,17 +143,16 @@ export class RealAuthService implements IAuthService {
         method: 'GET',
       });
 
-      const updatedUser: PlatformUser = {
-        ...stored.user,
-        id: meResponse.user.id,
-        email: meResponse.user.email,
-        display_name: meResponse.user.displayName,
-      };
-
-      const updatedSession: UserSessionContext = {
-        ...stored,
-        user: updatedUser,
-      };
+      const updatedSession = this.mapToSessionContext(
+        {
+          accessToken: stored.sessionToken,
+          tokenType: 'Bearer',
+          expiresIn: 900,
+          user: meResponse.user,
+        },
+        meResponse,
+        false
+      );
 
       storageAdapter.setSession(updatedSession);
       return updatedSession;
@@ -215,9 +214,9 @@ export class RealAuthService implements IAuthService {
     isRegisterFlow = false
   ): UserSessionContext {
     const user: PlatformUser = {
-      id: meResponse.user.id || tokenResponse.user.id,
-      email: meResponse.user.email || tokenResponse.user.email,
-      display_name: meResponse.user.displayName || tokenResponse.user.displayName,
+      id: meResponse.user?.id || tokenResponse.user?.id,
+      email: meResponse.user?.email || tokenResponse.user?.email,
+      display_name: meResponse.user?.displayName || tokenResponse.user?.displayName,
       status: 'ACTIVE',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
@@ -243,8 +242,8 @@ export class RealAuthService implements IAuthService {
           updated_at: new Date().toISOString(),
         }
       : {
-          id: 'tenant-ipa',
-          tenant_code: 'TAP-DOAN-IPA',
+          id: '810fbcb5-f2b7-4403-b506-72f28fe28a0b',
+          tenant_code: 'tap-doan-ipa',
           legal_name: 'Tập đoàn Đầu tư IPA',
           display_name: 'Tập đoàn IPA',
           default_currency_code: 'VND',

@@ -1,6 +1,5 @@
 import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
-import { LoginPage } from '@/features/auth/LoginPage';
+import { Routes, Route } from 'react-router-dom';
 import { SessionExpired } from '@/components/common/SessionExpired';
 import { AppLayout } from '@/layouts/AppLayout';
 import { OverviewPage } from '@/features/overview/OverviewPage';
@@ -10,9 +9,9 @@ import { AccountDetailPage } from '@/features/crm/accounts/AccountDetailPage';
 import { ForbiddenPage } from '@/features/system/ForbiddenPage';
 import { NotFoundPage } from '@/features/system/NotFoundPage';
 import { ProtectedRoute } from '@/components/common/ProtectedRoute';
-import { useAuth } from '@/core/session/useAuth';
 
-import { RegisterPage } from '@/features/auth/RegisterPage';
+import AuthLogin from '@/features/auth/AuthLogin';
+import AuthRegister from '@/features/auth/AuthRegister';
 import { AuthCallbackPage } from '@/features/auth/AuthCallbackPage';
 import { TenantSetupPage } from '@/features/tenant/TenantSetupPage';
 import { PendingApprovalPage } from '@/features/auth/PendingApprovalPage';
@@ -53,26 +52,28 @@ import { OutboxEventsPage } from '@/features/integration/outbox/OutboxEventsPage
 import { WebhooksPage } from '@/features/integration/webhooks/WebhooksPage';
 import { DataImportPage } from '@/features/integration/import/DataImportPage';
 
-export const AppRoutes: React.FC = () => {
-  const { isAuthenticated } = useAuth();
+import { LandingLayout } from '@/features/landing/LandingLayout';
+import HomePage from '@/features/landing/pages/HomePage';
+import SolutionsPage from '@/features/landing/pages/SolutionsPage';
+import FeaturesPage from '@/features/landing/pages/FeaturesPage';
+import PricingPage from '@/features/landing/pages/PricingPage';
+import DemoPage from '@/features/landing/pages/DemoPage';
 
+export const AppRoutes: React.FC = () => {
   return (
     <Routes>
-      {/* Root redirect */}
-      <Route
-        path="/"
-        element={
-          isAuthenticated ? (
-            <Navigate to="/app/overview" replace />
-          ) : (
-            <Navigate to="/login" replace />
-          )
-        }
-      />
+      {/* Public Landing Pages with Shared Layout */}
+      <Route element={<LandingLayout />}>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/solutions" element={<SolutionsPage />} />
+        <Route path="/features" element={<FeaturesPage />} />
+        <Route path="/pricing" element={<PricingPage />} />
+        <Route path="/demo" element={<DemoPage />} />
+      </Route>
 
       {/* Public / Auth routes */}
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/register" element={<RegisterPage />} />
+      <Route path="/login" element={<AuthLogin />} />
+      <Route path="/register" element={<AuthRegister />} />
       <Route path="/auth/callback" element={<AuthCallbackPage />} />
       <Route path="/auth/session-expired" element={<SessionExpired />} />
       <Route path="/403" element={<ForbiddenPage />} />

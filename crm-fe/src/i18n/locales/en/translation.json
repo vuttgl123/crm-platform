@@ -110,5 +110,201 @@
   "comingSoon": {
     "defaultDesc": "This feature belongs to deep CRM workflows and will be available in future releases.",
     "badge": "Coming soon"
+  },
+  "landing": {
+    "nav": {
+      "features": "Features",
+      "solutions": "Solutions",
+      "pricing": "Services",
+      "login": "Sign in",
+      "trial": "Try VUM CRM",
+      "demo": "Book a demo",
+      "workspace": "Open workspace",
+      "openMenu": "Open navigation menu",
+      "closeMenu": "Close navigation menu"
+    },
+    "common": {
+      "brandDescriptor": "Customer and revenue management platform",
+      "skipToContent": "Skip to main content",
+      "illustrativeData": "Illustrative data",
+      "learnMore": "Learn more",
+      "contactSales": "Contact the advisory team"
+    },
+    "preview": {
+      "items": {
+        "customerData": "Standardize customer data",
+        "quoteProcess": "Design the quote workflow",
+        "renewalWorkflow": "Run the renewal workflow"
+      },
+      "actions": {
+        "qualify": "Qualify the need",
+        "review": "Review the proposal",
+        "followUp": "Follow up after implementation"
+      }
+    },
+    "footer": {
+      "summary": "VUM CRM helps businesses centralize customer data, control the pipeline, and run sales processes on one unified platform.",
+      "product": "Product",
+      "contact": "Contact",
+      "privacy": "Privacy policy",
+      "terms": "Terms of use",
+      "copyright": "VUM CRM. All rights reserved."
+    },
+    "metadata": {
+      "homeTitle": "VUM CRM | Control the entire sales process",
+      "homeDescription": "Centralize customer data and manage pipeline, quotes, contracts, and sales performance on a CRM platform for Vietnamese enterprises.",
+      "featuresTitle": "VUM CRM Features | From lead to contract",
+      "featuresDescription": "Explore how VUM CRM manages the full customer lifecycle, opportunities, quotes, contracts, automation, and data governance.",
+      "solutionsTitle": "VUM CRM Solutions | Sales operations built around your business model",
+      "solutionsDescription": "Standardize sales processes across regions, teams, and complex B2B cycles with centrally governed customer data.",
+      "pricingTitle": "VUM CRM Services | Consultation based on operational needs",
+      "pricingDescription": "Define the VUM CRM implementation scope based on team size, process complexity, and data-governance requirements.",
+      "demoTitle": "Book a VUM CRM demo",
+      "demoDescription": "Talk directly with the VUM team about your sales process, customer data, and an appropriate implementation scope."
+    },
+    "home": {
+      "hero": {
+        "kicker": "VUM CRM for Vietnamese enterprises",
+        "title": "One system where the sales team works from the same data and follows the same process.",
+        "description": "Bring customer records, opportunities, quotes, contracts, and service activities together so leaders can see revenue clearly while the team focuses on the next action.",
+        "primaryCta": "Book a demo",
+        "secondaryCta": "Try VUM CRM"
+      },
+      "proof": {
+        "label": "One connected operating flow",
+        "items": ["Customer 360°", "Stage-based pipeline", "Quotes and contracts", "Scope-based permissions", "Audit logs"]
+      },
+      "problem": {
+        "eyebrow": "From scattered data to an operating system",
+        "title": "Your business does not need another report. It needs a trustworthy source of data for action.",
+        "beforeTitle": "When the process is fragmented",
+        "beforeItems": ["Customer information lives in many files and with many people", "The pipeline is updated only before review meetings", "Quotes, contracts, and conversation history are disconnected"],
+        "afterTitle": "When operations run on VUM CRM",
+        "afterItems": ["Every account has one unified profile and timeline", "Every opportunity is tracked by stage, owner, and next action", "Leaders see the same data the team uses every day"]
+      },
+      "capabilities": {
+        "eyebrow": "Three core capabilities",
+        "title": "Stay with the customer from the first signal through post-contract service",
+        "customer360Title": "One customer profile with complete context",
+        "customer360Description": "Connect organizations, contacts, activities, documents, and lifecycle status in one view.",
+        "pipelineTitle": "A pipeline that reflects real work",
+        "pipelineDescription": "Track value, probability, timing, and the next action for every opportunity instead of waiting for an end-of-period summary.",
+        "automationTitle": "Processes keep moving while the team is busy",
+        "automationDescription": "Standardize assignment, reminders, approvals, and alerts so opportunities are not lost between steps."
+      },
+      "roles": {
+        "eyebrow": "One system, three perspectives",
+        "title": "Each role sees what it needs to make a decision",
+        "executiveLabel": "Executives",
+        "executiveTitle": "See revenue and risk from the same source of data",
+        "executiveItems": ["Track pipeline and revenue trends", "Identify regions or stages where work is blocked", "Review performance without waiting for manual reports"],
+        "managerLabel": "Managers",
+        "managerTitle": "Know which opportunities need support before it is too late",
+        "managerItems": ["Control assignment across teams", "Find opportunities with no next activity", "Coach with evidence from each pipeline stage"],
+        "salesLabel": "Sales representatives",
+        "salesTitle": "Spend less time updating and more time with customers",
+        "salesItems": ["Manage calls, meetings, and next tasks", "Create quotes from product catalogs and price books", "Review the full interaction history before every contact"]
+      },
+      "trust": {
+        "eyebrow": "Governance for enterprises",
+        "title": "Scale the team without giving up control of customer data",
+        "items": ["Centralized roles and permissions", "Data scope by organization and team", "Access and change logs", "Data import, webhooks, and integrations"]
+      },
+      "finalCta": {
+        "title": "Start with the process costing your business the most time.",
+        "description": "The VUM team will review your current customer flow, pipeline, and data before recommending an implementation scope.",
+        "primary": "Book a demo",
+        "secondary": "Try VUM CRM"
+      }
+    },
+    "features": {
+      "heroKicker": "The customer lifecycle on one platform",
+      "heroTitle": "From first lead to contract and post-sale service",
+      "heroDescription": "VUM CRM connects the steps your teams perform every day so data stays intact across marketing, sales, operations, and service.",
+      "stages": {
+        "lead": {"title": "Capture and qualify leads", "description": "Record source, owner, contact status, and conversion criteria."},
+        "account": {"title": "Build Account and Contact 360° profiles", "description": "Centralize company details, contacts, relationships, addresses, channels, and activity history."},
+        "opportunity": {"title": "Manage opportunities through the pipeline", "description": "Track stage, value, probability, expected date, and next action."},
+        "commerce": {"title": "Connect opportunities with quotes, orders, and contracts", "description": "Preserve commercial context from proposal through delivery commitment."},
+        "automation": {"title": "Standardize reminders and workflows", "description": "Combine activities, notifications, and pipeline configuration so the team works consistently."},
+        "forecast": {"title": "Track forecasts and performance", "description": "Aggregate opportunity data so leaders and managers can assess revenue progress."},
+        "governance": {"title": "Control permissions, scope, and access history", "description": "Apply roles, data scope, privacy controls, and audit logs within the same platform."}
+      },
+      "ctaTitle": "See VUM CRM work with your business process",
+      "ctaAction": "Book a process-focused demo"
+    },
+    "solutions": {
+      "heroKicker": "Solutions for your operating model",
+      "heroTitle": "CRM should fit how your organization works and makes decisions",
+      "heroDescription": "Instead of applying one template to every industry, VUM starts with your organization structure, sales cycle, and data-governance requirements.",
+      "contexts": {
+        "regional": {"title": "Regional teams with multiple management levels", "description": "Assign customers, track performance, and limit data by organization, region, and team."},
+        "b2b": {"title": "Long B2B sales cycles with multiple stakeholders", "description": "Preserve context from contacts, opportunities, and quotes through orders and contracts."},
+        "governed": {"title": "Operations that require integration and traceability", "description": "Connect data through imports, webhooks, and integration records while maintaining audit logs and privacy controls."}
+      },
+      "ctaTitle": "Discuss your current operating challenge",
+      "ctaAction": "Book a consultation"
+    },
+    "pricing": {
+      "heroKicker": "An implementation scope based on real needs",
+      "heroTitle": "Service scope based on how your business operates",
+      "heroDescription": "VUM assesses team size, process complexity, and governance requirements before proposing an appropriate scope and cost.",
+      "factors": {
+        "scale": {"title": "Team size and structure", "description": "The number of users, regions, departments, management levels, and data scopes to control."},
+        "process": {"title": "Process complexity", "description": "The number of pipelines, approval steps, quotes, contracts, and service flows to standardize."},
+        "integration": {"title": "Data and integrations", "description": "The data sources to migrate, systems to connect, and synchronization requirements."},
+        "governance": {"title": "Governance and implementation support", "description": "Permissions, audit, privacy, training, operations, and the required support level."}
+      },
+      "includedTitle": "Every consultation scope starts with the core platform",
+      "includedItems": ["Account and Contact 360°", "Lead and Opportunity Pipeline", "Customer engagement activities", "Catalogs, quotes, orders, and contracts", "Roles, permissions, and data scope"],
+      "ctaTitle": "Receive a proposal based on your process and scale",
+      "ctaAction": "Get service guidance"
+    },
+    "demo": {
+      "heroKicker": "Talk directly with the VUM team",
+      "heroTitle": "See VUM CRM applied to your sales process",
+      "heroDescription": "Share how your team manages customers, pipeline, and reporting. VUM will prepare a focused conversation around that challenge.",
+      "form": {
+        "title": "Information to prepare your demo",
+        "fullName": "Full name",
+        "workEmail": "Work email",
+        "phone": "Phone number",
+        "companyName": "Company name",
+        "companySize": "Company size",
+        "industry": "Industry",
+        "primaryNeed": "Primary need",
+        "message": "Additional information",
+        "privacyConsent": "I agree that VUM may use this information to contact me and prepare the demo under the privacy policy.",
+        "submit": "Send demo request",
+        "submitting": "Sending request…"
+      },
+      "companySizes": {"UNDER_50": "Fewer than 50 employees", "FROM_50_TO_199": "50–199 employees", "FROM_200_TO_999": "200–999 employees", "FROM_1000": "1,000 employees or more"},
+      "industries": {"FINANCE": "Finance", "REAL_ESTATE": "Real estate", "RETAIL_FNB": "Retail and F&B", "MANUFACTURING_DISTRIBUTION": "Manufacturing and distribution", "TECHNOLOGY_B2B": "Technology and B2B services", "OTHER": "Other industry"},
+      "needs": {"CUSTOMER_360": "Centralize customer data", "SALES_PIPELINE": "Control the sales pipeline", "QUOTES_CONTRACTS": "Manage quotes and contracts", "AUTOMATION_FORECAST": "Automate and forecast", "SECURITY_INTEGRATION": "Permissions and integrations", "OTHER": "Other need"},
+      "contact": {
+        "title": "Contact the VUM team directly",
+        "description": "The online request channel has not been configured. Use one of the channels below and the advisory team will respond.",
+        "email": "Email sales",
+        "phone": "Call the advisory team",
+        "unavailable": "No contact channel has been configured. You can still try the product or return later."
+      },
+      "states": {
+        "successTitle": "Your demo request has been received",
+        "successDescription": "The VUM team will use the information you provided to prepare a relevant conversation.",
+        "errorTitle": "The demo request could not be sent",
+        "errorDescription": "Your information is still in the form. Try again or contact the advisory team directly."
+      },
+      "validation": {
+        "fullName": "Enter a full name between 2 and 100 characters.",
+        "workEmail": "Enter a valid work email.",
+        "phone": "Enter a phone number between 8 and 20 characters.",
+        "companyName": "Enter a company name between 2 and 160 characters.",
+        "companySize": "Select a company size.",
+        "industry": "Select an industry.",
+        "primaryNeed": "Select a primary need.",
+        "message": "Additional information cannot exceed 1,000 characters.",
+        "privacyConsent": "You must accept the privacy policy before sending the request."
+      }
+    }
   }
 }

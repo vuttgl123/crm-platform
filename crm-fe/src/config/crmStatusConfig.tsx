@@ -15,27 +15,27 @@ export interface StatusBadgeConfig {
 export const LifecycleStageConfigMap: Record<AccountLifecycleStage, StatusBadgeConfig> = {
   PROSPECT: {
     label: 'Tiềm năng',
-    className: 'bg-[#EAE6FF] text-[#403294] border-0 font-bold rounded-[3px] text-[11px] uppercase tracking-wider px-1.5 py-0.5',
+    className: 'bg-purple-50 text-purple-700 border-purple-200 font-bold',
     priorityLevel: 3,
   },
   QUALIFIED: {
     label: 'Đạt chuẩn',
-    className: 'bg-[#DEEBFF] text-[#0747A6] border-0 font-bold rounded-[3px] text-[11px] uppercase tracking-wider px-1.5 py-0.5',
+    className: 'bg-blue-50 text-blue-700 border-blue-200 font-bold',
     priorityLevel: 2,
   },
   CUSTOMER: {
     label: 'Khách hàng chính thức',
-    className: 'bg-[#E3FCEF] text-[#006644] border-0 font-bold rounded-[3px] text-[11px] uppercase tracking-wider px-1.5 py-0.5',
+    className: 'bg-emerald-50 text-emerald-700 border-emerald-200 font-bold',
     priorityLevel: 1,
   },
   INACTIVE: {
     label: 'Ngừng hoạt động',
-    className: 'bg-[#FFFAE6] text-[#974F0C] border-0 font-bold rounded-[3px] text-[11px] uppercase tracking-wider px-1.5 py-0.5',
+    className: 'bg-amber-50 text-amber-700 border-amber-200 font-semibold',
     priorityLevel: 4,
   },
   CHURNED: {
     label: 'Rời bỏ',
-    className: 'bg-[#FFEBE6] text-[#DE350B] border-0 font-bold rounded-[3px] text-[11px] uppercase tracking-wider px-1.5 py-0.5',
+    className: 'bg-rose-50 text-rose-700 border-rose-200 font-semibold',
     priorityLevel: 5,
   },
 };

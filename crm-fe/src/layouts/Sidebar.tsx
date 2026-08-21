@@ -1,165 +1,86 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
-import {
-  Building2,
-  Users,
-  UserPlus,
-  TrendingUp,
-  Calendar,
-  FileText,
-  ShoppingCart,
-  FileSignature,
-  FolderTree,
-  Package,
-  Tag,
-  LifeBuoy,
-  Megaphone,
-  ShieldCheck,
-  Archive,
-  UserCheck,
-  Lock,
-  Link as LinkIcon,
-  Send,
-  Webhook,
-  Upload,
-  ClipboardList,
-  Eye,
-  User,
-  Network,
-  Shield,
-  Settings,
-  Layers,
-  Workflow,
-  BarChart3,
-} from 'lucide-react';
-import { NAVIGATION_GROUPS } from '@/config/navigationConfig';
-import { useAuth } from '@/core/session/useAuth';
-import { canAccessRoute } from '@/core/permissions/evaluator';
-import { NavigationItem } from '@/types/navigation';
-import { useTranslation } from 'react-i18next';
-
-const ICON_MAP: Record<string, React.ElementType> = {
-  Building2,
-  Users,
-  UserPlus,
-  TrendingUp,
-  Calendar,
-  FileText,
-  ShoppingCart,
-  FileSignature,
-  FolderTree,
-  Package,
-  Tag,
-  LifeBuoy,
-  Megaphone,
-  ShieldCheck,
-  Archive,
-  UserCheck,
-  Lock,
-  Link: LinkIcon,
-  Send,
-  Webhook,
-  Upload,
-  ClipboardList,
-  Eye,
-  User,
-  Network,
-  Shield,
-  Settings,
-  Workflow,
-  BarChart3,
-};
 
 export const Sidebar: React.FC = () => {
-  const { session } = useAuth();
-  const { i18n } = useTranslation();
-  const isVi = !i18n.language || i18n.language.startsWith('vi');
-
-  const tenantName = session?.tenant?.display_name || 'Tập đoàn IPA';
-  const roleName = session?.activeRole?.name || (session?.membership?.is_tenant_admin ? 'Quản trị viên' : 'Thành viên');
 
   return (
-    <aside className="w-64 h-screen sticky top-0 bg-[#FAFBFC] border-r border-slate-200 flex flex-col shrink-0 font-sans z-20 select-none">
-      {/* Jira Workspace / Project Header */}
-      <div className="h-13 flex items-center px-3.5 border-b border-slate-200 shrink-0 bg-white">
-        <NavLink to="/app/overview" className="flex items-center gap-2.5 w-full group">
-          <div className="w-7 h-7 rounded-[4px] bg-[#0C66E4] flex items-center justify-center text-white text-[11px] font-bold tracking-wider shrink-0 shadow-none">
-            IPA
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="text-[13px] font-semibold text-slate-900 truncate group-hover:text-[#0C66E4] transition-colors leading-tight">
-              {tenantName}
-            </div>
-            <div className="text-[11px] text-slate-500 font-normal truncate mt-0.5">
-              Hệ thống CRM Doanh nghiệp
-            </div>
-          </div>
-        </NavLink>
-      </div>
-
-      {/* Navigation Groups */}
-      <div className="flex-1 overflow-y-auto px-2 py-3 space-y-3.5 custom-scrollbar">
-        {NAVIGATION_GROUPS.map((group) => {
-          const visibleItems = group.items.filter((item) => canAccessRoute(item, session));
-          if (visibleItems.length === 0) return null;
-
-          const groupTitle = isVi ? group.titleVi : group.titleEn;
-
-          return (
-            <div key={group.id} className="space-y-0.5">
-              {/* Group Section Heading */}
-              <div className="px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                {groupTitle}
-              </div>
-
-              {/* Items List */}
-              <div className="space-y-0.5">
-                {visibleItems.map((item: NavigationItem) => {
-                  const Icon = ICON_MAP[item.iconName] || Layers;
-                  const itemTitle = isVi ? item.titleVi : item.titleEn;
-
-                  return (
-                    <NavLink
-                      key={item.id}
-                      to={item.path}
-                      className={({ isActive }) =>
-                        `flex items-center gap-2.5 px-2.5 py-1.5 rounded-[4px] text-[13px] font-medium transition-colors group ${
-                          isActive
-                            ? 'bg-[#E9F2FF] text-[#0C66E4] font-semibold'
-                            : 'text-slate-700 hover:bg-slate-200/50 hover:text-slate-900'
-                        }`
-                      }
-                    >
-                      {({ isActive }) => (
-                        <>
-                          <Icon
-                            className={`w-4 h-4 shrink-0 transition-colors ${
-                              isActive ? 'text-[#0C66E4]' : 'text-slate-400 group-hover:text-slate-600'
-                            }`}
-                            strokeWidth={isActive ? 2.2 : 1.8}
-                          />
-                          <span className="truncate">{itemTitle}</span>
-                        </>
-                      )}
-                    </NavLink>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Workspace Footer Info */}
-      <div className="px-3.5 py-2.5 border-t border-slate-200 bg-white text-xs text-slate-500 shrink-0">
-        <div className="flex items-center justify-between text-[11px] font-medium text-slate-500">
-          <span className="text-slate-400 font-mono text-[10px]">{roleName}</span>
-          <span className="inline-flex items-center gap-1 text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-200 font-bold px-1.5 py-0.5 rounded-[3px]">
-            <span className="w-1 h-1 rounded-full bg-emerald-500" />
-            Online
-          </span>
-        </div>
-      </div>
-    </aside>
+    <aside className="bg-surface-container-lowest text-secondary fixed left-0 top-0 h-screen border-r border-outline-variant flat no shadows font-body-md text-body-md font-label-md text-label-md flex flex-col h-full z-50 hidden md:flex pt-0 shadow-[1px_0_0_0_#DFE1E6] w-56">
+<div className="h-[56px] border-b border-outline-variant flex items-center px-4 gap-3 bg-surface-container-lowest shadow-sm">
+<div className="w-8 h-8 rounded bg-primary-container flex items-center justify-center text-white font-bold">V</div>
+<div>
+<div className="font-bold text-on-surface text-sm">VUM CRM</div>
+<div className="text-xs text-outline">Enterprise Admin</div>
+</div>
+</div>
+<div className="p-4 border-b border-outline-variant">
+<button className="w-full flex items-center justify-between text-sm font-medium text-on-surface bg-surface-container hover:bg-surface-container-high transition rounded px-3 py-2">
+<div className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-primary-container"></span> Workspace: IPA</div>
+<span className="material-symbols-outlined text-sm">unfold_more</span>
+</button>
+</div>
+<div className="flex-1 overflow-y-auto py-2">
+<div className="px-4 py-2 text-xs font-bold text-outline uppercase tracking-wider">CRM</div>
+<nav className="flex flex-col gap-1 mb-4">
+<a className="flex items-center gap-3 px-4 py-2 text-primary-container font-medium border-l-[3px] border-primary-container bg-primary-container/10" href="#">
+<span className="material-symbols-outlined">groups</span>
+                        Khách hàng
+                    </a>
+<a className="flex items-center gap-3 px-4 py-2 text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors border-l-[3px] border-transparent" href="#">
+<span className="material-symbols-outlined">person</span>
+                        Người liên hệ
+                    </a>
+<a className="flex items-center gap-3 px-4 py-2 text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors border-l-[3px] border-transparent" href="#">
+<span className="material-symbols-outlined">radar</span>
+                        Leads
+                    </a>
+<a className="flex items-center gap-3 px-4 py-2 text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors border-l-[3px] border-transparent" href="#">
+<span className="material-symbols-outlined">emoji_objects</span>
+                        Opportunities
+                    </a>
+<a className="flex items-center gap-3 px-4 py-2 text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors border-l-[3px] border-transparent" href="#">
+<span className="material-symbols-outlined">local_activity</span>
+                        Activities
+                    </a>
+</nav>
+<div className="px-4 py-2 text-xs font-bold text-outline uppercase tracking-wider mt-2">Sales</div>
+<nav className="flex flex-col gap-1 mb-4">
+<a className="flex items-center gap-3 px-4 py-2 text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors border-l-[3px] border-transparent" href="#">
+<span className="material-symbols-outlined">trending_up</span>
+                        Forecast
+                    </a>
+<a className="flex items-center gap-3 px-4 py-2 text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors border-l-[3px] border-transparent" href="#">
+<span className="material-symbols-outlined">request_quote</span>
+                        Quotes
+                    </a>
+<a className="flex items-center gap-3 px-4 py-2 text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors border-l-[3px] border-transparent" href="#">
+<span className="material-symbols-outlined">shopping_cart</span>
+                        Orders
+                    </a>
+<a className="flex items-center gap-3 px-4 py-2 text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors border-l-[3px] border-transparent" href="#">
+<span className="material-symbols-outlined">contract</span>
+                        Hợp đồng
+                    </a>
+</nav>
+<div className="px-4 py-2 text-xs font-bold text-outline uppercase tracking-wider mt-2">System</div>
+<nav className="flex flex-col gap-1">
+<a className="flex items-center gap-3 px-4 py-2 text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors border-l-[3px] border-transparent" href="#">
+<span className="material-symbols-outlined">manage_accounts</span>
+                        Users
+                    </a>
+<a className="flex items-center gap-3 px-4 py-2 text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors border-l-[3px] border-transparent" href="#">
+<span className="material-symbols-outlined">settings</span>
+                        Settings
+                    </a>
+</nav>
+</div>
+<div className="p-4 border-t border-outline-variant bg-surface-container-lowest mt-auto">
+<div className="flex items-center gap-3 cursor-pointer hover:bg-surface-container-low p-2 -m-2 rounded transition">
+<div className="w-8 h-8 rounded-full bg-secondary-container flex items-center justify-center text-primary-fixed font-bold text-sm border border-outline-variant">VP</div>
+<div className="flex-1 min-w-0">
+<div className="text-sm font-medium text-on-surface truncate">Vũ Phạm Tuấn</div>
+<div className="text-xs text-outline truncate">Admin</div>
+</div>
+</div>
+</div>
+</aside>
   );
 };

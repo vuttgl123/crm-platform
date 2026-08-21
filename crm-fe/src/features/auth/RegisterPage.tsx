@@ -8,12 +8,12 @@ import {
   Eye,
   EyeOff,
   Globe,
-  HelpCircle,
-  ShieldCheck,
-  Check,
-  Star,
   ChevronDown,
-  ArrowLeft,
+  Building2,
+  Mail,
+  User,
+  Lock,
+  ArrowLeft
 } from 'lucide-react';
 import { useAuth } from '@/core/session/useAuth';
 import { useTranslation } from 'react-i18next';
@@ -22,13 +22,35 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  CardFooter
+} from '@/components/ui/card';
 import { toast } from 'sonner';
 
 const registerSchema = z.object({
-  displayName: z.string().min(2, 'Họ và tên phải có ít nhất 2 ký tự').max(255, 'Tối đa 255 ký tự'),
-  email: z.string().email('Email không đúng định dạng').max(320, 'Tối đa 320 ký tự'),
-  password: z.string().min(8, 'Mật khẩu phải có ít nhất 8 ký tự').max(128, 'Tối đa 128 ký tự'),
-  tenantName: z.string().min(2, 'Vui lòng nhập Tên Doanh nghiệp / Tổ chức'),
+  displayName: z
+    .string()
+    .trim()
+    .min(2, 'Họ và tên phải có ít nhất 2 ký tự')
+    .max(255, 'Tối đa 255 ký tự'),
+  email: z
+    .string()
+    .trim()
+    .email('Email không đúng định dạng')
+    .max(320, 'Tối đa 320 ký tự'),
+  password: z
+    .string()
+    .min(8, 'Mật khẩu phải có ít nhất 8 ký tự')
+    .max(128, 'Tối đa 128 ký tự'),
+  tenantName: z
+    .string()
+    .trim()
+    .min(2, 'Vui lòng nhập Tên Doanh nghiệp / Tổ chức'),
 });
 
 type RegisterFormValues = z.infer<typeof registerSchema>;
@@ -36,7 +58,7 @@ type RegisterFormValues = z.infer<typeof registerSchema>;
 export const RegisterPage: React.FC = () => {
   const { register: registerUser, isLoading, error } = useAuth();
   const navigate = useNavigate();
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [localError, setLocalError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(true);
@@ -74,7 +96,7 @@ export const RegisterPage: React.FC = () => {
         email: values.email,
         password: values.password,
         displayName: values.displayName,
-        tenantCode: generatedTenantCode || 'tap-doan-ipa',
+        tenantCode: generatedTenantCode || 'vum-enterprise',
       });
 
       toast.success('Đăng ký tài khoản thành công! Đang chuyển hướng...');
@@ -86,9 +108,11 @@ export const RegisterPage: React.FC = () => {
           err.message.includes('NetworkError') ||
           err.message.includes('Network Error')
         ) {
-          setLocalError('Không thể kết nối tới dịch vụ Backend. Vui lòng kiểm tra máy chủ backend.');
+          setLocalError(
+            'Không thể kết nối tới máy chủ (Backend). Vui lòng thử lại hoặc đăng nhập bằng tài khoản mẫu.'
+          );
         } else if (err.message.includes('SELF_REGISTRATION_DISABLED')) {
-          setLocalError('Hệ thống hiện chưa bật tính năng tự đăng ký tài khoản. Vui lòng liên hệ quản trị viên.');
+          setLocalError('Hệ thống hiện chưa bật tính năng tự đăng ký. Vui lòng liên hệ Quản trị viên.');
         } else if (err.message.includes('EMAIL_ALREADY_REGISTERED')) {
           setLocalError('Địa chỉ email này đã được sử dụng. Vui lòng thử email khác hoặc đăng nhập.');
         } else {
@@ -106,19 +130,211 @@ export const RegisterPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#FAFBFC] relative flex flex-col justify-between items-center py-6 px-4 font-sans select-none overflow-hidden text-[#172B4D]">
-      <div className="w-full max-w-7xl mx-auto flex items-center justify-between z-20 px-2 sm:px-6">
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#E9F2FF] text-[#0C66E4] rounded-full border border-[#CCE0FF] text-xs font-semibold shadow-xs">
-          <ShieldCheck className="w-3.5 h-3.5 text-[#0C66E4]" />
-          <span>Atlassian Design System</span>
-        </div>
+    <div className="min-h-screen bg-[#F5F8FC] flex flex-col justify-between items-center py-8 sm:py-12 px-4 font-sans text-[#07182B] selection:bg-blue-100 selection:text-blue-900">
+      {/* Top Header */}
+      <div className="w-full max-w-md flex justify-between items-center mb-6">
+        <Link
+          to="/"
+          className="flex items-center gap-2.5 group"
+          aria-label="VUM CRM Home"
+        >
+          <div className="w-9 h-9 rounded-lg bg-[#07182B] flex items-center justify-center text-white shadow-sm group-hover:bg-[#085AC0] transition-colors">
+            <span className="font-extrabold text-lg tracking-tight" translate="no">
+              V
+            </span>
+          </div>
+          <div className="flex flex-col">
+            <span className="font-extrabold text-lg tracking-tight text-[#07182B] leading-none" translate="no">
+              VUM CRM
+            </span>
+            <span className="text-[10px] font-semibold text-[#52647A] tracking-wider uppercase mt-0.5">
+              Enterprise Cloud
+            </span>
+          </div>
+        </Link>
 
-        <div className="flex items-center gap-4 text-xs text-[#44546F]">
+        <Link
+          to="/login"
+          className="text-xs font-semibold text-[#085AC0] hover:underline flex items-center gap-1"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          <span>{t('landing.nav.login', 'Đăng nhập')}</span>
+        </Link>
+      </div>
+
+      {/* Main Register Card */}
+      <Card className="w-full max-w-md bg-white border border-[#DCE5F0] rounded-2xl shadow-xl overflow-hidden">
+        <div className="h-1.5 bg-[#085AC0] w-full" />
+        <CardHeader className="space-y-1.5 pb-4 pt-6 px-6 sm:px-8 text-center">
+          <CardTitle className="text-xl sm:text-2xl font-extrabold text-[#07182B] tracking-tight">
+            Đăng ký tài khoản Doanh nghiệp
+          </CardTitle>
+          <CardDescription className="text-xs sm:text-sm text-[#52647A]">
+            Khởi tạo không gian làm việc và trải nghiệm VUM CRM
+          </CardDescription>
+        </CardHeader>
+
+        <CardContent className="space-y-4 px-6 sm:px-8 pt-2">
+          {/* Error Alert */}
+          {(error || localError) && (
+            <Alert
+              variant="destructive"
+              className="py-2.5 px-3 rounded-lg border-rose-200 bg-rose-50 text-rose-800 text-xs"
+            >
+              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+              <AlertDescription className="text-xs leading-relaxed">
+                {localError || error}
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {/* Form */}
+          <form className="space-y-3.5" onSubmit={handleSubmit(onSubmit)} noValidate>
+            {/* Full Name */}
+            <div className="space-y-1.5">
+              <Label htmlFor="displayName" className="text-xs font-bold tracking-wider text-[#07182B] uppercase">
+                HỌ VÀ TÊN <span className="text-rose-500">*</span>
+              </Label>
+              <div className="relative">
+                <Input
+                  id="displayName"
+                  type="text"
+                  autoComplete="name"
+                  placeholder="Nguyễn Văn A"
+                  className={`h-10 text-sm bg-white border-[#DCE5F0] rounded-lg text-[#07182B] focus:border-[#085AC0] placeholder:text-slate-400 pl-9 ${
+                    errors.displayName ? 'border-rose-400 focus-visible:ring-rose-500' : ''
+                  }`}
+                  {...register('displayName')}
+                />
+                <User className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              </div>
+              {errors.displayName && (
+                <p className="text-xs text-rose-600 mt-0.5">{errors.displayName.message}</p>
+              )}
+            </div>
+
+            {/* Email */}
+            <div className="space-y-1.5">
+              <Label htmlFor="email" className="text-xs font-bold tracking-wider text-[#07182B] uppercase">
+                EMAIL CÔNG VIỆC <span className="text-rose-500">*</span>
+              </Label>
+              <div className="relative">
+                <Input
+                  id="email"
+                  type="email"
+                  autoComplete="email"
+                  placeholder="name@company.com"
+                  className={`h-10 text-sm bg-white border-[#DCE5F0] rounded-lg text-[#07182B] focus:border-[#085AC0] placeholder:text-slate-400 pl-9 ${
+                    errors.email ? 'border-rose-400 focus-visible:ring-rose-500' : ''
+                  }`}
+                  {...register('email')}
+                />
+                <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              </div>
+              {errors.email && (
+                <p className="text-xs text-rose-600 mt-0.5">{errors.email.message}</p>
+              )}
+            </div>
+
+            {/* Company / Organization Name */}
+            <div className="space-y-1.5">
+              <Label htmlFor="tenantName" className="text-xs font-bold tracking-wider text-[#07182B] uppercase">
+                TÊN DOANH NGHIỆP / TỔ CHỨC <span className="text-rose-500">*</span>
+              </Label>
+              <div className="relative">
+                <Input
+                  id="tenantName"
+                  type="text"
+                  autoComplete="organization"
+                  placeholder="Tập đoàn An Phát"
+                  className={`h-10 text-sm bg-white border-[#DCE5F0] rounded-lg text-[#07182B] focus:border-[#085AC0] placeholder:text-slate-400 pl-9 ${
+                    errors.tenantName ? 'border-rose-400 focus-visible:ring-rose-500' : ''
+                  }`}
+                  {...register('tenantName')}
+                />
+                <Building2 className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              </div>
+              {errors.tenantName && (
+                <p className="text-xs text-rose-600 mt-0.5">{errors.tenantName.message}</p>
+              )}
+            </div>
+
+            {/* Password */}
+            <div className="space-y-1.5">
+              <Label htmlFor="password" className="text-xs font-bold tracking-wider text-[#07182B] uppercase">
+                MẬT KHẨU <span className="text-rose-500">*</span>
+              </Label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  autoComplete="new-password"
+                  placeholder="Tối thiểu 8 ký tự"
+                  className={`h-10 pr-10 pl-9 text-sm bg-white border-[#DCE5F0] rounded-lg text-[#07182B] focus:border-[#085AC0] placeholder:text-slate-400 ${
+                    errors.password ? 'border-rose-400 focus-visible:ring-rose-500' : ''
+                  }`}
+                  {...register('password')}
+                />
+                <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-[#07182B] focus:outline-none"
+                  aria-label={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              {errors.password && (
+                <p className="text-xs text-rose-600 mt-0.5">{errors.password.message}</p>
+              )}
+            </div>
+
+            {/* Terms Checkbox */}
+            <div className="flex items-start space-x-2 pt-2">
+              <Checkbox
+                id="agreeTerms"
+                checked={agreeTerms}
+                onCheckedChange={(checked) => setAgreeTerms(Boolean(checked))}
+                className="h-4 w-4 rounded border-[#DCE5F0] data-[state=checked]:bg-[#085AC0] data-[state=checked]:border-[#085AC0] mt-0.5"
+              />
+              <label
+                htmlFor="agreeTerms"
+                className="text-xs text-[#52647A] leading-relaxed cursor-pointer select-none"
+              >
+                Tôi đồng ý với Thỏa thuận Khách hàng và Chính sách Quyền riêng tư của VUM CRM.
+              </label>
+            </div>
+
+            {/* Submit Button */}
+            <Button
+              type="submit"
+              className="w-full h-11 bg-[#085AC0] hover:bg-[#06499D] text-white font-semibold text-sm rounded-lg shadow-sm transition-colors mt-2"
+              disabled={isLoading}
+            >
+              {isLoading ? 'Đang tạo tài khoản...' : 'Tạo tài khoản Doanh nghiệp'}
+            </Button>
+          </form>
+        </CardContent>
+
+        <CardFooter className="flex flex-col gap-2 pt-2 pb-6 px-6 sm:px-8 border-t border-slate-100 text-center">
+          <div className="text-xs text-[#52647A]">
+            Đã có tài khoản?{' '}
+            <Link to="/login" className="font-semibold text-[#085AC0] hover:underline">
+              Đăng nhập ngay
+            </Link>
+          </div>
+        </CardFooter>
+      </Card>
+
+      {/* Footer */}
+      <footer className="w-full max-w-md text-center space-y-2 text-xs text-[#52647A] pt-6">
+        <div className="flex items-center justify-center gap-3">
           <div className="relative">
             <button
               onClick={() => setShowLangMenu(!showLangMenu)}
               type="button"
-              className="flex items-center gap-1.5 text-xs text-[#44546F] hover:text-[#172B4D] font-medium py-1 px-2 rounded-[3px] hover:bg-slate-200/50 transition-colors"
+              className="flex items-center gap-1.5 text-xs text-[#52647A] hover:text-[#07182B] font-medium py-1 px-2 rounded-md hover:bg-slate-200/50 transition-colors"
             >
               <Globe className="w-3.5 h-3.5" />
               <span>{i18n.language && i18n.language.startsWith('en') ? 'English' : 'Tiếng Việt'}</span>
@@ -126,18 +342,18 @@ export const RegisterPage: React.FC = () => {
             </button>
 
             {showLangMenu && (
-              <div className="absolute right-0 mt-1 w-32 bg-white border border-[#DFE1E6] rounded-[3px] shadow-lg py-1 z-50 text-xs">
+              <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-1 w-32 bg-white border border-[#DCE5F0] rounded-lg shadow-lg py-1 z-50 text-xs text-left">
                 <button
                   type="button"
                   onClick={() => toggleLanguage('vi')}
-                  className="w-full text-left px-3 py-1.5 hover:bg-[#F4F5F7] font-medium text-[#172B4D]"
+                  className="w-full text-left px-3 py-1.5 hover:bg-[#F5F8FC] font-medium text-[#07182B]"
                 >
                   Tiếng Việt
                 </button>
                 <button
                   type="button"
                   onClick={() => toggleLanguage('en')}
-                  className="w-full text-left px-3 py-1.5 hover:bg-[#F4F5F7] font-medium text-[#172B4D]"
+                  className="w-full text-left px-3 py-1.5 hover:bg-[#F5F8FC] font-medium text-[#07182B]"
                 >
                   English
                 </button>
@@ -145,268 +361,19 @@ export const RegisterPage: React.FC = () => {
             )}
           </div>
 
-          <a
-            href="#help"
-            className="flex items-center gap-1 text-xs text-[#44546F] hover:text-[#172B4D] font-medium transition-colors"
-          >
-            <HelpCircle className="w-3.5 h-3.5" />
-            <span>Trợ giúp</span>
-          </a>
-        </div>
-      </div>
+          <span>•</span>
 
-      <div className="hidden xl:block absolute bottom-12 left-10 pointer-events-none z-10 select-none">
-        <div className="relative">
-          <div className="absolute -top-3.5 right-6 z-20 bg-[#0C66E4] text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow-sm flex items-center gap-1">
-            <span>SPRINT 24</span>
-          </div>
-          <div className="absolute -top-1.5 -right-1 w-2.5 h-2.5 rounded-full bg-[#00C7E5] ring-2 ring-white z-20" />
-
-          <div className="w-48 bg-white rounded-[6px] border border-[#EBECF0] shadow-[0px_8px_24px_rgba(9,30,66,0.12)] p-3 space-y-2">
-            <div className="flex items-center justify-between pb-1">
-              <div className="w-14 h-2 bg-[#0C66E4] rounded-full" />
-              <div className="w-10 h-2 bg-slate-200 rounded-full" />
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <div className="bg-[#F4F5F7] rounded-[4px] p-1.5 space-y-1.5 min-h-[90px]">
-                <div className="bg-white p-1 rounded-[3px] border border-[#DFE1E6] space-y-1 shadow-2xs">
-                  <div className="w-10 h-1.5 bg-slate-400 rounded-full" />
-                </div>
-                <div className="bg-white p-1 rounded-[3px] border border-[#DFE1E6] space-y-1 shadow-2xs">
-                  <div className="w-8 h-1.5 bg-slate-400 rounded-full" />
-                  <div className="w-2 h-2 rounded-full bg-[#FF7452]" />
-                </div>
-              </div>
-              <div className="bg-[#F4F5F7] rounded-[4px] p-1.5 space-y-1.5 min-h-[90px]">
-                <div className="bg-white p-1.5 rounded-[3px] border-2 border-[#0C66E4] space-y-1 shadow-xs">
-                  <div className="w-12 h-1.5 bg-[#0C66E4] rounded-full" />
-                  <div className="flex justify-end pt-1">
-                    <Check className="w-3 h-3 text-[#0C66E4]" />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="absolute -bottom-6 -right-6 flex items-center">
-            <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
-              <path
-                d="M 5 35 Q 20 15 35 5"
-                stroke="#36B37E"
-                strokeWidth="3"
-                strokeLinecap="round"
-              />
-            </svg>
-            <div className="w-4 h-4 rounded-full bg-[#36B37E] ring-4 ring-[#36B37E]/20 -ml-2" />
-          </div>
-        </div>
-      </div>
-
-      <div className="hidden xl:block absolute bottom-14 right-12 pointer-events-none z-10 select-none">
-        <div className="relative">
-          <div className="absolute -top-3 -left-3 z-20 w-7 h-7 bg-[#FFAB00] text-white rounded-full flex items-center justify-center shadow-md ring-2 ring-white">
-            <Star className="w-3.5 h-3.5 fill-white" />
-          </div>
-
-          <div className="w-44 bg-white rounded-[6px] border border-[#EBECF0] shadow-[0px_8px_24px_rgba(9,30,66,0.12)] p-3.5 space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <div className="w-14 h-2 bg-[#172B4D] rounded-full" />
-                <div className="w-8 h-1.5 bg-slate-200 rounded-full" />
-              </div>
-              <div className="w-7 h-7 rounded-full border-2 border-[#0C66E4] flex items-center justify-center text-[9px] font-bold text-[#0C66E4]">
-                86%
-              </div>
-            </div>
-
-            <div className="flex items-end justify-between h-14 pt-2 px-1 gap-1.5 border-b border-slate-100">
-              <div className="w-2.5 h-6 bg-[#DEEBFF] rounded-t-[2px]" />
-              <div className="w-2.5 h-9 bg-[#B3D4FF] rounded-t-[2px]" />
-              <div className="w-2.5 h-12 bg-[#4C9AFF] rounded-t-[2px]" />
-              <div className="w-2.5 h-14 bg-[#0C66E4] rounded-t-[2px]" />
-              <div className="w-2.5 h-8 bg-[#00C7E5] rounded-t-[2px]" />
-              <div className="w-2.5 h-11 bg-[#36B37E] rounded-t-[2px]" />
-            </div>
-
-            <div className="pt-0.5">
-              <span className="inline-block px-2 py-0.5 rounded-[3px] bg-[#E3FCEF] text-[#006644] font-bold text-[10px] tracking-wide">
-                ON TRACK
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="w-full max-w-[440px] my-auto z-20 py-4">
-        <div className="bg-white border border-[#DFE1E6] rounded-[4px] shadow-[0px_4px_24px_rgba(9,30,66,0.08),0px_0px_1px_rgba(9,30,66,0.25)] p-8 sm:p-10">
-          <Link
-            to="/login"
-            className="inline-flex items-center gap-1 text-xs text-[#626F86] hover:text-[#172B4D] font-medium mb-4 transition-colors"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            <span>Quay lại Đăng nhập</span>
+          <Link to="/demo" className="text-xs text-[#52647A] hover:text-[#07182B] hover:underline">
+            Tư vấn &amp; Demo
           </Link>
-
-          <div className="text-center space-y-1 mb-5">
-            <div className="flex items-center justify-center gap-2">
-              <div className="w-8 h-8 rounded-[4px] bg-[#0C66E4] flex items-center justify-center text-white shadow-xs">
-                <svg className="w-5 h-5 fill-white" viewBox="0 0 24 24">
-                  <path d="M11.53 2c0 2.4-1.97 4.35-4.4 4.35H2.8a.8.8 0 0 0-.8.8v4.33c2.43 0 4.4 1.95 4.4 4.35v4.37c0 .44.36.8.8.8h4.33c0-2.4 1.97-4.35 4.4-4.35h4.33a.8.8 0 0 0 .8-.8v-4.33c-2.43 0-4.4-1.95-4.4-4.35V3.8a.8.8 0 0 0-.8-.8H11.53z" />
-                </svg>
-              </div>
-              <div className="text-left">
-                <div className="text-xl font-bold tracking-tight text-[#172B4D] leading-none">
-                  VUM <span className="text-[#0C66E4]">CRM</span>
-                </div>
-                <div className="text-[9px] font-bold uppercase tracking-[0.14em] text-[#626F86] mt-0.5">
-                  ENTERPRISE CLOUD
-                </div>
-              </div>
-            </div>
-
-            <h1 className="text-base sm:text-lg font-bold text-[#172B4D] pt-2">
-              Đăng ký tài khoản VUM CRM
-            </h1>
-            <p className="text-xs text-[#626F86]">
-              Bắt đầu dùng thử miễn phí 14 ngày, không cần thẻ tín dụng
-            </p>
-          </div>
-
-          {(error || localError) && (
-            <Alert variant="destructive" className="mb-4 py-2 px-3 rounded-[3px] border-rose-200 bg-rose-50 text-rose-800 text-xs">
-              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
-              <AlertDescription className="text-xs leading-relaxed">{localError || error}</AlertDescription>
-            </Alert>
-          )}
-
-          <form className="space-y-3.5" onSubmit={handleSubmit(onSubmit)} noValidate>
-            <div className="space-y-1">
-              <Label htmlFor="displayName" className="text-[11px] font-bold tracking-wider text-[#44546F] uppercase block">
-                HỌ VÀ TÊN
-              </Label>
-              <Input
-                id="displayName"
-                type="text"
-                placeholder="Nguyễn Văn A"
-                className={`h-10 text-xs sm:text-sm bg-white border-[#DFE1E6] rounded-[3px] text-[#172B4D] focus:ring-1 focus:ring-[#0C66E4] focus:border-[#0C66E4] placeholder:text-[#8993A4] ${
-                  errors.displayName ? 'border-rose-500 focus:ring-rose-500 focus:border-rose-500' : ''
-                }`}
-                {...register('displayName')}
-              />
-              {errors.displayName && (
-                <p className="text-[11px] text-rose-600 mt-0.5">{errors.displayName.message}</p>
-              )}
-            </div>
-
-            <div className="space-y-1">
-              <Label htmlFor="email" className="text-[11px] font-bold tracking-wider text-[#44546F] uppercase block">
-                ĐỊA CHỈ EMAIL CÔNG VIỆC
-              </Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="ten.ban@congty.vn"
-                className={`h-10 text-xs sm:text-sm bg-white border-[#DFE1E6] rounded-[3px] text-[#172B4D] focus:ring-1 focus:ring-[#0C66E4] focus:border-[#0C66E4] placeholder:text-[#8993A4] ${
-                  errors.email ? 'border-rose-500 focus:ring-rose-500 focus:border-rose-500' : ''
-                }`}
-                {...register('email')}
-              />
-              {errors.email && (
-                <p className="text-[11px] text-rose-600 mt-0.5">{errors.email.message}</p>
-              )}
-            </div>
-
-            <div className="space-y-1">
-              <Label htmlFor="tenantName" className="text-[11px] font-bold tracking-wider text-[#44546F] uppercase block">
-                TÊN DOANH NGHIỆP / TỔ CHỨC
-              </Label>
-              <Input
-                id="tenantName"
-                type="text"
-                placeholder="Ví dụ: VUM Media Corp"
-                className={`h-10 text-xs sm:text-sm bg-white border-[#DFE1E6] rounded-[3px] text-[#172B4D] focus:ring-1 focus:ring-[#0C66E4] focus:border-[#0C66E4] placeholder:text-[#8993A4] ${
-                  errors.tenantName ? 'border-rose-500 focus:ring-rose-500 focus:border-rose-500' : ''
-                }`}
-                {...register('tenantName')}
-              />
-              {errors.tenantName && (
-                <p className="text-[11px] text-rose-600 mt-0.5">{errors.tenantName.message}</p>
-              )}
-            </div>
-
-            <div className="space-y-1">
-              <Label htmlFor="password" className="text-[11px] font-bold tracking-wider text-[#44546F] uppercase block">
-                MẬT KHẨU
-              </Label>
-              <div className="relative">
-                <Input
-                  id="password"
-                  type={showPassword ? 'text' : 'password'}
-                  placeholder="Tối thiểu 8 ký tự"
-                  className={`h-10 pr-9 text-xs sm:text-sm bg-white border-[#DFE1E6] rounded-[3px] text-[#172B4D] focus:ring-1 focus:ring-[#0C66E4] focus:border-[#0C66E4] placeholder:text-[#8993A4] ${
-                    errors.password ? 'border-rose-500 focus:ring-rose-500 focus:border-rose-500' : ''
-                  }`}
-                  {...register('password')}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#626F86] hover:text-[#172B4D] focus:outline-none"
-                  aria-label={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-              {errors.password && (
-                <p className="text-[11px] text-rose-600 mt-0.5">{errors.password.message}</p>
-              )}
-            </div>
-
-            <div className="flex items-start space-x-2 pt-1">
-              <Checkbox
-                id="agreeTerms"
-                checked={agreeTerms}
-                onCheckedChange={(checked) => setAgreeTerms(Boolean(checked))}
-                className="h-4 w-4 mt-0.5 rounded-[2px] border-[#DFE1E6] data-[state=checked]:bg-[#0C66E4] data-[state=checked]:border-[#0C66E4]"
-              />
-              <label
-                htmlFor="agreeTerms"
-                className="text-xs text-[#44546F] leading-tight font-normal cursor-pointer select-none"
-              >
-                Tôi đồng ý với Thỏa thuận Khách hàng và Chính sách Quyền riêng tư của VUM CRM.
-              </label>
-            </div>
-
-            <Button
-              type="submit"
-              className="w-full h-10 bg-[#0C66E4] hover:bg-[#0052CC] active:bg-[#0747A6] text-white font-semibold text-xs sm:text-sm rounded-[3px] shadow-none mt-2 transition-colors"
-              disabled={isLoading}
-            >
-              {isLoading ? 'Đang khởi tạo...' : 'Tạo tài khoản Doanh nghiệp'}
-            </Button>
-          </form>
-
-          <div className="text-center pt-5 text-xs text-[#626F86]">
-            <span>Đã có tài khoản? </span>
-            <Link
-              to="/login"
-              className="text-[#0C66E4] font-semibold hover:underline"
-            >
-              Đăng nhập ngay
-            </Link>
-          </div>
         </div>
-      </div>
 
-      {/* ── Page Bottom Footer ── */}
-      <footer className="w-full max-w-2xl text-center space-y-2 text-xs text-[#626F86] py-3 z-20">
-        <div className="text-[10px] text-[#8993A4]">
-          © 2026 VUM Corporation. All rights reserved. Powered by Jira Cloud Architecture.
+        <div className="text-[11px] text-slate-400">
+          © {new Date().getFullYear()} VUM CRM. Nền tảng quản trị khách hàng và doanh số.
         </div>
       </footer>
-
-      {/* Subtle bottom wavy background graphic */}
-      <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-blue-50/40 to-transparent pointer-events-none z-0" />
     </div>
   );
 };
+
+export default RegisterPage;

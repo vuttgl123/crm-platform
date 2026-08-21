@@ -2,7 +2,6 @@ import type { ReactElement } from 'react';
 import { cn } from '@/lib/utils';
 
 export interface SectionHeadingProps {
-  eyebrow?: string;
   title: string;
   description?: string;
   align?: 'left' | 'center';
@@ -11,7 +10,6 @@ export interface SectionHeadingProps {
 }
 
 export function SectionHeading({
-  eyebrow,
   title,
   description,
   align = 'left',
@@ -23,26 +21,23 @@ export function SectionHeading({
   return (
     <div
       className={cn(
-        'space-y-3 mb-10 sm:mb-14',
-        align === 'center' ? 'text-center mx-auto max-w-3xl' : 'max-w-3xl',
+        'mb-12 sm:mb-16',
+        align === 'center' ? 'text-center mx-auto max-w-[42rem]' : 'max-w-[42rem]',
         className
       )}
     >
-      {eyebrow && (
-        <span className="inline-block text-xs font-bold uppercase tracking-wider text-[#085AC0] bg-[#EAF2FC] px-3 py-1 rounded-full">
-          {eyebrow}
-        </span>
-      )}
+      {/* NO EYEBROW ALLOWED IN ANTI-SLOP SAAS */}
       <HeadingTag
         className={cn(
-          'text-2xl sm:text-3xl lg:text-4xl font-extrabold text-[#07182B] landing-display leading-tight',
-          as === 'h1' && 'text-3xl sm:text-4xl lg:text-5xl'
+          'h-section text-[--color-ink] landing-display',
+          as === 'h1' && 'h-hero'
         )}
       >
         {title}
       </HeadingTag>
+      
       {description && (
-        <p className="text-base sm:text-lg text-[#52647A] leading-relaxed max-w-2xl">
+        <p className="mt-5 text-base sm:text-lg text-[--color-ink-muted] leading-relaxed">
           {description}
         </p>
       )}

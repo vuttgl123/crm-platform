@@ -1,55 +1,91 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { Loader2, AlertCircle, ArrowLeft } from 'lucide-react';
 import { realAuthService } from '@/services/api/RealAuthService';
-import { LoadingSkeleton } from '@/components/common/LoadingSkeleton';
+import { AuthShell } from './components/AuthShell';
+import { AuthPageHeader } from './components/AuthPageHeader';
 
 export const AuthCallbackPage: React.FC = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [hasError, setHasError] = useState(false);
 
   useEffect(() => {
-    let mounted = true;
+    let active = true;
+    let redirectTimer: ReturnType<typeof setTimeout> | undefined;
 
     realAuthService
       .handleOAuth2Callback()
       .then(() => {
-        if (mounted) {
+        if (active) {
           navigate('/app/overview', { replace: true });
         }
       })
-      .catch((err) => {
-        if (mounted) {
-          const message = err instanceof Error ? err.message : 'Đăng nhập OAuth2 thất bại';
-          setErrorMessage(message);
-          setTimeout(() => {
-            navigate('/login?error=OAUTH2_FAILED', { replace: true });
-          }, 2000);
-        }
+      .catch(() => {
+        if (!active) return;
+        setHasError(true);
+        redirectTimer = setTimeout(() => {
+          navigate('/login?errorCode=OAUTH2_LOGIN_FAILED', { replace: true });
+        }, 2000);
       });
 
     return () => {
-      mounted = false;
+      active = false;
+      if (redirectTimer) clearTimeout(redirectTimer);
     };
   }, [navigate]);
 
-  if (errorMessage) {
+  if (hasError) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
-        <div className="bg-white p-6 rounded-xl shadow-lg max-w-md w-full text-center border border-red-200">
-          <h2 className="text-lg font-bold text-red-600 mb-2">Đăng nhập không thành công</h2>
-          <p className="text-sm text-slate-600 mb-4">{errorMessage}</p>
-          <p className="text-xs text-slate-400">Đang tự động chuyển hướng về trang đăng nhập...</p>
+      <AuthShell brandVariant="compact">
+        <AuthPageHeader
+          titleKey="auth.gateway.callback.errorTitle"
+          descriptionKey="auth.gateway.callback.errorDescription"
+        />
+
+        <div className="space-y-4 text-center">
+          <div className="w-12 h-12 rounded-full bg-rose-50 border border-rose-200 text-rose-600 flex items-center justify-center mx-auto">
+            <AlertCircle className="w-6 h-6" aria-hidden="true" />
+          </div>
+
+          <p className="text-xs text-slate-500 font-normal">
+            {t('auth.gateway.callback.redirecting')}
+          </p>
+
+          <div className="pt-2">
+            <Link
+              to="/login?errorCode=OAUTH2_LOGIN_FAILED"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#085AC0] hover:underline"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" aria-hidden="true" />
+              <span>{t('auth.gateway.callback.returnLogin')}</span>
+            </Link>
+          </div>
         </div>
-      </div>
+      </AuthShell>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50">
-      <div className="text-center">
-        <LoadingSkeleton variant="card" />
-        <p className="mt-4 text-sm text-slate-600 font-medium">Đang đồng bộ phiên làm việc SSO...</p>
+    <AuthShell brandVariant="compact">
+      <AuthPageHeader
+        titleKey="auth.gateway.callback.title"
+        descriptionKey="auth.gateway.callback.loadingDescription"
+      />
+
+      <div
+        className="py-6 flex flex-col items-center justify-center gap-3 text-center"
+        role="status"
+        aria-live="polite"
+      >
+        <Loader2 className="w-8 h-8 text-[#085AC0] animate-spin" aria-hidden="true" />
+        <p className="text-xs text-slate-500 font-medium">
+          {t('auth.gateway.callback.loadingDescription')}
+        </p>
       </div>
-    </div>
+    </AuthShell>
   );
 };
+
+export default AuthCallbackPage;

@@ -10,6 +10,7 @@ import { apiFetch } from './apiClient';
 import { storageAdapter } from '../storageAdapter';
 import { DEMO_ROLES, DEMO_TENANT, DEMO_USERS } from '@/mocks/fixtures/demoData';
 import { PlatformTenant, PlatformTenantMembership, PlatformUser } from '@/types/schema';
+import { env } from '@/config/env';
 
 export interface BackendAccessTokenResponse {
   accessToken: string;
@@ -78,7 +79,7 @@ export class RealAuthService implements IAuthService {
           Authorization: `Bearer ${tokenResponse.accessToken}`,
         },
         body: JSON.stringify({
-          tenantCode: (payload.tenantCode || 'tap-doan-ipa').trim().toLowerCase(),
+          tenantCode: payload.tenantCode?.trim(),
           message: `Đăng ký tài khoản thành viên mới từ ${payload.displayName}`,
         }),
       });
@@ -99,9 +100,11 @@ export class RealAuthService implements IAuthService {
   }
 
   public async loginWithSSO(payload: SSOLoginPayload): Promise<UserSessionContext> {
-    const provider = payload.provider.toLowerCase();
-    window.location.href = `http://localhost:8080/oauth2/authorization/${provider}`;
-    return new Promise(() => {});
+    const provider = payload.provider === 'GOOGLE' ? 'google' : 'microsoft';
+    window.location.assign(
+      `${env.oauthBaseUrl}/oauth2/authorization/${provider}`
+    );
+    return new Promise<UserSessionContext>(() => undefined);
   }
 
   public async handleOAuth2Callback(): Promise<UserSessionContext> {

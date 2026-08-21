@@ -41,7 +41,133 @@
     "sessionExpiredDesc": "Your security session has expired. Please sign in again.",
     "reloginButton": "Sign in again",
     "invalidCredentials": "Invalid email or password.",
-    "accountLocked": "Your account has been locked. Please contact your administrator."
+    "accountLocked": "Your account has been locked. Please contact your administrator.",
+    "gateway": {
+      "common": {
+        "skipToContent": "Skip to authentication content",
+        "backHome": "Back to home",
+        "openDemo": "Consultation and demo",
+        "openLogin": "Sign in",
+        "openRegister": "Create an account"
+      },
+      "brand": {
+        "descriptor": "Customer and revenue management platform",
+        "statement": "One system where the sales team sees the same data and follows the same process.",
+        "capabilities": {
+          "customer360": "Customer 360° profiles",
+          "pipeline": "Stage-based sales pipeline",
+          "permissions": "Roles and data scope"
+        }
+      },
+      "language": {
+        "label": "Choose language",
+        "vietnamese": "Tiếng Việt",
+        "english": "English"
+      },
+      "password": {
+        "show": "Show password",
+        "hide": "Hide password"
+      },
+      "login": {
+        "title": "Sign in to VUM CRM",
+        "description": "Continue working with your organization's customer data and sales pipeline.",
+        "emailLabel": "Work email",
+        "emailPlaceholder": "name@company.com",
+        "passwordLabel": "Password",
+        "passwordPlaceholder": "Enter your password",
+        "submit": "Sign in",
+        "submitting": "Signing in…",
+        "noAccount": "No account yet?",
+        "registerLink": "Create an account",
+        "ssoDivider": "Or continue with",
+        "google": "Sign in with Google",
+        "microsoft": "Sign in with Microsoft",
+        "redirecting": "Redirecting to the provider…"
+      },
+      "register": {
+        "title": "Create a VUM CRM account",
+        "description": "Create your account and request access to your organization.",
+        "fullNameLabel": "Full name",
+        "fullNamePlaceholder": "Alex Nguyen",
+        "emailLabel": "Work email",
+        "emailPlaceholder": "name@company.com",
+        "passwordLabel": "Password",
+        "passwordPlaceholder": "Enter 12 to 128 characters",
+        "passwordHelper": "Use at least 12 characters.",
+        "tenantCodeLabel": "Organization code",
+        "tenantCodePlaceholder": "example-company",
+        "tenantCodeHelper": "Enter the code supplied by your organization administrator.",
+        "consentPrefix": "I agree to the",
+        "terms": "Terms of use",
+        "connector": "and",
+        "privacy": "Privacy policy",
+        "consentSuffix": "for VUM CRM.",
+        "submit": "Create account",
+        "submitting": "Creating account…",
+        "hasAccount": "Already have an account?",
+        "loginLink": "Sign in",
+        "organizationHelp": "Is your organization new to VUM CRM?",
+        "demoLink": "Talk with the VUM team"
+      },
+      "demo": {
+        "title": "Demo accounts",
+        "description": "Choose a role to fill sample credentials in Mock Mode.",
+        "toggle": "Open demo account list",
+        "mockBadge": "Mock Mode",
+        "roles": {
+          "admin": "Administrator",
+          "regionalManager": "Regional manager",
+          "teamLead": "Team lead",
+          "staff": "Sales representative",
+          "viewer": "View only"
+        }
+      },
+      "callback": {
+        "title": "Completing sign-in",
+        "loadingDescription": "VUM CRM is establishing your secure session.",
+        "errorTitle": "Sign-in could not be completed",
+        "errorDescription": "The provider sign-in session was not confirmed.",
+        "returnLogin": "Return to sign in",
+        "redirecting": "Returning to sign in…"
+      },
+      "pending": {
+        "title": "Your access request is pending",
+        "description": "An organization administrator must approve the request before you can access CRM data.",
+        "account": "Account",
+        "organization": "Organization",
+        "status": "Status",
+        "statusInvited": "Pending approval",
+        "unknownOrganization": "Organization not identified",
+        "processTitle": "What happens next?",
+        "processDescription": "After an administrator approves the request, check the status again to continue into the system.",
+        "refresh": "Check status",
+        "logout": "Sign out"
+      },
+      "validation": {
+        "email": "Enter a valid email no longer than 320 characters.",
+        "loginPassword": "Enter a password no longer than 128 characters.",
+        "fullName": "Enter a full name between 2 and 255 characters.",
+        "registerPassword": "Password must contain 12 to 128 characters.",
+        "tenantCode": "Enter an organization code no longer than 320 characters.",
+        "legalConsent": "You must accept the terms and privacy policy."
+      },
+      "errors": {
+        "network": "The authentication service could not be reached. Check your connection and try again.",
+        "requestValidation": "Some information is invalid. Review the marked fields.",
+        "invalidCredentials": "The email or password is incorrect.",
+        "registrationDisabled": "Self-registration is not available. Talk with the VUM team.",
+        "emailRegistered": "An account already uses this email. Continue to sign in.",
+        "tenantNotAvailable": "No available organization matches this code. Check the code or contact your administrator.",
+        "membershipPending": "This account already has a pending access request for the organization.",
+        "oauthFailed": "Provider sign-in was not completed. Try again or use your email and password.",
+        "externalEmailNotVerified": "The provider has not verified your email. Verify it before trying again.",
+        "identityLinkRequired": "This email already belongs to a VUM CRM account. Sign in locally or contact an administrator to link it.",
+        "unknown": "The action could not be completed. Try again."
+      },
+      "footer": {
+        "copyright": "VUM CRM. All rights reserved."
+      }
+    }
   },
   "nav": {
     "overview": "Overview",
@@ -164,10 +290,10 @@
     },
     "home": {
       "hero": {
-        "kicker": "VUM CRM for Vietnamese enterprises",
-        "title": "One system where the sales team works from the same data and follows the same process.",
-        "description": "Bring customer records, opportunities, quotes, contracts, and service activities together so leaders can see revenue clearly while the team focuses on the next action.",
-        "primaryCta": "Book a demo",
+        "kicker": "Enterprise B2B CRM Platform",
+        "title": "Unify Customer 360° & Accelerate Sales Pipeline",
+        "description": "Streamline customer intelligence, automate multi-version quotes, and track revenue velocity in real time.",
+        "primaryCta": "Book a Demo",
         "secondaryCta": "Try VUM CRM"
       },
       "proof": {
@@ -272,6 +398,7 @@
         "companyName": "Company name",
         "companySize": "Company size",
         "industry": "Industry",
+        "selectPlaceholder": "Select an option...",
         "primaryNeed": "Primary need",
         "message": "Additional information",
         "privacyConsent": "I agree that VUM may use this information to contact me and prepare the demo under the privacy policy.",

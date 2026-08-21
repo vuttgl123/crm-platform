@@ -10,7 +10,7 @@ export const RoleOutcomesSection: React.FC = () => {
   return (
     <LandingSection className="bg-[#F5F8FC]">
       <SectionHeading
-        eyebrow={t('landing.home.roles.eyebrow')}
+
         title={t('landing.home.roles.title')}
         align="left"
       />

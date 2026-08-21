@@ -41,7 +41,133 @@
     "sessionExpiredDesc": "Phiên làm việc của bạn đã hết hạn bảo mật. Vui lòng đăng nhập lại để tiếp tục sử dụng VUM CRM.",
     "reloginButton": "Đăng nhập lại",
     "invalidCredentials": "Email hoặc mật khẩu không chính xác.",
-    "accountLocked": "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ Quản trị viên."
+    "accountLocked": "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ Quản trị viên.",
+    "gateway": {
+      "common": {
+        "skipToContent": "Chuyển đến nội dung xác thực",
+        "backHome": "Về trang chủ",
+        "openDemo": "Tư vấn và demo",
+        "openLogin": "Đăng nhập",
+        "openRegister": "Tạo tài khoản"
+      },
+      "brand": {
+        "descriptor": "Nền tảng quản trị khách hàng và doanh số",
+        "statement": "Một hệ thống để đội ngũ bán hàng nhìn cùng dữ liệu và đi cùng quy trình.",
+        "capabilities": {
+          "customer360": "Hồ sơ khách hàng 360°",
+          "pipeline": "Pipeline theo từng giai đoạn",
+          "permissions": "Vai trò và phạm vi dữ liệu"
+        }
+      },
+      "language": {
+        "label": "Chọn ngôn ngữ",
+        "vietnamese": "Tiếng Việt",
+        "english": "English"
+      },
+      "password": {
+        "show": "Hiện mật khẩu",
+        "hide": "Ẩn mật khẩu"
+      },
+      "login": {
+        "title": "Đăng nhập vào VUM CRM",
+        "description": "Tiếp tục công việc với dữ liệu khách hàng và pipeline của tổ chức.",
+        "emailLabel": "Email công việc",
+        "emailPlaceholder": "ten@doanhnghiep.vn",
+        "passwordLabel": "Mật khẩu",
+        "passwordPlaceholder": "Nhập mật khẩu",
+        "submit": "Đăng nhập",
+        "submitting": "Đang đăng nhập…",
+        "noAccount": "Chưa có tài khoản?",
+        "registerLink": "Tạo tài khoản",
+        "ssoDivider": "Hoặc tiếp tục với",
+        "google": "Đăng nhập bằng Google",
+        "microsoft": "Đăng nhập bằng Microsoft",
+        "redirecting": "Đang chuyển đến nhà cung cấp…"
+      },
+      "register": {
+        "title": "Tạo tài khoản VUM CRM",
+        "description": "Tạo tài khoản và gửi yêu cầu gia nhập tổ chức của bạn.",
+        "fullNameLabel": "Họ và tên",
+        "fullNamePlaceholder": "Nguyễn Văn An",
+        "emailLabel": "Email công việc",
+        "emailPlaceholder": "ten@doanhnghiep.vn",
+        "passwordLabel": "Mật khẩu",
+        "passwordPlaceholder": "Nhập từ 12 đến 128 ký tự",
+        "passwordHelper": "Sử dụng ít nhất 12 ký tự.",
+        "tenantCodeLabel": "Mã tổ chức",
+        "tenantCodePlaceholder": "vi-du-doanh-nghiep",
+        "tenantCodeHelper": "Nhập mã do quản trị viên tổ chức cung cấp.",
+        "consentPrefix": "Tôi đồng ý với",
+        "terms": "Điều khoản sử dụng",
+        "connector": "và",
+        "privacy": "Chính sách riêng tư",
+        "consentSuffix": "của VUM CRM.",
+        "submit": "Tạo tài khoản",
+        "submitting": "Đang tạo tài khoản…",
+        "hasAccount": "Đã có tài khoản?",
+        "loginLink": "Đăng nhập",
+        "organizationHelp": "Tổ chức của bạn chưa sử dụng VUM CRM?",
+        "demoLink": "Trao đổi với đội ngũ VUM"
+      },
+      "demo": {
+        "title": "Tài khoản dùng thử",
+        "description": "Chọn vai trò để điền thông tin mẫu trong Mock Mode.",
+        "toggle": "Mở danh sách tài khoản dùng thử",
+        "mockBadge": "Mock Mode",
+        "roles": {
+          "admin": "Quản trị viên",
+          "regionalManager": "Quản lý vùng",
+          "teamLead": "Trưởng nhóm",
+          "staff": "Nhân viên",
+          "viewer": "Chỉ xem"
+        }
+      },
+      "callback": {
+        "title": "Đang hoàn tất đăng nhập",
+        "loadingDescription": "VUM CRM đang thiết lập phiên làm việc bảo mật.",
+        "errorTitle": "Chưa thể hoàn tất đăng nhập",
+        "errorDescription": "Phiên đăng nhập từ nhà cung cấp chưa được xác nhận.",
+        "returnLogin": "Quay lại đăng nhập",
+        "redirecting": "Đang quay lại trang đăng nhập…"
+      },
+      "pending": {
+        "title": "Yêu cầu gia nhập đang chờ duyệt",
+        "description": "Quản trị viên tổ chức cần phê duyệt trước khi bạn truy cập dữ liệu CRM.",
+        "account": "Tài khoản",
+        "organization": "Tổ chức",
+        "status": "Trạng thái",
+        "statusInvited": "Chờ phê duyệt",
+        "unknownOrganization": "Chưa xác định tổ chức",
+        "processTitle": "Điều gì xảy ra tiếp theo?",
+        "processDescription": "Sau khi quản trị viên phê duyệt, hãy kiểm tra lại trạng thái để tiếp tục vào hệ thống.",
+        "refresh": "Kiểm tra trạng thái",
+        "logout": "Đăng xuất"
+      },
+      "validation": {
+        "email": "Nhập email hợp lệ, tối đa 320 ký tự.",
+        "loginPassword": "Nhập mật khẩu, tối đa 128 ký tự.",
+        "fullName": "Nhập họ tên từ 2 đến 255 ký tự.",
+        "registerPassword": "Mật khẩu phải có từ 12 đến 128 ký tự.",
+        "tenantCode": "Nhập mã tổ chức, tối đa 320 ký tự.",
+        "legalConsent": "Bạn cần đồng ý điều khoản và chính sách riêng tư."
+      },
+      "errors": {
+        "network": "Không thể kết nối tới dịch vụ xác thực. Kiểm tra kết nối và thử lại.",
+        "requestValidation": "Thông tin chưa hợp lệ. Kiểm tra các trường được đánh dấu.",
+        "invalidCredentials": "Email hoặc mật khẩu không chính xác.",
+        "registrationDisabled": "Hệ thống chưa mở tự đăng ký. Hãy trao đổi với đội ngũ VUM.",
+        "emailRegistered": "Email này đã có tài khoản. Hãy chuyển sang đăng nhập.",
+        "tenantNotAvailable": "Không tìm thấy tổ chức khả dụng với mã này. Kiểm tra lại mã hoặc liên hệ quản trị viên.",
+        "membershipPending": "Tổ chức đã nhận được một yêu cầu đang chờ duyệt từ tài khoản này.",
+        "oauthFailed": "Đăng nhập qua nhà cung cấp chưa hoàn tất. Thử lại hoặc dùng email và mật khẩu.",
+        "externalEmailNotVerified": "Nhà cung cấp chưa xác minh email của bạn. Hãy xác minh email trước khi thử lại.",
+        "identityLinkRequired": "Email này đã thuộc một tài khoản VUM CRM. Hãy đăng nhập cục bộ hoặc liên hệ quản trị viên để liên kết.",
+        "unknown": "Chưa thể hoàn tất thao tác. Hãy thử lại."
+      },
+      "footer": {
+        "copyright": "VUM CRM. Bảo lưu mọi quyền."
+      }
+    }
   },
   "nav": {
     "overview": "Tổng quan",
@@ -164,9 +290,9 @@
     },
     "home": {
       "hero": {
-        "kicker": "VUM CRM cho doanh nghiệp Việt",
-        "title": "Một hệ thống để đội ngũ bán hàng nhìn cùng một dữ liệu, đi cùng một quy trình.",
-        "description": "Tập trung hồ sơ khách hàng, cơ hội, báo giá, hợp đồng và hoạt động chăm sóc để lãnh đạo nhìn rõ doanh thu còn đội ngũ tập trung vào công việc cần làm tiếp theo.",
+        "kicker": "Nền tảng CRM Doanh nghiệp B2B",
+        "title": "Quản trị Khách hàng & Tăng tốc Doanh số Toàn diện",
+        "description": "Hợp nhất Customer 360°, tối ưu quy trình báo giá và kiểm soát phễu bán hàng theo thời gian thực.",
         "primaryCta": "Đặt lịch demo",
         "secondaryCta": "Dùng thử VUM CRM"
       },
@@ -272,6 +398,7 @@
         "companyName": "Tên doanh nghiệp",
         "companySize": "Quy mô doanh nghiệp",
         "industry": "Lĩnh vực hoạt động",
+        "selectPlaceholder": "Chọn một mục...",
         "primaryNeed": "Nhu cầu ưu tiên",
         "message": "Thông tin bổ sung",
         "privacyConsent": "Tôi đồng ý để VUM sử dụng thông tin này nhằm liên hệ và chuẩn bị buổi demo theo chính sách riêng tư.",

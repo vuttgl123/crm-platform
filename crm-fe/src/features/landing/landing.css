@@ -1,59 +1,150 @@
+/* ============================================================
+   VUM CRM — Landing Page Design System
+   Standard: Anti-Slop Minimalist SaaS
+   Style: Linear / Vercel / High-Contrast, No Gradients
+   ============================================================ */
+
 .landing-theme {
-  --landing-canvas: #f5f8fc;
-  --landing-surface: #ffffff;
-  --landing-ink: #07182b;
-  --landing-muted: #52647a;
-  --landing-line: #dce5f0;
-  --landing-blue: #085ac0;
-  --landing-blue-hover: #06499d;
-  --landing-blue-soft: #eaf2fc;
+  /* Ultra-minimalist Color Palette */
+  --color-ink:        #09090b;   /* zinc-950 — True sharp black */
+  --color-ink-muted:  #52525b;   /* zinc-500 — Clean grey */
+  --color-ink-faint:  #a1a1aa;   /* zinc-400 */
+  --color-surface:    #ffffff;   /* Pure white */
+  --color-canvas:     #fafafa;   /* zinc-50 — Extreme subtle off-white for sections */
+  --color-border:     #e4e4e7;   /* zinc-200 — Sharp, uncolored borders */
+  
+  /* Brand Accent: Single high-contrast accent color. No purple, no glows. */
+  --color-brand:      #09090b;   /* Primary default is solid black */
+  --color-brand-alt:  #2563eb;   /* Minimalist sharp blue when strictly needed */
+  
+  /* Dark mode variants for Demo Section */
+  --color-dark:       #09090b;   /* zinc-950 */
+  --color-dark-border:#27272a;   /* zinc-800 */
+  --color-dark-muted: #a1a1aa;   /* zinc-400 */
+
+  /* Typography */
+  --font-display: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+  /* Baseline */
   min-height: 100dvh;
-  background: var(--landing-canvas);
-  color: var(--landing-ink);
-  font-family: 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font-family: var(--font-display);
   overflow-x: clip;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
+/* ── 1. LAYOUT ────────────────────────────────────────── */
 .landing-theme .landing-container {
-  width: min(100% - 2rem, 82.5rem);
+  width: min(100% - 2.5rem, 80rem); /* Max 1280px for tighter reading rhythm */
   margin-inline: auto;
 }
 
+/* ── 2. SECTION RHYTHM ────────────────────────────────── */
+.landing-theme .section-py {
+  padding-block: clamp(6rem, 10vw, 8rem);
+}
+.landing-theme .section-py-sm {
+  padding-block: clamp(4rem, 6vw, 6rem);
+}
+
+/* ── 3. TYPOGRAPHY ────────────────────────────────────── */
 .landing-theme .landing-display {
-  font-family: 'Plus Jakarta Sans', 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, sans-serif;
-  letter-spacing: -0.035em;
+  font-family: var(--font-display);
+  letter-spacing: -0.04em; /* Tight Vercel-style tracking */
   text-wrap: balance;
+  line-height: 1.1;
 }
 
+.landing-theme .h-hero {
+  font-size: clamp(3rem, 7vw, 5.5rem);
+  font-weight: 900; /* Black */
+  letter-spacing: -0.05em;
+  line-height: 1.05;
+  color: var(--color-ink);
+}
+
+.landing-theme .h-section {
+  font-size: clamp(2rem, 4vw, 3.5rem);
+  font-weight: 800; /* ExtraBold */
+  letter-spacing: -0.04em;
+  line-height: 1.1;
+  color: var(--color-ink);
+}
+
+/* ── 4. PRIMITIVES (Strictly No Glows / Shimmers) ─────── */
+
+/* Primary CTA — Solid Black, sharp hover */
+.landing-theme .btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  height: 2.75rem; /* 44px */
+  padding: 0 1.5rem;
+  border-radius: 0.375rem; /* rounded-md - SaaS standard */
+  font-size: 0.875rem;
+  font-weight: 600;
+  background: var(--color-ink);
+  color: #FFFFFF;
+  transition: all 150ms ease;
+  border: 1px solid var(--color-ink);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05); /* Minimal physical shadow, NO GLOW */
+}
+.landing-theme .btn-primary:hover {
+  background: #27272a; /* zinc-800 */
+}
+.landing-theme .btn-primary:active {
+  transform: scale(0.98);
+}
+
+/* Base Card — Pure flat design */
+.landing-theme .card-feature {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem; /* rounded-xl */
+  padding: clamp(1.5rem, 3vw, 2.5rem);
+  /* No hover float, no glow. Just solid engineering feel. */
+}
+
+/* Icon badge — Minimalist */
+.landing-theme .icon-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.5rem;
+  flex-shrink: 0;
+  background: var(--color-canvas);
+  border: 1px solid var(--color-border);
+  color: var(--color-ink);
+}
+
+/* ── 5. BACKGROUND UTILITIES ──────────────────────────── */
+.landing-theme .bg-canvas {
+  background-color: var(--color-canvas);
+}
+
+.landing-theme .bg-dark-section {
+  background-color: var(--color-dark);
+  color: #fafafa;
+}
+
+/* Legacy compat */
 .landing-theme .landing-section {
-  padding-block: clamp(3.5rem, 8vw, 8rem);
+  padding-block: clamp(6rem, 10vw, 8rem);
+  position: relative;
 }
 
+/* A11y Focus */
 .landing-theme :where(a, button, input, select, textarea):focus-visible {
-  outline: 3px solid color-mix(in srgb, var(--landing-blue) 65%, white);
-  outline-offset: 3px;
+  outline: 2px solid var(--color-ink);
+  outline-offset: 2px;
+  border-radius: 0.25rem;
 }
 
-.landing-theme .landing-card {
-  background-color: var(--landing-surface);
-  border: 1px solid var(--landing-line);
-  border-radius: 0.75rem;
-  transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 200ms cubic-bezier(0.16, 1, 0.3, 1), border-color 200ms ease;
-}
-
-.landing-theme .landing-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 25px -5px rgba(8, 90, 192, 0.07), 0 8px 10px -6px rgba(8, 90, 192, 0.04);
-  border-color: #cbd5e1;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .landing-theme *,
-  .landing-theme *::before,
-  .landing-theme *::after {
-    scroll-behavior: auto !important;
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
-}
+/* Remove scrollbar for clean horizontal lists if any */
+.landing-theme .no-scrollbar::-webkit-scrollbar { display: none; }
+.landing-theme .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }

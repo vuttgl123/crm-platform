@@ -1,4 +1,4 @@
-/* global HTMLMetaElement, HTMLLinkElement, URL */
+/* global HTMLMetaElement, HTMLLinkElement */
 import { useEffect } from 'react';
 import { LandingMetadata } from '../types/landing';
 import { env } from '@/config/env';

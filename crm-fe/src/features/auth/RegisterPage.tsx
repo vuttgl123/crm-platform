@@ -1,378 +1,370 @@
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { useForm } from 'react-hook-form';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import {
-  AlertCircle,
-  Eye,
-  EyeOff,
-  Globe,
-  ChevronDown,
-  Building2,
-  Mail,
-  User,
-  Lock,
-  ArrowLeft
-} from 'lucide-react';
+import type { TFunction } from 'i18next';
+import { User, Mail, Building2, ArrowRight, Loader2 } from 'lucide-react';
+import { env } from '@/config/env';
 import { useAuth } from '@/core/session/useAuth';
-import { useTranslation } from 'react-i18next';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AuthShell } from './components/AuthShell';
+import { AuthPageHeader } from './components/AuthPageHeader';
+import { AuthFormError } from './components/AuthFormError';
+import { PasswordField } from './components/PasswordField';
 import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-  CardFooter
-} from '@/components/ui/card';
-import { toast } from 'sonner';
+  AuthErrorCode,
+  normalizeAuthError,
+} from './utils/authErrorMessages';
 
-const registerSchema = z.object({
-  displayName: z
-    .string()
-    .trim()
-    .min(2, 'Họ và tên phải có ít nhất 2 ký tự')
-    .max(255, 'Tối đa 255 ký tự'),
-  email: z
-    .string()
-    .trim()
-    .email('Email không đúng định dạng')
-    .max(320, 'Tối đa 320 ký tự'),
-  password: z
-    .string()
-    .min(8, 'Mật khẩu phải có ít nhất 8 ký tự')
-    .max(128, 'Tối đa 128 ký tự'),
-  tenantName: z
-    .string()
-    .trim()
-    .min(2, 'Vui lòng nhập Tên Doanh nghiệp / Tổ chức'),
-});
+const createRegisterSchema = (t: TFunction) =>
+  z.object({
+    displayName: z
+      .string()
+      .trim()
+      .min(2, t('auth.gateway.validation.fullName'))
+      .max(255, t('auth.gateway.validation.fullName')),
+    email: z
+      .string()
+      .trim()
+      .email(t('auth.gateway.validation.email'))
+      .max(320, t('auth.gateway.validation.email')),
+    password: z
+      .string()
+      .min(12, t('auth.gateway.validation.registerPassword'))
+      .max(128, t('auth.gateway.validation.registerPassword')),
+    tenantCode: z
+      .string()
+      .trim()
+      .min(1, t('auth.gateway.validation.tenantCode'))
+      .max(320, t('auth.gateway.validation.tenantCode')),
+    legalConsent: z.boolean().refine(Boolean, {
+      message: t('auth.gateway.validation.legalConsent'),
+    }),
+  });
 
-type RegisterFormValues = z.infer<typeof registerSchema>;
+type RegisterFormValues = z.infer<ReturnType<typeof createRegisterSchema>>;
 
 export const RegisterPage: React.FC = () => {
-  const { register: registerUser, isLoading, error } = useAuth();
+  const { t } = useTranslation();
   const navigate = useNavigate();
-  const { t, i18n } = useTranslation();
-  const [localError, setLocalError] = useState<string | null>(null);
-  const [showPassword, setShowPassword] = useState(false);
-  const [agreeTerms, setAgreeTerms] = useState(true);
-  const [showLangMenu, setShowLangMenu] = useState(false);
+
+  const { register: registerUser, clearError, session } = useAuth();
+  const clearErrorOnMount = useRef(clearError);
+  const [localErrorCode, setLocalErrorCode] = useState<AuthErrorCode>();
+
+  useEffect(() => {
+    clearErrorOnMount.current();
+  }, []);
+
+  const schema = useMemo(() => createRegisterSchema(t), [t]);
 
   const {
     register,
     handleSubmit,
-    formState: { errors },
+    control,
+    formState: { errors, isSubmitting },
   } = useForm<RegisterFormValues>({
-    resolver: zodResolver(registerSchema),
+    resolver: zodResolver(schema),
     defaultValues: {
       displayName: '',
       email: '',
       password: '',
-      tenantName: '',
+      tenantCode: '',
+      legalConsent: false,
     },
   });
 
   const onSubmit = async (values: RegisterFormValues) => {
-    if (!agreeTerms) {
-      setLocalError('Vui lòng đồng ý với Thỏa thuận Khách hàng và Chính sách Quyền riêng tư.');
-      return;
-    }
-
-    setLocalError(null);
+    setLocalErrorCode(undefined);
     try {
-      const generatedTenantCode = values.tenantName
-        .trim()
-        .toLowerCase()
-        .replace(/[^a-z0-9]/g, '-')
-        .replace(/-+/g, '-');
-
-      await registerUser({
+      const returnedSession = await registerUser({
+        displayName: values.displayName,
         email: values.email,
         password: values.password,
-        displayName: values.displayName,
-        tenantCode: generatedTenantCode || 'vum-enterprise',
+        tenantCode: values.tenantCode,
       });
-
-      toast.success('Đăng ký tài khoản thành công! Đang chuyển hướng...');
-      navigate('/app/overview', { replace: true });
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        if (
-          err.message.includes('Failed to fetch') ||
-          err.message.includes('NetworkError') ||
-          err.message.includes('Network Error')
-        ) {
-          setLocalError(
-            'Không thể kết nối tới máy chủ (Backend). Vui lòng thử lại hoặc đăng nhập bằng tài khoản mẫu.'
-          );
-        } else if (err.message.includes('SELF_REGISTRATION_DISABLED')) {
-          setLocalError('Hệ thống hiện chưa bật tính năng tự đăng ký. Vui lòng liên hệ Quản trị viên.');
-        } else if (err.message.includes('EMAIL_ALREADY_REGISTERED')) {
-          setLocalError('Địa chỉ email này đã được sử dụng. Vui lòng thử email khác hoặc đăng nhập.');
-        } else {
-          setLocalError(err.message);
-        }
-      } else {
-        setLocalError('Đăng ký thất bại. Vui lòng thử lại sau.');
-      }
+      const isPending =
+        returnedSession.membership?.membership_status === 'INVITED' &&
+        returnedSession.membership?.is_tenant_admin !== true;
+      navigate(isPending ? '/app/pending-approval' : '/app/overview', {
+        replace: true,
+      });
+    } catch (error: unknown) {
+      setLocalErrorCode(normalizeAuthError(error));
     }
   };
 
-  const toggleLanguage = (lang: string) => {
-    i18n.changeLanguage(lang);
-    setShowLangMenu(false);
-  };
+  const isInvitedSession =
+    session?.membership?.membership_status === 'INVITED' &&
+    session?.membership?.is_tenant_admin !== true;
 
   return (
-    <div className="min-h-screen bg-[#F5F8FC] flex flex-col justify-between items-center py-8 sm:py-12 px-4 font-sans text-[#07182B] selection:bg-blue-100 selection:text-blue-900">
-      {/* Top Header */}
-      <div className="w-full max-w-md flex justify-between items-center mb-6">
-        <Link
-          to="/"
-          className="flex items-center gap-2.5 group"
-          aria-label="VUM CRM Home"
-        >
-          <div className="w-9 h-9 rounded-lg bg-[#07182B] flex items-center justify-center text-white shadow-sm group-hover:bg-[#085AC0] transition-colors">
-            <span className="font-extrabold text-lg tracking-tight" translate="no">
-              V
-            </span>
-          </div>
-          <div className="flex flex-col">
-            <span className="font-extrabold text-lg tracking-tight text-[#07182B] leading-none" translate="no">
-              VUM CRM
-            </span>
-            <span className="text-[10px] font-semibold text-[#52647A] tracking-wider uppercase mt-0.5">
-              Enterprise Cloud
-            </span>
-          </div>
-        </Link>
+    <AuthShell
+      utilityLink={{
+        to: '/login',
+        labelKey: 'auth.gateway.common.openLogin',
+        direction: 'back',
+      }}
+    >
+      <AuthPageHeader
+        titleKey="auth.gateway.register.title"
+        descriptionKey="auth.gateway.register.description"
+      />
 
-        <Link
-          to="/login"
-          className="text-xs font-semibold text-[#085AC0] hover:underline flex items-center gap-1"
-        >
-          <ArrowLeft className="w-3.5 h-3.5" />
-          <span>{t('landing.nav.login', 'Đăng nhập')}</span>
-        </Link>
-      </div>
+      <AuthFormError
+        errorCode={localErrorCode}
+        fallbackMessageKey="auth.gateway.errors.unknown"
+      />
 
-      {/* Main Register Card */}
-      <Card className="w-full max-w-md bg-white border border-[#DCE5F0] rounded-2xl shadow-xl overflow-hidden">
-        <div className="h-1.5 bg-[#085AC0] w-full" />
-        <CardHeader className="space-y-1.5 pb-4 pt-6 px-6 sm:px-8 text-center">
-          <CardTitle className="text-xl sm:text-2xl font-extrabold text-[#07182B] tracking-tight">
-            Đăng ký tài khoản Doanh nghiệp
-          </CardTitle>
-          <CardDescription className="text-xs sm:text-sm text-[#52647A]">
-            Khởi tạo không gian làm việc và trải nghiệm VUM CRM
-          </CardDescription>
-        </CardHeader>
+      {localErrorCode === 'SELF_REGISTRATION_DISABLED' && (
+        <div className="mb-4 text-left">
+          <Link
+            to="/demo"
+            className="inline-flex items-center gap-1 text-xs font-semibold text-[#085AC0] hover:underline"
+          >
+            <span>{t('auth.gateway.common.openDemo')}</span>
+            <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
+          </Link>
+        </div>
+      )}
 
-        <CardContent className="space-y-4 px-6 sm:px-8 pt-2">
-          {/* Error Alert */}
-          {(error || localError) && (
-            <Alert
-              variant="destructive"
-              className="py-2.5 px-3 rounded-lg border-rose-200 bg-rose-50 text-rose-800 text-xs"
-            >
-              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
-              <AlertDescription className="text-xs leading-relaxed">
-                {localError || error}
-              </AlertDescription>
-            </Alert>
-          )}
+      {localErrorCode === 'EMAIL_ALREADY_REGISTERED' && (
+        <div className="mb-4 text-left">
+          <Link
+            to="/login"
+            className="inline-flex items-center gap-1 text-xs font-semibold text-[#085AC0] hover:underline"
+          >
+            <span>{t('auth.gateway.common.openLogin')}</span>
+            <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
+          </Link>
+        </div>
+      )}
 
-          {/* Form */}
-          <form className="space-y-3.5" onSubmit={handleSubmit(onSubmit)} noValidate>
-            {/* Full Name */}
-            <div className="space-y-1.5">
-              <Label htmlFor="displayName" className="text-xs font-bold tracking-wider text-[#07182B] uppercase">
-                HỌ VÀ TÊN <span className="text-rose-500">*</span>
-              </Label>
-              <div className="relative">
-                <Input
-                  id="displayName"
-                  type="text"
-                  autoComplete="name"
-                  placeholder="Nguyễn Văn A"
-                  className={`h-10 text-sm bg-white border-[#DCE5F0] rounded-lg text-[#07182B] focus:border-[#085AC0] placeholder:text-slate-400 pl-9 ${
-                    errors.displayName ? 'border-rose-400 focus-visible:ring-rose-500' : ''
-                  }`}
-                  {...register('displayName')}
-                />
-                <User className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-              </div>
-              {errors.displayName && (
-                <p className="text-xs text-rose-600 mt-0.5">{errors.displayName.message}</p>
-              )}
-            </div>
+      {localErrorCode === 'MEMBERSHIP_REQUEST_ALREADY_PENDING' && isInvitedSession && (
+        <div className="mb-4 text-left">
+          <Link
+            to="/app/pending-approval"
+            className="inline-flex items-center gap-1 text-xs font-semibold text-[#085AC0] hover:underline"
+          >
+            <span>{t('auth.gateway.pending.title')}</span>
+            <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
+          </Link>
+        </div>
+      )}
 
-            {/* Email */}
-            <div className="space-y-1.5">
-              <Label htmlFor="email" className="text-xs font-bold tracking-wider text-[#07182B] uppercase">
-                EMAIL CÔNG VIỆC <span className="text-rose-500">*</span>
-              </Label>
-              <div className="relative">
-                <Input
-                  id="email"
-                  type="email"
-                  autoComplete="email"
-                  placeholder="name@company.com"
-                  className={`h-10 text-sm bg-white border-[#DCE5F0] rounded-lg text-[#07182B] focus:border-[#085AC0] placeholder:text-slate-400 pl-9 ${
-                    errors.email ? 'border-rose-400 focus-visible:ring-rose-500' : ''
-                  }`}
-                  {...register('email')}
-                />
-                <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-              </div>
-              {errors.email && (
-                <p className="text-xs text-rose-600 mt-0.5">{errors.email.message}</p>
-              )}
-            </div>
-
-            {/* Company / Organization Name */}
-            <div className="space-y-1.5">
-              <Label htmlFor="tenantName" className="text-xs font-bold tracking-wider text-[#07182B] uppercase">
-                TÊN DOANH NGHIỆP / TỔ CHỨC <span className="text-rose-500">*</span>
-              </Label>
-              <div className="relative">
-                <Input
-                  id="tenantName"
-                  type="text"
-                  autoComplete="organization"
-                  placeholder="Tập đoàn An Phát"
-                  className={`h-10 text-sm bg-white border-[#DCE5F0] rounded-lg text-[#07182B] focus:border-[#085AC0] placeholder:text-slate-400 pl-9 ${
-                    errors.tenantName ? 'border-rose-400 focus-visible:ring-rose-500' : ''
-                  }`}
-                  {...register('tenantName')}
-                />
-                <Building2 className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-              </div>
-              {errors.tenantName && (
-                <p className="text-xs text-rose-600 mt-0.5">{errors.tenantName.message}</p>
-              )}
-            </div>
-
-            {/* Password */}
-            <div className="space-y-1.5">
-              <Label htmlFor="password" className="text-xs font-bold tracking-wider text-[#07182B] uppercase">
-                MẬT KHẨU <span className="text-rose-500">*</span>
-              </Label>
-              <div className="relative">
-                <Input
-                  id="password"
-                  type={showPassword ? 'text' : 'password'}
-                  autoComplete="new-password"
-                  placeholder="Tối thiểu 8 ký tự"
-                  className={`h-10 pr-10 pl-9 text-sm bg-white border-[#DCE5F0] rounded-lg text-[#07182B] focus:border-[#085AC0] placeholder:text-slate-400 ${
-                    errors.password ? 'border-rose-400 focus-visible:ring-rose-500' : ''
-                  }`}
-                  {...register('password')}
-                />
-                <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-[#07182B] focus:outline-none"
-                  aria-label={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-              {errors.password && (
-                <p className="text-xs text-rose-600 mt-0.5">{errors.password.message}</p>
-              )}
-            </div>
-
-            {/* Terms Checkbox */}
-            <div className="flex items-start space-x-2 pt-2">
-              <Checkbox
-                id="agreeTerms"
-                checked={agreeTerms}
-                onCheckedChange={(checked) => setAgreeTerms(Boolean(checked))}
-                className="h-4 w-4 rounded border-[#DCE5F0] data-[state=checked]:bg-[#085AC0] data-[state=checked]:border-[#085AC0] mt-0.5"
-              />
-              <label
-                htmlFor="agreeTerms"
-                className="text-xs text-[#52647A] leading-relaxed cursor-pointer select-none"
-              >
-                Tôi đồng ý với Thỏa thuận Khách hàng và Chính sách Quyền riêng tư của VUM CRM.
-              </label>
-            </div>
-
-            {/* Submit Button */}
-            <Button
-              type="submit"
-              className="w-full h-11 bg-[#085AC0] hover:bg-[#06499D] text-white font-semibold text-sm rounded-lg shadow-sm transition-colors mt-2"
-              disabled={isLoading}
-            >
-              {isLoading ? 'Đang tạo tài khoản...' : 'Tạo tài khoản Doanh nghiệp'}
-            </Button>
-          </form>
-        </CardContent>
-
-        <CardFooter className="flex flex-col gap-2 pt-2 pb-6 px-6 sm:px-8 border-t border-slate-100 text-center">
-          <div className="text-xs text-[#52647A]">
-            Đã có tài khoản?{' '}
-            <Link to="/login" className="font-semibold text-[#085AC0] hover:underline">
-              Đăng nhập ngay
-            </Link>
-          </div>
-        </CardFooter>
-      </Card>
-
-      {/* Footer */}
-      <footer className="w-full max-w-md text-center space-y-2 text-xs text-[#52647A] pt-6">
-        <div className="flex items-center justify-center gap-3">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 text-left" noValidate>
+        {/* Full Name */}
+        <div className="space-y-1.5">
+          <label htmlFor="register-name" className="text-xs font-semibold text-[#07182B]">
+            {t('auth.gateway.register.fullNameLabel')}
+          </label>
           <div className="relative">
-            <button
-              onClick={() => setShowLangMenu(!showLangMenu)}
-              type="button"
-              className="flex items-center gap-1.5 text-xs text-[#52647A] hover:text-[#07182B] font-medium py-1 px-2 rounded-md hover:bg-slate-200/50 transition-colors"
-            >
-              <Globe className="w-3.5 h-3.5" />
-              <span>{i18n.language && i18n.language.startsWith('en') ? 'English' : 'Tiếng Việt'}</span>
-              <ChevronDown className="w-3 h-3 opacity-60" />
-            </button>
-
-            {showLangMenu && (
-              <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-1 w-32 bg-white border border-[#DCE5F0] rounded-lg shadow-lg py-1 z-50 text-xs text-left">
-                <button
-                  type="button"
-                  onClick={() => toggleLanguage('vi')}
-                  className="w-full text-left px-3 py-1.5 hover:bg-[#F5F8FC] font-medium text-[#07182B]"
-                >
-                  Tiếng Việt
-                </button>
-                <button
-                  type="button"
-                  onClick={() => toggleLanguage('en')}
-                  className="w-full text-left px-3 py-1.5 hover:bg-[#F5F8FC] font-medium text-[#07182B]"
-                >
-                  English
-                </button>
-              </div>
-            )}
+            <input
+              id="register-name"
+              type="text"
+              autoComplete="name"
+              placeholder={t('auth.gateway.register.fullNamePlaceholder')}
+              aria-invalid={Boolean(errors.displayName)}
+              aria-describedby={errors.displayName ? 'register-name-error' : undefined}
+              className={`auth-control auth-interactive flex w-full border bg-white px-3.5 pl-10 text-sm text-[#07182B] placeholder:text-slate-400 focus-visible:border-[#085AC0] ${
+                errors.displayName ? 'border-rose-400 focus-visible:ring-rose-500' : 'border-[#DCE5F0]'
+              }`}
+              {...register('displayName')}
+            />
+            <User
+              className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"
+              aria-hidden="true"
+            />
           </div>
+          {errors.displayName && (
+            <p id="register-name-error" className="text-xs text-rose-600 mt-1">
+              {errors.displayName.message}
+            </p>
+          )}
+        </div>
 
-          <span>•</span>
+        {/* Work Email */}
+        <div className="space-y-1.5">
+          <label htmlFor="register-email" className="text-xs font-semibold text-[#07182B]">
+            {t('auth.gateway.register.emailLabel')}
+          </label>
+          <div className="relative">
+            <input
+              id="register-email"
+              type="email"
+              inputMode="email"
+              autoComplete="email"
+              spellCheck={false}
+              placeholder={t('auth.gateway.register.emailPlaceholder')}
+              aria-invalid={Boolean(errors.email)}
+              aria-describedby={errors.email ? 'register-email-error' : undefined}
+              className={`auth-control auth-interactive flex w-full border bg-white px-3.5 pl-10 text-sm text-[#07182B] placeholder:text-slate-400 focus-visible:border-[#085AC0] ${
+                errors.email ? 'border-rose-400 focus-visible:ring-rose-500' : 'border-[#DCE5F0]'
+              }`}
+              {...register('email')}
+            />
+            <Mail
+              className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"
+              aria-hidden="true"
+            />
+          </div>
+          {errors.email && (
+            <p id="register-email-error" className="text-xs text-rose-600 mt-1">
+              {errors.email.message}
+            </p>
+          )}
+        </div>
 
-          <Link to="/demo" className="text-xs text-[#52647A] hover:text-[#07182B] hover:underline">
-            Tư vấn &amp; Demo
+        {/* Tenant Code */}
+        <div className="space-y-1.5">
+          <label htmlFor="register-tenant" className="text-xs font-semibold text-[#07182B]">
+            {t('auth.gateway.register.tenantCodeLabel')}
+          </label>
+          <div className="relative">
+            <input
+              id="register-tenant"
+              type="text"
+              autoComplete="off"
+              spellCheck={false}
+              placeholder={t('auth.gateway.register.tenantCodePlaceholder')}
+              aria-invalid={Boolean(errors.tenantCode)}
+              aria-describedby={
+                errors.tenantCode
+                  ? 'register-tenant-error'
+                  : 'register-tenant-help'
+              }
+              className={`auth-control auth-interactive flex w-full border bg-white px-3.5 pl-10 text-sm text-[#07182B] placeholder:text-slate-400 focus-visible:border-[#085AC0] ${
+                errors.tenantCode ? 'border-rose-400 focus-visible:ring-rose-500' : 'border-[#DCE5F0]'
+              }`}
+              {...register('tenantCode')}
+            />
+            <Building2
+              className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"
+              aria-hidden="true"
+            />
+          </div>
+          {errors.tenantCode ? (
+            <p id="register-tenant-error" className="text-xs text-rose-600 mt-1">
+              {errors.tenantCode.message}
+            </p>
+          ) : (
+            <p id="register-tenant-help" className="text-xs text-slate-500 mt-1">
+              {t('auth.gateway.register.tenantCodeHelper')}
+            </p>
+          )}
+        </div>
+
+        {/* Password Field */}
+        <PasswordField
+          id="register-password"
+          label={t('auth.gateway.register.passwordLabel')}
+          placeholder={t('auth.gateway.register.passwordPlaceholder')}
+          autoComplete="new-password"
+          error={errors.password?.message}
+          helperText={t('auth.gateway.register.passwordHelper')}
+          registration={register('password')}
+        />
+
+        {/* Legal Consent Checkbox */}
+        <div className="pt-2">
+          <div className="flex items-start gap-2.5">
+            <Controller
+              control={control}
+              name="legalConsent"
+              render={({ field }) => (
+                <Checkbox
+                  id="legalConsent"
+                  checked={field.value}
+                  onCheckedChange={(checked) => field.onChange(checked === true)}
+                  aria-invalid={Boolean(errors.legalConsent)}
+                  aria-describedby={errors.legalConsent ? 'legalConsent-error' : undefined}
+                  className="mt-0.5 border-[#DCE5F0] data-[state=checked]:bg-[#085AC0] data-[state=checked]:border-[#085AC0]"
+                />
+              )}
+            />
+            <label
+              htmlFor="legalConsent"
+              className="text-xs text-slate-600 leading-relaxed cursor-pointer select-none font-normal"
+            >
+              {t('auth.gateway.register.consentPrefix')}{' '}
+              {env.termsUrl ? (
+                <a
+                  href={env.termsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[#085AC0] font-semibold underline hover:text-[#06499D]"
+                >
+                  {t('auth.gateway.register.terms')}
+                </a>
+              ) : (
+                <span className="font-semibold text-slate-700">{t('auth.gateway.register.terms')}</span>
+              )}{' '}
+              {t('auth.gateway.register.connector')}{' '}
+              {env.privacyPolicyUrl ? (
+                <a
+                  href={env.privacyPolicyUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[#085AC0] font-semibold underline hover:text-[#06499D]"
+                >
+                  {t('auth.gateway.register.privacy')}
+                </a>
+              ) : (
+                <span className="font-semibold text-slate-700">{t('auth.gateway.register.privacy')}</span>
+              )}{' '}
+              {t('auth.gateway.register.consentSuffix')}
+            </label>
+          </div>
+          {errors.legalConsent && (
+            <p id="legalConsent-error" className="text-xs text-rose-600 mt-1">
+              {errors.legalConsent.message}
+            </p>
+          )}
+        </div>
+
+        {/* Submit Button */}
+        <div className="pt-2">
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="auth-control auth-interactive w-full bg-[#085AC0] hover:bg-[#06499D] text-white font-semibold text-sm shadow-sm flex items-center justify-center gap-2 disabled:opacity-60"
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
+                <span>{t('auth.gateway.register.submitting')}</span>
+              </>
+            ) : (
+              <span>{t('auth.gateway.register.submit')}</span>
+            )}
+          </button>
+        </div>
+
+        {/* Already Have Account */}
+        <div className="pt-2 text-center text-xs text-slate-500">
+          <span>{t('auth.gateway.register.hasAccount')} </span>
+          <Link
+            to="/login"
+            className="font-semibold text-[#085AC0] hover:underline"
+          >
+            {t('auth.gateway.register.loginLink')}
           </Link>
         </div>
 
-        <div className="text-[11px] text-slate-400">
-          © {new Date().getFullYear()} VUM CRM. Nền tảng quản trị khách hàng và doanh số.
+        {/* New Organization Help */}
+        <div className="pt-3 border-t border-[#DCE5F0] text-center text-xs text-slate-500">
+          <span>{t('auth.gateway.register.organizationHelp')} </span>
+          <Link
+            to="/demo"
+            className="font-semibold text-[#085AC0] hover:underline"
+          >
+            {t('auth.gateway.register.demoLink')}
+          </Link>
         </div>
-      </footer>
-    </div>
+      </form>
+    </AuthShell>
   );
 };
 

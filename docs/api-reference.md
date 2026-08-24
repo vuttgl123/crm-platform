@@ -8608,6 +8608,153 @@ X-Tenant-ID: 22222222-2222-2222-2222-222222222222
 
 ---
 
+## Sales Quotes
+
+### Create Draft Quote
+Creates a new initial draft quote with assigned customer, price book, and ownership.
+
+```http
+POST /api/quotes
+Authorization: Bearer <access-token>
+X-Tenant-ID: 22222222-2222-2222-2222-222222222222
+Content-Type: application/json
+
+{
+  "name": "Acme Enterprise Software Proposal",
+  "accountId": "33333333-3333-3333-3333-333333333333",
+  "contactId": "44444444-4444-4444-4444-444444444444",
+  "opportunityId": "55555555-5555-5555-5555-555555555555",
+  "priceBookId": "66666666-6666-6666-6666-666666666666",
+  "owner": {
+    "type": "USER",
+    "id": "11111111-1111-1111-1111-111111111111"
+  },
+  "issueDate": "2026-08-24",
+  "validUntil": "2026-09-24"
+}
+```
+
+#### Response (201 Created):
+```json
+{
+  "id": "77777777-7777-7777-7777-777777777777",
+  "quoteNumber": "QUO-2026-0001",
+  "revisionNumber": 1,
+  "previousQuoteId": null,
+  "name": "Acme Enterprise Software Proposal",
+  "latestRevision": true,
+  "legacyAmountOnly": false,
+  "effectiveStatus": "DRAFT",
+  "storedStatus": "DRAFT",
+  "pricingMode": "LINE_ITEM",
+  "account": { "id": "33333333-3333-3333-3333-333333333333", "label": "Acme Corp", "routeAvailable": true },
+  "amounts": {
+    "currencyCode": "USD",
+    "subtotal": "0.000000",
+    "discountTotal": "0.000000",
+    "taxTotal": "0.000000",
+    "shippingTotal": "0.000000",
+    "grandTotal": "0.000000"
+  },
+  "lines": [],
+  "issueDate": "2026-08-24",
+  "validUntil": "2026-09-24",
+  "availableActions": ["EDIT_DRAFT", "SUBMIT", "DELETE_DRAFT", "PRINT"],
+  "version": 1
+}
+```
+
+### Save Draft Quote
+Saves editable metadata, frozen customer billing snapshot, shipping, and line items. Requires `If-Match: "{version}"`.
+
+```http
+PUT /api/quotes/77777777-7777-7777-7777-777777777777
+Authorization: Bearer <access-token>
+X-Tenant-ID: 22222222-2222-2222-2222-222222222222
+If-Match: "1"
+Content-Type: application/json
+
+{
+  "name": "Acme Enterprise Software Proposal",
+  "accountId": "33333333-3333-3333-3333-333333333333",
+  "contactId": "44444444-4444-4444-4444-444444444444",
+  "opportunityId": "55555555-5555-5555-5555-555555555555",
+  "priceBookId": "66666666-6666-6666-6666-666666666666",
+  "owner": { "type": "USER", "id": "11111111-1111-1111-1111-111111111111" },
+  "issueDate": "2026-08-24",
+  "validUntil": "2026-09-24",
+  "customerSnapshot": {
+    "legalName": "Acme Corporation Inc.",
+    "addressLine1": "100 Market St",
+    "locality": "San Francisco",
+    "region": "CA",
+    "postalCode": "94105",
+    "countryCode": "US",
+    "contactName": "Jane Doe",
+    "contactEmail": "jane@acme.com"
+  },
+  "paymentTerms": "Net 30 Days",
+  "deliveryTerms": "Digital SaaS",
+  "customerReference": "PO-REQ-9921",
+  "internalNotes": "Customer requested standard volume tiering.",
+  "shippingTotal": 0.00,
+  "lines": [
+    {
+      "position": 1,
+      "productId": "88888888-8888-8888-8888-888888888888",
+      "priceBookItemId": "99999999-9999-9999-9999-999999999999",
+      "quantity": 10,
+      "salesUnitPrice": 100.00,
+      "discountPercent": 10.0,
+      "taxPercent": 8.0,
+      "description": "Annual Platform License"
+    }
+  ]
+}
+```
+
+### Search Quotes
+Searches and filters quotes with server pagination, validity calculation, and sorting.
+
+```http
+GET /api/quotes?q=Acme&status=SENT&status=APPROVED&validity=ACTIVE&page=0&size=20
+Authorization: Bearer <access-token>
+X-Tenant-ID: 22222222-2222-2222-2222-222222222222
+```
+
+### Quote Commercial Pulse
+Retrieves high-level pipeline KPIs grouped by currency for active deal monitoring.
+
+```http
+GET /api/quotes/summary
+Authorization: Bearer <access-token>
+X-Tenant-ID: 22222222-2222-2222-2222-222222222222
+```
+
+### Quote Document Projection (Print/Save PDF)
+Returns canonical customer-facing document projection with customer snapshot and line items.
+
+```http
+GET /api/quotes/77777777-7777-7777-7777-777777777777/document
+Authorization: Bearer <access-token>
+X-Tenant-ID: 22222222-2222-2222-2222-222222222222
+```
+
+### Quote Lifecycle Transition Endpoints
+All lifecycle mutations require optimistic concurrency header `If-Match: "{version}"`:
+- `POST /api/quotes/{id}/submit` — Submits Draft for internal approval.
+- `POST /api/quotes/{id}/approve` — Approves pending quote (`sales_quote.approve`).
+- `POST /api/quotes/{id}/request-changes` — Returns quote to Draft with mandatory reason body.
+- `POST /api/quotes/{id}/mark-sent` — Marks approved quote as sent to customer.
+- `POST /api/quotes/{id}/accept` — Confirms customer acceptance with optional `customerReference` body.
+- `POST /api/quotes/{id}/reject` — Records customer decline with mandatory reason body.
+- `POST /api/quotes/{id}/cancel` — Cancels proposal with mandatory reason body.
+- `POST /api/quotes/{id}/revise` — Supersedes current quote and creates next revision Draft.
+- `DELETE /api/quotes/{id}` — Soft-deletes unsubmitted initial draft.
+- `POST /api/quotes/{id}/convert-to-order` — Idempotently converts accepted quote into Sales Order.
+
+---
+
 ## Maintenance Rules
 
 Every API addition, modification, or removal must update this file in the same

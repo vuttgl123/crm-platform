@@ -419,3 +419,65 @@ export const renderForecastCategoryBadge = (category?: string) => {
   );
 };
 
+export const QuoteStatusConfigMap: Record<string, StatusBadgeConfig> = {
+  DRAFT: {
+    label: 'Draft',
+    className: 'bg-slate-100 text-slate-700 border-slate-200 font-semibold rounded-[3px] text-[10px] uppercase tracking-wider px-1.5 py-0.5',
+    priorityLevel: 1,
+  },
+  PENDING_APPROVAL: {
+    label: 'Pending Approval',
+    className: 'bg-amber-50 text-amber-700 border-amber-200 font-bold rounded-[3px] text-[10px] uppercase tracking-wider px-1.5 py-0.5',
+    priorityLevel: 2,
+  },
+  APPROVED: {
+    label: 'Approved',
+    className: 'bg-blue-50 text-blue-700 border-blue-200 font-bold rounded-[3px] text-[10px] uppercase tracking-wider px-1.5 py-0.5',
+    priorityLevel: 3,
+  },
+  SENT: {
+    label: 'Sent',
+    className: 'bg-purple-50 text-purple-700 border-purple-200 font-bold rounded-[3px] text-[10px] uppercase tracking-wider px-1.5 py-0.5',
+    priorityLevel: 4,
+  },
+  ACCEPTED: {
+    label: 'Accepted',
+    className: 'bg-emerald-50 text-emerald-700 border-emerald-200 font-bold rounded-[3px] text-[10px] uppercase tracking-wider px-1.5 py-0.5',
+    priorityLevel: 5,
+  },
+  REJECTED: {
+    label: 'Rejected',
+    className: 'bg-rose-50 text-rose-700 border-rose-200 font-semibold rounded-[3px] text-[10px] uppercase tracking-wider px-1.5 py-0.5',
+    priorityLevel: 6,
+  },
+  EXPIRED: {
+    label: 'Expired',
+    className: 'bg-amber-50 text-amber-700 border-amber-200 font-semibold rounded-[3px] text-[10px] uppercase tracking-wider px-1.5 py-0.5',
+    priorityLevel: 7,
+  },
+  CANCELLED: {
+    label: 'Cancelled',
+    className: 'bg-slate-100 text-slate-600 border-slate-200 font-medium rounded-[3px] text-[10px] uppercase tracking-wider px-1.5 py-0.5',
+    priorityLevel: 8,
+  },
+  SUPERSEDED: {
+    label: 'Superseded',
+    className: 'bg-slate-100 text-slate-500 border-slate-200 font-medium rounded-[3px] text-[10px] uppercase tracking-wider px-1.5 py-0.5',
+    priorityLevel: 9,
+  },
+};
+
+/** Helper function to render Quote status badge */
+export const renderQuoteStatusBadge = (status?: string, effectiveStatus?: string) => {
+  const displayStatus = effectiveStatus || status;
+  if (!displayStatus) return null;
+  const config = QuoteStatusConfigMap[displayStatus];
+  if (!config) return <Badge variant="outline" className="rounded-[3px] text-[10px] uppercase font-bold">{displayStatus}</Badge>;
+  return (
+    <Badge variant="outline" className={config.className}>
+      {config.label}
+    </Badge>
+  );
+};
+
+

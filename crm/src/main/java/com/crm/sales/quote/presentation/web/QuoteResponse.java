@@ -3,8 +3,11 @@ package com.crm.sales.quote.presentation.web;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
+import com.crm.sales.quote.domain.QuoteAction;
+import com.crm.sales.quote.domain.QuotePricingMode;
 import com.crm.sales.quote.domain.QuoteStatus;
 
 public record QuoteResponse(
@@ -12,13 +15,20 @@ public record QuoteResponse(
 		String quoteNumber,
 		int revisionNumber,
 		UUID previousQuoteId,
-		UUID accountId,
-		UUID contactId,
-		UUID opportunityId,
-		UUID priceBookId,
-		UUID ownerUserId,
-		QuoteStatus status,
-		Amounts amounts,
+		String name,
+		boolean latestRevision,
+		boolean legacyAmountOnly,
+		QuoteStatus effectiveStatus,
+		QuoteStatus storedStatus,
+		QuotePricingMode pricingMode,
+		QuoteReferenceResponse account,
+		QuoteReferenceResponse contact,
+		QuoteReferenceResponse opportunity,
+		QuoteReferenceResponse priceBook,
+		QuoteOwnerReferenceResponse owner,
+		QuoteAmountsResponse amounts,
+		QuoteCustomerSnapshotResponse customerSnapshot,
+		List<QuoteLineResponse> lines,
 		BigDecimal exchangeRateToTenantCurrency,
 		LocalDate issueDate,
 		LocalDate validUntil,
@@ -28,21 +38,16 @@ public record QuoteResponse(
 		String notes,
 		Instant approvedAt,
 		UUID approvedBy,
+		Instant sentAt,
 		Instant acceptedAt,
 		Instant rejectedAt,
+		Instant cancelledAt,
+		UUID relatedOrderId,
+		List<QuoteAction> availableActions,
 		Instant createdAt,
 		UUID createdBy,
 		Instant updatedAt,
 		UUID updatedBy,
-		long version) {
-
-	public record Amounts(
-			String currencyCode,
-			BigDecimal subtotal,
-			BigDecimal discountTotal,
-			BigDecimal taxTotal,
-			BigDecimal shippingTotal,
-			BigDecimal grandTotal) {
-	}
-
+		long version
+) {
 }

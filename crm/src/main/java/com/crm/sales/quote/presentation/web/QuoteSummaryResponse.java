@@ -1,34 +1,30 @@
 package com.crm.sales.quote.presentation.web;
 
-import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
+import com.crm.sales.quote.domain.QuoteAction;
 import com.crm.sales.quote.domain.QuoteStatus;
 
 public record QuoteSummaryResponse(
 		UUID id,
 		String quoteNumber,
 		int revisionNumber,
-		UUID accountId,
-		UUID contactId,
-		UUID opportunityId,
-		UUID ownerUserId,
-		QuoteStatus status,
-		Amounts amounts,
+		String name,
+		boolean latestRevision,
+		boolean legacyAmountOnly,
+		QuoteStatus effectiveStatus,
+		QuoteReferenceResponse account,
+		QuoteReferenceResponse opportunity,
+		QuoteOwnerReferenceResponse owner,
+		QuoteAmountsResponse amounts,
+		int lineCount,
 		LocalDate issueDate,
 		LocalDate validUntil,
 		Instant updatedAt,
-		long version) {
-
-	public record Amounts(
-			String currencyCode,
-			BigDecimal subtotal,
-			BigDecimal discountTotal,
-			BigDecimal taxTotal,
-			BigDecimal shippingTotal,
-			BigDecimal grandTotal) {
-	}
-
+		long version,
+		List<QuoteAction> availableActions
+) {
 }

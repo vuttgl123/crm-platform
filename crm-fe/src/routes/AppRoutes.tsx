@@ -29,6 +29,9 @@ import { ActivityDetailPage } from '@/features/crm/activities/pages/ActivityDeta
 
 // Sales & Catalog Screens
 import { QuotesPage } from '@/features/sales/quotes/QuotesPage';
+import { QuoteDetailPage } from '@/features/sales/quotes/pages/QuoteDetailPage';
+import { QuoteEditorPage } from '@/features/sales/quotes/pages/QuoteEditorPage';
+import { QuotePrintPage } from '@/features/sales/quotes/pages/QuotePrintPage';
 import { OrdersPage } from '@/features/sales/orders/OrdersPage';
 import { ContractsPage } from '@/features/sales/contracts/ContractsPage';
 import { SalesForecastPage } from '@/features/sales/forecast/SalesForecastPage';
@@ -103,6 +106,16 @@ export const AppRoutes: React.FC = () => {
         }
       />
 
+      {/* Standalone Canonical Quote Print View */}
+      <Route
+        path="/app/sales/quotes/:quoteId/print"
+        element={
+          <ProtectedRoute>
+            <QuotePrintPage />
+          </ProtectedRoute>
+        }
+      />
+
       {/* Full-screen Standalone Tenant Setup Onboarding */}
       <Route
         path="/app/setup-tenant"
@@ -144,6 +157,9 @@ export const AppRoutes: React.FC = () => {
         {/* 2. Sales & Orders Module */}
         <Route path="sales/forecast" element={<SalesForecastPage />} />
         <Route path="sales/quotes" element={<QuotesPage />} />
+        <Route path="sales/quotes/new" element={<QuoteEditorPage />} />
+        <Route path="sales/quotes/:quoteId" element={<QuoteDetailPage />} />
+        <Route path="sales/quotes/:quoteId/edit" element={<QuoteEditorPage />} />
         <Route path="sales/orders" element={<OrdersPage />} />
         <Route path="sales/contracts" element={<ContractsPage />} />
 

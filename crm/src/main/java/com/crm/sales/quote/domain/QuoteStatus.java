@@ -8,5 +8,6 @@ public enum QuoteStatus {
 	ACCEPTED,
 	REJECTED,
 	EXPIRED,
-	CANCELLED
+	CANCELLED,
+	SUPERSEDED
 }

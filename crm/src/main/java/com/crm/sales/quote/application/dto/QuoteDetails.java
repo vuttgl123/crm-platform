@@ -3,10 +3,14 @@ package com.crm.sales.quote.application.dto;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
+import com.crm.sales.quote.domain.QuoteAction;
 import com.crm.sales.quote.domain.QuoteAmounts;
+import com.crm.sales.quote.domain.QuoteCustomerSnapshot;
 import com.crm.sales.quote.domain.QuoteId;
+import com.crm.sales.quote.domain.QuotePricingMode;
 import com.crm.sales.quote.domain.QuoteStatus;
 import com.crm.sharedkernel.domain.ActorId;
 import com.crm.sharedkernel.domain.TenantId;
@@ -17,13 +21,20 @@ public record QuoteDetails(
 		String quoteNumber,
 		int revisionNumber,
 		UUID previousQuoteId,
-		UUID accountId,
-		UUID contactId,
-		UUID opportunityId,
-		UUID priceBookId,
-		UUID ownerUserId,
-		QuoteStatus status,
+		String name,
+		boolean latestRevision,
+		boolean legacyAmountOnly,
+		QuoteStatus effectiveStatus,
+		QuoteStatus storedStatus,
+		QuotePricingMode pricingMode,
+		QuoteReferenceDto account,
+		QuoteReferenceDto contact,
+		QuoteReferenceDto opportunity,
+		QuoteReferenceDto priceBook,
+		QuoteOwnerReferenceDto owner,
 		QuoteAmounts amounts,
+		QuoteCustomerSnapshot customerSnapshot,
+		List<QuoteLineDetails> lines,
 		BigDecimal exchangeRateToTenantCurrency,
 		LocalDate issueDate,
 		LocalDate validUntil,
@@ -33,11 +44,16 @@ public record QuoteDetails(
 		String notes,
 		Instant approvedAt,
 		ActorId approvedBy,
+		Instant sentAt,
 		Instant acceptedAt,
 		Instant rejectedAt,
+		Instant cancelledAt,
+		UUID relatedOrderId,
+		List<QuoteAction> availableActions,
 		Instant createdAt,
 		ActorId createdBy,
 		Instant updatedAt,
 		ActorId updatedBy,
-		long version) {
+		long version
+) {
 }

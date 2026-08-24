@@ -1,4 +1,6 @@
 import { apiFetch } from './apiClient';
+import type { PageResult } from './accountApi';
+export type { PageResult };
 
 export type QuoteStatus =
   | 'DRAFT'
@@ -8,67 +10,118 @@ export type QuoteStatus =
   | 'ACCEPTED'
   | 'REJECTED'
   | 'EXPIRED'
-  | 'CANCELLED';
+  | 'CANCELLED'
+  | 'SUPERSEDED';
 
-export interface QuoteAmounts {
-  currencyCode: string;
-  subtotal: number;
-  discountTotal: number;
-  taxTotal: number;
-  shippingTotal: number;
-  grandTotal?: number;
-}
+export type QuoteAction =
+  | 'EDIT_DRAFT'
+  | 'DELETE_DRAFT'
+  | 'SUBMIT'
+  | 'APPROVE'
+  | 'REQUEST_CHANGES'
+  | 'MARK_SENT'
+  | 'ACCEPT'
+  | 'REJECT'
+  | 'CANCEL'
+  | 'REVISE'
+  | 'PRINT'
+  | 'CREATE_ORDER';
 
-export interface QuoteItem {
+export type QuotePricingMode = 'LINE_ITEM' | 'LEGACY_AMOUNT_ONLY';
+
+export interface QuoteReference {
   id: string;
-  quoteNumber: string;
-  revisionNumber?: number;
-  title?: string;
-  accountId: string;
-  accountName?: string;
-  contactName?: string;
-  totalAmount: number;
-  discountAmount?: number;
-  taxAmount?: number;
-  grandTotal?: number;
-  status: QuoteStatus;
-  validUntil?: string | null;
-  assignedTo?: string;
-  notes?: string | null;
-  itemsCount?: number;
-  createdAt?: string;
-  updatedAt?: string;
-  version: number;
+  label: string;
+  routeAvailable: boolean;
 }
 
-export interface QuoteSummaryResponse {
+export interface QuoteOwnerReference {
+  type: 'USER' | 'TEAM';
+  id: string;
+  label: string;
+}
+
+export interface QuoteAmountsResponse {
+  currencyCode: string;
+  subtotal: string | number;
+  discountTotal: string | number;
+  taxTotal: string | number;
+  shippingTotal: string | number;
+  grandTotal: string | number;
+}
+
+export interface QuoteCustomerSnapshot {
+  legalName: string;
+  addressLine1?: string | null;
+  addressLine2?: string | null;
+  locality?: string | null;
+  region?: string | null;
+  postalCode?: string | null;
+  countryCode?: string | null;
+  contactName?: string | null;
+  contactEmail?: string | null;
+  contactPhone?: string | null;
+}
+
+export interface QuoteLineResponse {
+  id: string;
+  position: number;
+  productId: string;
+  priceBookItemId: string;
+  sku: string;
+  productName: string;
+  unit?: string | null;
+  description?: string | null;
+  quantity: string | number;
+  listUnitPrice: string | number;
+  salesUnitPrice: string | number;
+  discountPercent: string | number;
+  taxPercent: string | number;
+  lineSubtotal: string | number;
+  lineDiscount: string | number;
+  lineTax: string | number;
+  lineTotal: string | number;
+}
+
+export interface QuoteSummaryItem {
   id: string;
   quoteNumber: string;
   revisionNumber: number;
-  accountId: string;
-  contactId?: string | null;
-  opportunityId?: string | null;
-  ownerUserId?: string | null;
-  status: QuoteStatus;
-  amounts: QuoteAmounts;
-  issueDate?: string | null;
+  name: string;
+  latestRevision: boolean;
+  legacyAmountOnly: boolean;
+  effectiveStatus: QuoteStatus;
+  account: QuoteReference;
+  opportunity?: QuoteReference | null;
+  owner?: QuoteOwnerReference | null;
+  amounts: QuoteAmountsResponse;
+  lineCount: number;
+  issueDate: string;
   validUntil?: string | null;
   updatedAt: string;
   version: number;
+  availableActions: QuoteAction[];
 }
 
-export interface QuoteResponse {
+export interface QuoteDetailResponse {
   id: string;
   quoteNumber: string;
   revisionNumber: number;
   previousQuoteId?: string | null;
-  accountId: string;
-  contactId?: string | null;
-  opportunityId?: string | null;
-  priceBookId?: string | null;
-  ownerUserId?: string | null;
-  status: QuoteStatus;
-  amounts: QuoteAmounts;
+  name: string;
+  latestRevision: boolean;
+  legacyAmountOnly: boolean;
+  effectiveStatus: QuoteStatus;
+  storedStatus: QuoteStatus;
+  pricingMode: QuotePricingMode;
+  account: QuoteReference;
+  contact?: QuoteReference | null;
+  opportunity?: QuoteReference | null;
+  priceBook?: QuoteReference | null;
+  owner?: QuoteOwnerReference | null;
+  amounts: QuoteAmountsResponse;
+  customerSnapshot: QuoteCustomerSnapshot;
+  lines: QuoteLineResponse[];
   exchangeRateToTenantCurrency?: number | null;
   issueDate: string;
   validUntil?: string | null;
@@ -78,8 +131,12 @@ export interface QuoteResponse {
   notes?: string | null;
   approvedAt?: string | null;
   approvedBy?: string | null;
+  sentAt?: string | null;
   acceptedAt?: string | null;
   rejectedAt?: string | null;
+  cancelledAt?: string | null;
+  relatedOrderId?: string | null;
+  availableActions: QuoteAction[];
   createdAt: string;
   createdBy?: string | null;
   updatedAt: string;
@@ -87,179 +144,284 @@ export interface QuoteResponse {
   version: number;
 }
 
-export interface CreateQuoteRequest {
-  quoteNumber?: string;
-  accountId?: string;
-  accountName?: string;
-  contactName?: string;
-  title?: string;
-  totalAmount?: number;
-  discountAmount?: number;
-  taxAmount?: number;
-  grandTotal?: number;
-  status?: QuoteStatus;
+export interface QuoteDocumentResponse {
+  quoteId: string;
+  quoteNumber: string;
+  revisionNumber: number;
+  name: string;
+  effectiveStatus: QuoteStatus;
+  storedStatus: QuoteStatus;
+  issueDate: string;
   validUntil?: string | null;
-  assignedTo?: string;
-  notes?: string | null;
-  amounts?: QuoteAmounts;
+  customerSnapshot: QuoteCustomerSnapshot;
+  lines: QuoteLineResponse[];
+  amounts: QuoteAmountsResponse;
+  paymentTerms?: string | null;
+  deliveryTerms?: string | null;
+  customerReference?: string | null;
 }
 
-export interface UpdateQuoteRequest {
-  version: number;
-  title?: string;
-  accountId?: string;
-  accountName?: string;
-  contactName?: string;
-  totalAmount?: number;
-  discountAmount?: number;
-  taxAmount?: number;
-  grandTotal?: number;
-  status?: QuoteStatus;
-  validUntil?: string | null;
-  assignedTo?: string;
-  notes?: string | null;
-  amounts?: QuoteAmounts;
+export interface QuotePulseCurrencyGroup {
+  currencyCode: string;
+  draftCount: number;
+  pendingApprovalCount: number;
+  sentAmount: string | number;
+  sentCount: number;
+  acceptedAmount: string | number;
+  acceptedCount: number;
+  expiringSoonAmount: string | number;
+  expiringSoonCount: number;
 }
 
-export interface QuoteSearchRequest {
+export interface QuotePulseResponse {
+  revisionScope: 'LATEST_ONLY';
+  asOf: string;
+  tenantTimezone: string;
+  currencyGroups: QuotePulseCurrencyGroup[];
+}
+
+export interface QuoteRevisionItem {
+  id: string;
+  quoteNumber: string;
+  revisionNumber: number;
+  status: QuoteStatus;
+  effectiveStatus: QuoteStatus;
+  grandTotal: string | number;
+  currencyCode: string;
+  createdAt: string;
+  createdBy?: string | null;
+  isCurrent: boolean;
+}
+
+export interface QuoteStatusHistoryItem {
+  id: string;
+  quoteId: string;
+  quoteRevisionNumber: number;
+  action: string;
+  previousStoredStatus?: QuoteStatus | null;
+  newStoredStatus: QuoteStatus;
+  actorId?: string | null;
+  reason?: string | null;
+  quoteVersionBefore: number;
+  quoteVersionAfter: number;
+  occurredAt: string;
+}
+
+export interface QuoteSearchParams {
   q?: string;
-  search?: string;
-  status?: string;
+  status?: string | string[];
   accountId?: string;
   opportunityId?: string;
-  ownerUserId?: string;
+  ownerType?: 'USER' | 'TEAM';
+  ownerId?: string;
+  currencyCode?: string;
+  validity?: 'ACTIVE' | 'EXPIRING_SOON' | 'EXPIRED';
+  issueFrom?: string;
+  issueTo?: string;
+  validFrom?: string;
+  validTo?: string;
+  latestOnly?: boolean;
+  sort?: string;
+  direction?: 'asc' | 'desc';
   page?: number;
   size?: number;
 }
 
-export const QUOTE_STATUS_CONFIG: Record<QuoteStatus, { label: string; className: string }> = {
-  DRAFT: { label: 'DRAFT', className: 'bg-slate-100 text-slate-600 border-slate-300 font-semibold' },
-  PENDING_APPROVAL: { label: 'PENDING APPROVAL', className: 'bg-amber-50 text-amber-700 border-amber-200 font-semibold' },
-  APPROVED: { label: 'APPROVED', className: 'bg-blue-50 text-blue-700 border-blue-200 font-bold' },
-  SENT: { label: 'SENT', className: 'bg-purple-50 text-purple-700 border-purple-200 font-bold' },
-  ACCEPTED: { label: 'ACCEPTED', className: 'bg-emerald-50 text-emerald-700 border-emerald-200 font-bold' },
-  REJECTED: { label: 'REJECTED', className: 'bg-rose-50 text-rose-700 border-rose-200 font-semibold' },
-  EXPIRED: { label: 'EXPIRED', className: 'bg-slate-200 text-slate-700 border-slate-300' },
-  CANCELLED: { label: 'CANCELLED', className: 'bg-rose-100 text-rose-800 border-rose-300 font-semibold' },
-};
+export interface CreateQuotePayload {
+  name: string;
+  accountId: string;
+  contactId?: string | null;
+  opportunityId?: string | null;
+  priceBookId: string;
+  owner?: { type: string; id: string } | null;
+  issueDate: string;
+  validUntil?: string | null;
+}
 
-function normalizeQuote(q: any): QuoteItem {
-  const total = q.amounts?.subtotal ?? (q.totalAmount || 0);
-  const discount = q.amounts?.discountTotal ?? (q.discountAmount || 0);
-  const tax = q.amounts?.taxTotal ?? (q.taxAmount || 0);
-  const grand = q.amounts?.grandTotal ?? (q.grandTotal || (total - discount + tax));
+export interface QuoteLineInputPayload {
+  id?: string | null;
+  position: number;
+  productId: string;
+  priceBookItemId: string;
+  quantity: number | string;
+  salesUnitPrice: number | string;
+  discountPercent?: number | string;
+  taxPercent?: number | string;
+  description?: string | null;
+}
 
-  return {
-    ...q,
-    id: q.id || '',
-    quoteNumber: q.quoteNumber || `BG-${q.id?.slice(-4) || '000'}`,
-    title: q.title || `Báo giá ${q.quoteNumber || ''}`,
-    accountId: q.accountId || 'acc-001',
-    accountName: q.accountName || 'Khách hàng Doanh nghiệp',
-    contactName: q.contactName || 'Người đại diện',
-    totalAmount: total,
-    discountAmount: discount,
-    taxAmount: tax,
-    grandTotal: grand,
-    status: q.status || 'DRAFT',
-    validUntil: q.validUntil || '2026-08-31',
-    assignedTo: q.assignedTo || 'Phạm Tuấn Vũ',
-    notes: q.notes || '',
-    itemsCount: q.itemsCount || 2,
-    createdAt: q.createdAt || new Date().toISOString(),
-    version: q.version || 1,
-  };
+export interface SaveQuoteDraftPayload {
+  name: string;
+  accountId: string;
+  contactId?: string | null;
+  opportunityId?: string | null;
+  priceBookId: string;
+  owner?: { type: string; id: string } | null;
+  issueDate: string;
+  validUntil?: string | null;
+  customerSnapshot: QuoteCustomerSnapshot;
+  paymentTerms?: string | null;
+  deliveryTerms?: string | null;
+  customerReference?: string | null;
+  internalNotes?: string | null;
+  shippingTotal?: number | string;
+  lines: QuoteLineInputPayload[];
+}
+
+function buildSearchParams(params?: Record<string, unknown>): URLSearchParams {
+  const searchParams = new URLSearchParams();
+  if (!params) return searchParams;
+
+  Object.entries(params).forEach(([key, value]) => {
+    if (value === undefined || value === null || value === '') return;
+    if (Array.isArray(value)) {
+      value.forEach((item) => {
+        if (item !== undefined && item !== null && item !== '') {
+          searchParams.append(key, String(item));
+        }
+      });
+    } else {
+      searchParams.set(key, String(value));
+    }
+  });
+
+  return searchParams;
 }
 
 export const quoteApi = {
-  async list(params: QuoteSearchRequest = {}): Promise<{ content: QuoteItem[]; totalElements: number; totalPages: number; page: number; size: number }> {
-    const query = new URLSearchParams();
-    const q = params.q || params.search;
-    if (q) query.append('q', q);
-    if (params.status && params.status !== 'ALL') query.append('status', params.status);
-    if (params.accountId) query.append('accountId', params.accountId);
-    if (params.page !== undefined) query.append('page', params.page.toString());
-    if (params.size !== undefined) query.append('size', params.size.toString());
-
-    const queryString = query.toString();
-    const endpoint = `/quotes${queryString ? `?${queryString}` : ''}`;
-    const res = await apiFetch<any>(endpoint, { method: 'GET' });
-
-    const rawItems: any[] = Array.isArray(res) ? res : res.items || res.content || [];
-    const content = rawItems.map(normalizeQuote);
-
-    return {
-      content,
-      totalElements: res.totalElements ?? content.length,
-      totalPages: res.totalPages ?? 1,
-      page: res.page ?? res.pageNumber ?? 0,
-      size: res.size ?? res.pageSize ?? 10,
-    };
+  searchQuotes: async (params?: QuoteSearchParams, signal?: AbortSignal): Promise<PageResult<QuoteSummaryItem>> => {
+    const sp = buildSearchParams(params as Record<string, unknown>);
+    const queryString = sp.toString() ? `?${sp.toString()}` : '';
+    return apiFetch<PageResult<QuoteSummaryItem>>(`/api/quotes${queryString}`, { signal });
   },
 
-  async getById(id: string): Promise<QuoteItem> {
-    const res = await apiFetch<any>(`/quotes/${id}`, { method: 'GET' });
-    return normalizeQuote(res);
+  getQuotePulse: async (params?: QuoteSearchParams, signal?: AbortSignal): Promise<QuotePulseResponse> => {
+    const sp = buildSearchParams(params as Record<string, unknown>);
+    const queryString = sp.toString() ? `?${sp.toString()}` : '';
+    return apiFetch<QuotePulseResponse>(`/api/quotes/summary${queryString}`, { signal });
   },
 
-  async create(request: CreateQuoteRequest): Promise<QuoteItem> {
-    const total = request.totalAmount || request.grandTotal || 0;
-    const payload = {
-      quoteNumber: request.quoteNumber || `BG-2026-${Date.now().toString().slice(-4)}`,
-      accountId: request.accountId || 'acc-001',
-      amounts: {
-        currencyCode: 'VND',
-        subtotal: total,
-        discountTotal: request.discountAmount || 0,
-        taxTotal: request.taxAmount || 0,
-        shippingTotal: 0,
-      },
-      validUntil: request.validUntil,
-      notes: request.notes,
-    };
-    const res = await apiFetch<any>('/quotes', {
+  getQuote: async (id: string, signal?: AbortSignal): Promise<QuoteDetailResponse> => {
+    return apiFetch<QuoteDetailResponse>(`/api/quotes/${id}`, { signal });
+  },
+
+  getQuoteDocument: async (id: string, signal?: AbortSignal): Promise<QuoteDocumentResponse> => {
+    return apiFetch<QuoteDocumentResponse>(`/api/quotes/${id}/document`, { signal });
+  },
+
+  getQuoteHistory: async (id: string, page = 0, size = 20, signal?: AbortSignal): Promise<PageResult<QuoteStatusHistoryItem>> => {
+    return apiFetch<PageResult<QuoteStatusHistoryItem>>(`/api/quotes/${id}/history?page=${page}&size=${size}`, { signal });
+  },
+
+  getQuoteRevisions: async (id: string, signal?: AbortSignal): Promise<QuoteRevisionItem[]> => {
+    return apiFetch<QuoteRevisionItem[]>(`/api/quotes/${id}/revisions`, { signal });
+  },
+
+  createQuote: async (payload: CreateQuotePayload): Promise<QuoteDetailResponse> => {
+    return apiFetch<QuoteDetailResponse>('/api/quotes', {
       method: 'POST',
       body: JSON.stringify(payload),
     });
-    return normalizeQuote({ ...res, ...request });
   },
 
-  async update(id: string, request: UpdateQuoteRequest): Promise<QuoteItem> {
-    const total = request.totalAmount || request.grandTotal || 0;
-    const payload = {
-      version: request.version || 1,
-      accountId: request.accountId || 'acc-001',
-      status: request.status || 'DRAFT',
-      amounts: {
-        currencyCode: 'VND',
-        subtotal: total,
-        discountTotal: request.discountAmount || 0,
-        taxTotal: request.taxAmount || 0,
-        shippingTotal: 0,
-      },
-      validUntil: request.validUntil,
-      notes: request.notes,
-    };
-    const res = await apiFetch<any>(`/quotes/${id}`, {
+  saveQuoteDraft: async (id: string, version: number, payload: SaveQuoteDraftPayload): Promise<QuoteDetailResponse> => {
+    return apiFetch<QuoteDetailResponse>(`/api/quotes/${id}`, {
       method: 'PUT',
+      headers: {
+        'If-Match': `"${version}"`,
+      },
       body: JSON.stringify(payload),
     });
-    return normalizeQuote({ ...res, ...request });
   },
 
-  async approve(id: string, version: number = 1): Promise<QuoteItem> {
-    const res = await apiFetch<any>(`/quotes/${id}/approve`, {
+  submitQuote: async (id: string, version: number): Promise<QuoteDetailResponse> => {
+    return apiFetch<QuoteDetailResponse>(`/api/quotes/${id}/submit`, {
       method: 'POST',
       headers: {
         'If-Match': `"${version}"`,
       },
     });
-    return normalizeQuote(res);
   },
 
-  async delete(id: string, version: number = 1): Promise<void> {
-    return apiFetch<void>(`/quotes/${id}`, {
+  approveQuote: async (id: string, version: number): Promise<QuoteDetailResponse> => {
+    return apiFetch<QuoteDetailResponse>(`/api/quotes/${id}/approve`, {
+      method: 'POST',
+      headers: {
+        'If-Match': `"${version}"`,
+      },
+    });
+  },
+
+  requestQuoteChanges: async (id: string, version: number, reason: string): Promise<QuoteDetailResponse> => {
+    return apiFetch<QuoteDetailResponse>(`/api/quotes/${id}/request-changes`, {
+      method: 'POST',
+      headers: {
+        'If-Match': `"${version}"`,
+      },
+      body: JSON.stringify({ reason }),
+    });
+  },
+
+  markQuoteSent: async (id: string, version: number): Promise<QuoteDetailResponse> => {
+    return apiFetch<QuoteDetailResponse>(`/api/quotes/${id}/mark-sent`, {
+      method: 'POST',
+      headers: {
+        'If-Match': `"${version}"`,
+      },
+    });
+  },
+
+  acceptQuote: async (id: string, version: number, customerReference?: string): Promise<QuoteDetailResponse> => {
+    return apiFetch<QuoteDetailResponse>(`/api/quotes/${id}/accept`, {
+      method: 'POST',
+      headers: {
+        'If-Match': `"${version}"`,
+      },
+      body: customerReference ? JSON.stringify({ customerReference }) : undefined,
+    });
+  },
+
+  rejectQuote: async (id: string, version: number, reason: string): Promise<QuoteDetailResponse> => {
+    return apiFetch<QuoteDetailResponse>(`/api/quotes/${id}/reject`, {
+      method: 'POST',
+      headers: {
+        'If-Match': `"${version}"`,
+      },
+      body: JSON.stringify({ reason }),
+    });
+  },
+
+  cancelQuote: async (id: string, version: number, reason: string): Promise<QuoteDetailResponse> => {
+    return apiFetch<QuoteDetailResponse>(`/api/quotes/${id}/cancel`, {
+      method: 'POST',
+      headers: {
+        'If-Match': `"${version}"`,
+      },
+      body: JSON.stringify({ reason }),
+    });
+  },
+
+  reviseQuote: async (id: string, version: number): Promise<QuoteDetailResponse> => {
+    return apiFetch<QuoteDetailResponse>(`/api/quotes/${id}/revise`, {
+      method: 'POST',
+      headers: {
+        'If-Match': `"${version}"`,
+      },
+    });
+  },
+
+  deleteQuoteDraft: async (id: string, version: number): Promise<void> => {
+    return apiFetch<void>(`/api/quotes/${id}`, {
       method: 'DELETE',
+      headers: {
+        'If-Match': `"${version}"`,
+      },
+    });
+  },
+
+  convertQuoteToOrder: async (id: string, version: number): Promise<{ orderId: string }> => {
+    return apiFetch<{ orderId: string }>(`/api/quotes/${id}/convert-to-order`, {
+      method: 'POST',
       headers: {
         'If-Match': `"${version}"`,
       },

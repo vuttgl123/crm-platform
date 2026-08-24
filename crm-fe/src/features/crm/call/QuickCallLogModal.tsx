@@ -103,12 +103,12 @@ export const QuickCallLogModal: React.FC<QuickCallLogModalProps> = ({
       const fullDescription = `[Thời lượng: ${formatTimer(seconds)}] [Kết quả: ${outcomeLabels[outcome]}] [Thái độ: ${sentiment}]\n${notes}`;
 
       await activityApi.create({
-        type: 'CALL',
+        activityType: 'CALL',
         subject: subject || `Cuộc gọi tới ${targetName}`,
         description: fullDescription,
-        status: 'COMPLETED',
-        priority: 'MEDIUM',
-        dueDate: new Date().toISOString(),
+        direction: 'OUTBOUND',
+        priority: 'NORMAL',
+        scheduledStartAt: new Date().toISOString(),
       });
 
       toast.success(`Đã lưu nhật ký cuộc gọi (${formatTimer(seconds)}) vào Timeline thành công!`);

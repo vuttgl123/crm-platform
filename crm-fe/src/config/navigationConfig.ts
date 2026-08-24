@@ -78,7 +78,7 @@ export const APP_ROUTE_MANIFEST: AppRouteManifestItem[] = [
     id: 'crm-opportunities',
     titleKey: 'nav.opportunities',
     path: '/app/crm/opportunities',
-    matchPatterns: ['/app/crm/opportunities'],
+    matchPatterns: ['/app/crm/opportunities', '/app/crm/opportunities/:id'],
     iconName: 'TrendingUp',
     access: { kind: 'permission', code: 'crm_opportunity.read' },
     groupId: 'crm',
@@ -90,7 +90,7 @@ export const APP_ROUTE_MANIFEST: AppRouteManifestItem[] = [
     id: 'crm-activities',
     titleKey: 'nav.activities',
     path: '/app/crm/activities',
-    matchPatterns: ['/app/crm/activities'],
+    matchPatterns: ['/app/crm/activities', '/app/crm/activities/:activityId'],
     iconName: 'Calendar',
     // Previously: requiresAnyCrmReadPermission
     access: { kind: 'any-permission', codes: ['crm_account.read', 'crm_contact.read', 'crm_lead.read', 'crm_opportunity.read'] },

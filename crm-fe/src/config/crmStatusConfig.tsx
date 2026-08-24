@@ -91,6 +91,29 @@ export const LeadStatusConfigMap: Record<string, StatusBadgeConfig> = {
   },
 };
 
+export const OpportunityStatusConfigMap: Record<string, StatusBadgeConfig> = {
+  OPEN: {
+    label: 'OPEN',
+    className: 'bg-blue-50 text-blue-700 border-blue-200 font-bold rounded-[3px] text-[10px] uppercase tracking-wider px-1.5 py-0.5',
+    priorityLevel: 1,
+  },
+  WON: {
+    label: 'CLOSED WON',
+    className: 'bg-emerald-50 text-emerald-700 border-emerald-200 font-bold rounded-[3px] text-[10px] uppercase tracking-wider px-1.5 py-0.5',
+    priorityLevel: 2,
+  },
+  LOST: {
+    label: 'CLOSED LOST',
+    className: 'bg-rose-50 text-rose-700 border-rose-200 font-bold rounded-[3px] text-[10px] uppercase tracking-wider px-1.5 py-0.5',
+    priorityLevel: 3,
+  },
+  CANCELLED: {
+    label: 'CANCELLED',
+    className: 'bg-slate-100 text-slate-600 border-slate-200 font-semibold rounded-[3px] text-[10px] uppercase tracking-wider px-1.5 py-0.5',
+    priorityLevel: 4,
+  },
+};
+
 export const OpportunityStageConfigMap: Record<string, StatusBadgeConfig> = {
   PROSPECTING: {
     label: 'PROSPECTING',
@@ -191,11 +214,129 @@ export const renderLeadStatusBadge = (status?: string) => {
   );
 };
 
+/** Helper function to render Opportunity status badge */
+export const renderOpportunityStatusBadge = (status?: string) => {
+  if (!status) return null;
+  const config = OpportunityStatusConfigMap[status];
+  if (!config) return <Badge variant="outline" className="rounded-[3px] text-[10px] uppercase font-bold">{status}</Badge>;
+  return (
+    <Badge variant="outline" className={config.className}>
+      {config.label}
+    </Badge>
+  );
+};
+
 /** Helper function to render Opportunity stage badge */
-export const renderOpportunityStageBadge = (stage?: string) => {
-  if (!stage) return null;
-  const config = OpportunityStageConfigMap[stage];
-  if (!config) return <Badge variant="outline">{stage}</Badge>;
+export const renderOpportunityStageBadge = (stageName?: string, category?: string) => {
+  if (!stageName) return null;
+  const config = OpportunityStageConfigMap[stageName];
+  if (config) {
+    return (
+      <Badge variant="outline" className={config.className}>
+        {config.label}
+      </Badge>
+    );
+  }
+  let colorClass = 'bg-[#DEEBFF] text-[#0747A6] border-blue-200';
+  const upper = stageName.toUpperCase();
+  if (category === 'WON' || upper.includes('WON')) {
+    colorClass = 'bg-emerald-50 text-emerald-700 border-emerald-200';
+  } else if (category === 'LOST' || upper.includes('LOST')) {
+    colorClass = 'bg-rose-50 text-rose-700 border-rose-200';
+  } else if (upper.includes('PROSPECT') || upper.includes('DISCOVERY')) {
+    colorClass = 'bg-purple-50 text-purple-700 border-purple-200';
+  } else if (upper.includes('NEGOTIAT')) {
+    colorClass = 'bg-amber-50 text-amber-700 border-amber-200';
+  }
+  return (
+    <Badge
+      variant="outline"
+      className={`${colorClass} font-bold rounded-[3px] text-[10px] uppercase tracking-wider px-1.5 py-0.5`}
+    >
+      {stageName}
+    </Badge>
+  );
+};
+
+export const ActivityStatusConfigMap: Record<string, StatusBadgeConfig> = {
+  PLANNED: {
+    label: 'PLANNED',
+    className: 'bg-purple-50 text-purple-700 border-purple-200 font-bold rounded-[3px] text-[10px] uppercase tracking-wider px-1.5 py-0.5',
+    priorityLevel: 1,
+  },
+  IN_PROGRESS: {
+    label: 'IN PROGRESS',
+    className: 'bg-blue-50 text-blue-700 border-blue-200 font-bold rounded-[3px] text-[10px] uppercase tracking-wider px-1.5 py-0.5',
+    priorityLevel: 2,
+  },
+  COMPLETED: {
+    label: 'COMPLETED',
+    className: 'bg-emerald-50 text-emerald-700 border-emerald-200 font-bold rounded-[3px] text-[10px] uppercase tracking-wider px-1.5 py-0.5',
+    priorityLevel: 3,
+  },
+  DEFERRED: {
+    label: 'DEFERRED',
+    className: 'bg-amber-50 text-amber-700 border-amber-200 font-bold rounded-[3px] text-[10px] uppercase tracking-wider px-1.5 py-0.5',
+    priorityLevel: 4,
+  },
+  CANCELLED: {
+    label: 'CANCELLED',
+    className: 'bg-slate-100 text-slate-600 border-slate-200 font-semibold rounded-[3px] text-[10px] uppercase tracking-wider px-1.5 py-0.5',
+    priorityLevel: 5,
+  },
+};
+
+export const ActivityPriorityConfigMap: Record<string, StatusBadgeConfig> = {
+  URGENT: {
+    label: 'URGENT',
+    className: 'bg-rose-50 text-rose-700 border-rose-200 font-bold rounded-[3px] text-[10px] uppercase tracking-wider px-1.5 py-0.5',
+    priorityLevel: 1,
+  },
+  HIGH: {
+    label: 'HIGH',
+    className: 'bg-orange-50 text-orange-700 border-orange-200 font-bold rounded-[3px] text-[10px] uppercase tracking-wider px-1.5 py-0.5',
+    priorityLevel: 2,
+  },
+  NORMAL: {
+    label: 'NORMAL',
+    className: 'bg-blue-50 text-blue-700 border-blue-200 font-semibold rounded-[3px] text-[10px] uppercase tracking-wider px-1.5 py-0.5',
+    priorityLevel: 3,
+  },
+  LOW: {
+    label: 'LOW',
+    className: 'bg-slate-100 text-slate-600 border-slate-200 font-medium rounded-[3px] text-[10px] uppercase tracking-wider px-1.5 py-0.5',
+    priorityLevel: 4,
+  },
+};
+
+export const ActivityTypeConfigMap: Record<string, { label: string; className: string }> = {
+  CALL: { label: 'Call', className: 'bg-blue-50 text-blue-700 border-blue-200' },
+  EMAIL: { label: 'Email', className: 'bg-purple-50 text-purple-700 border-purple-200' },
+  MEETING: { label: 'Meeting', className: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+  TASK: { label: 'Task', className: 'bg-amber-50 text-amber-700 border-amber-200' },
+  MESSAGE: { label: 'Message', className: 'bg-sky-50 text-sky-700 border-sky-200' },
+  DEMO: { label: 'Demo', className: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
+  FOLLOW_UP: { label: 'Follow-up', className: 'bg-teal-50 text-teal-700 border-teal-200' },
+  OTHER: { label: 'Other', className: 'bg-slate-100 text-slate-700 border-slate-200' },
+};
+
+/** Helper function to render Activity status badge */
+export const renderActivityStatusBadge = (status?: string) => {
+  if (!status) return null;
+  const config = ActivityStatusConfigMap[status];
+  if (!config) return <Badge variant="outline" className="rounded-[3px] text-[10px] uppercase font-bold">{status}</Badge>;
+  return (
+    <Badge variant="outline" className={config.className}>
+      {config.label}
+    </Badge>
+  );
+};
+
+/** Helper function to render Activity priority badge */
+export const renderActivityPriorityBadge = (priority?: string) => {
+  if (!priority) return null;
+  const config = ActivityPriorityConfigMap[priority] || PriorityConfigMap[priority];
+  if (!config) return <Badge variant="outline" className="rounded-[3px] text-[10px] uppercase font-bold">{priority}</Badge>;
   return (
     <Badge variant="outline" className={config.className}>
       {config.label}
@@ -206,7 +347,7 @@ export const renderOpportunityStageBadge = (stage?: string) => {
 /** Helper function to render Priority badge */
 export const renderPriorityBadge = (priority?: string) => {
   if (!priority) return null;
-  const config = PriorityConfigMap[priority];
+  const config = PriorityConfigMap[priority] || ActivityPriorityConfigMap[priority];
   if (!config) return <Badge variant="outline">{priority}</Badge>;
   return (
     <Badge variant="outline" className={config.className}>
@@ -237,3 +378,44 @@ export const renderBranchUnitBadge = () => (
     <span>Subsidiary Unit</span>
   </Badge>
 );
+
+export const ForecastCategoryConfigMap: Record<string, StatusBadgeConfig> = {
+  CLOSED: {
+    label: 'Closed Won',
+    className: 'bg-emerald-50 text-emerald-700 border-emerald-200 font-bold rounded-[3px] text-[10px] uppercase tracking-wider px-1.5 py-0.5',
+    priorityLevel: 1,
+  },
+  COMMIT: {
+    label: 'Commit',
+    className: 'bg-blue-50 text-blue-700 border-blue-200 font-bold rounded-[3px] text-[10px] uppercase tracking-wider px-1.5 py-0.5',
+    priorityLevel: 2,
+  },
+  BEST_CASE: {
+    label: 'Best Case',
+    className: 'bg-purple-50 text-purple-700 border-purple-200 font-bold rounded-[3px] text-[10px] uppercase tracking-wider px-1.5 py-0.5',
+    priorityLevel: 3,
+  },
+  PIPELINE: {
+    label: 'Pipeline',
+    className: 'bg-amber-50 text-amber-700 border-amber-200 font-semibold rounded-[3px] text-[10px] uppercase tracking-wider px-1.5 py-0.5',
+    priorityLevel: 4,
+  },
+  OMITTED: {
+    label: 'Omitted',
+    className: 'bg-slate-100 text-slate-600 border-slate-200 font-medium rounded-[3px] text-[10px] uppercase tracking-wider px-1.5 py-0.5',
+    priorityLevel: 5,
+  },
+};
+
+/** Helper function to render Forecast Category badge */
+export const renderForecastCategoryBadge = (category?: string) => {
+  if (!category) return null;
+  const config = ForecastCategoryConfigMap[category];
+  if (!config) return <Badge variant="outline" className="rounded-[3px] text-[10px] uppercase font-bold">{category}</Badge>;
+  return (
+    <Badge variant="outline" className={config.className}>
+      {config.label}
+    </Badge>
+  );
+};
+

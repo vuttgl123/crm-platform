@@ -1,13 +1,9 @@
 import { apiFetch } from './apiClient';
 import type { PageResult } from './accountApi';
 
-export type OpportunityStage =
-  | 'PROSPECTING'
-  | 'QUALIFICATION'
-  | 'PROPOSAL'
-  | 'NEGOTIATION'
-  | 'CLOSED_WON'
-  | 'CLOSED_LOST';
+export type { PageResult };
+
+export type OpportunityStatus = 'OPEN' | 'WON' | 'LOST' | 'CANCELLED';
 
 export type OpportunityType =
   | 'NEW_BUSINESS'
@@ -17,7 +13,6 @@ export type OpportunityType =
   | 'PARTNERSHIP'
   | 'OTHER';
 
-export type OpportunityStatus = 'OPEN' | 'WON' | 'LOST' | 'CANCELLED';
 export type OpportunityOwnerType = 'USER' | 'TEAM';
 
 export interface OpportunityOwner {
@@ -30,99 +25,82 @@ export interface OpportunityAmount {
   currencyCode: string;
 }
 
-export interface OpportunityItem {
-  id: string;
-  opportunityNumber?: string;
-  name?: string;
-  dealName: string; // alias
-  accountId: string;
-  accountName?: string;
-  contactName?: string;
-  pipelineId?: string;
-  currentStageId?: string;
-  owner?: OpportunityOwner | null;
-  sourceId?: string | null;
-  primaryContactId?: string | null;
-  opportunityType?: OpportunityType;
-  status?: OpportunityStatus;
-  stage: OpportunityStage;
-  amount: number;
-  probability: number;
-  expectedCloseDate: string;
-  actualCloseDate?: string | null;
-  assignedTo: string;
-  leadSource?: string;
-  nextStep?: string | null;
-  description?: string | null;
-  lostReasonId?: string | null;
-  lostReasonNotes?: string | null;
-  campaignId?: string | null;
-  createdAt: string;
-  createdBy?: string | null;
-  updatedAt?: string;
-  updatedBy?: string | null;
-  version: number;
-}
-
-export interface OpportunitySummaryItem {
+export interface OpportunitySummaryResponse {
   id: string;
   opportunityNumber: string;
   name: string;
-  dealName?: string;
   accountId: string;
-  accountName?: string;
   pipelineId: string;
   currentStageId: string;
-  owner?: OpportunityOwner | null;
+  owner: OpportunityOwner | null;
   opportunityType: OpportunityType;
   status: OpportunityStatus;
-  stage?: OpportunityStage;
-  amount: number;
+  amount: OpportunityAmount;
   probability: number;
-  expectedCloseDate: string;
+  expectedCloseDate: string | null;
   updatedAt: string;
   version: number;
 }
 
-export interface CreateOpportunityPayload {
-  opportunityNumber?: string;
-  name?: string;
-  dealName?: string;
+export interface OpportunityResponse {
+  id: string;
+  opportunityNumber: string;
+  name: string;
   accountId: string;
-  pipelineId?: string;
-  currentStageId?: string;
+  pipelineId: string;
+  currentStageId: string;
+  owner: OpportunityOwner | null;
+  sourceId: string | null;
+  primaryContactId: string | null;
+  opportunityType: OpportunityType;
+  status: OpportunityStatus;
+  amount: OpportunityAmount;
+  probability: number;
+  expectedCloseDate: string | null;
+  actualCloseDate: string | null;
+  nextStep: string | null;
+  description: string | null;
+  lostReasonId: string | null;
+  lostReasonNotes: string | null;
+  campaignId: string | null;
+  createdAt: string;
+  createdBy: string | null;
+  updatedAt: string;
+  updatedBy: string | null;
+  version: number;
+}
+
+export interface CreateOpportunityRequest {
+  opportunityNumber?: string;
+  name: string;
+  accountId: string;
+  pipelineId: string;
+  currentStageId: string;
   owner?: OpportunityOwner | null;
   sourceId?: string | null;
   primaryContactId?: string | null;
-  opportunityType?: OpportunityType;
-  amount: number | OpportunityAmount;
-  probability?: number;
+  opportunityType: OpportunityType;
+  amount: OpportunityAmount;
+  probability: number;
   expectedCloseDate?: string | null;
   nextStep?: string | null;
   description?: string | null;
   campaignId?: string | null;
-  stage?: OpportunityStage;
-  accountName?: string;
-  contactName?: string;
-  assignedTo?: string;
-  leadSource?: string;
 }
 
-export interface UpdateOpportunityPayload {
+export interface UpdateOpportunityRequest {
   version: number;
-  name?: string;
-  dealName?: string;
-  accountId?: string;
-  pipelineId?: string;
-  currentStageId?: string;
+  name: string;
+  accountId: string;
+  pipelineId: string;
+  currentStageId: string;
   owner?: OpportunityOwner | null;
   sourceId?: string | null;
   primaryContactId?: string | null;
-  opportunityType?: OpportunityType;
+  opportunityType: OpportunityType;
   status?: OpportunityStatus;
-  stage?: OpportunityStage;
-  amount?: number | OpportunityAmount;
-  probability?: number;
+  amount: OpportunityAmount;
+  probability: number;
   expectedCloseDate?: string | null;
   actualCloseDate?: string | null;
   nextStep?: string | null;
@@ -130,15 +108,127 @@ export interface UpdateOpportunityPayload {
   lostReasonId?: string | null;
   lostReasonNotes?: string | null;
   campaignId?: string | null;
-  accountName?: string;
-  contactName?: string;
-  assignedTo?: string;
+}
+
+export type OpportunityTransitionAction =
+  | 'MOVE_STAGE'
+  | 'CHANGE_PIPELINE'
+  | 'MARK_WON'
+  | 'MARK_LOST'
+  | 'CANCEL'
+  | 'REOPEN';
+
+export interface OpportunityTransitionRequest {
+  version: number;
+  action: OpportunityTransitionAction;
+  targetPipelineId?: string;
+  targetStageId?: string;
+  actualCloseDate?: string;
+  lostReasonId?: string;
+  lostReasonNotes?: string | null;
+  reason?: string | null;
+}
+
+export type OpportunityStageHistoryEventType =
+  | 'STAGE_MOVED'
+  | 'PIPELINE_CHANGED'
+  | 'MARKED_WON'
+  | 'MARKED_LOST'
+  | 'CANCELLED'
+  | 'REOPENED';
+
+export interface OpportunityStageHistoryEntry {
+  id: string;
+  opportunityId: string;
+  eventType: OpportunityStageHistoryEventType;
+  fromPipelineId?: string;
+  toPipelineId?: string;
+  fromStageId?: string | null;
+  toStageId?: string;
+  fromStatus?: OpportunityStatus;
+  toStatus?: OpportunityStatus;
+  lostReasonId?: string | null;
+  reason?: string | null;
+  changedBy?: string | null;
+  changedAt: string;
+}
+
+export interface OpportunityTransitionResponse {
+  opportunity: OpportunityResponse;
+  historyEntry?: OpportunityStageHistoryEntry;
+}
+
+export type OpportunityStakeholderRole =
+  | 'DECISION_MAKER'
+  | 'CHAMPION'
+  | 'INFLUENCER'
+  | 'PROCUREMENT'
+  | 'TECHNICAL_EVALUATOR'
+  | 'LEGAL'
+  | 'OTHER';
+
+export type OpportunityStakeholderInfluence = 'LOW' | 'MEDIUM' | 'HIGH';
+
+export interface OpportunityStakeholderResponse {
+  id: string;
+  opportunityId: string;
+  contactId: string;
+  role: OpportunityStakeholderRole;
+  influenceLevel: OpportunityStakeholderInfluence | null;
+  primary: boolean;
+  createdAt: string;
+  createdBy?: string | null;
+  updatedAt: string;
+  updatedBy?: string | null;
+  version: number;
+}
+
+export interface CreateOpportunityStakeholderRequest {
+  contactId: string;
+  role: OpportunityStakeholderRole;
+  influenceLevel?: OpportunityStakeholderInfluence | null;
+  primary: boolean;
+}
+
+export interface UpdateOpportunityStakeholderRequest {
+  version: number;
+  role: OpportunityStakeholderRole;
+  influenceLevel?: OpportunityStakeholderInfluence | null;
+  primary: boolean;
+}
+
+export type { NoteVisibility } from './noteApi';
+import type { NoteVisibility } from './noteApi';
+
+export interface OpportunityNoteResponse {
+  id: string;
+  opportunityId: string;
+  title: string | null;
+  body: string;
+  visibility: NoteVisibility;
+  ownerId?: string;
+  createdAt: string;
+  createdBy?: string | null;
+  updatedAt: string;
+  updatedBy?: string | null;
+  version: number;
+}
+
+export interface CreateOpportunityNoteRequest {
+  title?: string | null;
+  body: string;
+  visibility: NoteVisibility;
+}
+
+export interface UpdateOpportunityNoteRequest {
+  version: number;
+  title?: string | null;
+  body: string;
+  visibility: NoteVisibility;
 }
 
 export interface OpportunitySearchParams {
   q?: string;
-  search?: string;
-  stage?: string;
   accountId?: string;
   pipelineId?: string;
   stageId?: string;
@@ -146,161 +236,227 @@ export interface OpportunitySearchParams {
   opportunityType?: OpportunityType;
   ownerType?: OpportunityOwnerType;
   ownerId?: string;
+  forecastFrom?: string;
+  forecastTo?: string;
+  forecastCategory?: string;
+  currencyCode?: string;
+  forecastQuality?: string;
   page?: number;
   size?: number;
 }
 
-export const PIPELINE_STAGES: { id: OpportunityStage; title: string; defaultProb: number; colorClass: string }[] = [
-  { id: 'PROSPECTING', title: 'Prospecting & Discovery', defaultProb: 15, colorClass: 'border-t-purple-500 bg-purple-50/20' },
-  { id: 'QUALIFICATION', title: 'Solution Qualification', defaultProb: 35, colorClass: 'border-t-blue-500 bg-blue-50/20' },
-  { id: 'PROPOSAL', title: 'Proposal & CPQ Quote', defaultProb: 60, colorClass: 'border-t-sky-500 bg-sky-50/20' },
-  { id: 'NEGOTIATION', title: 'Contract Negotiation', defaultProb: 80, colorClass: 'border-t-amber-500 bg-amber-50/20' },
-  { id: 'CLOSED_WON', title: 'Closed Won', defaultProb: 100, colorClass: 'border-t-emerald-500 bg-emerald-50/20' },
-  { id: 'CLOSED_LOST', title: 'Closed Lost', defaultProb: 0, colorClass: 'border-t-rose-500 bg-rose-50/20' },
-];
-
-function normalizeOpportunity<T extends Partial<any>>(item: T): OpportunityItem {
-  const dealName = item.dealName || item.name || 'Cơ hội kinh doanh';
-  const rawAmount = typeof item.amount === 'object' ? item.amount?.amount : item.amount;
-  const numAmount = typeof rawAmount === 'number' ? rawAmount : (parseFloat(rawAmount) || 0);
-  const stage = (item.stage || (item.status === 'WON' ? 'CLOSED_WON' : item.status === 'LOST' ? 'CLOSED_LOST' : 'PROSPECTING')) as OpportunityStage;
-
-  return {
-    ...item,
-    id: item.id || '',
-    opportunityNumber: item.opportunityNumber || `OPP-${item.id?.slice(-4) || '000'}`,
-    name: dealName,
-    dealName,
-    accountId: item.accountId || '',
-    accountName: item.accountName || 'Khách hàng doanh nghiệp',
-    contactName: item.contactName || 'Người liên hệ',
-    amount: numAmount,
-    stage,
-    probability: item.probability ?? 50,
-    expectedCloseDate: item.expectedCloseDate || new Date().toISOString().split('T')[0],
-    assignedTo: item.assignedTo || 'Phạm Tuấn Vũ',
-    leadSource: item.leadSource || 'WEBSITE',
-    createdAt: item.createdAt || new Date().toISOString(),
-    version: item.version || 1,
-  };
-}
-
 export const opportunityApi = {
-  async search(params: OpportunitySearchParams = {}): Promise<PageResult<OpportunityItem>> {
+  async search(params: OpportunitySearchParams = {}, signal?: AbortSignal): Promise<PageResult<OpportunitySummaryResponse>> {
     const query = new URLSearchParams();
-    const q = params.q || params.search;
-    if (q) query.append('q', q);
+    if (params.q?.trim()) query.append('q', params.q.trim());
     if (params.accountId) query.append('accountId', params.accountId);
     if (params.pipelineId) query.append('pipelineId', params.pipelineId);
     if (params.stageId) query.append('stageId', params.stageId);
     if (params.status) query.append('status', params.status);
     if (params.opportunityType) query.append('opportunityType', params.opportunityType);
+    if (params.ownerType && params.ownerId) {
+      query.append('ownerType', params.ownerType);
+      query.append('ownerId', params.ownerId);
+    }
+    if (params.forecastFrom) query.append('forecastFrom', params.forecastFrom);
+    if (params.forecastTo) query.append('forecastTo', params.forecastTo);
+    if (params.forecastCategory) query.append('forecastCategory', params.forecastCategory);
+    if (params.currencyCode) query.append('currencyCode', params.currencyCode);
+    if (params.forecastQuality) query.append('forecastQuality', params.forecastQuality);
     if (params.page !== undefined) query.append('page', params.page.toString());
     if (params.size !== undefined) query.append('size', params.size.toString());
 
     const queryString = query.toString();
     const endpoint = `/opportunities${queryString ? `?${queryString}` : ''}`;
-    const res = await apiFetch<any>(endpoint, { method: 'GET' });
-
-    const rawItems: any[] = Array.isArray(res) ? res : res.items || res.content || [];
-    let items = rawItems.map(normalizeOpportunity);
-
-    if (params.stage && params.stage !== 'ALL') {
-      items = items.filter((o) => o.stage === params.stage);
-    }
-
-    return {
-      items,
-      page: res.page ?? res.pageNumber ?? 0,
-      size: res.size ?? res.pageSize ?? 10,
-      totalElements: res.totalElements ?? items.length,
-      totalPages: res.totalPages ?? 1,
-    };
+    return apiFetch<PageResult<OpportunitySummaryResponse>>(endpoint, { method: 'GET', signal });
   },
 
-  async list(params: OpportunitySearchParams = {}): Promise<{ content: OpportunityItem[]; totalElements: number; totalPages: number; page: number; size: number }> {
-    const res = await this.search(params);
-    return {
-      content: res.items,
-      totalElements: res.totalElements,
-      totalPages: res.totalPages,
-      page: res.page,
-      size: res.size,
-    };
+  async get(id: string): Promise<OpportunityResponse> {
+    return apiFetch<OpportunityResponse>(`/opportunities/${id}`, { method: 'GET' });
   },
 
-  async getAllForKanban(): Promise<OpportunityItem[]> {
-    const res = await this.search({ size: 100 });
-    return res.items;
-  },
-
-  async get(id: string): Promise<OpportunityItem> {
-    const res = await apiFetch<any>(`/opportunities/${id}`, { method: 'GET' });
-    return normalizeOpportunity(res);
-  },
-
-  async create(data: CreateOpportunityPayload): Promise<OpportunityItem> {
-    const dealName = data.dealName || data.name || 'Cơ hội mới';
-    const rawAmt = typeof data.amount === 'object' ? data.amount.amount : data.amount;
-    const numAmt = typeof rawAmt === 'number' ? rawAmt : (parseFloat(rawAmt as any) || 0);
-
-    const payload = {
-      opportunityNumber: data.opportunityNumber || `OPP-${Date.now().toString().slice(-6)}`,
-      name: dealName,
-      accountId: data.accountId || 'acc-001',
-      pipelineId: data.pipelineId || '80000000-0000-0000-0000-000000000001',
-      currentStageId: data.currentStageId || '81000000-0000-0000-0000-000000000001',
-      opportunityType: data.opportunityType || 'NEW_BUSINESS',
-      amount: { amount: numAmt, currencyCode: 'VND' },
-      probability: data.probability || 20,
-      expectedCloseDate: data.expectedCloseDate,
-      nextStep: data.nextStep,
-      description: data.description,
-    };
-    const res = await apiFetch<any>('/opportunities', {
+  async create(data: CreateOpportunityRequest): Promise<OpportunityResponse> {
+    return apiFetch<OpportunityResponse>('/opportunities', {
       method: 'POST',
-      body: JSON.stringify(payload),
+      body: JSON.stringify(data),
     });
-    return normalizeOpportunity({ ...res, ...data });
   },
 
-  async update(id: string, data: UpdateOpportunityPayload): Promise<OpportunityItem> {
-    const dealName = data.dealName || data.name || 'Cơ hội';
-    const rawAmt = typeof data.amount === 'object' ? data.amount.amount : data.amount;
-    const numAmt = typeof rawAmt === 'number' ? rawAmt : (parseFloat(rawAmt as any) || 0);
-
-    const payload = {
-      version: data.version || 1,
-      name: dealName,
-      accountId: data.accountId || 'acc-001',
-      pipelineId: data.pipelineId || '80000000-0000-0000-0000-000000000001',
-      currentStageId: data.currentStageId || '81000000-0000-0000-0000-000000000001',
-      opportunityType: data.opportunityType || 'NEW_BUSINESS',
-      amount: { amount: numAmt, currencyCode: 'VND' },
-      probability: data.probability || 50,
-      expectedCloseDate: data.expectedCloseDate,
-      nextStep: data.nextStep,
-      description: data.description,
-    };
-    const res = await apiFetch<any>(`/opportunities/${id}`, {
+  async update(id: string, data: UpdateOpportunityRequest): Promise<OpportunityResponse> {
+    return apiFetch<OpportunityResponse>(`/opportunities/${id}`, {
       method: 'PUT',
-      body: JSON.stringify(payload),
+      body: JSON.stringify(data),
     });
-    return normalizeOpportunity({ ...res, ...data });
   },
 
-  async changeStage(id: string, stage: OpportunityStage, defaultProb: number): Promise<OpportunityItem> {
-    const opp = await this.get(id);
-    return this.update(id, {
-      ...opp,
-      version: opp.version,
-      stage,
-      probability: defaultProb,
-    });
+  async transition(id: string, data: OpportunityTransitionRequest): Promise<OpportunityResponse> {
+    // If backend transition endpoint is available, call it; otherwise execute atomic update
+    try {
+      const res = await apiFetch<OpportunityTransitionResponse | OpportunityResponse>(`/opportunities/${id}/transitions`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+      if ('opportunity' in res) {
+        return res.opportunity;
+      }
+      return res as OpportunityResponse;
+    } catch {
+      // Fallback transition via direct update
+      const existing = await this.get(id);
+      let newStatus: OpportunityStatus = existing.status;
+      let newStageId = existing.currentStageId;
+      let newPipelineId = existing.pipelineId;
+      let newProb = existing.probability;
+      let actualClose = existing.actualCloseDate;
+      let lostReason = existing.lostReasonId;
+      let lostNotes = existing.lostReasonNotes;
+
+      if (data.action === 'MOVE_STAGE' && data.targetStageId) {
+        newStageId = data.targetStageId;
+      } else if (data.action === 'CHANGE_PIPELINE' && data.targetPipelineId && data.targetStageId) {
+        newPipelineId = data.targetPipelineId;
+        newStageId = data.targetStageId;
+      } else if (data.action === 'MARK_WON') {
+        newStatus = 'WON';
+        newProb = 100;
+        actualClose = data.actualCloseDate || new Date().toISOString().split('T')[0];
+        if (data.targetStageId) newStageId = data.targetStageId;
+        lostReason = null;
+        lostNotes = null;
+      } else if (data.action === 'MARK_LOST') {
+        newStatus = 'LOST';
+        newProb = 0;
+        actualClose = data.actualCloseDate || new Date().toISOString().split('T')[0];
+        if (data.targetStageId) newStageId = data.targetStageId;
+        lostReason = data.lostReasonId || null;
+        lostNotes = data.lostReasonNotes || null;
+      } else if (data.action === 'CANCEL') {
+        newStatus = 'CANCELLED';
+        newProb = 0;
+        actualClose = data.actualCloseDate || new Date().toISOString().split('T')[0];
+        lostReason = null;
+        lostNotes = null;
+      } else if (data.action === 'REOPEN') {
+        newStatus = 'OPEN';
+        actualClose = null;
+        lostReason = null;
+        lostNotes = null;
+        if (data.targetPipelineId) newPipelineId = data.targetPipelineId;
+        if (data.targetStageId) newStageId = data.targetStageId;
+      }
+
+      return this.update(id, {
+        version: data.version,
+        name: existing.name,
+        accountId: existing.accountId,
+        pipelineId: newPipelineId,
+        currentStageId: newStageId,
+        owner: existing.owner,
+        sourceId: existing.sourceId,
+        primaryContactId: existing.primaryContactId,
+        opportunityType: existing.opportunityType,
+        status: newStatus,
+        amount: existing.amount,
+        probability: newProb,
+        expectedCloseDate: existing.expectedCloseDate,
+        actualCloseDate: actualClose,
+        nextStep: existing.nextStep,
+        description: existing.description,
+        lostReasonId: lostReason,
+        lostReasonNotes: lostNotes,
+        campaignId: existing.campaignId,
+      });
+    }
   },
 
   async delete(id: string, version: number = 1): Promise<void> {
     return apiFetch<void>(`/opportunities/${id}`, {
+      method: 'DELETE',
+      headers: {
+        'If-Match': `"${version}"`,
+      },
+    });
+  },
+
+  // Stage History
+  async listStageHistory(id: string, params: { page?: number; size?: number } = {}): Promise<PageResult<OpportunityStageHistoryEntry>> {
+    const query = new URLSearchParams();
+    if (params.page !== undefined) query.append('page', params.page.toString());
+    if (params.size !== undefined) query.append('size', params.size.toString());
+    const qs = query.toString();
+    try {
+      return await apiFetch<PageResult<OpportunityStageHistoryEntry>>(`/opportunities/${id}/stage-history${qs ? `?${qs}` : ''}`);
+    } catch {
+      return { items: [], page: 0, size: params.size || 20, totalElements: 0, totalPages: 0 };
+    }
+  },
+
+  // Stakeholders
+  async listStakeholders(id: string): Promise<OpportunityStakeholderResponse[]> {
+    try {
+      const res = await apiFetch<OpportunityStakeholderResponse[] | { items: OpportunityStakeholderResponse[] }>(`/opportunities/${id}/stakeholders`);
+      return Array.isArray(res) ? res : res.items || [];
+    } catch {
+      return [];
+    }
+  },
+
+  async addStakeholder(id: string, data: CreateOpportunityStakeholderRequest): Promise<OpportunityStakeholderResponse> {
+    return apiFetch<OpportunityStakeholderResponse>(`/opportunities/${id}/stakeholders`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async updateStakeholder(
+    id: string,
+    stakeholderId: string,
+    data: UpdateOpportunityStakeholderRequest
+  ): Promise<OpportunityStakeholderResponse> {
+    return apiFetch<OpportunityStakeholderResponse>(`/opportunities/${id}/stakeholders/${stakeholderId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async deleteStakeholder(id: string, stakeholderId: string, version: number = 1): Promise<void> {
+    return apiFetch<void>(`/opportunities/${id}/stakeholders/${stakeholderId}`, {
+      method: 'DELETE',
+      headers: {
+        'If-Match': `"${version}"`,
+      },
+    });
+  },
+
+  // Notes
+  async listNotes(id: string, params: { page?: number; size?: number } = {}): Promise<PageResult<OpportunityNoteResponse>> {
+    const query = new URLSearchParams();
+    if (params.page !== undefined) query.append('page', params.page.toString());
+    if (params.size !== undefined) query.append('size', params.size.toString());
+    const qs = query.toString();
+    try {
+      return await apiFetch<PageResult<OpportunityNoteResponse>>(`/opportunities/${id}/notes${qs ? `?${qs}` : ''}`);
+    } catch {
+      return { items: [], page: 0, size: params.size || 20, totalElements: 0, totalPages: 0 };
+    }
+  },
+
+  async createNote(id: string, data: CreateOpportunityNoteRequest): Promise<OpportunityNoteResponse> {
+    return apiFetch<OpportunityNoteResponse>(`/opportunities/${id}/notes`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async updateNote(id: string, noteId: string, data: UpdateOpportunityNoteRequest): Promise<OpportunityNoteResponse> {
+    return apiFetch<OpportunityNoteResponse>(`/opportunities/${id}/notes/${noteId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async deleteNote(id: string, noteId: string, version: number = 1): Promise<void> {
+    return apiFetch<void>(`/opportunities/${id}/notes/${noteId}`, {
       method: 'DELETE',
       headers: {
         'If-Match': `"${version}"`,

@@ -1,126 +1,125 @@
 package com.crm.sales.forecast.application.service;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
+import com.crm.foundation.security.ActorId;
+import com.crm.foundation.security.AuthorizedDataAccess;
 import com.crm.foundation.security.CurrentActor;
 import com.crm.foundation.security.SystemPermission;
 import com.crm.foundation.security.TenantAccessAuthorizer;
 import com.crm.foundation.tenancy.CurrentTenant;
-import com.crm.sales.forecast.application.dto.SalesForecastSummary;
-import com.crm.sales.forecast.application.dto.SalesRepPerformanceDto;
+import com.crm.sales.forecast.application.dto.ForecastBreakdownResponse;
+import com.crm.sales.forecast.application.dto.ForecastPeriodContext;
+import com.crm.sales.forecast.application.dto.SalesForecastSummaryResponse;
+import com.crm.sales.forecast.domain.ForecastBreakdownDimension;
+import com.crm.sales.forecast.domain.ForecastPeriodPreset;
+import com.crm.sales.forecast.infrastructure.persistence.SalesForecastReadRepository;
 import com.crm.sharedkernel.domain.TenantId;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@Transactional(readOnly = true)
 public class SalesForecastService {
 
-	private final JdbcClient jdbcClient;
 	private final CurrentTenant currentTenant;
 	private final CurrentActor currentActor;
 	private final TenantAccessAuthorizer authorizer;
+	private final ForecastPeriodResolver periodResolver;
+	private final SalesForecastReadRepository readRepository;
+	private final JdbcClient jdbcClient;
 
 	public SalesForecastService(
-			JdbcClient jdbcClient,
 			CurrentTenant currentTenant,
 			CurrentActor currentActor,
-			TenantAccessAuthorizer authorizer
+			TenantAccessAuthorizer authorizer,
+			ForecastPeriodResolver periodResolver,
+			SalesForecastReadRepository readRepository,
+			JdbcClient jdbcClient
 	) {
-		this.jdbcClient = jdbcClient;
 		this.currentTenant = currentTenant;
 		this.currentActor = currentActor;
 		this.authorizer = authorizer;
+		this.periodResolver = periodResolver;
+		this.readRepository = readRepository;
+		this.jdbcClient = jdbcClient;
 	}
 
-	public SalesForecastSummary getForecastSummary(String period) {
+	public SalesForecastSummaryResponse getSummary(
+			ForecastPeriodPreset period,
+			UUID pipelineId,
+			String ownerType,
+			UUID ownerId,
+			String currencyCode
+	) {
 		TenantId tenantId = currentTenant.requireTenantId();
-		authorizer.requireAny(SystemPermission.CRM_OPPORTUNITY_READ, SystemPermission.SALES_ORDER_READ);
+		AuthorizedDataAccess access = authorizer.authorize(SystemPermission.CRM_OPPORTUNITY_READ, "OPPORTUNITY");
+		ActorId actorId = new ActorId(currentActor.userId());
 
-		double closedWonAmount = 0.0;
-		double commitAmount = 0.0;
-		double bestCaseAmount = 0.0;
-		double pipelineAmount = 0.0;
-		double weightedForecastAmount = 0.0;
-		int totalDealsCount = 0;
-		int wonCount = 0;
-		int lostCount = 0;
+		String timezone = resolveTenantTimezone(tenantId);
+		ForecastPeriodContext periodContext = periodResolver.resolve(period, timezone);
 
+		return readRepository.getSummary(
+				tenantId,
+				actorId,
+				access,
+				periodContext,
+				pipelineId,
+				ownerType,
+				ownerId,
+				currencyCode
+		);
+	}
+
+	public ForecastBreakdownResponse getBreakdown(
+			ForecastPeriodPreset period,
+			ForecastBreakdownDimension dimension,
+			String currencyCode,
+			UUID pipelineId,
+			String ownerType,
+			UUID ownerId,
+			int page,
+			int size
+	) {
+		TenantId tenantId = currentTenant.requireTenantId();
+		AuthorizedDataAccess access = authorizer.authorize(SystemPermission.CRM_OPPORTUNITY_READ, "OPPORTUNITY");
+		ActorId actorId = new ActorId(currentActor.userId());
+
+		String timezone = resolveTenantTimezone(tenantId);
+		ForecastPeriodContext periodContext = periodResolver.resolve(period, timezone);
+
+		String selectedCurrency = (currencyCode != null && !currencyCode.isBlank()) ? currencyCode : "USD";
+		ForecastBreakdownDimension selectedDimension = dimension != null ? dimension : ForecastBreakdownDimension.OWNER;
+
+		return readRepository.getBreakdown(
+				tenantId,
+				actorId,
+				access,
+				periodContext,
+				selectedDimension,
+				selectedCurrency,
+				pipelineId,
+				ownerType,
+				ownerId,
+				page,
+				size
+		);
+	}
+
+	private String resolveTenantTimezone(TenantId tenantId) {
 		try {
-			List<Map<String, Object>> rows = jdbcClient.sql("""
-					SELECT amount, probability, stage, status, assigned_to
-					FROM crm_opportunities
-					WHERE tenant_id = :tenantId
+			return jdbcClient.sql("""
+					SELECT default_timezone
+					FROM platform.tenants
+					WHERE id = :tenantId
 					""")
 					.param("tenantId", tenantId.value())
-					.query()
-					.listOfRows();
-
-			totalDealsCount = rows.size();
-
-			for (Map<String, Object> row : rows) {
-				double amount = row.get("amount") != null ? ((Number) row.get("amount")).doubleValue() : 0.0;
-				int prob = row.get("probability") != null ? ((Number) row.get("probability")).intValue() : 0;
-				String stage = row.get("stage") != null ? row.get("stage").toString() : "";
-				String status = row.get("status") != null ? row.get("status").toString() : "";
-
-				if ("CLOSED_WON".equalsIgnoreCase(stage) || "WON".equalsIgnoreCase(status)) {
-					closedWonAmount += amount;
-					weightedForecastAmount += amount;
-					wonCount++;
-				} else if ("CLOSED_LOST".equalsIgnoreCase(stage) || "LOST".equalsIgnoreCase(status)) {
-					lostCount++;
-				} else {
-					weightedForecastAmount += (amount * prob) / 100.0;
-					if (prob >= 80 || "NEGOTIATION".equalsIgnoreCase(stage)) {
-						commitAmount += amount;
-					} else if (prob >= 50 || "PROPOSAL".equalsIgnoreCase(stage)) {
-						bestCaseAmount += amount;
-					} else {
-						pipelineAmount += amount;
-					}
-				}
-			}
-		} catch (Exception ignored) {
-			// Fallback baseline for demo tenants
-			closedWonAmount = 450_000_000.0;
-			commitAmount = 320_000_000.0;
-			bestCaseAmount = 280_000_000.0;
-			pipelineAmount = 190_000_000.0;
-			weightedForecastAmount = closedWonAmount + (commitAmount * 0.85) + (bestCaseAmount * 0.6) + (pipelineAmount * 0.25);
-			totalDealsCount = 18;
-			wonCount = 8;
-			lostCount = 2;
+					.query(String.class)
+					.optional()
+					.orElse("UTC");
+		} catch (Exception e) {
+			return "UTC";
 		}
-
-		double totalTargetQuota = 1_200_000_000.0;
-		if ("THIS_QUARTER".equalsIgnoreCase(period)) {
-			totalTargetQuota = 3_500_000_000.0;
-		} else if ("THIS_YEAR".equalsIgnoreCase(period)) {
-			totalTargetQuota = 14_000_000_000.0;
-		}
-
-		double winRatePercent = (wonCount + lostCount) > 0 ? (wonCount * 100.0) / (wonCount + lostCount) : 75.0;
-
-		List<SalesRepPerformanceDto> repPerformance = List.of(
-				new SalesRepPerformanceDto("Phạm Tuấn Vũ", closedWonAmount * 0.45, commitAmount * 0.4, 400_000_000.0, 112.5, 4, 1),
-				new SalesRepPerformanceDto("Nguyễn Văn An", closedWonAmount * 0.35, commitAmount * 0.35, 400_000_000.0, 95.0, 3, 1),
-				new SalesRepPerformanceDto("Trần Thị Mai", closedWonAmount * 0.20, commitAmount * 0.25, 400_000_000.0, 68.0, 1, 0)
-		);
-
-		return new SalesForecastSummary(
-				period,
-				closedWonAmount,
-				commitAmount,
-				bestCaseAmount,
-				pipelineAmount,
-				totalTargetQuota,
-				weightedForecastAmount,
-				winRatePercent,
-				totalDealsCount,
-				repPerformance
-		);
 	}
 }

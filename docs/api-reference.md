@@ -8239,6 +8239,375 @@ X-Tenant-ID: 22222222-2222-2222-2222-222222222222
 
 ---
 
+## Opportunities
+
+### Search / List Opportunities
+```http
+GET /api/opportunities?q=Enterprise&pipelineId=pip-1&page=0&size=20
+Authorization: Bearer <access-token>
+X-Tenant-ID: 22222222-2222-2222-2222-222222222222
+```
+
+### Get Opportunity Details
+```http
+GET /api/opportunities/{id}
+Authorization: Bearer <access-token>
+X-Tenant-ID: 22222222-2222-2222-2222-222222222222
+```
+
+### Create Opportunity
+```http
+POST /api/opportunities
+Authorization: Bearer <access-token>
+X-Tenant-ID: 22222222-2222-2222-2222-222222222222
+Content-Type: application/json
+
+{
+  "name": "Enterprise Cloud Migration",
+  "accountId": "acc-1",
+  "pipelineId": "pip-1",
+  "currentStageId": "stg-1",
+  "owner": {
+    "type": "USER",
+    "id": "usr-1"
+  },
+  "sourceId": "src-1",
+  "primaryContactId": "con-1",
+  "opportunityType": "NEW_BUSINESS",
+  "amount": {
+    "amount": 50000.00,
+    "currencyCode": "USD"
+  },
+  "probability": 40,
+  "expectedCloseDate": "2026-12-31",
+  "nextStep": "Technical scoping demo",
+  "description": "Enterprise cloud workload migration phase 1"
+}
+```
+
+### Update Opportunity
+```http
+PUT /api/opportunities/{id}
+Authorization: Bearer <access-token>
+X-Tenant-ID: 22222222-2222-2222-2222-222222222222
+Content-Type: application/json
+
+{
+  "version": 1,
+  "name": "Enterprise Cloud Migration - Revised",
+  "accountId": "acc-1",
+  "pipelineId": "pip-1",
+  "currentStageId": "stg-2",
+  "owner": {
+    "type": "USER",
+    "id": "usr-1"
+  },
+  "sourceId": "src-1",
+  "primaryContactId": "con-1",
+  "opportunityType": "NEW_BUSINESS",
+  "status": "OPEN",
+  "amount": {
+    "amount": 65000.00,
+    "currencyCode": "USD"
+  },
+  "probability": 60,
+  "expectedCloseDate": "2026-11-30",
+  "nextStep": "Legal review of master services agreement",
+  "description": "Updated scope including disaster recovery",
+  "campaignId": "cmp-1"
+}
+```
+
+### Delete Opportunity
+```http
+DELETE /api/opportunities/{id}
+Authorization: Bearer <access-token>
+X-Tenant-ID: 22222222-2222-2222-2222-222222222222
+If-Match: "1"
+```
+
+### Transition Opportunity Lifecycle / Stage
+```http
+POST /api/opportunities/{id}/transitions
+Authorization: Bearer <access-token>
+X-Tenant-ID: 22222222-2222-2222-2222-222222222222
+Content-Type: application/json
+
+{
+  "version": 1,
+  "action": "MARK_WON",
+  "targetStageId": "stg-won",
+  "actualCloseDate": "2026-08-24"
+}
+```
+
+
+---
+
+## Activities API
+
+### Search & List Activities
+```http
+GET /api/activities?queue=my-work&page=0&size=20&sort=scheduledStartAt:asc
+Authorization: Bearer <access-token>
+X-Tenant-ID: 22222222-2222-2222-2222-222222222222
+```
+
+### Work Queue Summary Counts
+```http
+GET /api/activities/work-queue-summary
+Authorization: Bearer <access-token>
+X-Tenant-ID: 22222222-2222-2222-2222-222222222222
+```
+
+### Get Activity Detail
+```http
+GET /api/activities/{id}
+Authorization: Bearer <access-token>
+X-Tenant-ID: 22222222-2222-2222-2222-222222222222
+```
+
+### Create Activity
+```http
+POST /api/activities
+Authorization: Bearer <access-token>
+X-Tenant-ID: 22222222-2222-2222-2222-222222222222
+Content-Type: application/json
+
+{
+  "activityType": "CALL",
+  "subject": "Discovery call with VP of Engineering",
+  "description": "Discuss enterprise architecture requirements and procurement timeline.",
+  "direction": "OUTBOUND",
+  "priority": "HIGH",
+  "owner": {
+    "kind": "USER",
+    "id": "11111111-1111-1111-1111-111111111111"
+  },
+  "scheduledStartAt": "2026-08-25T09:00:00Z",
+  "scheduledEndAt": "2026-08-25T10:00:00Z",
+  "links": [
+    {
+      "targetType": "ACCOUNT",
+      "targetId": "acc-12345"
+    }
+  ],
+  "participants": [
+    {
+      "participantType": "USER",
+      "displayName": "Alex Morgan",
+      "role": "ORGANIZER"
+    }
+  ]
+}
+```
+
+### Update Activity
+```http
+PUT /api/activities/{id}
+Authorization: Bearer <access-token>
+X-Tenant-ID: 22222222-2222-2222-2222-222222222222
+If-Match: "1"
+Content-Type: application/json
+
+{
+  "version": 1,
+  "activityType": "CALL",
+  "subject": "Discovery call with VP of Engineering",
+  "priority": "HIGH",
+  "owner": {
+    "kind": "USER",
+    "id": "11111111-1111-1111-1111-111111111111"
+  }
+}
+```
+
+### Transition Activity Lifecycle Status
+```http
+POST /api/activities/{id}/transitions
+Authorization: Bearer <access-token>
+X-Tenant-ID: 22222222-2222-2222-2222-222222222222
+Content-Type: application/json
+
+{
+  "version": 1,
+  "action": "COMPLETE",
+  "outcomeNotes": "Client confirmed budget approval for Phase 1.",
+  "completedAt": "2026-08-25T10:00:00Z"
+}
+```
+
+### Reschedule Activity
+```http
+PUT /api/activities/{id}/schedule
+Authorization: Bearer <access-token>
+X-Tenant-ID: 22222222-2222-2222-2222-222222222222
+Content-Type: application/json
+
+{
+  "version": 1,
+  "scheduledStartAt": "2026-08-26T14:00:00Z",
+  "scheduledEndAt": "2026-08-26T15:00:00Z"
+}
+```
+
+### Delete Activity
+```http
+DELETE /api/activities/{id}
+Authorization: Bearer <access-token>
+X-Tenant-ID: 22222222-2222-2222-2222-222222222222
+If-Match: "1"
+```
+
+### Activity Links Management
+```http
+GET /api/activities/{id}/links
+POST /api/activities/{id}/links
+DELETE /api/activities/{id}/links/{linkId}
+```
+
+### Activity Participants Management
+```http
+GET /api/activities/{id}/participants
+POST /api/activities/{id}/participants
+PUT /api/activities/{id}/participants/{participantId}
+DELETE /api/activities/{id}/participants/{participantId}
+```
+
+### Activity Status History
+```http
+GET /api/activities/{id}/status-history
+```
+
+---
+
+## Sales Forecast Live Revenue Workspace APIs
+
+### Get Sales Forecast Summary
+Retrieves live projected revenue rollups, category breakdowns (`CLOSED`, `COMMIT`, `BEST_CASE`, `PIPELINE`, `OMITTED`), and data-quality metrics separated strictly by currency.
+
+```http
+GET /api/sales/forecast?period=THIS_MONTH&pipelineId=33333333-3333-3333-3333-333333333333&currencyCode=USD
+Authorization: Bearer <access-token>
+X-Tenant-ID: 22222222-2222-2222-2222-222222222222
+```
+
+#### Query Parameters:
+- `period` (optional, enum: `THIS_MONTH`, `THIS_QUARTER`, `THIS_YEAR`, default: `THIS_MONTH`)
+- `pipelineId` (optional, UUID)
+- `ownerType` (optional, `USER` | `TEAM`)
+- `ownerId` (optional, UUID)
+- `currencyCode` (optional, string, e.g. `USD`, `VND`)
+
+#### Response (200 OK):
+```json
+{
+  "period": {
+    "preset": "THIS_MONTH",
+    "fromDate": "2026-08-01",
+    "toDate": "2026-08-31",
+    "timezone": "Asia/Ho_Chi_Minh"
+  },
+  "appliedFilters": {
+    "pipelineId": "33333333-3333-3333-3333-333333333333",
+    "owner": null,
+    "currencyCode": "USD"
+  },
+  "tenantCurrencyCode": "USD",
+  "asOf": "2026-08-24T08:00:00Z",
+  "currencyGroups": [
+    {
+      "currencyCode": "USD",
+      "weightedForecastAmount": "185000.000000",
+      "openPipelineAmount": "240000.000000",
+      "eligibleOpportunityCount": 12,
+      "categories": [
+        { "category": "CLOSED", "amount": "90000.000000", "opportunityCount": 4 },
+        { "category": "COMMIT", "amount": "80000.000000", "opportunityCount": 3 },
+        { "category": "BEST_CASE", "amount": "45000.000000", "opportunityCount": 2 },
+        { "category": "PIPELINE", "amount": "25000.000000", "opportunityCount": 2 },
+        { "category": "OMITTED", "amount": "10000.000000", "opportunityCount": 1 }
+      ],
+      "quality": [
+        { "code": "UNSCHEDULED", "amount": "15000.000000", "opportunityCount": 1, "scope": "FILTERS_EXCLUDING_PERIOD" },
+        { "code": "STATUS_STAGE_CONFLICT", "amount": "0.000000", "opportunityCount": 0, "scope": "SELECTED_PERIOD" },
+        { "code": "MISSING_OWNER", "amount": "0.000000", "opportunityCount": 0, "scope": "SELECTED_PERIOD" }
+      ]
+    }
+  ]
+}
+```
+
+### Get Sales Forecast Breakdown
+Retrieves paginated breakdown rows grouped by `OWNER` (User, Team, Unassigned) or `STAGE`.
+
+```http
+GET /api/sales/forecast/breakdown?period=THIS_MONTH&dimension=OWNER&currencyCode=USD&page=0&size=20
+Authorization: Bearer <access-token>
+X-Tenant-ID: 22222222-2222-2222-2222-222222222222
+```
+
+#### Query Parameters:
+- `period` (optional, enum: `THIS_MONTH`, `THIS_QUARTER`, `THIS_YEAR`, default: `THIS_MONTH`)
+- `dimension` (optional, enum: `OWNER`, `STAGE`, default: `OWNER`)
+- `currencyCode` (required/default: `USD`)
+- `pipelineId` (optional, UUID)
+- `ownerType` (optional, `USER` | `TEAM`)
+- `ownerId` (optional, UUID)
+- `page` (optional, int, default: `0`)
+- `size` (optional, int, default: `20`)
+
+#### Response (200 OK):
+```json
+{
+  "dimension": "OWNER",
+  "period": {
+    "preset": "THIS_MONTH",
+    "fromDate": "2026-08-01",
+    "toDate": "2026-08-31",
+    "timezone": "Asia/Ho_Chi_Minh"
+  },
+  "appliedFilters": {
+    "pipelineId": null,
+    "owner": null,
+    "currencyCode": "USD"
+  },
+  "currencyCode": "USD",
+  "items": [
+    {
+      "subject": {
+        "kind": "USER",
+        "id": "11111111-1111-1111-1111-111111111111",
+        "label": "Alex Morgan",
+        "pipelineId": null,
+        "pipelineName": null,
+        "displayOrder": null,
+        "stageCategory": null,
+        "forecastCategory": null
+      },
+      "currencyCode": "USD",
+      "weightedForecastAmount": "110000.000000",
+      "openPipelineAmount": "140000.000000",
+      "opportunityCount": 6,
+      "categories": [
+        { "category": "CLOSED", "amount": "50000.000000", "opportunityCount": 2 },
+        { "category": "COMMIT", "amount": "60000.000000", "opportunityCount": 2 },
+        { "category": "BEST_CASE", "amount": "20000.000000", "opportunityCount": 1 },
+        { "category": "PIPELINE", "amount": "10000.000000", "opportunityCount": 1 },
+        { "category": "OMITTED", "amount": "0.000000", "opportunityCount": 0 }
+      ]
+    }
+  ],
+  "page": 0,
+  "size": 20,
+  "totalElements": 1,
+  "totalPages": 1,
+  "asOf": "2026-08-24T08:00:00Z"
+}
+```
+
+---
+
 ## Maintenance Rules
 
 Every API addition, modification, or removal must update this file in the same
@@ -8259,3 +8628,4 @@ Document only implemented behavior. Do not describe planned endpoints,
 planned permission checks, or future response fields as currently available.
 Never put real credentials, tokens, signing keys, OAuth secrets, database
 connection values, or personal data in this reference.
+

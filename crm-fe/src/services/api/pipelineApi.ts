@@ -1,8 +1,9 @@
 import { apiFetch } from './apiClient';
+import type { ForecastCategory } from './forecastApi';
 
+export type { ForecastCategory };
 export type PipelineType = 'SALES' | 'RENEWAL' | 'PARTNERSHIP' | 'CUSTOM';
 export type StageCategory = 'OPEN' | 'WON' | 'LOST';
-export type ForecastCategory = 'OMITTED' | 'PIPELINE' | 'BEST_CASE' | 'COMMIT' | 'CLOSED';
 
 export interface PipelineStageItem {
   id: string;

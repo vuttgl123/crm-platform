@@ -15,5 +15,10 @@ public record OpportunitySearchQuery(
 		OpportunityStatus status,
 		OpportunityType opportunityType,
 		OpportunityOwner owner,
+		String forecastFrom,
+		String forecastTo,
+		String forecastCategory,
+		String currencyCode,
+		String forecastQuality,
 		PageQuery pageQuery) {
 }

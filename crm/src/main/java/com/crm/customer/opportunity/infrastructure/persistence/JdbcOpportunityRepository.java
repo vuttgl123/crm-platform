@@ -89,8 +89,9 @@ public class JdbcOpportunityRepository implements OpportunityRepository {
 		appendSearchCriteria(criteria, parameters, query);
 
 		long totalElements = jdbcClient.sql(scope.cte() + """
-				SELECT COUNT(*)
+				SELECT COUNT(o.id)
 				FROM crm_opportunities o
+				LEFT JOIN crm_pipeline_stages s ON o.current_stage_id = s.id AND s.tenant_id = o.tenant_id AND s.deleted_at IS NULL
 				""" + criteria)
 				.params(parameters)
 				.query(Long.class)
@@ -100,6 +101,9 @@ public class JdbcOpportunityRepository implements OpportunityRepository {
 		parameters.put("pageOffset", query.pageQuery().offset());
 
 		List<OpportunitySummary> items = jdbcClient.sql(scope.cte() + SUMMARY_SELECT
+				+ """
+				LEFT JOIN crm_pipeline_stages s ON o.current_stage_id = s.id AND s.tenant_id = o.tenant_id AND s.deleted_at IS NULL
+				"""
 				+ criteria + """
 				ORDER BY o.updated_at DESC, o.id DESC
 				LIMIT :pageSize OFFSET :pageOffset
@@ -338,6 +342,45 @@ public class JdbcOpportunityRepository implements OpportunityRepository {
 				criteria.append(" AND o.owner_team_id = :filterOwnerId");
 			}
 			parameters.put("filterOwnerId", query.owner().id().toString());
+		}
+		if (query.currencyCode() != null && !query.currencyCode().isBlank()) {
+			criteria.append(" AND o.currency_code = :filterCurrencyCode");
+			parameters.put("filterCurrencyCode", query.currencyCode().toUpperCase().trim());
+		}
+		if (query.forecastCategory() != null && !query.forecastCategory().isBlank()) {
+			String fc = query.forecastCategory().toUpperCase().trim();
+			if ("CLOSED".equalsIgnoreCase(fc)) {
+				criteria.append(" AND o.status = 'WON' AND s.stage_category = 'WON' AND s.forecast_category = 'CLOSED'");
+				if (query.forecastFrom() != null && query.forecastTo() != null) {
+					criteria.append(" AND o.actual_close_date BETWEEN :forecastFrom AND :forecastTo");
+					parameters.put("forecastFrom", query.forecastFrom());
+					parameters.put("forecastTo", query.forecastTo());
+				}
+			} else {
+				criteria.append(" AND o.status = 'OPEN' AND s.stage_category = 'OPEN' AND s.forecast_category = :forecastCategory");
+				parameters.put("forecastCategory", fc);
+				if (query.forecastFrom() != null && query.forecastTo() != null) {
+					criteria.append(" AND o.expected_close_date BETWEEN :forecastFrom AND :forecastTo");
+					parameters.put("forecastFrom", query.forecastFrom());
+					parameters.put("forecastTo", query.forecastTo());
+				}
+			}
+		}
+		if (query.forecastQuality() != null && !query.forecastQuality().isBlank()) {
+			String fq = query.forecastQuality().toUpperCase().trim();
+			if ("UNSCHEDULED".equalsIgnoreCase(fq)) {
+				criteria.append(" AND o.status = 'OPEN' AND s.stage_category = 'OPEN' AND s.forecast_category IN ('COMMIT', 'BEST_CASE', 'PIPELINE', 'OMITTED') AND o.expected_close_date IS NULL");
+			} else if ("STATUS_STAGE_CONFLICT".equalsIgnoreCase(fq)) {
+				criteria.append("""
+						 AND (
+						     (o.status = 'OPEN' AND (s.stage_category IN ('WON', 'LOST') OR s.forecast_category = 'CLOSED'))
+						     OR (o.status = 'WON' AND (s.stage_category <> 'WON' OR s.forecast_category <> 'CLOSED'))
+						     OR (o.status = 'LOST' AND s.stage_category <> 'LOST')
+						 )
+						""");
+			} else if ("MISSING_OWNER".equalsIgnoreCase(fq)) {
+				criteria.append(" AND o.owner_user_id IS NULL AND o.owner_team_id IS NULL");
+			}
 		}
 	}
 

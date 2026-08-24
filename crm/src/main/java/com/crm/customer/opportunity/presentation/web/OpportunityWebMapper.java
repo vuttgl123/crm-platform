@@ -89,7 +89,9 @@ public interface OpportunityWebMapper {
 		return new OpportunitySearchQuery(
 				request.q(), request.accountId(), request.pipelineId(),
 				request.stageId(), request.status(), request.opportunityType(),
-				owner, new PageQuery(page, size));
+				owner, request.forecastFrom(), request.forecastTo(),
+				request.forecastCategory(), request.currencyCode(),
+				request.forecastQuality(), new PageQuery(page, size));
 	}
 
 	default PageResult<OpportunitySummaryResponse> toSummaryPage(

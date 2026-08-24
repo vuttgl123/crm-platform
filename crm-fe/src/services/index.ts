@@ -32,6 +32,7 @@ export * from './api/tenantApi';
 export * from './api/noteApi';
 export * from './api/tagApi';
 export * from './api/customFieldApi';
+export type { ForecastCategory } from './api/forecastApi';
 export * from './api/pipelineApi';
 export * from './api/salesConfigApi';
 export * from './api/timelineApi';

@@ -23,7 +23,9 @@ import { RolesPage } from '@/features/platform/roles/RolesPage';
 import { ContactsPage } from '@/features/crm/contacts/ContactsPage';
 import { LeadsPage } from '@/features/crm/leads/LeadsPage';
 import { OpportunitiesPage } from '@/features/crm/opportunities/OpportunitiesPage';
+import { OpportunityDetailPage } from '@/features/crm/opportunities/pages/OpportunityDetailPage';
 import { ActivitiesPage } from '@/features/crm/activities/ActivitiesPage';
+import { ActivityDetailPage } from '@/features/crm/activities/pages/ActivityDetailPage';
 
 // Sales & Catalog Screens
 import { QuotesPage } from '@/features/sales/quotes/QuotesPage';
@@ -135,7 +137,9 @@ export const AppRoutes: React.FC = () => {
         <Route path="crm/contacts" element={<ContactsPage />} />
         <Route path="crm/leads" element={<LeadsPage />} />
         <Route path="crm/opportunities" element={<OpportunitiesPage />} />
+        <Route path="crm/opportunities/:id" element={<OpportunityDetailPage />} />
         <Route path="crm/activities" element={<ActivitiesPage />} />
+        <Route path="crm/activities/:activityId" element={<ActivityDetailPage />} />
 
         {/* 2. Sales & Orders Module */}
         <Route path="sales/forecast" element={<SalesForecastPage />} />

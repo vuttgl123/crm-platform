@@ -18,6 +18,11 @@ public record OpportunitySearchRequest(
 		OpportunityType opportunityType,
 		AccountOwnerType ownerType,
 		UUID ownerId,
+		String forecastFrom,
+		String forecastTo,
+		String forecastCategory,
+		String currencyCode,
+		String forecastQuality,
 		@PositiveOrZero @Min(0) Integer page,
 		@PositiveOrZero @Min(1) @Max(100) Integer size) {
 }

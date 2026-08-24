@@ -1,4 +1,6 @@
 import { apiFetch } from './apiClient';
+import type { PageResult } from './accountApi';
+import type { NoteItem, NoteVisibility } from './noteApi';
 
 export type ActivityType =
   | 'CALL'
@@ -10,245 +12,470 @@ export type ActivityType =
   | 'FOLLOW_UP'
   | 'OTHER';
 
-export type ActivityPriority = 'LOW' | 'MEDIUM' | 'NORMAL' | 'HIGH' | 'URGENT';
-
 export type ActivityStatus =
-  | 'PENDING'
   | 'PLANNED'
   | 'IN_PROGRESS'
   | 'COMPLETED'
   | 'CANCELLED'
   | 'DEFERRED';
 
+export type ActivityPriority = 'LOW' | 'NORMAL' | 'HIGH' | 'URGENT';
+
 export type ActivityDirection = 'INBOUND' | 'OUTBOUND' | 'INTERNAL';
 
-export interface ActivityOwner {
-  ownerUserId?: string | null;
-  assignedTeamId?: string | null;
-}
+export type ActivityOwnerKind = 'USER' | 'TEAM';
 
-export interface ActivityItem {
+export interface ActivityOwnerRef {
+  kind: ActivityOwnerKind;
   id: string;
-  subject: string;
-  type: ActivityType;
-  activityType?: ActivityType;
-  priority: ActivityPriority;
-  status: ActivityStatus;
-  dueDate: string;
-  dueTime?: string;
-  accountId?: string;
-  accountName?: string;
-  contactName?: string;
-  assignedTo: string;
-  description?: string;
-  scheduledStartAt?: string;
-  scheduledEndAt?: string;
-  createdAt: string;
-  updatedAt?: string;
-  version: number;
+  displayName?: string;
+  secondaryLabel?: string | null;
 }
 
-export interface ActivityResponse {
+export type ActivityRelatedType = 'ACCOUNT' | 'CONTACT' | 'LEAD' | 'OPPORTUNITY';
+
+export interface ActivityLink {
+  id: string;
+  targetType: ActivityRelatedType;
+  targetId?: string;
+  displayName: string;
+  displayCode?: string | null;
+  relationRole: 'REGARDING';
+  accessible: boolean;
+  href?: string | null;
+  createdAt: string;
+}
+
+export type ActivityParticipantType = 'USER' | 'CONTACT' | 'EXTERNAL_EMAIL';
+
+export type ActivityParticipantRole =
+  | 'ORGANIZER'
+  | 'ATTENDEE'
+  | 'REQUIRED'
+  | 'OPTIONAL'
+  | 'CC'
+  | 'BCC';
+
+export type ActivityParticipationStatus =
+  | 'NEEDS_ACTION'
+  | 'ACCEPTED'
+  | 'DECLINED'
+  | 'TENTATIVE';
+
+export interface ActivityParticipant {
+  id: string;
+  participantType: ActivityParticipantType;
+  principalId?: string | null;
+  displayName: string;
+  email?: string | null;
+  role: ActivityParticipantRole;
+  participationStatus?: ActivityParticipationStatus | null;
+  accessible: boolean;
+  createdAt: string;
+  version?: number;
+}
+
+export type ActivityAvailableAction =
+  | 'EDIT'
+  | 'START'
+  | 'COMPLETE'
+  | 'DEFER'
+  | 'RESUME'
+  | 'CANCEL'
+  | 'REOPEN'
+  | 'RESCHEDULE'
+  | 'MANAGE_LINKS'
+  | 'MANAGE_PARTICIPANTS'
+  | 'ADD_NOTE'
+  | 'DELETE';
+
+export interface ActivitySummary {
   id: string;
   activityType: ActivityType;
   subject: string;
-  description?: string | null;
   direction?: ActivityDirection | null;
   status: ActivityStatus;
   priority: ActivityPriority;
-  owner: ActivityOwner;
+  owner: ActivityOwnerRef;
   scheduledStartAt?: string | null;
   scheduledEndAt?: string | null;
   completedAt?: string | null;
+  relatedRecords: ActivityLink[];
+  relatedRecordCount: number;
+  participantCount: number;
+  availableActions: ActivityAvailableAction[];
+  updatedAt: string;
+  version: number;
+}
+
+export interface ActivityDetail extends ActivitySummary {
+  description?: string | null;
   durationSeconds?: number | null;
   outcomeCode?: string | null;
   externalReference?: string | null;
   recurrenceRule?: string | null;
   createdAt: string;
   createdBy?: string | null;
-  updatedAt: string;
   updatedBy?: string | null;
+}
+
+export type ActivityQueueType =
+  | 'MY_WORK'
+  | 'OVERDUE'
+  | 'TODAY'
+  | 'UPCOMING'
+  | 'COMPLETED'
+  | 'ALL';
+
+export interface ActivityQueueSummary {
+  myWork: number;
+  overdue: number;
+  today: number;
+  upcoming: number;
+  completed: number;
+  all: number;
+  timeZone: string;
+  asOf: string;
+}
+
+export type ActivityTransitionAction =
+  | 'START'
+  | 'COMPLETE'
+  | 'DEFER'
+  | 'RESUME'
+  | 'CANCEL'
+  | 'REOPEN';
+
+export interface ActivityTransitionRequest {
   version: number;
-}
-
-export interface CreateActivityRequest {
-  activityType?: ActivityType;
-  type?: ActivityType;
-  subject: string;
-  description?: string | null;
-  direction?: ActivityDirection | null;
-  priority?: ActivityPriority;
-  status?: ActivityStatus;
-  owner?: ActivityOwner;
-  scheduledStartAt?: string | null;
-  scheduledEndAt?: string | null;
-  dueDate?: string;
-  dueTime?: string;
-  durationSeconds?: number | null;
+  action: ActivityTransitionAction;
   outcomeCode?: string | null;
-  externalReference?: string | null;
-  recurrenceRule?: string | null;
-  accountName?: string;
-  contactName?: string;
-  assignedTo?: string;
+  outcomeNotes?: string | null;
+  completedAt?: string | null;
+  reason?: string | null;
 }
 
-export interface UpdateActivityRequest {
+export interface ActivityScheduleRequest {
   version: number;
-  activityType?: ActivityType;
-  type?: ActivityType;
-  subject: string;
-  description?: string | null;
-  direction?: ActivityDirection | null;
-  status?: ActivityStatus;
-  priority?: ActivityPriority;
-  owner?: ActivityOwner;
-  scheduledStartAt?: string | null;
+  scheduledStartAt: string | null;
   scheduledEndAt?: string | null;
-  dueDate?: string;
-  dueTime?: string;
-  durationSeconds?: number | null;
-  outcomeCode?: string | null;
-  externalReference?: string | null;
-  recurrenceRule?: string | null;
-  accountName?: string;
-  contactName?: string;
-  assignedTo?: string;
 }
 
-export interface ActivitySearchRequest {
+export interface ActivityStatusHistoryEntry {
+  id: string;
+  activityId: string;
+  fromStatus?: ActivityStatus | null;
+  toStatus: ActivityStatus;
+  reason?: string | null;
+  changedBy?: string | null;
+  changedAt: string;
+}
+
+export interface ActivitySearchParams {
   q?: string;
-  search?: string;
-  type?: string;
+  queue?: string;
   activityType?: ActivityType;
-  status?: string;
-  priority?: string;
+  status?: ActivityStatus;
+  priority?: ActivityPriority;
   ownerUserId?: string;
   assignedTeamId?: string;
+  relatedType?: ActivityRelatedType;
+  relatedId?: string;
   from?: string;
   to?: string;
   page?: number;
   size?: number;
+  sort?: string;
 }
 
-export const ACTIVITY_TYPE_CONFIG: Record<string, { label: string; icon: string; className: string }> = {
-  CALL: { label: 'Phone Call', icon: 'Phone', className: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-  MEETING: { label: 'Meeting / Meeting', icon: 'Users', className: 'bg-blue-50 text-blue-700 border-blue-200' },
-  TASK: { label: 'Action Task', icon: 'CheckSquare', className: 'bg-purple-50 text-purple-700 border-purple-200' },
-  EMAIL: { label: 'Email Dispatch', icon: 'Mail', className: 'bg-amber-50 text-amber-700 border-amber-200' },
-};
+export interface CreateActivityRequest {
+  activityType: ActivityType;
+  subject: string;
+  description?: string | null;
+  direction?: ActivityDirection | null;
+  priority: ActivityPriority;
+  owner?: {
+    kind: ActivityOwnerKind;
+    id: string;
+  } | null;
+  scheduledStartAt?: string | null;
+  scheduledEndAt?: string | null;
+  links?: {
+    targetType: ActivityRelatedType;
+    targetId: string;
+  }[];
+  participants?: {
+    participantType: ActivityParticipantType;
+    principalId?: string | null;
+    displayName?: string;
+    email?: string | null;
+    role: ActivityParticipantRole;
+  }[];
+}
 
-function normalizeActivity(a: any): ActivityItem {
-  const type: ActivityType = a.type || a.activityType || 'TASK';
-  const priority: ActivityPriority = a.priority || 'MEDIUM';
-  const status: ActivityStatus = a.status || 'PENDING';
-  const scheduled = a.scheduledStartAt || a.dueDate || new Date().toISOString();
-  const dueDate = scheduled.split('T')[0] || scheduled.split(' ')[0] || '2026-08-15';
-  const dueTime = a.dueTime || (scheduled.includes('T') ? scheduled.split('T')[1]?.substring(0, 5) : '09:00');
-
-  return {
-    ...a,
-    id: a.id || '',
-    subject: a.subject || 'Công việc',
-    type,
-    activityType: type,
-    priority,
-    status,
-    dueDate,
-    dueTime,
-    accountName: a.accountName || 'Doanh nghiệp',
-    contactName: a.contactName || 'Người liên hệ',
-    assignedTo: a.assignedTo || 'Phạm Tuấn Vũ',
-    description: a.description || '',
-    createdAt: a.createdAt || new Date().toISOString(),
-    version: a.version || 1,
+export interface UpdateActivityRequest {
+  version: number;
+  activityType: ActivityType;
+  subject: string;
+  description?: string | null;
+  direction?: ActivityDirection | null;
+  priority: ActivityPriority;
+  owner: {
+    kind: ActivityOwnerKind;
+    id: string;
   };
+  scheduledStartAt?: string | null;
+  scheduledEndAt?: string | null;
+}
+
+export interface CreateActivityLinkRequest {
+  targetType: ActivityRelatedType;
+  targetId: string;
+}
+
+export interface CreateActivityParticipantRequest {
+  participantType: ActivityParticipantType;
+  principalId?: string | null;
+  displayName?: string;
+  email?: string | null;
+  role: ActivityParticipantRole;
+}
+
+export interface UpdateActivityParticipantRequest {
+  version: number;
+  role: ActivityParticipantRole;
 }
 
 export const activityApi = {
-  async list(params: ActivitySearchRequest = {}): Promise<{ content: ActivityItem[]; totalElements: number; totalPages: number; page: number; size: number }> {
-    const query = new URLSearchParams();
-    const q = params.q || params.search;
-    if (q) query.append('q', q);
-    if (params.type && params.type !== 'ALL') query.append('activityType', params.type);
-    if (params.activityType) query.append('activityType', params.activityType);
-    if (params.status && params.status !== 'ALL') query.append('status', params.status);
-    if (params.priority && params.priority !== 'ALL') query.append('priority', params.priority);
-    if (params.page !== undefined) query.append('page', params.page.toString());
-    if (params.size !== undefined) query.append('size', params.size.toString());
+  search: async (params: ActivitySearchParams = {}): Promise<PageResult<ActivitySummary>> => {
+    const searchParams = new URLSearchParams();
+    if (params.q?.trim()) searchParams.set('q', params.q.trim());
+    if (params.queue) searchParams.set('queue', params.queue);
+    if (params.activityType) searchParams.set('activityType', params.activityType);
+    if (params.status) searchParams.set('status', params.status);
+    if (params.priority) searchParams.set('priority', params.priority);
+    if (params.ownerUserId) searchParams.set('ownerUserId', params.ownerUserId);
+    if (params.assignedTeamId) searchParams.set('assignedTeamId', params.assignedTeamId);
+    if (params.relatedType && params.relatedId) {
+      searchParams.set('relatedType', params.relatedType);
+      searchParams.set('relatedId', params.relatedId);
+    }
+    if (params.from) searchParams.set('from', params.from);
+    if (params.to) searchParams.set('to', params.to);
+    if (params.sort) searchParams.set('sort', params.sort);
+    if (params.page !== undefined) searchParams.set('page', params.page.toString());
+    if (params.size !== undefined) searchParams.set('size', params.size.toString());
 
-    const queryString = query.toString();
-    const endpoint = `/activities${queryString ? `?${queryString}` : ''}`;
-    const res = await apiFetch<any>(endpoint, { method: 'GET' });
-
-    const rawItems: any[] = Array.isArray(res) ? res : res.items || res.content || [];
-    const content = rawItems.map(normalizeActivity);
-
-    return {
-      content,
-      totalElements: res.totalElements ?? content.length,
-      totalPages: res.totalPages ?? 1,
-      page: res.page ?? res.pageNumber ?? 0,
-      size: res.size ?? res.pageSize ?? 10,
-    };
+    const queryStr = searchParams.toString();
+    const endpoint = queryStr ? `/activities?${queryStr}` : '/activities';
+    return apiFetch<PageResult<ActivitySummary>>(endpoint);
   },
 
-  async getById(id: string): Promise<ActivityItem> {
-    const res = await apiFetch<any>(`/activities/${id}`, { method: 'GET' });
-    return normalizeActivity(res);
+  getWorkQueueSummary: async (
+    filters: Omit<ActivitySearchParams, 'queue' | 'page' | 'size' | 'sort'> = {}
+  ): Promise<ActivityQueueSummary> => {
+    const searchParams = new URLSearchParams();
+    if (filters.q?.trim()) searchParams.set('q', filters.q.trim());
+    if (filters.activityType) searchParams.set('activityType', filters.activityType);
+    if (filters.priority) searchParams.set('priority', filters.priority);
+    if (filters.ownerUserId) searchParams.set('ownerUserId', filters.ownerUserId);
+    if (filters.assignedTeamId) searchParams.set('assignedTeamId', filters.assignedTeamId);
+    if (filters.relatedType && filters.relatedId) {
+      searchParams.set('relatedType', filters.relatedType);
+      searchParams.set('relatedId', filters.relatedId);
+    }
+    if (filters.from) searchParams.set('from', filters.from);
+    if (filters.to) searchParams.set('to', filters.to);
+
+    const queryStr = searchParams.toString();
+    const endpoint = queryStr ? `/activities/work-queue-summary?${queryStr}` : '/activities/work-queue-summary';
+    return apiFetch<ActivityQueueSummary>(endpoint);
   },
 
-  async create(request: CreateActivityRequest): Promise<ActivityItem> {
-    const type = request.type || request.activityType || 'TASK';
-    const payload = {
-      activityType: type,
-      subject: request.subject,
-      description: request.description,
-      priority: request.priority === 'MEDIUM' ? 'NORMAL' : (request.priority || 'NORMAL'),
-      scheduledStartAt: request.dueDate ? `${request.dueDate}T${request.dueTime || '09:00'}:00Z` : new Date().toISOString(),
-    };
-    const res = await apiFetch<any>('/activities', {
+  get: async (id: string): Promise<ActivityDetail> => {
+    return apiFetch<ActivityDetail>(`/activities/${id}`);
+  },
+
+  create: async (payload: CreateActivityRequest): Promise<ActivityDetail> => {
+    return apiFetch<ActivityDetail>('/activities', {
       method: 'POST',
       body: JSON.stringify(payload),
     });
-    return normalizeActivity({ ...res, ...request });
   },
 
-  async update(id: string, request: UpdateActivityRequest): Promise<ActivityItem> {
-    const type = request.type || request.activityType || 'TASK';
-    const payload = {
-      version: request.version || 1,
-      activityType: type,
-      subject: request.subject,
-      description: request.description,
-      status: request.status || 'PENDING',
-      priority: request.priority === 'MEDIUM' ? 'NORMAL' : (request.priority || 'NORMAL'),
-      scheduledStartAt: request.dueDate ? `${request.dueDate}T${request.dueTime || '09:00'}:00Z` : new Date().toISOString(),
-    };
-    const res = await apiFetch<any>(`/activities/${id}`, {
+  update: async (id: string, payload: UpdateActivityRequest): Promise<ActivityDetail> => {
+    return apiFetch<ActivityDetail>(`/activities/${id}`, {
       method: 'PUT',
+      headers: {
+        'If-Match': `"${payload.version}"`,
+      },
       body: JSON.stringify(payload),
     });
-    return normalizeActivity({ ...res, ...request });
   },
 
-  async complete(id: string, version: number = 1): Promise<ActivityItem> {
-    const res = await apiFetch<any>(`/activities/${id}/complete`, {
-      method: 'POST',
-      headers: {
-        'If-Match': `"${version}"`,
-      },
-      body: JSON.stringify({ outcomeCode: 'SUCCESS' }),
-    });
-    return normalizeActivity(res);
-  },
-
-  async delete(id: string, version: number = 1): Promise<void> {
+  delete: async (id: string, version: number): Promise<void> => {
     return apiFetch<void>(`/activities/${id}`, {
       method: 'DELETE',
       headers: {
         'If-Match': `"${version}"`,
       },
     });
+  },
+
+  transition: async (id: string, payload: ActivityTransitionRequest): Promise<ActivityDetail> => {
+    return apiFetch<ActivityDetail>(`/activities/${id}/transitions`, {
+      method: 'POST',
+      headers: {
+        'If-Match': `"${payload.version}"`,
+      },
+      body: JSON.stringify(payload),
+    });
+  },
+
+  reschedule: async (id: string, payload: ActivityScheduleRequest): Promise<ActivityDetail> => {
+    return apiFetch<ActivityDetail>(`/activities/${id}/schedule`, {
+      method: 'PUT',
+      headers: {
+        'If-Match': `"${payload.version}"`,
+      },
+      body: JSON.stringify(payload),
+    });
+  },
+
+  listLinks: async (id: string, params: { page?: number; size?: number } = {}): Promise<PageResult<ActivityLink>> => {
+    const searchParams = new URLSearchParams();
+    if (params.page !== undefined) searchParams.set('page', params.page.toString());
+    if (params.size !== undefined) searchParams.set('size', params.size.toString());
+    const queryStr = searchParams.toString();
+    return apiFetch<PageResult<ActivityLink>>(`/activities/${id}/links${queryStr ? `?${queryStr}` : ''}`);
+  },
+
+  addLink: async (id: string, payload: CreateActivityLinkRequest): Promise<ActivityLink> => {
+    return apiFetch<ActivityLink>(`/activities/${id}/links`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  removeLink: async (id: string, linkId: string, version: number): Promise<void> => {
+    return apiFetch<void>(`/activities/${id}/links/${linkId}`, {
+      method: 'DELETE',
+      headers: {
+        'If-Match': `"${version}"`,
+      },
+    });
+  },
+
+  listParticipants: async (
+    id: string,
+    params: { page?: number; size?: number } = {}
+  ): Promise<PageResult<ActivityParticipant>> => {
+    const searchParams = new URLSearchParams();
+    if (params.page !== undefined) searchParams.set('page', params.page.toString());
+    if (params.size !== undefined) searchParams.set('size', params.size.toString());
+    const queryStr = searchParams.toString();
+    return apiFetch<PageResult<ActivityParticipant>>(`/activities/${id}/participants${queryStr ? `?${queryStr}` : ''}`);
+  },
+
+  addParticipant: async (
+    id: string,
+    payload: CreateActivityParticipantRequest
+  ): Promise<ActivityParticipant> => {
+    return apiFetch<ActivityParticipant>(`/activities/${id}/participants`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  updateParticipant: async (
+    id: string,
+    participantId: string,
+    payload: UpdateActivityParticipantRequest
+  ): Promise<ActivityParticipant> => {
+    return apiFetch<ActivityParticipant>(`/activities/${id}/participants/${participantId}`, {
+      method: 'PUT',
+      headers: {
+        'If-Match': `"${payload.version}"`,
+      },
+      body: JSON.stringify(payload),
+    });
+  },
+
+  removeParticipant: async (id: string, participantId: string, version: number): Promise<void> => {
+    return apiFetch<void>(`/activities/${id}/participants/${participantId}`, {
+      method: 'DELETE',
+      headers: {
+        'If-Match': `"${version}"`,
+      },
+    });
+  },
+
+  listNotes: async (
+    id: string,
+    params: { page?: number; size?: number } = {}
+  ): Promise<PageResult<NoteItem>> => {
+    const searchParams = new URLSearchParams();
+    searchParams.set('targetType', 'ACTIVITY');
+    searchParams.set('targetId', id);
+    if (params.page !== undefined) searchParams.set('page', params.page.toString());
+    if (params.size !== undefined) searchParams.set('size', params.size.toString());
+    return apiFetch<PageResult<NoteItem>>(`/notes?${searchParams.toString()}`);
+  },
+
+  createNote: async (
+    id: string,
+    payload: { content: string; visibility: NoteVisibility }
+  ): Promise<NoteItem> => {
+    return apiFetch<NoteItem>('/notes', {
+      method: 'POST',
+      body: JSON.stringify({
+        targetType: 'ACTIVITY',
+        targetId: id,
+        content: payload.content,
+        visibility: payload.visibility,
+      }),
+    });
+  },
+
+  updateNote: async (
+    id: string,
+    noteId: string,
+    payload: { content: string; visibility: NoteVisibility; version: number }
+  ): Promise<NoteItem> => {
+    return apiFetch<NoteItem>(`/notes/${noteId}`, {
+      method: 'PUT',
+      headers: {
+        'If-Match': `"${payload.version}"`,
+      },
+      body: JSON.stringify({
+        targetType: 'ACTIVITY',
+        targetId: id,
+        content: payload.content,
+        visibility: payload.visibility,
+        version: payload.version,
+      }),
+    });
+  },
+
+  deleteNote: async (_id: string, noteId: string, version: number): Promise<void> => {
+    return apiFetch<void>(`/notes/${noteId}`, {
+      method: 'DELETE',
+      headers: {
+        'If-Match': `"${version}"`,
+      },
+    });
+  },
+
+  listStatusHistory: async (
+    id: string,
+    params: { page?: number; size?: number } = {}
+  ): Promise<PageResult<ActivityStatusHistoryEntry>> => {
+    const searchParams = new URLSearchParams();
+    if (params.page !== undefined) searchParams.set('page', params.page.toString());
+    if (params.size !== undefined) searchParams.set('size', params.size.toString());
+    const queryStr = searchParams.toString();
+    return apiFetch<PageResult<ActivityStatusHistoryEntry>>(
+      `/activities/${id}/status-history${queryStr ? `?${queryStr}` : ''}`
+    );
   },
 };

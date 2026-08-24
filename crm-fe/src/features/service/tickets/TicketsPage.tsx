@@ -443,7 +443,7 @@ export const TicketsPage: React.FC = () => {
                       {/* Actions */}
                       <TableCell className="py-2 px-3 text-right pr-4">
                         <div className="flex items-center justify-end gap-1">
-                          <ActionTooltip label="Chỉnh sửa ticket">
+                          <ActionTooltip label="Edit Ticket">
                             <Button
                               variant="ghost"
                               size="icon"
@@ -454,7 +454,7 @@ export const TicketsPage: React.FC = () => {
                               <Edit className="w-3.5 h-3.5" />
                             </Button>
                           </ActionTooltip>
-                          <ActionTooltip label="Xóa ticket">
+                          <ActionTooltip label="Delete Ticket">
                             <Button
                               variant="ghost"
                               size="icon"

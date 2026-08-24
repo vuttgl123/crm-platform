@@ -334,7 +334,7 @@ export const ProductsPage: React.FC = () => {
                     {/* Actions */}
                     <TableCell className="py-2 px-3 text-right pr-4">
                       <div className="flex items-center justify-end gap-1">
-                        <ActionTooltip label="Chỉnh sửa sản phẩm">
+                        <ActionTooltip label="Edit Product">
                           <Button
                             variant="ghost"
                             size="icon"
@@ -345,7 +345,7 @@ export const ProductsPage: React.FC = () => {
                             <Edit className="w-3.5 h-3.5" />
                           </Button>
                         </ActionTooltip>
-                        <ActionTooltip label="Xóa sản phẩm">
+                        <ActionTooltip label="Delete Product">
                           <Button
                             variant="ghost"
                             size="icon"

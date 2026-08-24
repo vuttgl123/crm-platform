@@ -522,7 +522,7 @@ export const ActivitiesPage: React.FC = () => {
                               <CheckCircle2 className="w-3.5 h-3.5" />
                             </Button>
                           )}
-                          <ActionTooltip label="Chỉnh sửa hoạt động">
+                          <ActionTooltip label="Edit Activity">
                             <Button
                               variant="ghost"
                               size="icon"
@@ -533,7 +533,7 @@ export const ActivitiesPage: React.FC = () => {
                               <Edit className="w-3.5 h-3.5" />
                             </Button>
                           </ActionTooltip>
-                          <ActionTooltip label="Xóa hoạt động">
+                          <ActionTooltip label="Delete Activity">
                             <Button
                               variant="ghost"
                               size="icon"

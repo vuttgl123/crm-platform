@@ -2,7 +2,6 @@ import { UserSessionContext } from '@/types/auth';
 
 const SESSION_KEY = 'vum_crm_session_v1';
 const SIDEBAR_KEY = 'vum_crm_sidebar_collapsed';
-const LOCALE_KEY = 'vum_crm_locale_pref';
 
 export const storageAdapter = {
   getSession(): UserSessionContext | null {
@@ -53,22 +52,6 @@ export const storageAdapter = {
   setSidebarCollapsed(collapsed: boolean): void {
     try {
       localStorage.setItem(SIDEBAR_KEY, String(collapsed));
-    } catch {
-      // Ignore
-    }
-  },
-
-  getLocale(): string {
-    try {
-      return localStorage.getItem(LOCALE_KEY) || 'en';
-    } catch {
-      return 'en';
-    }
-  },
-
-  setLocale(locale: string): void {
-    try {
-      localStorage.setItem(LOCALE_KEY, locale);
     } catch {
       // Ignore
     }

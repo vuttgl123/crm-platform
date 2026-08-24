@@ -211,7 +211,6 @@ export const opportunityApi = {
 
     return {
       items,
-      content: items,
       page: res.page ?? res.pageNumber ?? 0,
       size: res.size ?? res.pageSize ?? 10,
       totalElements: res.totalElements ?? items.length,

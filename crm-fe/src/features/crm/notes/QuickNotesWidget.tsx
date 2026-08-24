@@ -19,6 +19,7 @@ import {
   Check,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { ActionTooltip } from '@/components/ui/action-tooltip';
 
 interface QuickNotesWidgetProps {
   accountId?: string;
@@ -217,19 +218,21 @@ export const QuickNotesWidget: React.FC<QuickNotesWidgetProps> = ({
               >
                 <div className="flex items-center justify-between gap-2">
                   <span className="font-bold text-xs text-slate-900 line-clamp-1">
-                    {note.content.startsWith('**') ? note.content.split('\n')[0].replace(/\*\*/g, '') : 'Ghi chú'}
+                    {note.content.startsWith('**') ? note.content.split('\n')[0].replace(/\*\*/g, '') : 'Note'}
                   </span>
                   <div className="flex items-center gap-1">
                     <span className="text-[10px] text-slate-400 font-mono">
-                      {new Date(note.createdAt).toLocaleDateString('vi-VN')}
+                      {new Date(note.createdAt).toLocaleDateString('en-US')}
                     </span>
-                    <button
-                      onClick={() => handleDelete(note.id, note.version)}
-                      className="text-slate-400 hover:text-rose-600 p-0.5"
-                      title="Xóa ghi chú"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </button>
+                    <ActionTooltip label="Delete note">
+                      <button
+                        onClick={() => handleDelete(note.id, note.version)}
+                        className="text-slate-400 hover:text-rose-600 p-0.5"
+                        aria-label="Delete note"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    </ActionTooltip>
                   </div>
                 </div>
 

@@ -413,7 +413,7 @@ export const ContractsPage: React.FC = () => {
                       {/* Actions */}
                       <TableCell className="py-2 px-3 text-right pr-4">
                         <div className="flex items-center justify-end gap-1">
-                          <ActionTooltip label="In / Xuất PDF">
+                          <ActionTooltip label="Print Preview & PDF Export">
                             <Button
                               variant="ghost"
                               size="icon"
@@ -427,7 +427,7 @@ export const ContractsPage: React.FC = () => {
                               <Printer className="w-3.5 h-3.5" />
                             </Button>
                           </ActionTooltip>
-                          <ActionTooltip label="Chỉnh sửa hợp đồng">
+                          <ActionTooltip label="Edit Contract">
                             <Button
                               variant="ghost"
                               size="icon"
@@ -438,7 +438,7 @@ export const ContractsPage: React.FC = () => {
                               <Edit className="w-3.5 h-3.5" />
                             </Button>
                           </ActionTooltip>
-                          <ActionTooltip label="Xóa hợp đồng">
+                          <ActionTooltip label="Delete Contract">
                             <Button
                               variant="ghost"
                               size="icon"

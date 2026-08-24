@@ -135,7 +135,7 @@ export const QuickTaggingWidget: React.FC<QuickTaggingWidgetProps> = ({
             style={{ backgroundColor: tag.colorHex || '#3b82f6' }}
           />
           <span>{tag.tagName}</span>
-          <ActionTooltip label="Gỡ tag">
+          <ActionTooltip label="Remove tag">
             <button
               onClick={() => handleRemoveTag(tag.tagId, tag.tagName)}
               className="hover:opacity-70 ml-0.5"

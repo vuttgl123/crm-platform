@@ -28,14 +28,15 @@ export interface AccountCommunicationChannelResponse {
 export interface CreateAccountCommunicationChannelRequest {
   channelType: ChannelType;
   rawValue: string;
-  label?: string;
+  label?: string | null;
   isPrimary?: boolean;
   doNotUse?: boolean;
 }
 
 export interface UpdateAccountCommunicationChannelRequest {
-  rawValue?: string;
-  label?: string;
+  channelType: ChannelType;
+  rawValue: string;
+  label?: string | null;
   isPrimary?: boolean;
   doNotUse?: boolean;
 }
@@ -45,14 +46,8 @@ export function normalizeChannelValue(type: ChannelType, rawValue: string): stri
   if (!trimmed) return trimmed;
 
   if (['PHONE', 'MOBILE', 'SMS', 'WHATSAPP'].includes(type)) {
-    // Remove formatting characters (spaces, hyphens, dots, brackets)
-    let cleaned = trimmed.replace(/[\s\-\.\(\)]/g, '');
-    if (cleaned.startsWith('0')) {
-      // Automatically convert local Vietnamese phone format (0912345678) to E.164 (+84912345678)
-      cleaned = '+84' + cleaned.slice(1);
-    } else if (!cleaned.startsWith('+') && /^\d+$/.test(cleaned)) {
-      cleaned = '+' + cleaned;
-    }
+    // Keep numbers and leading + format, strip spacing and dashes
+    const cleaned = trimmed.replace(/[\s\-\.\(\)]/g, '');
     return cleaned;
   }
 
@@ -60,9 +55,13 @@ export function normalizeChannelValue(type: ChannelType, rawValue: string): stri
 }
 
 export const accountChannelApi = {
-  async list(accountId: string): Promise<AccountCommunicationChannelResponse[]> {
+  async list(
+    accountId: string,
+    options?: { signal?: AbortSignal }
+  ): Promise<AccountCommunicationChannelResponse[]> {
     return apiFetch<AccountCommunicationChannelResponse[]>(
-      `/api/accounts/${accountId}/communication-channels`
+      `/accounts/${accountId}/communication-channels`,
+      { signal: options?.signal }
     );
   },
 
@@ -78,7 +77,7 @@ export const accountChannelApi = {
       doNotUse: payload.doNotUse ?? false,
     };
     return apiFetch<AccountCommunicationChannelResponse>(
-      `/api/accounts/${accountId}/communication-channels`,
+      `/accounts/${accountId}/communication-channels`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -93,22 +92,29 @@ export const accountChannelApi = {
     version: number,
     payload: UpdateAccountCommunicationChannelRequest
   ): Promise<AccountCommunicationChannelResponse> {
+    const normalizedPayload = {
+      channelType: payload.channelType,
+      rawValue: normalizeChannelValue(payload.channelType, payload.rawValue),
+      label: payload.label?.trim() || null,
+      isPrimary: payload.isPrimary ?? false,
+      doNotUse: payload.doNotUse ?? false,
+    };
     return apiFetch<AccountCommunicationChannelResponse>(
-      `/api/accounts/${accountId}/communication-channels/${channelId}`,
+      `/accounts/${accountId}/communication-channels/${channelId}`,
       {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'If-Match': `"${version}"`,
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(normalizedPayload),
       }
     );
   },
 
   async delete(accountId: string, channelId: string, version: number): Promise<void> {
     await apiFetch<void>(
-      `/api/accounts/${accountId}/communication-channels/${channelId}`,
+      `/accounts/${accountId}/communication-channels/${channelId}`,
       {
         method: 'DELETE',
         headers: {

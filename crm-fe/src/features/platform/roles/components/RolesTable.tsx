@@ -170,7 +170,7 @@ export const RolesTable: React.FC<RolesTableProps> = ({
                   <TableCell className="text-right pr-4 py-2.5 px-3">
                     <div className="flex items-center justify-end gap-1">
                       {isSystem || !canManage ? (
-                        <ActionTooltip label="Xem chi tiết">
+                        <ActionTooltip label="View details">
                           <Button
                             variant="ghost"
                             size="sm"
@@ -182,7 +182,7 @@ export const RolesTable: React.FC<RolesTableProps> = ({
                           </Button>
                         </ActionTooltip>
                       ) : (
-                        <ActionTooltip label="Chỉnh sửa">
+                        <ActionTooltip label="Edit role">
                           <Button
                             variant="ghost"
                             size="sm"
@@ -196,7 +196,7 @@ export const RolesTable: React.FC<RolesTableProps> = ({
                       )}
 
                       {canManage && (
-                        <ActionTooltip label="Nhân bản (Clone)">
+                        <ActionTooltip label="Clone role">
                           <Button
                             variant="ghost"
                             size="sm"
@@ -210,7 +210,7 @@ export const RolesTable: React.FC<RolesTableProps> = ({
                       )}
 
                       {!isSystem && canManage && (
-                        <ActionTooltip label="Xóa vai trò">
+                        <ActionTooltip label="Delete role">
                           <Button
                             variant="ghost"
                             size="sm"

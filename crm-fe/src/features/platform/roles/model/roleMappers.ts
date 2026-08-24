@@ -11,13 +11,13 @@ import {
   RoleEditorMode,
 } from './roleTypes';
 
-export const MODULE_NAMES: Record<string, { en: string; vi: string }> = {
-  crm: { en: 'Customer Relationship Management', vi: 'Quản trị Quan hệ Khách hàng (CRM)' },
-  sales: { en: 'Sales & Commercial Operations', vi: 'Quản lý Bán hàng & Thương mại' },
-  service: { en: 'Service & Support Operations', vi: 'Dịch vụ & Chăm sóc Khách hàng' },
-  platform: { en: 'Platform & Security Governance', vi: 'Quản trị Nền tảng & Bảo mật' },
-  audit: { en: 'Audit & Compliance Logging', vi: 'Kiểm toán & Truy vết Hệ thống' },
-  privacy: { en: 'Data Privacy & Protection', vi: 'Quyền riêng tư & Bảo vệ Dữ liệu' },
+export const MODULE_NAMES: Record<string, { en: string; vi?: string }> = {
+  crm: { en: 'Customer Relationship Management' },
+  sales: { en: 'Sales & Commercial Operations' },
+  service: { en: 'Service & Support Operations' },
+  platform: { en: 'Platform & Security Governance' },
+  audit: { en: 'Audit & Compliance Logging' },
+  privacy: { en: 'Data Privacy & Protection' },
 };
 
 export function mapPermissionResponse(p: PermissionResponse): ExtendedPermission {
@@ -25,17 +25,16 @@ export function mapPermissionResponse(p: PermissionResponse): ExtendedPermission
   const modCode = (p.moduleCode || 'other').toLowerCase();
   const moduleInfo = MODULE_NAMES[modCode] || {
     en: p.moduleCode ? p.moduleCode.toUpperCase() : 'System',
-    vi: p.moduleCode ? p.moduleCode.toUpperCase() : 'Hệ thống',
   };
 
   return {
     ...p,
     permissionCode: code,
-    description: p.description || p.descriptionVi || code,
+    description: p.description || code,
     moduleCode: modCode,
     moduleNameEn: moduleInfo.en,
-    moduleNameVi: moduleInfo.vi,
-    actionName: p.displayNameEn || p.displayNameVi || p.description || code,
+    moduleNameVi: moduleInfo.en,
+    actionName: p.displayNameEn || p.description || code,
     riskLevel: p.riskLevel || 'NORMAL',
   };
 }

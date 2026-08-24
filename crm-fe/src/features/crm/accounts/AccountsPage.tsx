@@ -1,1042 +1,343 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import {
-  accountApi,
-  AccountSummaryResponse,
-  AccountType,
-  AccountLifecycleStage,
-  CreateAccountRequest,
-} from '@/services/api/accountApi';
-import { membershipApi } from '@/services/api/membershipApi';
-import { toast } from 'sonner';
-import { BusinessNumberInput } from '@/components/ui/BusinessNumberInput';
-import {
-  renderLifecycleStageBadge as getLifecycleStageBadge,
-  renderAccountTypeBadge as getAccountTypeBadge,
-  renderRootAccountBadge,
-  renderChildCountBadge,
-} from '@/config/crmStatusConfig';
-import {
-  Building2,
-  Building,
-  Plus,
-  Eye,
-  Trash2,
-  Loader2,
-  ChevronDown,
-  ChevronRight,
-  ShieldAlert,
-  GitMerge,
-  CornerDownRight,
-  Users,
-} from 'lucide-react';
-import { SmartMergeModal } from '@/features/crm/deduplication/SmartMergeModal';
-import { StandardPageHeader } from '@/components/common/StandardPageHeader';
-import { StandardFilterBar, ViewTabItem } from '@/components/common/StandardFilterBar';
-import { StandardPagination } from '@/components/common/StandardPagination';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { SearchableSelect } from '@/components/ui/searchable-select';
-import {
-  Table,
-  TableHeader,
-  TableRow,
-  TableHead,
-  TableBody,
-  TableCell,
-} from '@/components/ui/table';
-import {
-  Dialog,
-  DialogContent,
-} from '@/components/ui/dialog';
-import { ActionTooltip } from '@/components/ui/action-tooltip';
-
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/core/session/useAuth';
+import { can } from '@/core/permissions/evaluator';
+import {
+  AccountSummaryResponse,
+  AccountResponse,
+  AccountSearchParams as ApiAccountSearchParams,
+} from '@/services/api/accountApi';
+import {
+  parseAccountSearchParams,
+  serializeAccountSearchParams,
+} from './accountSearchParams';
+import {
+  AccountFilterState,
+} from './model/accountTypes';
+import {
+  useAccountsQuery,
+  useDeleteAccountMutation,
+} from './hooks/accountQueries';
+import { getAllParentNodeIds } from './model/accountTree';
+import { mapAccountError } from './model/accountErrors';
+import { StandardPageHeader } from '@/components/common/StandardPageHeader';
+import { AccountsToolbar } from './components/AccountsToolbar';
+import { AccountsCollection } from './components/AccountsCollection';
+import { AccountEditorSheet } from './components/AccountEditorSheet';
+import { AccountDeleteDialog } from './components/AccountDeleteDialog';
+import { Button } from '@/components/ui/button';
+import { ActionTooltip } from '@/components/ui/action-tooltip';
+import { Plus, RefreshCw } from 'lucide-react';
+import { toast } from 'sonner';
 
 export const AccountsPage: React.FC = () => {
-  const navigate = useNavigate();
   const { session } = useAuth();
-  const [accounts, setAccounts] = useState<AccountSummaryResponse[]>([]);
-  const [loading, setLoading] = useState(false);
+  const tenantId = session?.tenant?.id || 'default';
+  const currentUserId = session?.user?.id;
+  const currentTeamId = session?.assignedTeam?.id;
 
-  // Search & Enhanced Filter State
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedType, setSelectedType] = useState<string>('ALL');
-  const [selectedStage, setSelectedStage] = useState<string>('ALL');
-  const [ownerFilter, setOwnerFilter] = useState<string>('ALL');
-  const [dncOnly, setDncOnly] = useState(false);
+  const canWrite = can('crm_account.write', session);
 
-  // Pagination State: 10 Parent Corporations per Page
-  const [currentPage, setCurrentPage] = useState(1);
-  const PARENT_PER_PAGE = 10;
+  // URL state synchronization
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlState = useMemo(() => parseAccountSearchParams(searchParams), [searchParams]);
 
-  // Collapsed Nodes State (by default empty set = all tree nodes expanded)
-  const [collapsedNodeIds, setCollapsedNodeIds] = useState<Set<string>>(new Set());
+  // Convert UI URL state to backend Search Request
+  const searchRequest: ApiAccountSearchParams = useMemo(() => {
+    const req: ApiAccountSearchParams = {
+      q: urlState.q || undefined,
+      accountType: urlState.accountType !== 'ALL' ? urlState.accountType : undefined,
+      lifecycleStage: urlState.lifecycleStage !== 'ALL' ? urlState.lifecycleStage : undefined,
+      page: Math.max(0, urlState.page - 1),
+      size: urlState.size,
+    };
 
-  const toggleCollapse = (id: string) => {
-    setCollapsedNodeIds((prev) => {
+    if (urlState.ownership === 'MINE' && currentUserId) {
+      req.ownerType = 'USER';
+      req.ownerId = currentUserId;
+    } else if (urlState.ownership === 'TEAM' && currentTeamId) {
+      req.ownerType = 'TEAM';
+      req.ownerId = currentTeamId;
+    }
+
+    return req;
+  }, [urlState, currentUserId, currentTeamId]);
+
+  // Query accounts list
+  const {
+    data: pageResult,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useAccountsQuery(searchRequest, tenantId);
+
+  const accounts = pageResult?.items || [];
+  const totalElements = pageResult?.totalElements ?? 0;
+  const totalPages = pageResult?.totalPages ?? 0;
+
+  // Tree Expansion State: default expand all parents
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (accounts.length > 0) {
+      const parentIds = getAllParentNodeIds(accounts);
+      setExpandedIds((prev) => {
+        const next = new Set(prev);
+        parentIds.forEach((id) => next.add(id));
+        return next;
+      });
+    }
+  }, [accounts]);
+
+  const handleToggleExpand = useCallback((accountId: string) => {
+    setExpandedIds((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
+      if (next.has(accountId)) {
+        next.delete(accountId);
       } else {
-        next.add(id);
+        next.add(accountId);
       }
       return next;
     });
-  };
+  }, []);
 
-  const toggleCollapseAll = () => {
-    if (collapsedNodeIds.size > 0) {
-      setCollapsedNodeIds(new Set());
-    } else {
-      const allParentIds = new Set(
-        accounts
-          .filter((a) => accounts.some((c) => c.parentAccountId === a.id))
-          .map((a) => a.id)
-      );
-      setCollapsedNodeIds(allParentIds);
-    }
-  };
+  const handleExpandAll = useCallback(() => {
+    const parentIds = getAllParentNodeIds(accounts);
+    setExpandedIds(new Set(parentIds));
+  }, [accounts]);
 
-  // Modal State
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [isMergeModalOpen, setIsMergeModalOpen] = useState(false);
-  const [activeFormTab, setActiveFormTab] = useState<'general' | 'legal'>('general');
+  const handleCollapseAll = useCallback(() => {
+    setExpandedIds(new Set());
+  }, []);
 
-  // Synchronized Complete Form State for Creating Account
-  const [formAccountNumber, setFormAccountNumber] = useState('');
-  const [formDisplayName, setFormDisplayName] = useState('');
-  const [formLegalName, setFormLegalName] = useState('');
-  const [formParentAccountId, setFormParentAccountId] = useState<string | undefined>(undefined);
-  const [formAccountType, setFormAccountType] = useState<AccountType>('ORGANIZATION');
-  const [formLifecycleStage, setFormLifecycleStage] = useState<AccountLifecycleStage>('PROSPECT');
-  const [formTaxIdentifier, setFormTaxIdentifier] = useState('');
-  const [formRegistrationNumber, setFormRegistrationNumber] = useState('');
-  const [formIndustryCode, setFormIndustryCode] = useState('');
-  const [formWebsite, setFormWebsite] = useState('');
-  const [formEmployeeCount, setFormEmployeeCount] = useState('');
-  const [formRevenueAmount, setFormRevenueAmount] = useState('');
-  const [formDescription, setFormDescription] = useState('');
-  const [formDoNotContact, setFormDoNotContact] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  // Delete Target State
+  const [deleteTarget, setDeleteTarget] = useState<AccountSummaryResponse | AccountResponse | null>(null);
+  const deleteMutation = useDeleteAccountMutation(tenantId);
 
-  const [teamMembers, setTeamMembers] = useState<{ id: string; name: string; email: string }[]>([]);
-  const [selectedOwnerId, setSelectedOwnerId] = useState<string>('');
-
-  // Fetch approved active team members for owner selection dropdown
-  useEffect(() => {
-    membershipApi.searchRequests('APPROVED').then((res) => {
-      if (res?.items) {
-        const list = res.items.map((item) => ({
-          id: item.requester.id,
-          name: item.requester.displayName || item.requester.email,
-          email: item.requester.email,
-        }));
-        if (session?.user && !list.some((m) => m.id === session.user.id)) {
-          list.unshift({
-            id: session.user.id,
-            name: session.user.email,
-            email: session.user.email,
-          });
-        }
-        setTeamMembers(list);
-      }
-    }).catch(() => {
-      if (session?.user) {
-        setTeamMembers([{ id: session.user.id, name: session.user.email, email: session.user.email }]);
-      }
-    });
-  }, [session]);
-
-  // Quick Action: Create Child Account under Parent Account
-  const handleCreateChildAccount = (parentAccId: string) => {
-    resetForm();
-    setFormParentAccountId(parentAccId);
-    setIsCreateOpen(true);
-  };
-
-  // Fetch Accounts from Backend API
-  const fetchAccounts = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await accountApi.search({
-        q: searchQuery || undefined,
-        accountType: selectedType !== 'ALL' ? (selectedType as AccountType) : undefined,
-        lifecycleStage: selectedStage !== 'ALL' ? (selectedStage as AccountLifecycleStage) : undefined,
+  // Filter change handlers
+  const handleFilterChange = useCallback(
+    (newFilters: Partial<AccountFilterState>) => {
+      setSearchParams((prev) => {
+        return serializeAccountSearchParams(
+          {
+            q: newFilters.q !== undefined ? newFilters.q : urlState.q,
+            accountType:
+              newFilters.accountType !== undefined
+                ? newFilters.accountType
+                : urlState.accountType,
+            lifecycleStage:
+              newFilters.lifecycleStage !== undefined
+                ? newFilters.lifecycleStage
+                : urlState.lifecycleStage,
+            ownership:
+              newFilters.ownership !== undefined
+                ? newFilters.ownership
+                : urlState.ownership,
+            viewMode:
+              newFilters.viewMode !== undefined
+                ? newFilters.viewMode
+                : urlState.viewMode,
+            page: newFilters.page !== undefined ? newFilters.page : urlState.page,
+            size: newFilters.size !== undefined ? newFilters.size : urlState.size,
+          },
+          prev
+        );
       });
+    },
+    [setSearchParams, urlState]
+  );
 
-      const rawItems: any[] = Array.isArray(res) ? res : res?.items || (res as any)?.content || [];
-      setAccounts(rawItems);
-    } catch {
-      setAccounts([]);
-      toast.error('Unable to fetch account list from server.');
-    } finally {
-      setLoading(false);
-    }
-  }, [searchQuery, selectedType, selectedStage]);
+  const handleResetFilters = useCallback(() => {
+    setSearchParams((prev) =>
+      serializeAccountSearchParams(
+        {
+          q: '',
+          accountType: 'ALL',
+          lifecycleStage: 'ALL',
+          ownership: 'ALL',
+          page: 1,
+        },
+        prev
+      )
+    );
+  }, [setSearchParams]);
 
-  useEffect(() => {
-    fetchAccounts();
-  }, [fetchAccounts]);
+  const handlePageChange = useCallback(
+    (newPage: number) => {
+      setSearchParams((prev) =>
+        serializeAccountSearchParams({ page: newPage }, prev)
+      );
+    },
+    [setSearchParams]
+  );
 
-  const handleResetFilters = () => {
-    setSearchQuery('');
-    setSelectedType('ALL');
-    setSelectedStage('ALL');
-    setOwnerFilter('ALL');
-    setDncOnly(false);
-    setCurrentPage(1);
-    fetchAccounts();
-  };
+  const handlePageSizeChange = useCallback(
+    (newSize: number) => {
+      setSearchParams((prev) =>
+        serializeAccountSearchParams({ size: newSize, page: 1 }, prev)
+      );
+    },
+    [setSearchParams]
+  );
 
-  const handleCreateAccount = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formAccountNumber.trim() || !formDisplayName.trim()) {
-      toast.error('Please enter both Account Code and Account Name');
-      return;
-    }
+  // Sheet Navigation Handlers
+  const handleOpenCreate = useCallback(() => {
+    setSearchParams((prev) =>
+      serializeAccountSearchParams({ mode: 'create', account: undefined, parentId: undefined }, prev)
+    );
+  }, [setSearchParams]);
 
-    setIsSubmitting(true);
-    const payload: CreateAccountRequest = {
-      accountNumber: formAccountNumber.trim(),
-      displayName: formDisplayName.trim(),
-      legalName: formLegalName.trim() || undefined,
-      parentAccountId: formParentAccountId && formParentAccountId !== 'NONE' ? formParentAccountId : undefined,
-      accountType: formAccountType,
-      lifecycleStage: formLifecycleStage,
-      taxIdentifier: formTaxIdentifier.trim() || undefined,
-      registrationNumber: formRegistrationNumber.trim() || undefined,
-      industryCode: formIndustryCode.trim() || undefined,
-      website: formWebsite.trim() || undefined,
-      employeeCount: formEmployeeCount ? parseInt(formEmployeeCount, 10) : undefined,
-      annualRevenue: formRevenueAmount
-        ? { amount: parseFloat(formRevenueAmount), currencyCode: 'VND' }
-        : undefined,
-      description: formDescription.trim() || undefined,
-      doNotContact: formDoNotContact,
-      owner: selectedOwnerId
-        ? { type: 'USER', id: selectedOwnerId }
-        : (session?.user?.id ? { type: 'USER', id: session.user.id } : undefined),
-    };
+  const handleOpenEdit = useCallback(
+    (acc: AccountSummaryResponse) => {
+      setSearchParams((prev) =>
+        serializeAccountSearchParams({ mode: 'edit', account: acc.id, parentId: undefined }, prev)
+      );
+    },
+    [setSearchParams]
+  );
 
+  const handleOpenAddSubsidiary = useCallback(
+    (acc: AccountSummaryResponse) => {
+      setSearchParams((prev) =>
+        serializeAccountSearchParams({ mode: 'subsidiary', account: undefined, parentId: acc.id }, prev)
+      );
+    },
+    [setSearchParams]
+  );
+
+  const handleCloseSheet = useCallback(() => {
+    setSearchParams((prev) =>
+      serializeAccountSearchParams({ mode: undefined, account: undefined, parentId: undefined }, prev)
+    );
+  }, [setSearchParams]);
+
+  // Delete Action Handler
+  const handleConfirmDelete = async (acc: AccountSummaryResponse | AccountResponse) => {
     try {
-      const created = await accountApi.create(payload);
-      toast.success(`Account "${created.displayName}" created successfully`);
-      setIsCreateOpen(false);
-      resetForm();
-      fetchAccounts();
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Failed to create account';
-      toast.error(msg);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleViewDetail = (id: string) => {
-    navigate(`/app/crm/accounts/${id}`);
-  };
-
-  const handleDeleteAccount = async (id: string, version: number, name: string) => {
-    if (!window.confirm(`Are you sure you want to delete account "${name}"?`)) return;
-
-    try {
-      await accountApi.delete(id, version);
-      toast.success(`Account "${name}" deleted successfully!`);
-      fetchAccounts();
-    } catch {
-      toast.error('Failed to delete account. Please verify permissions or network.');
-    }
-  };
-
-  const resetForm = () => {
-    setFormAccountNumber('');
-    setFormDisplayName('');
-    setFormLegalName('');
-    setFormParentAccountId(undefined);
-    setFormAccountType('ORGANIZATION');
-    setFormLifecycleStage('PROSPECT');
-    setFormTaxIdentifier('');
-    setFormRegistrationNumber('');
-    setFormIndustryCode('');
-    setFormWebsite('');
-    setFormEmployeeCount('');
-    setFormRevenueAmount('');
-    setFormDescription('');
-    setFormDoNotContact(false);
-    setActiveFormTab('general');
-  };
-
-  // Client-side Filtered Accounts for Owner & DNC
-  const filteredAccounts = useMemo(() => {
-    return accounts.filter((acc) => {
-      // Filter by Owner (Admin View)
-      if (ownerFilter !== 'ALL') {
-        if (ownerFilter === 'MY_OWN') {
-          if (!session?.user || acc.owner?.id !== session.user.id) return false;
-        } else {
-          if (acc.owner?.id !== ownerFilter) return false;
-        }
+      await deleteMutation.mutateAsync({ id: acc.id, version: acc.version });
+      toast.success('Account deleted');
+      setDeleteTarget(null);
+      if (urlState.account === acc.id) {
+        handleCloseSheet();
       }
-
-      // Filter by DNC
-      if (dncOnly && !acc.doNotContact) return false;
-      return true;
-    });
-  }, [accounts, ownerFilter, dncOnly, session]);
-
-  // Statistics Summary Counters
-  const totalCount = accounts.length;
-  const customerCount = accounts.filter((a) => a.lifecycleStage === 'CUSTOMER').length;
-
-  // Root Parent Accounts for Pagination
-  const rootParentAccounts = useMemo(() => {
-    return filteredAccounts.filter(
-      (acc) => !acc.parentAccountId || !accounts.some((p) => p.id === acc.parentAccountId)
-    );
-  }, [filteredAccounts, accounts]);
-
-  const totalPages = Math.max(1, Math.ceil(rootParentAccounts.length / PARENT_PER_PAGE));
-
-  // Reset to page 1 whenever filters change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchQuery, selectedType, selectedStage, ownerFilter, dncOnly]);
-
-  // Paginated Root Parents for Current Page
-  const paginatedRootParents = useMemo(() => {
-    const startIdx = (currentPage - 1) * PARENT_PER_PAGE;
-    return rootParentAccounts.slice(startIdx, startIdx + PARENT_PER_PAGE);
-  }, [rootParentAccounts, currentPage, PARENT_PER_PAGE]);
-
-  // Render Single Account and its Children Recursively
-  const renderSingleAccountAndChildren = (acc: AccountSummaryResponse, level: number = 0): React.ReactNode => {
-    const childAccounts = accounts.filter((c) => c.parentAccountId === acc.id);
-    const hasChildren = childAccounts.length > 0;
-    const isCollapsed = collapsedNodeIds.has(acc.id);
-    const isParentRoot = level === 0;
-
-    return (
-      <React.Fragment key={acc.id}>
-        <TableRow
-          className={`transition-colors border-b border-[#EBECF0] ${
-            isParentRoot
-              ? 'bg-white hover:bg-[#F1F2F4] font-medium'
-              : 'bg-[#FAFBFC] hover:bg-[#F1F2F4]'
-          }`}
-        >
-          {/* Column 1: Account Code & Toggle */}
-          <TableCell className="font-mono text-xs py-2 px-3">
-            <div className="flex items-center gap-1.5 font-mono" style={{ paddingLeft: `${level * 1.25}rem` }}>
-              {level > 0 && (
-                <div className="w-3 h-[1px] bg-[#DFE1E6] mr-0.5 shrink-0" />
-              )}
-
-              {/* Toggle Expand/Collapse Button */}
-              {hasChildren ? (
-                <button
-                  type="button"
-                  onClick={() => toggleCollapse(acc.id)}
-                  className="p-0.5 hover:bg-slate-200 rounded-[2px] transition-colors text-slate-600 flex items-center justify-center shrink-0"
-                  title={isCollapsed ? 'Expand subsidiaries' : 'Collapse subsidiaries'}
-                >
-                  {isCollapsed ? (
-                    <ChevronRight className="w-3.5 h-3.5 text-slate-500 font-bold" />
-                  ) : (
-                    <ChevronDown className="w-3.5 h-3.5 text-[#0C66E4] font-bold" />
-                  )}
-                </button>
-              ) : (
-                level === 0 && <span className="w-3.5 inline-block" />
-              )}
-
-              <span className={isParentRoot ? 'text-[#0C66E4] font-bold' : 'text-slate-700 font-medium'}>
-                {acc.accountNumber}
-              </span>
-            </div>
-          </TableCell>
-
-          {/* Column 2: Account Name & Hierarchy */}
-          <TableCell className="py-2 px-3">
-            <div className="flex items-center gap-2">
-              <div className={`w-6 h-6 rounded-[3px] flex items-center justify-center font-bold text-[11px] shrink-0 border ${
-                isParentRoot 
-                  ? 'bg-[#E9F2FF] text-[#0C66E4] border-[#C0D9FF]' 
-                  : 'bg-slate-100 text-slate-600 border-slate-200'
-              }`}>
-                {acc.displayName.charAt(0).toUpperCase()}
-              </div>
-              <div className="min-w-0">
-                <div className="font-semibold text-slate-900 text-xs flex items-center gap-1.5 flex-wrap">
-                  <Link to={`/app/crm/accounts/${acc.id}`} className="hover:text-[#0C66E4] hover:underline transition-colors font-semibold truncate max-w-xs">
-                    {acc.displayName}
-                  </Link>
-                  {isParentRoot && renderRootAccountBadge()}
-                  {hasChildren && renderChildCountBadge(childAccounts.length)}
-                </div>
-                {acc.legalName && (
-                  <div className="text-[11px] text-slate-400 truncate max-w-xs">{acc.legalName}</div>
-                )}
-              </div>
-            </div>
-          </TableCell>
-
-          {/* Column 3: Type */}
-          <TableCell className="py-2 px-3">{getAccountTypeBadge(acc.accountType)}</TableCell>
-
-          {/* Column 4: Lifecycle */}
-          <TableCell className="py-2 px-3">{getLifecycleStageBadge(acc.lifecycleStage)}</TableCell>
-
-          {/* Column 5: Last Updated */}
-          <TableCell className="py-2 px-3 text-slate-500 font-mono text-[11px]">
-            {new Date(acc.updatedAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })} {new Date(acc.updatedAt).toLocaleDateString('en-US')}
-          </TableCell>
-
-          {/* Column 6: Actions */}
-          <TableCell className="py-2 px-3 text-right pr-4">
-            <div className="flex items-center justify-end gap-1">
-              <ActionTooltip label={`Thêm chi nhánh dưới ${acc.displayName}`}>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => handleCreateChildAccount(acc.id)}
-                  className="h-7 w-7 rounded-[3px] text-slate-600 hover:text-emerald-700 hover:bg-emerald-50"
-                  aria-label={`Add subsidiary under ${acc.displayName}`}
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                </Button>
-              </ActionTooltip>
-              <ActionTooltip label="Xem chi tiết">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => handleViewDetail(acc.id)}
-                  className="h-7 w-7 rounded-[3px] text-slate-600 hover:text-[#0C66E4] hover:bg-[#E9F2FF]"
-                  aria-label="View details"
-                >
-                  <Eye className="w-3.5 h-3.5" />
-                </Button>
-              </ActionTooltip>
-              <ActionTooltip label="Xóa tài khoản">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => handleDeleteAccount(acc.id, acc.version, acc.displayName)}
-                  className="h-7 w-7 rounded-[3px] text-slate-600 hover:text-red-600 hover:bg-red-50"
-                  aria-label="Delete account"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </Button>
-              </ActionTooltip>
-            </div>
-          </TableCell>
-        </TableRow>
-
-        {/* Render nested children recursively ONLY IF node is NOT collapsed */}
-        {hasChildren && !isCollapsed && childAccounts.map((child) => renderSingleAccountAndChildren(child, level + 1))}
-      </React.Fragment>
-    );
-  };
-
-  const selectedParentAccountObj = accounts.find((a) => a.id === formParentAccountId);
-  const activeFiltersCount =
-    (searchQuery ? 1 : 0) +
-    (selectedType !== 'ALL' ? 1 : 0) +
-    (selectedStage !== 'ALL' ? 1 : 0) +
-    (ownerFilter !== 'ALL' ? 1 : 0) +
-    (dncOnly ? 1 : 0);
-
-  // View Tabs Config
-  const viewTabs: ViewTabItem[] = useMemo(() => [
-    { id: 'ALL', label: 'All', count: totalCount },
-    ...(session?.user ? [{ id: 'MY_OWN', label: 'My Accounts' }] : []),
-    { id: 'CUSTOMER', label: 'Customers', count: customerCount, dotColor: 'bg-emerald-500' },
-    { id: 'PROSPECT', label: 'Prospects', dotColor: 'bg-purple-500' },
-  ], [totalCount, customerCount, session]);
-
-  const currentActiveTab = ownerFilter === 'MY_OWN' ? 'MY_OWN' : selectedStage === 'CUSTOMER' ? 'CUSTOMER' : selectedStage === 'PROSPECT' ? 'PROSPECT' : 'ALL';
-
-  const handleTabChange = (tabId: string) => {
-    if (tabId === 'MY_OWN') {
-      setOwnerFilter('MY_OWN');
-      setSelectedStage('ALL');
-    } else if (tabId === 'CUSTOMER') {
-      setOwnerFilter('ALL');
-      setSelectedStage('CUSTOMER');
-    } else if (tabId === 'PROSPECT') {
-      setOwnerFilter('ALL');
-      setSelectedStage('PROSPECT');
-    } else {
-      setOwnerFilter('ALL');
-      setSelectedStage('ALL');
+    } catch (err: any) {
+      const errorMapping = mapAccountError(err);
+      toast.error(errorMapping.title, {
+        description: errorMapping.description,
+      });
     }
   };
+
+  const hasActiveFilters = Boolean(
+    urlState.q.trim() ||
+      urlState.accountType !== 'ALL' ||
+      urlState.lifecycleStage !== 'ALL' ||
+      urlState.ownership !== 'ALL'
+  );
+
+  const isEditorSheetOpen = Boolean(urlState.mode);
 
   return (
     <div className="space-y-4 pb-12 font-sans w-full">
-      {/* Standard Page Header */}
+      {/* Standard Header */}
       <StandardPageHeader
-        title="Enterprise Customer Accounts"
-        subtitle="Multi-level parent-subsidiary account hierarchy, legal entity registration & assigned account owners"
-        badgeCount={totalCount}
+        title="Accounts"
+        subtitle="Manage enterprise customer organizations, subsidiaries, and classifications."
         badgeLabel="accounts"
+        badgeCount={totalElements}
         actions={
-          <>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={toggleCollapseAll}
-              className="text-xs font-medium text-slate-700 bg-white border-slate-200 hover:bg-slate-50 gap-1.5 h-8 rounded-[3px]"
-              title={collapsedNodeIds.size > 0 ? 'Expand all hierarchy trees' : 'Collapse all hierarchy trees'}
-            >
-              {collapsedNodeIds.size > 0 ? (
-                <>
-                  <ChevronDown className="w-3.5 h-3.5 text-slate-500" />
-                  <span>Expand All</span>
-                </>
-              ) : (
-                <>
-                  <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
-                  <span>Collapse All</span>
-                </>
-              )}
-            </Button>
-
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsMergeModalOpen(true)}
-              className="text-xs font-medium text-slate-700 bg-white border-slate-200 hover:bg-slate-50 gap-1.5 h-8 rounded-[3px]"
-            >
-              <GitMerge className="w-3.5 h-3.5 text-indigo-500" />
-              <span>Scan Duplicates</span>
-            </Button>
-
-            <Button
-              size="sm"
-              onClick={() => { resetForm(); setIsCreateOpen(true); }}
-              className="text-xs font-semibold bg-[#0C66E4] hover:bg-[#0052CC] text-white gap-1.5 shadow-none h-8 rounded-[3px]"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>New Account</span>
-            </Button>
-          </>
-        }
-      />
-
-      {/* Standard Filter & Search Bar */}
-      <StandardFilterBar
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-        searchPlaceholder="Search by account code, name, legal entity..."
-        viewTabs={viewTabs}
-        activeTab={currentActiveTab}
-        onTabChange={handleTabChange}
-        activeFiltersCount={activeFiltersCount}
-        onResetFilters={handleResetFilters}
-        filterControls={
-          <>
-            {/* Filter 1: Owner */}
-            <SearchableSelect
-              options={[
-                { value: 'ALL', label: 'All Account Owners' },
-                ...(session?.user ? [{ value: 'MY_OWN', label: 'My Accounts Only' }] : []),
-                ...teamMembers.map((m) => ({
-                  value: m.id,
-                  label: m.name,
-                })),
-              ]}
-              value={ownerFilter}
-              onValueChange={setOwnerFilter}
-              placeholder="All Owners"
-              searchPlaceholder="Search owners..."
-              className="w-[175px] h-8 rounded-[3px] text-xs"
-            />
-
-            {/* Filter 2: Type */}
-            <SearchableSelect
-              options={[
-                { value: 'ALL', label: 'All Account Types' },
-                { value: 'ORGANIZATION', label: 'Enterprise' },
-                { value: 'PERSON', label: 'Individual' },
-                { value: 'PARTNER', label: 'Strategic Partner' },
-                { value: 'RESELLER', label: 'Reseller' },
-                { value: 'SUPPLIER', label: 'Supplier' },
-              ]}
-              value={selectedType}
-              onValueChange={setSelectedType}
-              placeholder="Account Type"
-              searchPlaceholder="Search type..."
-              className="w-[145px] h-8 rounded-[3px] text-xs"
-            />
-
-            {/* Filter 3: Stage */}
-            <SearchableSelect
-              options={[
-                { value: 'ALL', label: 'All Lifecycle Stages' },
-                { value: 'PROSPECT', label: 'Prospect', badge: 'New' },
-                { value: 'QUALIFIED', label: 'Qualified', badge: 'Verified' },
-                { value: 'CUSTOMER', label: 'Customer', badge: 'Active' },
-                { value: 'INACTIVE', label: 'Inactive', badge: 'Paused' },
-                { value: 'CHURNED', label: 'Churned', badge: 'Lost' },
-              ]}
-              value={selectedStage}
-              onValueChange={setSelectedStage}
-              placeholder="Lifecycle Stage"
-              searchPlaceholder="Search stage..."
-              className="w-[155px] h-8 rounded-[3px] text-xs"
-            />
-
-            {/* Filter 4: DNC */}
-            <div className="flex items-center space-x-1.5 px-2.5 bg-white rounded-[3px] border border-slate-200 h-8">
-              <Checkbox
-                id="filterDnc"
-                checked={dncOnly}
-                onCheckedChange={(c) => setDncOnly(Boolean(c))}
-              />
-              <Label htmlFor="filterDnc" className="text-xs font-medium cursor-pointer text-slate-700 flex items-center gap-1">
-                <ShieldAlert className="w-3.5 h-3.5 text-amber-500" />
-                <span>DNC</span>
-              </Label>
-            </div>
-          </>
-        }
-      />
-
-      {/* Main Accounts Multi-Level Tree Hierarchy Table */}
-      <Card className="border border-slate-200 rounded-[4px] w-full overflow-hidden bg-white shadow-none">
-        <Table>
-          <TableHeader className="bg-[#F7F8F9] border-b border-slate-200">
-            <TableRow className="hover:bg-[#F7F8F9]">
-              <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-slate-600 w-44 py-2.5 px-3">Account Code</TableHead>
-              <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-slate-600 py-2.5 px-3">Account Name &amp; Hierarchy</TableHead>
-              <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-slate-600 py-2.5 px-3">Type</TableHead>
-              <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-slate-600 py-2.5 px-3">Lifecycle Stage</TableHead>
-              <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-slate-600 py-2.5 px-3">Last Updated</TableHead>
-              <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-slate-600 text-right pr-4 py-2.5">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-
-          <TableBody className="text-xs">
-            {loading ? (
-              <TableRow>
-                <TableCell colSpan={6} className="h-44 text-center text-slate-500">
-                  <Loader2 className="w-5 h-5 animate-spin mx-auto text-[#0C66E4] mb-2" />
-                  <span className="text-xs">Loading customer accounts...</span>
-                </TableCell>
-              </TableRow>
-            ) : paginatedRootParents.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={6} className="h-44 text-center">
-                  <div className="flex flex-col items-center justify-center py-6 text-slate-400">
-                    <Building2 className="w-8 h-8 text-slate-300 mb-2" />
-                    <div className="font-semibold text-slate-700 text-xs">No accounts found</div>
-                    <p className="text-[11px] text-slate-400 mt-0.5">Try adjusting your filters or create a new account.</p>
-                    <Button
-                      size="sm"
-                      onClick={() => { resetForm(); setIsCreateOpen(true); }}
-                      className="mt-3 text-xs bg-[#0C66E4] hover:bg-[#0052CC] text-white rounded-[3px] h-7 px-2.5"
-                    >
-                      <Plus className="w-3 h-3 mr-1" />
-                      Create New Account
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ) : (
-              paginatedRootParents.map((parentAcc) => renderSingleAccountAndChildren(parentAcc, 0))
-            )}
-          </TableBody>
-        </Table>
-
-        {/* Pagination Controls Bar */}
-        {!loading && (
-          <StandardPagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            totalElements={rootParentAccounts.length}
-            pageSize={PARENT_PER_PAGE}
-            onPageChange={setCurrentPage}
-            itemLabel="parent organizations"
-          />
-        )}
-      </Card>
-
-      {/* Modal 1: Create Account Dialog */}
-      <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-        <DialogContent className="max-w-3xl w-full flex flex-col p-0 gap-0 overflow-hidden font-sans border-slate-200 shadow-xl rounded-2xl bg-white">
-          {/* Dialog Header */}
-          <div className="shrink-0 px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-white">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center shadow-sm shrink-0">
-                <Building className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <h2 className="text-base font-bold text-slate-900 leading-tight">
-                  {formParentAccountId ? 'Create Subsidiary Unit' : 'Create Customer Account'}
-                </h2>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Initialize account profile, enterprise hierarchy &amp; legal registration
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Synchronized Horizontal Tabs Bar */}
-          <div className="shrink-0 flex items-center gap-1 px-6 bg-slate-50/70 border-b border-slate-200/80">
-            <button
-              type="button"
-              onClick={() => setActiveFormTab('general')}
-              className={`py-3 px-4 text-xs font-bold border-b-2 transition-all flex items-center gap-2 relative ${
-                activeFormTab === 'general'
-                  ? 'border-blue-600 text-blue-600 bg-white shadow-2xs rounded-t-lg'
-                  : 'border-transparent text-slate-500 hover:text-slate-800'
-              }`}
-            >
-              <Building2 className="w-3.5 h-3.5" />
-              <span>1. General Information &amp; Hierarchy</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveFormTab('legal')}
-              className={`py-3 px-4 text-xs font-bold border-b-2 transition-all flex items-center gap-2 relative ${
-                activeFormTab === 'legal'
-                  ? 'border-blue-600 text-blue-600 bg-white shadow-2xs rounded-t-lg'
-                  : 'border-transparent text-slate-500 hover:text-slate-800'
-              }`}
-            >
-              <ShieldAlert className="w-3.5 h-3.5" />
-              <span>2. Legal &amp; Supplementary Info</span>
-            </button>
-          </div>
-
-          <form onSubmit={handleCreateAccount} className="flex flex-col flex-1 overflow-hidden">
-            <div className="p-6 space-y-6 overflow-y-auto max-h-[58vh]">
-              {/* Alert: Parent Account Preset Banner */}
-              {formParentAccountId && formParentAccountId !== 'NONE' && (
-                <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl flex items-center justify-between text-xs text-blue-900">
-                  <div className="flex items-center gap-2">
-                    <Building2 className="w-4 h-4 text-blue-600 shrink-0" />
-                    <span>
-                      Creating subsidiary for parent: <strong>{selectedParentAccountObj?.displayName}</strong> ({selectedParentAccountObj?.accountNumber})
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setFormParentAccountId(undefined)}
-                    className="text-[11px] text-blue-700 hover:text-blue-900 font-semibold underline"
-                  >
-                    Clear Parent
-                  </button>
-                </div>
-              )}
-
-              {/* TAB 1: GENERAL INFORMATION & HIERARCHY */}
-              {activeFormTab === 'general' && (
-                <div className="space-y-6">
-                  {/* Section A: Identity */}
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2 pb-1.5 border-b border-slate-100">
-                      <Building2 className="w-3.5 h-3.5 text-blue-600" />
-                      <h3 className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                        Identity Information
-                      </h3>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-1.5">
-                        <Label htmlFor="accNumber" className="text-xs font-semibold text-slate-700">
-                          Account Code <span className="text-red-500">*</span>
-                        </Label>
-                        <Input
-                          id="accNumber"
-                          value={formAccountNumber}
-                          onChange={(e) => setFormAccountNumber(e.target.value)}
-                          placeholder="e.g. ACC-1002"
-                          className="text-xs font-mono h-9 border-slate-200 focus-visible:ring-blue-500 bg-white"
-                          required
-                        />
-                      </div>
-
-                      <div className="space-y-1.5">
-                        <Label htmlFor="displayName" className="text-xs font-semibold text-slate-700">
-                          Trading / Brand Name <span className="text-red-500">*</span>
-                        </Label>
-                        <Input
-                          id="displayName"
-                          value={formDisplayName}
-                          onChange={(e) => setFormDisplayName(e.target.value)}
-                          placeholder="e.g. MB Securities"
-                          className="text-xs h-9 border-slate-200 focus-visible:ring-blue-500 bg-white"
-                          required
-                        />
-                      </div>
-
-                      <div className="md:col-span-2 space-y-1.5">
-                        <Label htmlFor="legalName" className="text-xs font-semibold text-slate-700">
-                          Full Legal Entity Name
-                        </Label>
-                        <Input
-                          id="legalName"
-                          value={formLegalName}
-                          onChange={(e) => setFormLegalName(e.target.value)}
-                          placeholder="e.g. MB Securities Joint Stock Company"
-                          className="text-xs h-9 border-slate-200 focus-visible:ring-blue-500 bg-white"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Section B: Hierarchy & Ownership */}
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2 pb-1.5 border-b border-slate-100">
-                      <CornerDownRight className="w-3.5 h-3.5 text-emerald-600" />
-                      <h3 className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                        Hierarchy &amp; Ownership
-                      </h3>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-1.5">
-                        <Label className="text-xs font-semibold text-slate-700">Parent Account / Organization</Label>
-                        <SearchableSelect
-                          options={[
-                            { value: 'NONE', label: 'None – Top-level Root (Independent)' },
-                            ...accounts.map((acc) => ({
-                              value: acc.id,
-                              label: `${acc.accountNumber} – ${acc.displayName}`,
-                              badge: acc.accountType,
-                              description: acc.legalName || undefined,
-                            })),
-                          ]}
-                          value={formParentAccountId || 'NONE'}
-                          onValueChange={(v) => setFormParentAccountId(v === 'NONE' ? undefined : v)}
-                          placeholder="Select Parent Account..."
-                          searchPlaceholder="Search account code or name..."
-                        />
-                      </div>
-
-                      <div className="space-y-1.5">
-                        <Label className="text-xs font-semibold text-slate-700">Assigned Account Owner</Label>
-                        {teamMembers.length > 1 ? (
-                          <SearchableSelect
-                            options={teamMembers.map((member) => {
-                              const isSelf = member.id === session?.user?.id;
-                              const label = member.name && member.name !== member.email
-                                ? `${member.name} (${member.email})`
-                                : member.email;
-                              return {
-                                value: member.id,
-                                label: `${label}${isSelf ? ' – You' : ''}`,
-                              };
-                            })}
-                            value={selectedOwnerId || session?.user?.id || ''}
-                            onValueChange={(v) => setSelectedOwnerId(v)}
-                            placeholder="Select account owner..."
-                            searchPlaceholder="Search name or email..."
-                          />
-                        ) : (
-                          <div className="flex items-center justify-between h-9 px-3 bg-white border border-slate-200 rounded-md text-xs text-slate-700 w-full">
-                            <span className="truncate">{session?.user?.email || 'You (Current Session)'}</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Section C: Classification & Lifecycle */}
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2 pb-1.5 border-b border-slate-100">
-                      <Users className="w-3.5 h-3.5 text-purple-600" />
-                      <h3 className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                        Commercial Classification
-                      </h3>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-1.5">
-                        <Label htmlFor="accType" className="text-xs font-semibold text-slate-700">Account Type</Label>
-                        <Select value={formAccountType} onValueChange={(v) => setFormAccountType(v as AccountType)}>
-                          <SelectTrigger className="text-xs h-9 border-slate-200 bg-white">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent className="text-xs">
-                            <SelectItem value="ORGANIZATION">Enterprise</SelectItem>
-                            <SelectItem value="PERSON">Individual</SelectItem>
-                            <SelectItem value="PARTNER">Strategic Partner</SelectItem>
-                            <SelectItem value="RESELLER">Authorized Reseller</SelectItem>
-                            <SelectItem value="SUPPLIER">Supplier</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div className="space-y-1.5">
-                        <Label htmlFor="lifecycle" className="text-xs font-semibold text-slate-700">Lifecycle Stage</Label>
-                        <Select value={formLifecycleStage} onValueChange={(v) => setFormLifecycleStage(v as AccountLifecycleStage)}>
-                          <SelectTrigger className="text-xs h-9 border-slate-200 bg-white">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent className="text-xs">
-                            <SelectItem value="PROSPECT">Prospect</SelectItem>
-                            <SelectItem value="QUALIFIED">Qualified</SelectItem>
-                            <SelectItem value="CUSTOMER">Customer (Active)</SelectItem>
-                            <SelectItem value="INACTIVE">Inactive (Paused)</SelectItem>
-                            <SelectItem value="CHURNED">Churned (Lost)</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* TAB 2: LEGAL & SUPPLEMENTARY INFO */}
-              {activeFormTab === 'legal' && (
-                <div className="space-y-6">
-                  {/* Section D: Legal & Contact */}
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2 pb-1.5 border-b border-slate-100">
-                      <ShieldAlert className="w-3.5 h-3.5 text-amber-600" />
-                      <h3 className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                        Registration &amp; Corporate Data
-                      </h3>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-1.5">
-                        <Label htmlFor="taxId" className="text-xs font-semibold text-slate-700">Tax Identification Number (TIN)</Label>
-                        <Input id="taxId" value={formTaxIdentifier} onChange={(e) => setFormTaxIdentifier(e.target.value)} placeholder="e.g. 0102065678" className="text-xs h-9 border-slate-200 bg-white" />
-                      </div>
-
-                      <div className="space-y-1.5">
-                        <Label htmlFor="regNo" className="text-xs font-semibold text-slate-700">Business Registration Number</Label>
-                        <Input id="regNo" value={formRegistrationNumber} onChange={(e) => setFormRegistrationNumber(e.target.value)} placeholder="e.g. 0102065678-GP" className="text-xs h-9 border-slate-200 bg-white" />
-                      </div>
-
-                      <div className="space-y-1.5">
-                        <Label htmlFor="website" className="text-xs font-semibold text-slate-700">Official Website</Label>
-                        <Input id="website" value={formWebsite} onChange={(e) => setFormWebsite(e.target.value)} placeholder="https://example.com" className="text-xs h-9 border-slate-200 bg-white" />
-                      </div>
-
-                      <div className="space-y-1.5">
-                        <Label htmlFor="industry" className="text-xs font-semibold text-slate-700">Industry / Sector</Label>
-                        <Input id="industry" value={formIndustryCode} onChange={(e) => setFormIndustryCode(e.target.value)} placeholder="e.g. Financial Services - Real Estate" className="text-xs h-9 border-slate-200 bg-white" />
-                      </div>
-
-                      <div className="space-y-1.5">
-                        <BusinessNumberInput
-                          id="empCount"
-                          label="Total Headcount"
-                          value={formEmployeeCount}
-                          onChange={setFormEmployeeCount}
-                          placeholder="e.g. 2500"
-                          unitSuffix="employees"
-                        />
-                      </div>
-
-                      <div className="space-y-1.5">
-                        <BusinessNumberInput
-                          id="revenue"
-                          label="Annual Revenue"
-                          value={formRevenueAmount}
-                          onChange={setFormRevenueAmount}
-                          placeholder="e.g. 350,000,000,000"
-                          unitSuffix="VND"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Section E: Notes & Privacy */}
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2 pb-1.5 border-b border-slate-100">
-                      <Users className="w-3.5 h-3.5 text-slate-600" />
-                      <h3 className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                        Notes &amp; Privacy Governance
-                      </h3>
-                    </div>
-
-                    <div className="space-y-4">
-                      <div className="space-y-1.5">
-                        <Label htmlFor="desc" className="text-xs font-semibold text-slate-700">Commercial Notes / Description</Label>
-                        <textarea
-                          id="desc"
-                          rows={3}
-                          value={formDescription}
-                          onChange={(e) => setFormDescription(e.target.value)}
-                          placeholder="Enter account relationship context, key requirements, or notes..."
-                          className="w-full rounded-lg border border-slate-200 p-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white resize-none"
-                        />
-                      </div>
-
-                      <div
-                        className="flex items-center gap-3 bg-rose-50/60 hover:bg-rose-50 border border-rose-200/80 rounded-xl px-4 py-3 cursor-pointer transition-colors"
-                        onClick={() => setFormDoNotContact(!formDoNotContact)}
-                      >
-                        <Checkbox
-                          id="createDnc"
-                          checked={formDoNotContact}
-                          onCheckedChange={(c) => setFormDoNotContact(Boolean(c))}
-                        />
-                        <div>
-                          <Label htmlFor="createDnc" className="text-xs font-semibold cursor-pointer text-rose-800">
-                            Mark as Do Not Contact (DNC)
-                          </Label>
-                          <p className="text-[11px] text-rose-600 mt-0.5">Opt out of automated marketing calls and outbound marketing emails</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Dialog Footer */}
-            <div className="shrink-0 px-6 py-3.5 bg-slate-50/80 border-t border-slate-100 flex items-center justify-end gap-2">
-              <Button type="button" variant="outline" onClick={() => setIsCreateOpen(false)} className="text-xs h-9 px-4 border-slate-200">
-                Cancel
-              </Button>
+          <div className="flex items-center gap-2">
+            <ActionTooltip label="Refresh account list">
               <Button
-                type="submit"
-                disabled={isSubmitting}
-                className="text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white min-w-32 h-9 gap-1.5 shadow-sm"
+                variant="outline"
+                size="sm"
+                onClick={() => refetch()}
+                disabled={isLoading}
+                className="h-8 px-2.5 text-xs font-semibold text-slate-600 hover:text-slate-900 border-slate-200 rounded-[3px] gap-1.5"
+                aria-label="Refresh accounts"
               >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    <span>Creating...</span>
-                  </>
-                ) : (
-                  <>
-                    <Plus className="w-3.5 h-3.5" />
-                    <span>Create Account</span>
-                  </>
-                )}
+                <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
+                <span className="hidden sm:inline">Refresh</span>
               </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
+            </ActionTooltip>
 
-      {/* Smart Deduplication & Merge Modal */}
-      <SmartMergeModal
-        open={isMergeModalOpen}
-        onClose={() => setIsMergeModalOpen(false)}
-        onMerged={fetchAccounts}
+            {canWrite && (
+              <Button
+                size="sm"
+                onClick={handleOpenCreate}
+                className="h-8 px-3 text-xs font-semibold bg-[#0C66E4] hover:bg-[#0052CC] text-white rounded-[3px] gap-1.5 shadow-none"
+                aria-label="Create new account"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>New Account</span>
+              </Button>
+            )}
+          </div>
+        }
+      />
+
+      {/* Toolbar */}
+      <AccountsToolbar
+        filters={{
+          q: urlState.q,
+          accountType: urlState.accountType,
+          lifecycleStage: urlState.lifecycleStage,
+          ownership: urlState.ownership,
+          viewMode: urlState.viewMode,
+          page: urlState.page,
+          size: urlState.size,
+        }}
+        hasSessionTeam={Boolean(currentTeamId)}
+        onFilterChange={handleFilterChange}
+        onResetFilters={handleResetFilters}
+        onExpandAll={handleExpandAll}
+        onCollapseAll={handleCollapseAll}
+      />
+
+      {/* Collection */}
+      <AccountsCollection
+        accounts={accounts}
+        viewMode={urlState.viewMode}
+        expandedIds={expandedIds}
+        totalElements={totalElements}
+        totalPages={totalPages}
+        page={urlState.page}
+        pageSize={urlState.size}
+        isLoading={isLoading}
+        isError={isError}
+        error={error}
+        hasActiveFilters={hasActiveFilters}
+        canWrite={canWrite}
+        onToggleExpand={handleToggleExpand}
+        onPageChange={handlePageChange}
+        onPageSizeChange={handlePageSizeChange}
+        onRefresh={() => refetch()}
+        onResetFilters={handleResetFilters}
+        onCreateClick={handleOpenCreate}
+        onEdit={handleOpenEdit}
+        onAddSubsidiary={handleOpenAddSubsidiary}
+        onDelete={(acc) => setDeleteTarget(acc)}
+      />
+
+      {/* Create / Edit / Subsidiary Form Sheet */}
+      <AccountEditorSheet
+        isOpen={isEditorSheetOpen}
+        mode={urlState.mode || 'create'}
+        accountId={urlState.account}
+        parentId={urlState.parentId}
+        tenantId={tenantId}
+        onClose={handleCloseSheet}
+      />
+
+      {/* Version-Safe Delete Confirmation Dialog */}
+      <AccountDeleteDialog
+        isOpen={Boolean(deleteTarget)}
+        account={deleteTarget}
+        isDeleting={deleteMutation.isPending}
+        onClose={() => setDeleteTarget(null)}
+        onConfirmDelete={handleConfirmDelete}
       />
     </div>
   );
 };
-
-export default AccountsPage;

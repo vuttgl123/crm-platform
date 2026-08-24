@@ -143,3 +143,71 @@ All CRM status badges (Lifecycle Stages, Account Types, Lead Status, Priority Le
 5. **CHURNED (Rời bỏ)**: `bg-rose-50 text-rose-700 border-rose-200 font-semibold` (Rose/Red badge - Level 5 Risk: Lost or cancelled accounts)
 
 All status badges must be imported from `@/config/crmStatusConfig` to maintain 100% visual consistency.
+
+## System-Wide UI & Layout Standard (Role Governance Blueprint)
+
+All feature pages, management modules, and editor sheets across the CRM platform must follow the standard layout proven in **Role Governance (`RolesPage.tsx` / `RoleEditorSheet.tsx`)**:
+
+### 1. Full-Width Page Container
+- **No Restrictive Max-Widths**: Never constrain feature pages with `max-w-7xl`, `max-w-5xl`, or `mx-auto` centered wrappers that leave massive empty margins on wide displays.
+- **Standard Root Container**: Every feature page must start with:
+  ```tsx
+  <div className="space-y-4 pb-12 font-sans w-full">
+  ```
+
+### 2. Standard Header Component
+- Use `StandardPageHeader` from `@/components/common/StandardPageHeader` for consistent title, subtitle, count badge, and top action buttons:
+  ```tsx
+  <StandardPageHeader
+    title="Contacts"
+    subtitle="Manage stakeholder profiles, organizational affiliations, and communication preferences."
+    badgeLabel="contacts"
+    badgeCount={totalElements}
+    actions={...}
+  />
+  ```
+
+### 3. Standard Editor & Detail Slide-Over Sheet
+- Every slide-over sheet (Drawer/Sheet) must use a wide, spacious design matching `RoleEditorSheet.tsx`:
+  ```tsx
+  <Sheet open={isOpen} onOpenChange={(open) => !open && handleAttemptClose()}>
+    <SheetContent
+      side="right"
+      className="w-full sm:max-w-3xl p-0 flex flex-col bg-[#F7F8F9] z-50 border-l border-slate-200"
+    >
+  ```
+- Use `#F7F8F9` sheet body background, clean white card containers (`bg-white border border-slate-200 rounded-[4px] p-4 shadow-2xs`), and standardized discard warning modal.
+
+### 4. Table & Toolbar Standard
+- Toolbars and tables must span `w-full`.
+- Use `ActionTooltip` for all row actions with English-only labels.
+- Use `StandardPagination` at the bottom of all lists.
+
+### 5. System-Wide Border Radius Hierarchy (`rounded-*` Standards)
+To maintain crisp visual consistency and eliminate conflicting rounded vs. square shapes, the entire CRM follows an exact enterprise border-radius hierarchy matching the Role Governance standard:
+
+1. **Containers, Cards, Sheets & Tables (`rounded-[4px]`)**:
+   - Feature page toolbars: `bg-white border border-slate-200 rounded-[4px]`
+   - Data tables & collection wrappers: `border border-slate-200 rounded-[4px] overflow-hidden`
+   - White card sections in forms/drawers: `bg-white border border-slate-200 rounded-[4px] shadow-2xs`
+   - Dialogs & modals (`AlertDialogContent`, `DialogContent`): `rounded-[4px]`
+
+2. **Interactive Controls (`rounded-[3px]`)**:
+   - Form inputs & textareas (`Input`, `textarea`): `rounded-[3px]`
+   - Buttons (`Button`, icon buttons, pagination buttons): `rounded-[3px]`
+   - Select triggers & popovers (`SelectTrigger`, `SelectContent`, `DropdownMenuContent`, `PopoverContent`): `rounded-[3px]`
+   - Header count badges (`badgeCount`): `rounded-[3px]`
+
+3. **Status Badges, Category Chips & Code Tags (`rounded-[2px]` / `rounded-[3px]`)**:
+   - Lifecycle badges, Lead status badges, Priority badges: `rounded-[3px]` or `rounded-[2px]` (from `@/config/crmStatusConfig`)
+   - Monospace IDs (`leadNumber`, `contactNumber`, `roleCode`): `rounded-[2px]`
+   - **NEVER use `rounded-full`** (capsule/pill shape) for status badges or count badges in tables and headers.
+
+4. **Circular Elements (`rounded-full` - Strictly Limited)**:
+   - User profile avatars: `rounded-full`
+   - Status color indicator dots (`w-1.5 h-1.5 rounded-full`): `rounded-full`
+
+5. **Strictly Prohibited Radii**:
+   - Do NOT use `rounded-xl`, `rounded-2xl`, `rounded-3xl`, or `rounded-lg` on standard enterprise cards, inputs, tables, or buttons.
+
+

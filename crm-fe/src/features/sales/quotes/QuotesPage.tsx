@@ -430,7 +430,7 @@ export const QuotesPage: React.FC = () => {
                       {/* Actions */}
                       <TableCell className="py-2 px-3 text-right pr-4">
                         <div className="flex items-center justify-end gap-1">
-                          <ActionTooltip label="In / Xuất PDF">
+                          <ActionTooltip label="Print Preview & PDF Export">
                             <Button
                               variant="ghost"
                               size="icon"
@@ -444,7 +444,7 @@ export const QuotesPage: React.FC = () => {
                               <Printer className="w-3.5 h-3.5" />
                             </Button>
                           </ActionTooltip>
-                          <ActionTooltip label="Chỉnh sửa báo giá">
+                          <ActionTooltip label="Edit Quotation">
                             <Button
                               variant="ghost"
                               size="icon"
@@ -455,7 +455,7 @@ export const QuotesPage: React.FC = () => {
                               <Edit className="w-3.5 h-3.5" />
                             </Button>
                           </ActionTooltip>
-                          <ActionTooltip label="Xóa báo giá">
+                          <ActionTooltip label="Delete Quotation">
                             <Button
                               variant="ghost"
                               size="icon"

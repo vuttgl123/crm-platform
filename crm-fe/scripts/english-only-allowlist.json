@@ -1,0 +1,9 @@
+{
+  "allowlist": [
+    {
+      "file": "src/features/landing/content/homeContent.ts",
+      "reason": "Business domain sample data / company names for landing references",
+      "classification": "SAMPLE_DATA"
+    }
+  ]
+}

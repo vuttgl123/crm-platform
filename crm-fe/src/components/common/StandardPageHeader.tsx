@@ -24,7 +24,7 @@ export const StandardPageHeader: React.FC<StandardPageHeaderProps> = ({
             {title}
           </h1>
           {badgeCount !== undefined && (
-            <span className="inline-flex items-center text-[11px] font-semibold bg-slate-200/80 text-slate-700 rounded-full px-2 py-0.5">
+            <span className="inline-flex items-center text-[11px] font-semibold bg-slate-200/80 text-slate-700 rounded-[3px] px-2 py-0.5">
               {badgeCount} {badgeLabel}
             </span>
           )}

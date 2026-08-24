@@ -8,7 +8,7 @@ export type RoleEditorMode = 'view' | 'create' | 'edit' | 'clone';
 export type RoleEditorStep = 'basics' | 'permissions' | 'scopes' | 'review';
 
 export interface ExtendedPermission extends PermissionResponse {
-  moduleNameVi: string;
+  moduleNameVi?: string;
   moduleNameEn: string;
   actionName: string;
 }

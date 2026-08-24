@@ -1,6 +1,16 @@
 import * as React from 'react';
-import { format, parse, isValid, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isToday } from 'date-fns';
-import { vi } from 'date-fns/locale';
+import {
+  format,
+  parse,
+  isValid,
+  addMonths,
+  subMonths,
+  startOfMonth,
+  endOfMonth,
+  eachDayOfInterval,
+  isSameDay,
+  isToday,
+} from 'date-fns';
 import { Calendar as CalendarIcon, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -19,12 +29,12 @@ export interface DatePickerProps {
   maxDate?: Date;
 }
 
-const WEEKDAYS = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 export const DatePicker: React.FC<DatePickerProps> = ({
   value,
   onChange,
-  placeholder = 'Chọn ngày (dd/mm/yyyy)...',
+  placeholder = 'Select date...',
   className,
   disabled = false,
 }) => {
@@ -57,7 +67,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
     return eachDayOfInterval({ start, end });
   }, [currentMonth]);
 
-  // Offset for the first day of the week (Monday = 0 ... Sunday = 6 in Vietnam)
+  // Offset for the first day of the week (Monday = 0 ... Sunday = 6)
   const firstDayOfWeek = (startOfMonth(currentMonth).getDay() + 6) % 7;
 
   const handleSelectDate = (date: Date) => {
@@ -91,7 +101,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
             <CalendarIcon className="w-3.5 h-3.5 text-slate-400 shrink-0" />
             <span className={cn('truncate', !selectedDate && 'text-slate-400')}>
               {selectedDate
-                ? format(selectedDate, 'dd/MM/yyyy')
+                ? format(selectedDate, 'MMM d, yyyy')
                 : placeholder}
             </span>
           </div>
@@ -101,7 +111,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
               role="button"
               onClick={handleClear}
               className="p-0.5 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
-              title="Xóa ngày đã chọn"
+              title="Clear selected date"
             >
               <X className="w-3.5 h-3.5" />
             </span>
@@ -123,8 +133,8 @@ export const DatePicker: React.FC<DatePickerProps> = ({
             <ChevronLeft className="w-4 h-4" />
           </button>
 
-          <span className="text-xs font-bold text-slate-800 capitalize">
-            {format(currentMonth, 'MMMM yyyy', { locale: vi })}
+          <span className="text-xs font-bold text-slate-800">
+            {format(currentMonth, 'MMMM yyyy')}
           </span>
 
           <button
@@ -190,7 +200,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
             onClick={handleToday}
             className="text-[11px] font-semibold text-blue-600 hover:text-blue-700 hover:underline px-1 py-0.5"
           >
-            Hôm nay
+            Today
           </button>
 
           {selectedDate && (
@@ -202,7 +212,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
               }}
               className="text-[11px] font-semibold text-slate-500 hover:text-rose-600 hover:underline px-1 py-0.5"
             >
-              Xóa ngày
+              Clear date
             </button>
           )}
         </div>

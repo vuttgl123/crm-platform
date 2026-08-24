@@ -17,7 +17,7 @@ import i18n from '@/i18n/config';
 
 describe('UI & System States Tests', () => {
   beforeEach(async () => {
-    await i18n.changeLanguage('vi');
+    await i18n.changeLanguage('en');
   });
 
   it('15. Renders all system states correctly', () => {

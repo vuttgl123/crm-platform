@@ -1,5 +1,5 @@
 import { apiFetch } from './apiClient';
-import { PageResult } from './accountApi';
+import type { PageResult } from './accountApi';
 
 export type RelationshipType =
   | 'PARENT_CHILD'
@@ -25,30 +25,30 @@ export interface AccountRelationshipResponse {
   };
   direction: RelationshipDirection;
   relationshipType: RelationshipType;
-  validFrom?: string;
-  validTo?: string;
-  description?: string;
+  validFrom?: string | null;
+  validTo?: string | null;
+  description?: string | null;
   createdAt: string;
-  createdBy?: string;
+  createdBy?: string | null;
 }
 
 export interface CreateAccountRelationshipRequest {
   relatedAccountId: string;
   relationshipType: RelationshipType;
-  validFrom?: string;
-  validTo?: string;
-  description?: string;
+  validFrom?: string | null;
+  validTo?: string | null;
+  description?: string | null;
 }
 
 export interface EndAccountRelationshipRequest {
-  endDate?: string;
-  reason?: string;
+  validTo: string;
 }
 
 export const accountRelationshipApi = {
   async search(
     accountId: string,
-    params?: { page?: number; size?: number }
+    params?: { page?: number; size?: number },
+    options?: { signal?: AbortSignal }
   ): Promise<PageResult<AccountRelationshipResponse>> {
     const query = new URLSearchParams();
     if (params?.page !== undefined) query.append('page', params.page.toString());
@@ -56,7 +56,8 @@ export const accountRelationshipApi = {
     const queryString = query.toString() ? `?${query.toString()}` : '';
 
     return apiFetch<PageResult<AccountRelationshipResponse>>(
-      `/api/accounts/${accountId}/relationships${queryString}`
+      `/accounts/${accountId}/relationships${queryString}`,
+      { signal: options?.signal }
     );
   },
 
@@ -65,7 +66,7 @@ export const accountRelationshipApi = {
     payload: CreateAccountRelationshipRequest
   ): Promise<AccountRelationshipResponse> {
     return apiFetch<AccountRelationshipResponse>(
-      `/api/accounts/${accountId}/relationships`,
+      `/accounts/${accountId}/relationships`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -77,14 +78,14 @@ export const accountRelationshipApi = {
   async end(
     accountId: string,
     relationshipId: string,
-    payload?: EndAccountRelationshipRequest
+    payload: EndAccountRelationshipRequest
   ): Promise<AccountRelationshipResponse> {
     return apiFetch<AccountRelationshipResponse>(
-      `/api/accounts/${accountId}/relationships/${relationshipId}/end`,
+      `/accounts/${accountId}/relationships/${relationshipId}/end`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload || {}),
+        body: JSON.stringify(payload),
       }
     );
   },

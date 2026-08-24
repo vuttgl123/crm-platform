@@ -63,7 +63,7 @@ export function AnimatedCounter({
     };
   }, [end, duration]);
 
-  const formattedValue = count.toLocaleString('vi-VN', {
+  const formattedValue = count.toLocaleString('en-US', {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
   });

@@ -1,11 +1,11 @@
 /**
  * Centralized locale-aware formatters for dates, times, numbers, and currency.
- * Defaults to Vietnamese formatting (vi-VN) with fallback support.
+ * Defaults to canonical English formatting (en-US).
  */
 
 export function formatDate(
   dateValue: string | Date | undefined | null,
-  locale: string = 'vi-VN'
+  locale: string = 'en-US'
 ): string {
   if (!dateValue) return '—';
   try {
@@ -13,8 +13,8 @@ export function formatDate(
     if (isNaN(date.getTime())) return '—';
     return new Intl.DateTimeFormat(locale, {
       year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
+      month: 'short',
+      day: 'numeric',
     }).format(date);
   } catch {
     return '—';
@@ -23,7 +23,7 @@ export function formatDate(
 
 export function formatDateTime(
   dateValue: string | Date | undefined | null,
-  locale: string = 'vi-VN'
+  locale: string = 'en-US'
 ): string {
   if (!dateValue) return '—';
   try {
@@ -31,8 +31,8 @@ export function formatDateTime(
     if (isNaN(date.getTime())) return '—';
     return new Intl.DateTimeFormat(locale, {
       year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
+      month: 'short',
+      day: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
     }).format(date);
@@ -43,10 +43,10 @@ export function formatDateTime(
 
 export function formatCurrency(
   amount: number | undefined | null,
-  currencyCode: string = 'VND',
-  locale: string = 'vi-VN'
+  currencyCode: string = 'USD',
+  locale: string = 'en-US'
 ): string {
-  if (amount === undefined || amount === null || isNaN(amount)) return '0 ₫';
+  if (amount === undefined || amount === null || isNaN(amount)) return '$0';
   try {
     return new Intl.NumberFormat(locale, {
       style: 'currency',
@@ -60,7 +60,7 @@ export function formatCurrency(
 
 export function formatNumber(
   value: number | undefined | null,
-  locale: string = 'vi-VN'
+  locale: string = 'en-US'
 ): string {
   if (value === undefined || value === null || isNaN(value)) return '0';
   try {

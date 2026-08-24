@@ -284,7 +284,7 @@ export const TeamsPage: React.FC = () => {
                     {/* Actions */}
                     <TableCell className="py-2 px-3 text-right pr-4">
                       <div className="flex items-center justify-end gap-1">
-                        <ActionTooltip label="Chỉnh sửa nhóm">
+                        <ActionTooltip label="Edit Team">
                           <Button
                             variant="ghost"
                             size="icon"

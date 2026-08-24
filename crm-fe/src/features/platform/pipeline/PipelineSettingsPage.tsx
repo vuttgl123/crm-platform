@@ -345,7 +345,7 @@ export const PipelineSettingsPage: React.FC = () => {
 
                             {/* Actions */}
                             <div className="flex items-center gap-1">
-                              <ActionTooltip label="Xóa giai đoạn">
+                              <ActionTooltip label="Delete Stage">
                                 <button
                                   onClick={() => handleDeleteStage(stage.id)}
                                   className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors"

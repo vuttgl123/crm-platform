@@ -5,5 +5,5 @@ import com.crm.sales.order.domain.OrderId;
 public record CancelOrderCommand(
 		OrderId orderId,
 		String reason,
-		long expectedVersion) {
-}
+		long expectedVersion
+) {}

@@ -5,8 +5,11 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.Collections;
 import java.util.UUID;
 
+import com.crm.sales.quote.application.dto.QuoteOwnerReferenceDto;
+import com.crm.sales.quote.application.dto.QuoteReferenceDto;
 import com.crm.sales.quote.application.dto.QuoteSummary;
 import com.crm.sales.quote.domain.Quote;
 import com.crm.sales.quote.domain.QuoteAmounts;
@@ -82,14 +85,13 @@ public final class QuoteJdbcMapper {
 	}
 
 	public static QuoteSummary mapSummary(ResultSet rs, int rowNum) throws SQLException {
-		String contactIdStr = rs.getString("contact_id");
-		UUID contactId = contactIdStr == null ? null : UUID.fromString(contactIdStr);
-
 		String opportunityIdStr = rs.getString("opportunity_id");
 		UUID opportunityId = opportunityIdStr == null ? null : UUID.fromString(opportunityIdStr);
 
 		String ownerUserIdStr = rs.getString("owner_user_id");
 		UUID ownerUserId = ownerUserIdStr == null ? null : UUID.fromString(ownerUserIdStr);
+
+		UUID accountId = UUID.fromString(rs.getString("account_id"));
 
 		QuoteAmounts amounts = new QuoteAmounts(
 				rs.getString("currency_code"),
@@ -105,20 +107,27 @@ public final class QuoteJdbcMapper {
 		java.sql.Date validUntilSql = rs.getDate("valid_until");
 		LocalDate validUntil = validUntilSql == null ? null : validUntilSql.toLocalDate();
 
+		QuoteStatus status = QuoteStatus.valueOf(rs.getString("status"));
+		String quoteNumber = rs.getString("quote_number");
+
 		return new QuoteSummary(
 				QuoteId.from(rs.getString("id")),
-				rs.getString("quote_number"),
+				quoteNumber,
 				rs.getInt("revision_number"),
-				UUID.fromString(rs.getString("account_id")),
-				contactId,
-				opportunityId,
-				ownerUserId,
-				QuoteStatus.valueOf(rs.getString("status")),
+				quoteNumber,
+				true,
+				false,
+				status,
+				new QuoteReferenceDto(accountId, "Account", true),
+				opportunityId != null ? new QuoteReferenceDto(opportunityId, "Opportunity", true) : null,
+				ownerUserId != null ? new QuoteOwnerReferenceDto("USER", ownerUserId, "User") : null,
 				amounts,
+				0,
 				issueDate,
 				validUntil,
 				toInstant(rs.getTimestamp("updated_at")),
-				rs.getLong("version"));
+				rs.getLong("version"),
+				Collections.emptyList());
 	}
 
 	private static Instant toInstant(Timestamp timestamp) {

@@ -8755,6 +8755,172 @@ All lifecycle mutations require optimistic concurrency header `If-Match: "{versi
 
 ---
 
+## Sales Orders API (`/api/sales/orders`)
+
+The Sales Orders API provides end-to-end commercial fulfillment and operational order lifecycle management. Supports both direct-draft creation and quote-converted commitments, itemized line pricing with `HALF_UP` server-side arithmetic, append-only fulfillment ledger events, and neutral operational status derivations.
+
+### Create Direct Order Draft
+
+Creates an unconfirmed direct sales order draft without requiring an upfront sales quote.
+
+```http
+POST /api/sales/orders
+Authorization: Bearer <access-token>
+X-Tenant-ID: 22222222-2222-2222-2222-222222222222
+Content-Type: application/json
+
+{
+  "accountId": "33333333-3333-3333-3333-333333333333",
+  "contactId": "44444444-4444-4444-4444-444444444444",
+  "opportunityId": "55555555-5555-5555-5555-555555555555",
+  "priceBookId": "66666666-6666-6666-6666-666666666666",
+  "currencyCode": "USD",
+  "orderDate": "2026-08-24",
+  "requestedDeliveryDate": "2026-09-15",
+  "customerReference": "PO-987452",
+  "paymentTerms": "Net 30 Days",
+  "deliveryTerms": "FOB Destination",
+  "notes": "Handle with care",
+  "billingAddressSnapshot": {
+    "legalName": "Acme Industrial Corp",
+    "addressLine1": "100 Tech Park Way",
+    "locality": "San Francisco",
+    "region": "CA",
+    "postalCode": "94105",
+    "countryCode": "US",
+    "contactName": "Jane Doe",
+    "contactEmail": "jane@acme.com",
+    "contactPhone": "+1-555-0199"
+  },
+  "shippingAddressSnapshot": {
+    "legalName": "Acme Warehouse Dock 4",
+    "addressLine1": "200 Logistics Blvd",
+    "locality": "Oakland",
+    "region": "CA",
+    "postalCode": "94607",
+    "countryCode": "US",
+    "contactName": "Receiving Dept",
+    "contactPhone": "+1-555-0188"
+  }
+}
+```
+
+Response: `201 Created` with `ETag: "{version}"` and canonical `OrderResponse`.
+
+### Save Order Draft
+
+Updates line items, logistics, and pricing snapshots on a `DRAFT` order.
+
+```http
+PUT /api/sales/orders/77777777-7777-7777-7777-777777777777
+Authorization: Bearer <access-token>
+X-Tenant-ID: 22222222-2222-2222-2222-222222222222
+If-Match: "1"
+Content-Type: application/json
+
+{
+  "accountId": "33333333-3333-3333-3333-333333333333",
+  "orderDate": "2026-08-24",
+  "shippingTotal": 50.00,
+  "lines": [
+    {
+      "lineNumber": 1,
+      "productId": "88888888-8888-8888-8888-888888888888",
+      "nameSnapshot": "Industrial Sensor Model X",
+      "skuSnapshot": "IND-SENS-01",
+      "quantity": 10,
+      "unitPrice": 120.00,
+      "discountPercent": 5.0,
+      "taxPercent": 8.5
+    }
+  ]
+}
+```
+
+Response: `200 OK` with `ETag: "{newVersion}"`.
+
+### Search Sales Orders
+
+Filters and searches sales orders with server-side pagination, status, and tenant isolation.
+
+```http
+GET /api/sales/orders?q=PO-987&status=PROCESSING&page=0&size=20
+Authorization: Bearer <access-token>
+X-Tenant-ID: 22222222-2222-2222-2222-222222222222
+```
+
+Response: `200 OK` with `PageResult<OrderSummaryResponse>`.
+
+### Order Pulse Summary
+
+Aggregates high-level volume and amount KPIs grouped by currency for active dashboard monitoring.
+
+```http
+GET /api/sales/orders/summary
+Authorization: Bearer <access-token>
+X-Tenant-ID: 22222222-2222-2222-2222-222222222222
+```
+
+Response: `200 OK` with `OrderPulseResponse`.
+
+### Record Order Fulfillment Event
+
+Appends an immutable fulfillment event to the order ledger and recalculates line-level fulfillment progress and overall order status.
+
+```http
+POST /api/sales/orders/77777777-7777-7777-7777-777777777777/fulfillments
+Authorization: Bearer <access-token>
+X-Tenant-ID: 22222222-2222-2222-2222-222222222222
+If-Match: "2"
+Content-Type: application/json
+
+{
+  "referenceNumber": "BOL-98214",
+  "fulfillmentDate": "2026-08-25",
+  "note": "First partial batch delivered via freight carrier",
+  "lines": [
+    {
+      "orderLineId": "99999999-9999-9999-9999-999999999999",
+      "quantity": 5.0
+    }
+  ]
+}
+```
+
+Response: `200 OK` with `ETag: "{newVersion}"`.
+
+### Void Order Fulfillment Event
+
+Voids an existing fulfillment event, reverses fulfilled quantities, logs an audit entry, and recomputes the derived order status.
+
+```http
+POST /api/sales/orders/77777777-7777-7777-7777-777777777777/fulfillments/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/void
+Authorization: Bearer <access-token>
+X-Tenant-ID: 22222222-2222-2222-2222-222222222222
+If-Match: "3"
+Content-Type: application/json
+
+{
+  "reason": "Shipment returned due to wrong delivery address entry"
+}
+```
+
+Response: `200 OK` with `ETag: "{newVersion}"`.
+
+### Order Lifecycle Transition Endpoints
+
+All mutating lifecycle endpoints require optimistic locking header `If-Match: "{version}"`:
+- `POST /api/sales/orders/{id}/confirm` — Commercially locks order lines and transitions status to `CONFIRMED`.
+- `POST /api/sales/orders/{id}/start-processing` — Moves order to `PROCESSING` status to allow operational fulfillment recording.
+- `POST /api/sales/orders/{id}/close-remaining` — Closes unfulfilled lines and sets status to `CLOSED_PARTIAL` (requires reason body).
+- `POST /api/sales/orders/{id}/cancel` — Cancels active order and sets status to `CANCELLED` (requires reason body).
+- `DELETE /api/sales/orders/{id}` — Soft-deletes a `DRAFT` order (`204 No Content`).
+- `GET /api/sales/orders/{id}/document` — Returns printable document projection.
+- `GET /api/sales/orders/{id}/history` — Returns complete audit trail of status transitions.
+- `GET /api/sales/orders/{id}/fulfillments` — Returns all ledger fulfillment events (recorded & voided).
+
+---
+
 ## Maintenance Rules
 
 Every API addition, modification, or removal must update this file in the same

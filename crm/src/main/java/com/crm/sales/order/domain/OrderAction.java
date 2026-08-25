@@ -1,0 +1,12 @@
+package com.crm.sales.order.domain;
+
+public enum OrderAction {
+	CONFIRM,
+	START_PROCESSING,
+	RECORD_FULFILLMENT,
+	VOID_FULFILLMENT,
+	CLOSE_REMAINING,
+	CANCEL,
+	DELETE_DRAFT,
+	EDIT_DRAFT
+}

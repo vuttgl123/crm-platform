@@ -2,7 +2,6 @@ package com.crm.sales.forecast.application.service;
 
 import java.util.UUID;
 
-import com.crm.foundation.security.ActorId;
 import com.crm.foundation.security.AuthorizedDataAccess;
 import com.crm.foundation.security.CurrentActor;
 import com.crm.foundation.security.SystemPermission;
@@ -14,6 +13,7 @@ import com.crm.sales.forecast.application.dto.SalesForecastSummaryResponse;
 import com.crm.sales.forecast.domain.ForecastBreakdownDimension;
 import com.crm.sales.forecast.domain.ForecastPeriodPreset;
 import com.crm.sales.forecast.infrastructure.persistence.SalesForecastReadRepository;
+import com.crm.sharedkernel.domain.ActorId;
 import com.crm.sharedkernel.domain.TenantId;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Service;
@@ -55,7 +55,7 @@ public class SalesForecastService {
 	) {
 		TenantId tenantId = currentTenant.requireTenantId();
 		AuthorizedDataAccess access = authorizer.authorize(SystemPermission.CRM_OPPORTUNITY_READ, "OPPORTUNITY");
-		ActorId actorId = new ActorId(currentActor.userId());
+		ActorId actorId = currentActor.requireActorId();
 
 		String timezone = resolveTenantTimezone(tenantId);
 		ForecastPeriodContext periodContext = periodResolver.resolve(period, timezone);
@@ -84,7 +84,7 @@ public class SalesForecastService {
 	) {
 		TenantId tenantId = currentTenant.requireTenantId();
 		AuthorizedDataAccess access = authorizer.authorize(SystemPermission.CRM_OPPORTUNITY_READ, "OPPORTUNITY");
-		ActorId actorId = new ActorId(currentActor.userId());
+		ActorId actorId = currentActor.requireActorId();
 
 		String timezone = resolveTenantTimezone(tenantId);
 		ForecastPeriodContext periodContext = periodResolver.resolve(period, timezone);

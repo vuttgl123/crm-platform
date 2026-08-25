@@ -1,7 +1,7 @@
 package com.crm.sales.order.presentation.web;
 
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.NotBlank;
 
 public record CancelOrderRequest(
-		@Size(max = 255) String reason) {
-}
+		@NotBlank String reason
+) {}

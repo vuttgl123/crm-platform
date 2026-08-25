@@ -480,4 +480,55 @@ export const renderQuoteStatusBadge = (status?: string, effectiveStatus?: string
   );
 };
 
+export const OrderStatusConfigMap: Record<string, StatusBadgeConfig> = {
+  DRAFT: {
+    label: 'Draft',
+    className: 'bg-slate-100 text-slate-700 border-slate-200 font-semibold rounded-[3px] text-[10px] uppercase tracking-wider px-1.5 py-0.5',
+    priorityLevel: 1,
+  },
+  CONFIRMED: {
+    label: 'Confirmed',
+    className: 'bg-blue-50 text-blue-700 border-blue-200 font-bold rounded-[3px] text-[10px] uppercase tracking-wider px-1.5 py-0.5',
+    priorityLevel: 2,
+  },
+  PROCESSING: {
+    label: 'Processing',
+    className: 'bg-purple-50 text-purple-700 border-purple-200 font-bold rounded-[3px] text-[10px] uppercase tracking-wider px-1.5 py-0.5',
+    priorityLevel: 3,
+  },
+  PARTIALLY_FULFILLED: {
+    label: 'Partially Fulfilled',
+    className: 'bg-amber-50 text-amber-700 border-amber-200 font-bold rounded-[3px] text-[10px] uppercase tracking-wider px-1.5 py-0.5',
+    priorityLevel: 4,
+  },
+  FULFILLED: {
+    label: 'Fulfilled',
+    className: 'bg-emerald-50 text-emerald-700 border-emerald-200 font-bold rounded-[3px] text-[10px] uppercase tracking-wider px-1.5 py-0.5',
+    priorityLevel: 5,
+  },
+  CLOSED_PARTIAL: {
+    label: 'Closed Partial',
+    className: 'bg-slate-100 text-slate-600 border-slate-200 font-medium rounded-[3px] text-[10px] uppercase tracking-wider px-1.5 py-0.5',
+    priorityLevel: 6,
+  },
+  CANCELLED: {
+    label: 'Cancelled',
+    className: 'bg-slate-100 text-slate-500 border-slate-200 font-medium rounded-[3px] text-[10px] uppercase tracking-wider px-1.5 py-0.5',
+    priorityLevel: 7,
+  },
+};
+
+/** Helper function to render Order status badge */
+export const renderOrderStatusBadge = (status?: string) => {
+  if (!status) return null;
+  const config = OrderStatusConfigMap[status];
+  if (!config) return <Badge variant="outline" className="rounded-[3px] text-[10px] uppercase font-bold">{status}</Badge>;
+  return (
+    <Badge variant="outline" className={config.className}>
+      {config.label}
+    </Badge>
+  );
+};
+
+
 

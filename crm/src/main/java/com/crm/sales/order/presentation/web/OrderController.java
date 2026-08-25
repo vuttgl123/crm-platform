@@ -1,90 +1,181 @@
 package com.crm.sales.order.presentation.web;
 
+import java.net.URI;
+import java.util.List;
 import java.util.UUID;
 
-import jakarta.validation.Valid;
 import com.crm.foundation.web.http.IfMatchVersion;
-import com.crm.foundation.web.validation.ValidIfMatchVersion;
 import com.crm.sales.order.application.command.DeleteOrderCommand;
 import com.crm.sales.order.application.dto.OrderDetails;
+import com.crm.sales.order.application.dto.OrderDocumentDto;
+import com.crm.sales.order.application.dto.OrderFulfillmentDto;
+import com.crm.sales.order.application.dto.OrderPulseDto;
+import com.crm.sales.order.application.dto.OrderSummary;
 import com.crm.sales.order.application.usecase.OrderFacade;
 import com.crm.sales.order.domain.OrderId;
+import com.crm.sales.order.domain.OrderStatusHistoryEntry;
 import com.crm.sharedkernel.application.PageResult;
-import org.springframework.http.HttpStatus;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/orders")
-public final class OrderController {
+@RequestMapping("/api/sales/orders")
+public class OrderController {
 
 	private final OrderFacade orders;
-	private final OrderWebMapper mapper;
 
-	public OrderController(OrderFacade orders, OrderWebMapper mapper) {
+	public OrderController(OrderFacade orders) {
 		this.orders = orders;
-		this.mapper = mapper;
 	}
 
 	@PostMapping
-	public ResponseEntity<OrderResponse> create(
-			@Valid @RequestBody CreateOrderRequest request) {
-		OrderDetails created = orders.create(mapper.toCreateCommand(request));
-		return ResponseEntity.status(HttpStatus.CREATED)
-				.body(mapper.toResponse(created));
-	}
-
-	@GetMapping("/{id}")
-	public OrderResponse get(@PathVariable UUID id) {
-		return mapper.toResponse(orders.get(new OrderId(id)));
-	}
-
-	@GetMapping
-	public PageResult<OrderSummaryResponse> search(
-			@Valid @ModelAttribute OrderSearchRequest request) {
-		return mapper.toSummaryPage(
-				orders.search(mapper.toSearchQuery(request)));
+	public ResponseEntity<OrderResponse> createDirectDraft(
+			@Valid @RequestBody CreateDirectOrderRequest request) {
+		OrderDetails details = orders.createDirectDraft(OrderWebMapper.toCommand(request));
+		return ResponseEntity.created(URI.create("/api/sales/orders/" + details.id().value()))
+				.eTag(String.valueOf(details.version()))
+				.body(OrderWebMapper.toResponse(details));
 	}
 
 	@PutMapping("/{id}")
-	public OrderResponse update(@PathVariable UUID id,
-			@Valid @RequestBody UpdateOrderRequest request) {
-		return mapper.toResponse(orders.update(
-				mapper.toUpdateCommand(new OrderId(id), request)));
+	public ResponseEntity<OrderResponse> saveDraft(
+			@PathVariable UUID id,
+			@RequestHeader(name = HttpHeaders.IF_MATCH, required = false) String ifMatch,
+			@Valid @RequestBody SaveOrderDraftRequest request) {
+		long version = IfMatchVersion.parse(ifMatch);
+		OrderDetails details = orders.saveDraft(OrderWebMapper.toCommand(new OrderId(id), request, version));
+		return ResponseEntity.ok()
+				.eTag(String.valueOf(details.version()))
+				.body(OrderWebMapper.toResponse(details));
+	}
+
+	@GetMapping("/{id}")
+	public ResponseEntity<OrderResponse> get(@PathVariable UUID id) {
+		OrderDetails details = orders.get(new OrderId(id));
+		return ResponseEntity.ok()
+				.eTag(String.valueOf(details.version()))
+				.body(OrderWebMapper.toResponse(details));
+	}
+
+	@GetMapping
+	public ResponseEntity<PageResult<OrderSummaryResponse>> search(
+			@ModelAttribute OrderSearchRequest request) {
+		PageResult<OrderSummary> result = orders.search(OrderWebMapper.toQuery(request));
+		List<OrderSummaryResponse> items = result.items().stream()
+				.map(OrderWebMapper::toResponse)
+				.toList();
+		return ResponseEntity.ok(new PageResult<>(
+				items,
+				result.page(),
+				result.size(),
+				result.totalElements(),
+				result.totalPages()
+		));
+	}
+
+	@GetMapping("/summary")
+	public ResponseEntity<OrderPulseResponse> getPulse() {
+		OrderPulseDto pulse = orders.getPulse();
+		return ResponseEntity.ok(OrderWebMapper.toResponse(pulse));
+	}
+
+	@GetMapping("/{id}/document")
+	public ResponseEntity<OrderDocumentResponse> getDocument(@PathVariable UUID id) {
+		OrderDocumentDto doc = orders.getDocument(new OrderId(id));
+		return ResponseEntity.ok(OrderWebMapper.toResponse(doc));
+	}
+
+	@GetMapping("/{id}/history")
+	public ResponseEntity<List<OrderStatusHistoryResponse>> getStatusHistory(@PathVariable UUID id) {
+		List<OrderStatusHistoryEntry> history = orders.getStatusHistory(new OrderId(id));
+		return ResponseEntity.ok(history.stream().map(OrderWebMapper::toResponse).toList());
+	}
+
+	@GetMapping("/{id}/fulfillments")
+	public ResponseEntity<List<OrderFulfillmentResponse>> getFulfillments(@PathVariable UUID id) {
+		List<OrderFulfillmentDto> fulfillments = orders.getFulfillments(new OrderId(id));
+		return ResponseEntity.ok(fulfillments.stream().map(OrderWebMapper::toResponse).toList());
 	}
 
 	@PostMapping("/{id}/confirm")
-	public OrderResponse confirm(@PathVariable UUID id,
-			@RequestHeader("If-Match")
-			@ValidIfMatchVersion String ifMatch) {
-		return mapper.toResponse(orders.confirm(
-				mapper.toConfirmCommand(new OrderId(id), IfMatchVersion.parse(ifMatch))));
+	public ResponseEntity<OrderResponse> confirm(
+			@PathVariable UUID id,
+			@RequestHeader(name = HttpHeaders.IF_MATCH, required = false) String ifMatch) {
+		long version = IfMatchVersion.parse(ifMatch);
+		OrderDetails details = orders.confirm(OrderWebMapper.toConfirmCommand(new OrderId(id), version));
+		return ResponseEntity.ok()
+				.eTag(String.valueOf(details.version()))
+				.body(OrderWebMapper.toResponse(details));
+	}
+
+	@PostMapping("/{id}/start-processing")
+	public ResponseEntity<OrderResponse> startProcessing(
+			@PathVariable UUID id,
+			@RequestHeader(name = HttpHeaders.IF_MATCH, required = false) String ifMatch) {
+		long version = IfMatchVersion.parse(ifMatch);
+		OrderDetails details = orders.startProcessing(OrderWebMapper.toStartProcessingCommand(new OrderId(id), version));
+		return ResponseEntity.ok()
+				.eTag(String.valueOf(details.version()))
+				.body(OrderWebMapper.toResponse(details));
+	}
+
+	@PostMapping("/{id}/fulfillments")
+	public ResponseEntity<OrderResponse> recordFulfillment(
+			@PathVariable UUID id,
+			@RequestHeader(name = HttpHeaders.IF_MATCH, required = false) String ifMatch,
+			@Valid @RequestBody RecordOrderFulfillmentRequest request) {
+		long version = IfMatchVersion.parse(ifMatch);
+		OrderDetails details = orders.recordFulfillment(OrderWebMapper.toCommand(new OrderId(id), request, version));
+		return ResponseEntity.ok()
+				.eTag(String.valueOf(details.version()))
+				.body(OrderWebMapper.toResponse(details));
+	}
+
+	@PostMapping("/{id}/fulfillments/{eventId}/void")
+	public ResponseEntity<OrderResponse> voidFulfillment(
+			@PathVariable UUID id,
+			@PathVariable UUID eventId,
+			@RequestHeader(name = HttpHeaders.IF_MATCH, required = false) String ifMatch,
+			@Valid @RequestBody VoidOrderFulfillmentRequest request) {
+		long version = IfMatchVersion.parse(ifMatch);
+		OrderDetails details = orders.voidFulfillment(OrderWebMapper.toCommand(new OrderId(id), eventId, request, version));
+		return ResponseEntity.ok()
+				.eTag(String.valueOf(details.version()))
+				.body(OrderWebMapper.toResponse(details));
+	}
+
+	@PostMapping("/{id}/close-remaining")
+	public ResponseEntity<OrderResponse> closeRemaining(
+			@PathVariable UUID id,
+			@RequestHeader(name = HttpHeaders.IF_MATCH, required = false) String ifMatch,
+			@Valid @RequestBody CloseRemainingOrderRequest request) {
+		long version = IfMatchVersion.parse(ifMatch);
+		OrderDetails details = orders.closeRemaining(OrderWebMapper.toCommand(new OrderId(id), request, version));
+		return ResponseEntity.ok()
+				.eTag(String.valueOf(details.version()))
+				.body(OrderWebMapper.toResponse(details));
 	}
 
 	@PostMapping("/{id}/cancel")
-	public OrderResponse cancel(@PathVariable UUID id,
-			@Valid @RequestBody CancelOrderRequest request,
-			@RequestHeader("If-Match")
-			@ValidIfMatchVersion String ifMatch) {
-		return mapper.toResponse(orders.cancel(
-				mapper.toCancelCommand(new OrderId(id), request.reason(), IfMatchVersion.parse(ifMatch))));
+	public ResponseEntity<OrderResponse> cancel(
+			@PathVariable UUID id,
+			@RequestHeader(name = HttpHeaders.IF_MATCH, required = false) String ifMatch,
+			@Valid @RequestBody CancelOrderRequest request) {
+		long version = IfMatchVersion.parse(ifMatch);
+		OrderDetails details = orders.cancel(OrderWebMapper.toCommand(new OrderId(id), request, version));
+		return ResponseEntity.ok()
+				.eTag(String.valueOf(details.version()))
+				.body(OrderWebMapper.toResponse(details));
 	}
 
 	@DeleteMapping("/{id}")
-	public ResponseEntity<Void> delete(@PathVariable UUID id,
-			@RequestHeader("If-Match")
-			@ValidIfMatchVersion String ifMatch) {
-		orders.delete(new DeleteOrderCommand(
-				new OrderId(id), IfMatchVersion.parse(ifMatch)));
+	public ResponseEntity<Void> delete(
+			@PathVariable UUID id,
+			@RequestHeader(name = HttpHeaders.IF_MATCH, required = false) String ifMatch) {
+		long version = IfMatchVersion.parse(ifMatch);
+		orders.deleteDraft(new DeleteOrderCommand(new OrderId(id), version));
 		return ResponseEntity.noContent().build();
 	}
 

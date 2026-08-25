@@ -1,36 +1,54 @@
 package com.crm.sales.order.application.dto;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.util.UUID;
-
+import java.util.List;
+import com.crm.sales.order.domain.OrderAction;
+import com.crm.sales.order.domain.OrderAddressSnapshot;
 import com.crm.sales.order.domain.OrderAmounts;
 import com.crm.sales.order.domain.OrderId;
+import com.crm.sales.order.domain.OrderPricingMode;
+import com.crm.sales.order.domain.OrderSourceType;
 import com.crm.sales.order.domain.OrderStatus;
 import com.crm.sharedkernel.domain.ActorId;
-import com.crm.sharedkernel.domain.TenantId;
 
 public record OrderDetails(
-		TenantId tenantId,
 		OrderId id,
 		String orderNumber,
-		UUID accountId,
-		UUID contactId,
-		UUID opportunityId,
-		UUID quoteId,
-		UUID ownerUserId,
+		OrderSourceType sourceType,
+		OrderPricingMode pricingMode,
 		OrderStatus status,
+		OrderReferenceDto account,
+		OrderReferenceDto contact,
+		OrderReferenceDto opportunity,
+		OrderReferenceDto quote,
+		OrderReferenceDto priceBook,
+		OrderOwnerReferenceDto owner,
 		OrderAmounts amounts,
+		OrderAddressSnapshot billingAddressSnapshot,
+		OrderAddressSnapshot shippingAddressSnapshot,
+		List<OrderLineDetails> lines,
+		BigDecimal progressPercent,
 		LocalDate orderDate,
 		LocalDate requestedDeliveryDate,
 		String customerReference,
+		String paymentTerms,
+		String deliveryTerms,
+		String notes,
 		Instant confirmedAt,
+		ActorId confirmedBy,
 		Instant fulfilledAt,
 		Instant cancelledAt,
+		ActorId cancelledBy,
 		String cancellationReason,
+		Instant closedAt,
+		ActorId closedBy,
+		String closedReason,
 		Instant createdAt,
 		ActorId createdBy,
 		Instant updatedAt,
 		ActorId updatedBy,
-		long version) {
-}
+		long version,
+		List<OrderAction> availableActions
+) {}

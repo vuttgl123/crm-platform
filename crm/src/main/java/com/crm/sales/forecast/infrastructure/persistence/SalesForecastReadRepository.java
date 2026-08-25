@@ -14,7 +14,6 @@ import java.util.Set;
 import java.util.UUID;
 
 import com.crm.customer.infrastructure.persistence.AccountScopeSql;
-import com.crm.foundation.security.ActorId;
 import com.crm.foundation.security.AuthorizedDataAccess;
 import com.crm.sales.forecast.application.dto.AppliedForecastFilters;
 import com.crm.sales.forecast.application.dto.ForecastBreakdownResponse;
@@ -29,6 +28,7 @@ import com.crm.sales.forecast.application.dto.SalesForecastSummaryResponse;
 import com.crm.sales.forecast.domain.ForecastBreakdownDimension;
 import com.crm.sales.forecast.domain.ForecastCategory;
 import com.crm.sales.forecast.domain.ForecastQualityCode;
+import com.crm.sharedkernel.domain.ActorId;
 import com.crm.sharedkernel.domain.TenantId;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;

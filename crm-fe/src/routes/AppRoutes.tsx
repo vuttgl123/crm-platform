@@ -33,6 +33,9 @@ import { QuoteDetailPage } from '@/features/sales/quotes/pages/QuoteDetailPage';
 import { QuoteEditorPage } from '@/features/sales/quotes/pages/QuoteEditorPage';
 import { QuotePrintPage } from '@/features/sales/quotes/pages/QuotePrintPage';
 import { OrdersPage } from '@/features/sales/orders/OrdersPage';
+import { OrderDetailPage } from '@/features/sales/orders/OrderDetailPage';
+import { OrderEditorPage } from '@/features/sales/orders/OrderEditorPage';
+import { OrderPrintPage } from '@/features/sales/orders/OrderPrintPage';
 import { ContractsPage } from '@/features/sales/contracts/ContractsPage';
 import { SalesForecastPage } from '@/features/sales/forecast/SalesForecastPage';
 import { CategoriesPage } from '@/features/catalog/categories/CategoriesPage';
@@ -116,6 +119,16 @@ export const AppRoutes: React.FC = () => {
         }
       />
 
+      {/* Standalone Canonical Order Print View */}
+      <Route
+        path="/app/sales/orders/:id/print"
+        element={
+          <ProtectedRoute>
+            <OrderPrintPage />
+          </ProtectedRoute>
+        }
+      />
+
       {/* Full-screen Standalone Tenant Setup Onboarding */}
       <Route
         path="/app/setup-tenant"
@@ -161,6 +174,9 @@ export const AppRoutes: React.FC = () => {
         <Route path="sales/quotes/:quoteId" element={<QuoteDetailPage />} />
         <Route path="sales/quotes/:quoteId/edit" element={<QuoteEditorPage />} />
         <Route path="sales/orders" element={<OrdersPage />} />
+        <Route path="sales/orders/new" element={<OrderEditorPage />} />
+        <Route path="sales/orders/:id" element={<OrderDetailPage />} />
+        <Route path="sales/orders/:id/edit" element={<OrderEditorPage />} />
         <Route path="sales/contracts" element={<ContractsPage />} />
 
         {/* 3. Product Catalog Module */}

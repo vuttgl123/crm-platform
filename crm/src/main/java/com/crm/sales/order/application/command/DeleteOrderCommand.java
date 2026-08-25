@@ -4,5 +4,5 @@ import com.crm.sales.order.domain.OrderId;
 
 public record DeleteOrderCommand(
 		OrderId orderId,
-		long expectedVersion) {
-}
+		long expectedVersion
+) {}

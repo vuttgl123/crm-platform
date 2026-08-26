@@ -54,7 +54,7 @@ export type {
 };
 
 export type AccountEditorMode = 'create' | 'edit' | 'subsidiary';
-export type AccountDetailTab = 'overview' | 'addresses' | 'channels' | 'relationships' | 'notes';
+export type AccountDetailTab = 'overview' | 'addresses' | 'channels' | 'relationships' | 'subsidiaries' | 'notes';
 export type AccountOwnershipFilter = 'ALL' | 'MINE' | 'TEAM';
 export type AccountViewMode = 'tree' | 'flat';
 

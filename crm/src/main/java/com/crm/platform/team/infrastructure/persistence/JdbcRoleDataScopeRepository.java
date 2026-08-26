@@ -19,14 +19,14 @@ public class JdbcRoleDataScopeRepository implements RoleDataScopeRepository {
 	private static final String SCOPE_SELECT = """
 			SELECT rds.tenant_id, rds.id, rds.role_id, rds.entity_type,
 			       rds.scope_type, rds.team_id, rds.created_at, rds.created_by
-			FROM platform.role_data_scopes rds
+			FROM platform_role_data_scopes rds
 			""";
 
 	private static final String DETAILS_SELECT = """
 			SELECT rds.id, rds.role_id, rds.entity_type, rds.scope_type,
 			       rds.team_id, t.name AS team_name, rds.created_at, rds.created_by
-			FROM platform.role_data_scopes rds
-			LEFT JOIN platform.teams t ON t.tenant_id = rds.tenant_id AND t.id = rds.team_id
+			FROM platform_role_data_scopes rds
+			LEFT JOIN platform_teams t ON t.tenant_id = rds.tenant_id AND t.id = rds.team_id
 			""";
 
 	private final JdbcClient jdbcClient;
@@ -65,7 +65,7 @@ public class JdbcRoleDataScopeRepository implements RoleDataScopeRepository {
 	@Override
 	public void insert(RoleDataScope scope) {
 		String sql = """
-				INSERT INTO platform.role_data_scopes (
+				INSERT INTO platform_role_data_scopes (
 				    tenant_id, id, role_id, entity_type,
 				    scope_type, team_id, created_at, created_by
 				) VALUES (
@@ -88,7 +88,7 @@ public class JdbcRoleDataScopeRepository implements RoleDataScopeRepository {
 	@Override
 	public void delete(TenantId tenantId, RoleDataScopeId id) {
 		String sql = """
-				DELETE FROM platform.role_data_scopes
+				DELETE FROM platform_role_data_scopes
 				WHERE tenant_id = :tenantId
 				  AND id = :id
 				""";

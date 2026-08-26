@@ -20,7 +20,7 @@ public class JdbcTicketCategoryRepository implements TicketCategoryRepository {
 			SELECT tc.tenant_id, tc.id, tc.category_code, tc.name, tc.parent_category_id,
 			       tc.default_team_id, tc.description, tc.is_active, tc.created_at,
 			       tc.updated_at, tc.created_by, tc.updated_by, tc.version
-			FROM service.ticket_categories tc
+			FROM service_ticket_categories tc
 			""";
 
 	private final JdbcClient jdbcClient;
@@ -59,7 +59,7 @@ public class JdbcTicketCategoryRepository implements TicketCategoryRepository {
 	public boolean existsByCode(TenantId tenantId, String code) {
 		String sql = """
 				SELECT COUNT(*) > 0
-				FROM service.ticket_categories tc
+				FROM service_ticket_categories tc
 				WHERE tc.tenant_id = :tenantId
 				  AND tc.category_code = :code
 				""";
@@ -76,9 +76,9 @@ public class JdbcTicketCategoryRepository implements TicketCategoryRepository {
 				SELECT tc.id, tc.category_code, tc.name, tc.parent_category_id,
 				       tc.default_team_id, t.name AS default_team_name,
 				       tc.description, tc.is_active, tc.updated_at, tc.version,
-				       (SELECT COUNT(*) FROM service.tickets tk WHERE tk.tenant_id = tc.tenant_id AND tk.category_id = tc.id) AS tickets_count
-				FROM service.ticket_categories tc
-				LEFT JOIN platform.teams t ON t.tenant_id = tc.tenant_id AND t.id = tc.default_team_id
+				       (SELECT COUNT(*) FROM service_tickets tk WHERE tk.tenant_id = tc.tenant_id AND tk.category_id = tc.id) AS tickets_count
+				FROM service_ticket_categories tc
+				LEFT JOIN platform_teams t ON t.tenant_id = tc.tenant_id AND t.id = tc.default_team_id
 				WHERE tc.tenant_id = :tenantId
 				ORDER BY tc.name ASC
 				""";
@@ -91,7 +91,7 @@ public class JdbcTicketCategoryRepository implements TicketCategoryRepository {
 	@Override
 	public void insert(TicketCategory category) {
 		String sql = """
-				INSERT INTO service.ticket_categories (
+				INSERT INTO service_ticket_categories (
 				    tenant_id, id, category_code, name, parent_category_id,
 				    default_team_id, description, is_active, created_at,
 				    updated_at, created_by, updated_by, version
@@ -121,7 +121,7 @@ public class JdbcTicketCategoryRepository implements TicketCategoryRepository {
 	@Override
 	public void update(TicketCategory category) {
 		String sql = """
-				UPDATE service.ticket_categories
+				UPDATE service_ticket_categories
 				SET name = :name,
 				    parent_category_id = :parentCategoryId,
 				    default_team_id = :defaultTeamId,
@@ -155,7 +155,7 @@ public class JdbcTicketCategoryRepository implements TicketCategoryRepository {
 	@Override
 	public void delete(TenantId tenantId, TicketCategoryId id, long version) {
 		String sql = """
-				DELETE FROM service.ticket_categories
+				DELETE FROM service_ticket_categories
 				WHERE tenant_id = :tenantId
 				  AND id = :id
 				  AND version = :version

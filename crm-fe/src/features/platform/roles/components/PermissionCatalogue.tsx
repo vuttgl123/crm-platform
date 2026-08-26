@@ -1,8 +1,9 @@
 import React, { useMemo } from 'react';
-import { Search, Key, Loader2 } from 'lucide-react';
+import { Search, X, RotateCcw, Key, Loader2 } from 'lucide-react';
 import { ExtendedPermission, CatalogueFilterState } from '../model/roleTypes';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
   Select,
   SelectContent,
@@ -72,10 +73,14 @@ export const PermissionCatalogue: React.FC<PermissionCatalogueProps> = ({
     return filteredPermissions.slice(start, start + filters.pageSize);
   }, [filteredPermissions, currentPage, filters.pageSize]);
 
+  const isFiltered = Boolean(
+    filters.search.trim() || filters.module !== 'ALL' || filters.risk !== 'ALL'
+  );
+
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 font-sans">
       {/* Search & Filter Toolbar */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white p-3 border border-slate-200 rounded-[4px]">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white p-3 border border-slate-200 rounded-[4px] shadow-2xs">
         <div className="flex flex-col sm:flex-row items-center gap-2.5 w-full sm:w-auto flex-1">
           <div className="relative w-full sm:w-72">
             <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -85,8 +90,17 @@ export const PermissionCatalogue: React.FC<PermissionCatalogueProps> = ({
                 onFilterChange({ search: e.target.value, page: 1 })
               }
               placeholder="Search permission code or action description..."
-              className="pl-8 h-8 text-xs border-slate-200 rounded-[3px] w-full"
+              className="pl-8 pr-7 h-8 text-xs border-slate-200 rounded-[3px] w-full"
             />
+            {filters.search && (
+              <button
+                onClick={() => onFilterChange({ search: '', page: 1 })}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 rounded-[2px]"
+                aria-label="Clear search"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            )}
           </div>
 
           <div className="w-full sm:w-44">
@@ -97,7 +111,7 @@ export const PermissionCatalogue: React.FC<PermissionCatalogueProps> = ({
               <SelectTrigger className="h-8 text-xs border-slate-200 rounded-[3px] bg-white">
                 <SelectValue placeholder="Module Scope" />
               </SelectTrigger>
-              <SelectContent className="rounded-[3px]">
+              <SelectContent className="rounded-[3px] text-xs">
                 <SelectItem value="ALL">All Modules ({availableModules.length})</SelectItem>
                 {availableModules.map((m) => (
                   <SelectItem key={m} value={m}>
@@ -116,7 +130,7 @@ export const PermissionCatalogue: React.FC<PermissionCatalogueProps> = ({
               <SelectTrigger className="h-8 text-xs border-slate-200 rounded-[3px] bg-white">
                 <SelectValue placeholder="Risk Level" />
               </SelectTrigger>
-              <SelectContent className="rounded-[3px]">
+              <SelectContent className="rounded-[3px] text-xs">
                 <SelectItem value="ALL">All Risk Levels</SelectItem>
                 <SelectItem value="NORMAL">NORMAL</SelectItem>
                 <SelectItem value="SENSITIVE">SENSITIVE</SelectItem>
@@ -124,11 +138,26 @@ export const PermissionCatalogue: React.FC<PermissionCatalogueProps> = ({
               </SelectContent>
             </Select>
           </div>
+
+          {/* Reset Filters */}
+          {isFiltered && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() =>
+                onFilterChange({ search: '', module: 'ALL', risk: 'ALL', page: 1 })
+              }
+              className="h-8 px-2 text-xs font-semibold text-slate-600 hover:text-slate-900 rounded-[3px] gap-1 shrink-0"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>Reset</span>
+            </Button>
+          )}
         </div>
       </div>
 
       {/* Catalogue Table */}
-      <div className="bg-white border border-slate-200 rounded-[4px] overflow-hidden">
+      <div className="bg-white border border-slate-200 rounded-[4px] overflow-hidden shadow-2xs">
         {loading ? (
           <div className="py-20 flex flex-col items-center justify-center text-slate-400 gap-2">
             <Loader2 className="w-6 h-6 animate-spin text-blue-600" />

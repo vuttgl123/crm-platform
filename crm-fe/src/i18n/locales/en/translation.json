@@ -45,6 +45,15 @@
     "reloginButton": "Sign in again",
     "invalidCredentials": "Invalid email or password.",
     "accountLocked": "Your account has been locked. Please contact your administrator.",
+    "loginSuccess": "Signed in successfully",
+    "welcomeBack": "Welcome back to VUM CRM.",
+    "registerSuccess": "Account created successfully",
+    "welcome": "Welcome to VUM CRM.",
+    "pendingNotice": "Your membership request has been submitted for administrator review.",
+    "resetSuccess": "Password updated successfully",
+    "loginWithNewPassword": "You can now sign in with your new password.",
+    "resetLinkSent": "Reset link sent",
+    "checkInbox": "Please check your inbox for password reset instructions.",
     "gateway": {
       "forgot": {
         "title": "Reset your password",
@@ -104,14 +113,16 @@
         "openRegister": "Create an account"
       },
       "brand": {
-        "capabilitiesLabel": "What VUM CRM covers",
-        "assurance": "Encrypted storage and multi-level data governance",
-        "descriptor": "Customer and revenue management platform",
-        "statement": "One system where the sales team sees the same data and follows the same process.",
+        "capabilitiesLabel": "Core Enterprise Capabilities",
+        "assurance": "AES-256 Encryption & Enterprise SLA Uptime",
+        "descriptor": "Enterprise B2B Platform",
+        "statement": "Sales Operations, CPQ & Automated Approvals",
+        "description": "A unified platform to standardize sales workflows, safeguard profit margins, and centralize customer intelligence in real time.",
         "capabilities": {
-          "customer360": "Customer 360° profiles",
-          "pipeline": "Stage-based sales pipeline",
-          "permissions": "Roles and data scope"
+          "pipeline": "Real-time 360° sales pipeline management",
+          "cpq": "Automated CPQ quoting & discount routing",
+          "contracts": "Centralized contract archive & audit logs",
+          "permissions": "Granular RBAC & branch data isolation"
         }
       },
       "language": {

@@ -45,18 +45,18 @@ export const AuthCallbackPage: React.FC = () => {
         />
 
         <div className="space-y-4 text-center">
-          <div className="w-12 h-12 rounded-full bg-rose-50 border border-rose-200 text-rose-600 flex items-center justify-center mx-auto">
-            <AlertCircle className="w-6 h-6" aria-hidden="true" />
+          <div className="w-14 h-14 rounded-full bg-[#FEF2F2] border border-[#FECACA] text-[#B91C1C] flex items-center justify-center mx-auto">
+            <AlertCircle className="w-7 h-7" aria-hidden="true" />
           </div>
 
-          <p className="text-xs text-slate-500 font-normal">
+          <p className="text-[13px] text-[#78716C] font-normal">
             {t('auth.gateway.callback.redirecting')}
           </p>
 
           <div className="pt-2">
             <Link
               to="/login?errorCode=OAUTH2_LOGIN_FAILED"
-              className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#085AC0] hover:underline"
+              className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-[#1D4ED8] hover:text-[#1E40AF] hover:underline"
             >
               <ArrowLeft className="w-3.5 h-3.5" aria-hidden="true" />
               <span>{t('auth.gateway.callback.returnLogin')}</span>
@@ -75,12 +75,12 @@ export const AuthCallbackPage: React.FC = () => {
       />
 
       <div
-        className="py-6 flex flex-col items-center justify-center gap-3 text-center"
+        className="py-8 flex flex-col items-center justify-center gap-4 text-center"
         role="status"
         aria-live="polite"
       >
-        <Loader2 className="w-8 h-8 text-[#085AC0] animate-spin" aria-hidden="true" />
-        <p className="text-xs text-slate-500 font-medium">
+        <Loader2 className="w-9 h-9 text-[#1D4ED8] animate-spin" aria-hidden="true" />
+        <p className="text-[14px] text-[#57534E] font-medium">
           {t('auth.gateway.callback.loadingDescription')}
         </p>
       </div>

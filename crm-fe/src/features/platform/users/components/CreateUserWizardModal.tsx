@@ -150,11 +150,11 @@ export const CreateUserWizardModal: React.FC<CreateUserWizardModalProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden font-sans border-slate-200 shadow-xl">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden font-sans border-slate-200 shadow-xl rounded-[4px]">
         {/* Header Bar */}
         <DialogHeader className="p-5 pb-4 border-b border-slate-200 bg-slate-50/90 shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold shadow-xs shrink-0">
+            <div className="w-10 h-10 rounded-[4px] bg-blue-600 text-white flex items-center justify-center font-bold shadow-xs shrink-0">
               <UserPlus className="w-5 h-5" />
             </div>
             <div>
@@ -245,7 +245,7 @@ export const CreateUserWizardModal: React.FC<CreateUserWizardModalProps> = ({
             {/* STEP 1: Personal Information via DynamicForm */}
             {currentStep === 1 && (
               <div className="space-y-4">
-                <div className="p-3.5 rounded-xl bg-blue-50/70 border border-blue-100 flex items-center gap-2 text-xs text-blue-800">
+                <div className="p-3.5 rounded-[4px] bg-blue-50/70 border border-blue-100 flex items-center gap-2 text-xs text-blue-800">
                   <User className="w-4 h-4 text-blue-600 shrink-0" />
                   <span>Step 1: Enter corporate work email and legal display name to provision profile.</span>
                 </div>
@@ -261,7 +261,7 @@ export const CreateUserWizardModal: React.FC<CreateUserWizardModalProps> = ({
             {/* STEP 2: Department & Job Information via DynamicForm */}
             {currentStep === 2 && (
               <div className="space-y-4">
-                <div className="p-3.5 rounded-xl bg-purple-50/70 border border-purple-100 flex items-center gap-2 text-xs text-purple-800">
+                <div className="p-3.5 rounded-[4px] bg-purple-50/70 border border-purple-100 flex items-center gap-2 text-xs text-purple-800">
                   <Building2 className="w-4 h-4 text-purple-600 shrink-0" />
                   <span>Step 2: Assign member to department, title and internal employee identifier code.</span>
                 </div>
@@ -277,7 +277,7 @@ export const CreateUserWizardModal: React.FC<CreateUserWizardModalProps> = ({
             {/* STEP 3: Role & Permissions Selection */}
             {currentStep === 3 && (
               <div className="space-y-4">
-                <div className="p-3.5 rounded-xl bg-emerald-50/70 border border-emerald-100 flex items-center gap-2 text-xs text-emerald-800">
+                <div className="p-3.5 rounded-[4px] bg-emerald-50/70 border border-emerald-100 flex items-center gap-2 text-xs text-emerald-800">
                   <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
                   <span>Step 3: Assign security role &amp; permission level for CRM platform access.</span>
                 </div>
@@ -296,7 +296,7 @@ export const CreateUserWizardModal: React.FC<CreateUserWizardModalProps> = ({
                           <div
                             key={r.id}
                             onClick={() => setSelectedRole(r.id)}
-                            className={`p-3.5 rounded-xl border cursor-pointer transition-all flex items-start gap-3 ${
+                            className={`p-3.5 rounded-[4px] border cursor-pointer transition-all flex items-start gap-3 ${
                               isSelected
                                 ? 'border-blue-600 bg-blue-50/60 ring-2 ring-blue-100'
                                 : 'border-slate-200 bg-white hover:bg-slate-50'
@@ -312,15 +312,15 @@ export const CreateUserWizardModal: React.FC<CreateUserWizardModalProps> = ({
                             <div className="flex-1">
                               <div className="font-bold text-slate-900 flex items-center gap-2 flex-wrap">
                                 <span>{r.name}</span>
-                                <Badge variant="outline" className="font-mono text-[10px] text-slate-600 border-slate-200">
+                                <Badge variant="outline" className="font-mono text-[10px] text-slate-600 border-slate-200 rounded-[2px]">
                                   {r.roleCode}
                                 </Badge>
                                 {r.isSystem || r.system ? (
-                                  <Badge variant="outline" className="bg-slate-100 text-slate-700 border-slate-200 text-[10px]">
+                                  <Badge variant="outline" className="bg-slate-100 text-slate-700 border-slate-200 text-[10px] rounded-[2px]">
                                     SYSTEM
                                   </Badge>
                                 ) : (
-                                  <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px]">
+                                  <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px] rounded-[2px]">
                                     CUSTOM
                                   </Badge>
                                 )}
@@ -354,7 +354,7 @@ export const CreateUserWizardModal: React.FC<CreateUserWizardModalProps> = ({
                   variant="outline"
                   size="sm"
                   onClick={handlePrev}
-                  className="text-xs font-semibold gap-1"
+                  className="h-8 px-3 text-xs font-semibold gap-1 rounded-[3px] border-slate-200"
                 >
                   <ChevronLeft className="w-4 h-4" />
                   <span>Back</span>
@@ -368,7 +368,7 @@ export const CreateUserWizardModal: React.FC<CreateUserWizardModalProps> = ({
                 variant="ghost"
                 size="sm"
                 onClick={() => onOpenChange(false)}
-                className="text-xs"
+                className="h-8 px-3 text-xs rounded-[3px]"
               >
                 Cancel
               </Button>
@@ -378,7 +378,7 @@ export const CreateUserWizardModal: React.FC<CreateUserWizardModalProps> = ({
                   type="button"
                   size="sm"
                   onClick={handleNext}
-                  className="text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white gap-1"
+                  className="h-8 px-3 text-xs font-semibold bg-[#0C66E4] hover:bg-[#0052CC] text-white gap-1 rounded-[3px]"
                 >
                   <span>Continue (Step {currentStep + 1})</span>
                   <ChevronRight className="w-4 h-4" />
@@ -387,7 +387,7 @@ export const CreateUserWizardModal: React.FC<CreateUserWizardModalProps> = ({
                 <Button
                   type="submit"
                   size="sm"
-                  className="text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5 min-w-32"
+                  className="h-8 px-4 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5 min-w-32 rounded-[3px]"
                 >
                   <CheckCircle2 className="w-4 h-4" />
                   <span>Complete &amp; Register</span>

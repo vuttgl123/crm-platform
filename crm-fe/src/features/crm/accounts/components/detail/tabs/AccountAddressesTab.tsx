@@ -36,6 +36,15 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
 } from '@/components/ui/alert-dialog';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { ActionTooltip } from '@/components/ui/action-tooltip';
 import { toast } from 'sonner';
 import {
   MapPin,
@@ -227,98 +236,160 @@ export const AccountAddressesTab: React.FC<AccountAddressesTabProps> = ({
 
       {/* Empty State */}
       {!isLoading && !isError && addresses.length === 0 && (
-        <div className="py-12 bg-white rounded-[4px] border border-slate-200 text-center space-y-2 shadow-2xs">
-          <MapPin className="w-8 h-8 text-slate-300 mx-auto" />
-          <h3 className="text-sm font-bold text-slate-900">No addresses on file</h3>
-          <p className="text-xs text-slate-500 max-w-sm mx-auto">
-            Add billing, shipping, or office addresses for this account.
-          </p>
+        <div className="bg-white border border-slate-200 rounded-[4px] p-10 text-center space-y-3 shadow-2xs">
+          <div className="w-12 h-12 rounded-full bg-slate-50 border border-slate-200 flex items-center justify-center mx-auto text-slate-400">
+            <MapPin className="w-6 h-6" />
+          </div>
+          <div className="space-y-1">
+            <h3 className="text-sm font-bold text-slate-800">
+              No Addresses on File
+            </h3>
+            <p className="text-xs text-slate-500 max-w-md mx-auto">
+              Add billing, shipping, or office addresses for this account.
+            </p>
+          </div>
           {canWrite && (
-            <div className="pt-2">
-              <Button size="sm" onClick={handleOpenCreate} className="rounded-[3px]">
-                Add Address
-              </Button>
-            </div>
+            <Button
+              size="sm"
+              onClick={handleOpenCreate}
+              className="h-8 px-3 text-xs font-semibold bg-[#0C66E4] hover:bg-[#0052CC] text-white rounded-[3px] gap-1.5 shadow-none mt-2"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Add Address</span>
+            </Button>
           )}
         </div>
       )}
 
-      {/* Address Cards Grid */}
+      {/* Address Table */}
       {!isLoading && !isError && addresses.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {addresses.map((addr) => {
-            const config = ACCOUNT_ADDRESS_TYPE_CONFIG[addr.addressType] || {
-              label: addr.addressType,
-              badge: addr.addressType,
-              color: 'bg-slate-50 text-slate-700 border-slate-200',
-            };
+        <div className="bg-white border border-slate-200 rounded-[4px] overflow-hidden shadow-2xs">
+          <Table>
+            <TableHeader className="bg-[#F7F8F9] border-b border-slate-200">
+              <TableRow className="hover:bg-[#F7F8F9]">
+                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase py-2.5 px-3">
+                  Address Type
+                </TableHead>
+                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase py-2.5 px-3">
+                  Street Address
+                </TableHead>
+                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase py-2.5 px-3">
+                  Locality / Province
+                </TableHead>
+                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase py-2.5 px-3">
+                  Postal & Country
+                </TableHead>
+                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase py-2.5 px-3">
+                  Status
+                </TableHead>
+                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase py-2.5 px-3 text-right pr-4">
+                  Action
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {addresses.map((addr) => {
+                const config = ACCOUNT_ADDRESS_TYPE_CONFIG[addr.addressType] || {
+                  label: addr.addressType,
+                  badge: addr.addressType,
+                  color: 'bg-slate-50 text-slate-700 border-slate-200',
+                };
+                const isEnded = Boolean(addr.validTo);
 
-            const isEnded = Boolean(addr.validTo);
+                return (
+                  <TableRow
+                    key={addr.id}
+                    className={`hover:bg-[#F1F2F4] border-b border-[#EBECF0] text-xs transition-colors ${
+                      isEnded ? 'opacity-60 bg-slate-50/50' : ''
+                    }`}
+                  >
+                    <TableCell className="py-2.5 px-3">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <Badge
+                          className={`text-[10px] rounded-[2px] uppercase font-bold tracking-wider px-1.5 py-0.5 ${config.color}`}
+                        >
+                          {config.badge}
+                        </Badge>
+                        {addr.isPrimary && (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.5 rounded-[2px]">
+                            <Star className="w-2.5 h-2.5 fill-blue-600 text-blue-600" />
+                            PRIMARY
+                          </span>
+                        )}
+                      </div>
+                    </TableCell>
 
-            return (
-              <div
-                key={addr.id}
-                className={`p-4 rounded-[4px] border ${
-                  isEnded ? 'bg-slate-50/70 border-slate-200 opacity-80' : 'bg-white border-slate-200 shadow-2xs'
-                } space-y-3`}
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <Badge className={`text-[10px] rounded-[2px] uppercase font-bold tracking-wider px-1.5 py-0.5 ${config.color}`}>
-                      {config.badge}
-                    </Badge>
-                    {addr.isPrimary && (
-                      <span className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.5 rounded-[2px]">
-                        <Star className="w-2.5 h-2.5 fill-blue-600 text-blue-600" />
-                        PRIMARY
-                      </span>
-                    )}
-                    {isEnded && (
-                      <span className="text-[10px] font-bold text-slate-500 bg-slate-200 px-1.5 py-0.5 rounded-[2px]">
-                        ENDED
-                      </span>
-                    )}
-                  </div>
+                    <TableCell className="py-2.5 px-3 font-medium text-slate-900">
+                      <div>{addr.addressLine1 || '—'}</div>
+                      {addr.addressLine2 && (
+                        <div className="text-[11px] text-slate-500 font-normal">
+                          {addr.addressLine2}
+                        </div>
+                      )}
+                    </TableCell>
 
-                  {canWrite && !isEnded && (
-                    <div className="flex items-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleOpenEdit(addr)}
-                        className="h-7 w-7 p-0 text-slate-600 hover:text-blue-600 rounded-[3px]"
-                        aria-label="Edit address"
-                      >
-                        <Edit className="w-3.5 h-3.5" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setEndTarget(addr)}
-                        className="h-7 w-7 p-0 text-slate-600 hover:text-rose-600 rounded-[3px]"
-                        aria-label="End address"
-                      >
-                        <PowerOff className="w-3.5 h-3.5" />
-                      </Button>
-                    </div>
-                  )}
-                </div>
+                    <TableCell className="py-2.5 px-3 text-slate-700">
+                      {[addr.locality, addr.administrativeArea].filter(Boolean).join(', ') || '—'}
+                    </TableCell>
 
-                <div className="space-y-1 text-slate-800">
-                  {addr.addressLine1 && (
-                    <p className="font-semibold text-xs text-slate-900">{addr.addressLine1}</p>
-                  )}
-                  {addr.addressLine2 && <p className="text-slate-600">{addr.addressLine2}</p>}
-                  <p className="text-slate-700 font-medium">
-                    {[addr.locality, addr.administrativeArea, addr.postalCode].filter(Boolean).join(', ')}
-                  </p>
-                  <p className="font-mono text-[11px] font-bold text-slate-900">
-                    Country: {addr.countryCode}
-                  </p>
-                </div>
-              </div>
-            );
-          })}
+                    <TableCell className="py-2.5 px-3">
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-mono text-xs font-bold text-slate-800 bg-slate-100 px-1.5 py-0.5 rounded-[2px] border border-slate-200">
+                          {addr.countryCode}
+                        </span>
+                        {addr.postalCode && (
+                          <span className="font-mono text-[11px] text-slate-500">
+                            {addr.postalCode}
+                          </span>
+                        )}
+                      </div>
+                    </TableCell>
+
+                    <TableCell className="py-2.5 px-3">
+                      {isEnded ? (
+                        <span className="text-[10px] font-bold text-slate-500 bg-slate-200 px-1.5 py-0.5 rounded-[2px]">
+                          ENDED
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded-[2px]">
+                          ACTIVE
+                        </span>
+                      )}
+                    </TableCell>
+
+                    <TableCell className="py-2.5 px-3 text-right pr-4">
+                      {canWrite && !isEnded && (
+                        <div className="flex items-center justify-end gap-1">
+                          <ActionTooltip label="Edit address">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleOpenEdit(addr)}
+                              className="h-7 w-7 rounded-[3px] text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                              aria-label="Edit address"
+                            >
+                              <Edit className="w-3.5 h-3.5" />
+                            </Button>
+                          </ActionTooltip>
+                          <ActionTooltip label="End address">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => setEndTarget(addr)}
+                              className="h-7 w-7 rounded-[3px] text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                              aria-label="End address"
+                            >
+                              <PowerOff className="w-3.5 h-3.5" />
+                            </Button>
+                          </ActionTooltip>
+                        </div>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
         </div>
       )}
 

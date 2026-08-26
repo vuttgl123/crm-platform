@@ -1,9 +1,10 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { toast } from 'sonner';
-import { Shield, Key, ArrowLeftRight } from 'lucide-react';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Shield, Key, ArrowLeftRight, RotateCcw, Plus } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { StandardPageHeader } from '@/components/common/StandardPageHeader';
 import { StandardPagination } from '@/components/common/StandardPagination';
+import { StandardGlidingTabs } from '@/components/common/StandardGlidingTabs';
 import { RoleSummaryResponse } from '@/services/api/roleApi';
 import { useAuth } from '@/core/session/useAuth';
 import { can } from '@/core/permissions/evaluator';
@@ -44,8 +45,16 @@ export const RolesPage: React.FC = () => {
   } = useRoleSearchParams();
 
   // Queries
-  const { data: roles = [], isLoading: isLoadingRoles } = useRolesList(tenantId);
-  const { data: catalog = [], isLoading: isLoadingCatalog } = usePermissionCatalogue(tenantId);
+  const {
+    data: roles = [],
+    isLoading: isLoadingRoles,
+    refetch: refetchRoles,
+  } = useRolesList(tenantId);
+  const {
+    data: catalog = [],
+    isLoading: isLoadingCatalog,
+    refetch: refetchCatalog,
+  } = usePermissionCatalogue(tenantId);
   const { data: teams = [] } = useTeamsList(tenantId);
   const { deleteMutation } = useRoleMutations(tenantId);
 
@@ -158,6 +167,11 @@ export const RolesPage: React.FC = () => {
     }
   };
 
+  const handleRefresh = useCallback(() => {
+    refetchRoles();
+    refetchCatalog();
+  }, [refetchRoles, refetchCatalog]);
+
   return (
     <div className="space-y-4 pb-12 font-sans w-full">
       {/* Header */}
@@ -166,41 +180,62 @@ export const RolesPage: React.FC = () => {
         subtitle="Administer security roles, capability matrices, and granular organizational data scoping."
         badgeLabel="roles"
         badgeCount={roles.length}
+        actions={
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleRefresh}
+              className="h-8 text-xs font-semibold border-slate-200 text-slate-700 hover:bg-slate-50 rounded-[3px] gap-1.5 shadow-none"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>Refresh</span>
+            </Button>
+            {canManage && (
+              <Button
+                size="sm"
+                onClick={handleOpenCreate}
+                className="h-8 px-3 text-xs font-semibold bg-[#0C66E4] hover:bg-[#0052CC] text-white gap-1.5 shadow-none rounded-[3px]"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>New Role</span>
+              </Button>
+            )}
+          </div>
+        }
       />
 
       {/* Summary KPI Strip */}
       <RolesSummary stats={stats} loading={isLoadingRoles || isLoadingCatalog} />
 
-      {/* Main Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-3">
-        <TabsList className="bg-white border border-slate-200 p-0.5 rounded-[4px] h-9">
-          <TabsTrigger
-            value="roles"
-            className="text-xs font-semibold px-3 py-1 rounded-[3px] data-[state=active]:bg-slate-100 data-[state=active]:text-slate-900 gap-1.5"
-          >
-            <Shield className="w-3.5 h-3.5" />
-            <span>Security Roles ({roles.length})</span>
-          </TabsTrigger>
+      {/* Gliding Navigation Tabs */}
+      <StandardGlidingTabs
+        activeTab={activeTab}
+        onChange={(id) => setActiveTab(id as any)}
+        tabs={[
+          {
+            id: 'roles',
+            label: 'Security Roles',
+            icon: Shield,
+            badgeCount: roles.length,
+          },
+          {
+            id: 'catalogue',
+            label: 'Permission Directory',
+            icon: Key,
+            badgeCount: catalog.length,
+          },
+          {
+            id: 'compare',
+            label: 'Role Differential Matrix',
+            icon: ArrowLeftRight,
+          },
+        ]}
+      />
 
-          <TabsTrigger
-            value="catalogue"
-            className="text-xs font-semibold px-3 py-1 rounded-[3px] data-[state=active]:bg-slate-100 data-[state=active]:text-slate-900 gap-1.5"
-          >
-            <Key className="w-3.5 h-3.5" />
-            <span>Permission Directory ({catalog.length})</span>
-          </TabsTrigger>
-
-          <TabsTrigger
-            value="compare"
-            className="text-xs font-semibold px-3 py-1 rounded-[3px] data-[state=active]:bg-slate-100 data-[state=active]:text-slate-900 gap-1.5"
-          >
-            <ArrowLeftRight className="w-3.5 h-3.5" />
-            <span>Role Differential Matrix</span>
-          </TabsTrigger>
-        </TabsList>
-
-        {/* Tab 1: Roles List */}
-        <TabsContent value="roles" className="space-y-3 mt-0 focus-visible:outline-none">
+      {/* Tab 1: Roles List */}
+      {activeTab === 'roles' && (
+        <div className="space-y-3 animate-tab-content">
           <RolesToolbar
             searchQuery={roleFilters.search}
             onSearchChange={(q) => setRoleFilters({ search: q, page: 1 })}
@@ -208,7 +243,14 @@ export const RolesPage: React.FC = () => {
             onStatusChange={(status) => setRoleFilters({ status, page: 1 })}
             typeFilter={roleFilters.type}
             onTypeChange={(type) => setRoleFilters({ type, page: 1 })}
-            onCreateClick={handleOpenCreate}
+            onResetFilters={() =>
+              setRoleFilters({
+                search: '',
+                status: 'ALL',
+                type: 'ALL',
+                page: 1,
+              })
+            }
           />
 
           <RolesTable
@@ -231,20 +273,24 @@ export const RolesPage: React.FC = () => {
             onPageSizeChange={(s) => setRoleFilters({ pageSize: s, page: 1 })}
             itemLabel="roles"
           />
-        </TabsContent>
+        </div>
+      )}
 
-        {/* Tab 2: Permission Catalogue */}
-        <TabsContent value="catalogue" className="mt-0 focus-visible:outline-none">
+      {/* Tab 2: Permission Catalogue */}
+      {activeTab === 'catalogue' && (
+        <div className="animate-tab-content">
           <PermissionCatalogue
             permissions={catalog}
             loading={isLoadingCatalog}
             filters={catalogueFilters}
             onFilterChange={setCatalogueFilters}
           />
-        </TabsContent>
+        </div>
+      )}
 
-        {/* Tab 3: Role Comparison */}
-        <TabsContent value="compare" className="mt-0 focus-visible:outline-none">
+      {/* Tab 3: Role Comparison */}
+      {activeTab === 'compare' && (
+        <div className="animate-tab-content">
           <RoleComparison
             roles={roles}
             catalog={catalog}
@@ -252,8 +298,8 @@ export const RolesPage: React.FC = () => {
             onFilterChange={setComparisonFilters}
             tenantId={tenantId}
           />
-        </TabsContent>
-      </Tabs>
+        </div>
+      )}
 
       {/* Role Editor Sheet (4-Step Wizard) */}
       <RoleEditorSheet

@@ -10,7 +10,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
-import com.crm.customer.infrastructure.persistence.AccountScopeSql;
+import com.crm.foundation.persistence.OwnershipScopeSql;
 import com.crm.foundation.security.AuthorizedDataAccess;
 import com.crm.sales.order.application.dto.OrderOwnerReferenceDto;
 import com.crm.sales.order.application.dto.OrderPulseCurrencyGroupDto;
@@ -154,7 +154,7 @@ public class JdbcOrderRepository implements OrderRepository, InitializingBean {
 	@Override
 	public Optional<Order> findById(TenantId tenantId, OrderId orderId,
 			ActorId actorId, AuthorizedDataAccess access) {
-		AccountScopeSql scope = AccountScopeSql.resolve(actorId, access);
+		OwnershipScopeSql scope = OwnershipScopeSql.resolve(actorId, access);
 		Map<String, Object> parameters = new HashMap<>(scope.parameters());
 		parameters.put("tenantId", tenantId.toString());
 		parameters.put("orderId", orderId.toString());
@@ -177,7 +177,7 @@ public class JdbcOrderRepository implements OrderRepository, InitializingBean {
 	public PageResult<OrderSummary> search(TenantId tenantId,
 			ActorId actorId, OrderSearchQuery query,
 			AuthorizedDataAccess access) {
-		AccountScopeSql scope = AccountScopeSql.resolve(actorId, access);
+		OwnershipScopeSql scope = OwnershipScopeSql.resolve(actorId, access);
 		Map<String, Object> parameters = new HashMap<>(scope.parameters());
 		parameters.put("tenantId", tenantId.toString());
 
@@ -292,7 +292,7 @@ public class JdbcOrderRepository implements OrderRepository, InitializingBean {
 
 	@Override
 	public OrderPulseDto getPulse(TenantId tenantId, ActorId actorId, AuthorizedDataAccess access) {
-		AccountScopeSql scope = AccountScopeSql.resolve(actorId, access);
+		OwnershipScopeSql scope = OwnershipScopeSql.resolve(actorId, access);
 		Map<String, Object> parameters = new HashMap<>(scope.parameters());
 		parameters.put("tenantId", tenantId.toString());
 

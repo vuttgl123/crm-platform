@@ -1,6 +1,6 @@
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { AlertCircle } from 'lucide-react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   AuthErrorCode,
   getAuthErrorMessageKey,
@@ -33,12 +33,12 @@ export function AuthFormError({
     messageKeyOverride ?? getAuthErrorMessageKey(errorCode, fallbackMessageKey);
 
   return (
-    <Alert variant="destructive" className="mb-4 text-left border-rose-200 bg-rose-50/80 text-rose-900">
-      <AlertCircle className="w-4 h-4 text-rose-600" aria-hidden="true" />
-      <AlertDescription className="text-xs font-medium leading-relaxed">
+    <div className="mb-5 p-3.5 rounded-[6px] border border-[#FECACA] bg-[#FEF2F2] text-[#B91C1C] flex items-start gap-2.5 text-[13px] text-left">
+      <AlertCircle className="w-4 h-4 text-[#B91C1C] shrink-0 mt-0.5" aria-hidden="true" />
+      <div className="font-medium leading-relaxed flex-1">
         {t(translationKey, messageValues)}
-      </AlertDescription>
-    </Alert>
+      </div>
+    </div>
   );
 }
 

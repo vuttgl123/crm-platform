@@ -62,7 +62,11 @@ public class TeamApplicationService implements TeamFacade {
 		Objects.requireNonNull(command, "command must not be null");
 		TenantId tenantId = currentTenant.requireTenantId();
 		ActorId actorId = currentActor.requireActorId();
-		authorizer.requirePermission(SystemPermission.PLATFORM_TEAM_MANAGE);
+		authorizer.requireAny(
+				SystemPermission.PLATFORM_TEAM_MANAGE,
+				SystemPermission.PLATFORM_USER_MANAGE,
+				SystemPermission.PLATFORM_ROLE_MANAGE
+		);
 
 		if (teamRepository.existsByName(tenantId, command.name())) {
 			throw new ResourceConflict(TeamErrorCode.TEAM_NAME_ALREADY_EXISTS.code());
@@ -102,7 +106,12 @@ public class TeamApplicationService implements TeamFacade {
 	public TeamDetails get(TeamId id) {
 		Objects.requireNonNull(id, "id must not be null");
 		TenantId tenantId = currentTenant.requireTenantId();
-		authorizer.requirePermission(SystemPermission.PLATFORM_TEAM_READ);
+		authorizer.requireAny(
+				SystemPermission.PLATFORM_TEAM_READ,
+				SystemPermission.PLATFORM_ROLE_READ,
+				SystemPermission.PLATFORM_USER_MANAGE,
+				SystemPermission.CRM_ACCOUNT_READ
+		);
 
 		Team team = teamRepository.findById(tenantId, id)
 				.orElseThrow(() -> new DomainResourceNotFound(TeamErrorCode.TEAM_NOT_FOUND.code()));
@@ -115,7 +124,12 @@ public class TeamApplicationService implements TeamFacade {
 	@Transactional(readOnly = true)
 	public List<TeamSummary> list() {
 		TenantId tenantId = currentTenant.requireTenantId();
-		authorizer.requirePermission(SystemPermission.PLATFORM_TEAM_READ);
+		authorizer.requireAny(
+				SystemPermission.PLATFORM_TEAM_READ,
+				SystemPermission.PLATFORM_ROLE_READ,
+				SystemPermission.PLATFORM_USER_MANAGE,
+				SystemPermission.CRM_ACCOUNT_READ
+		);
 		return teamRepository.findAll(tenantId);
 	}
 
@@ -125,7 +139,11 @@ public class TeamApplicationService implements TeamFacade {
 		Objects.requireNonNull(command, "command must not be null");
 		TenantId tenantId = currentTenant.requireTenantId();
 		ActorId actorId = currentActor.requireActorId();
-		authorizer.requirePermission(SystemPermission.PLATFORM_TEAM_MANAGE);
+		authorizer.requireAny(
+				SystemPermission.PLATFORM_TEAM_MANAGE,
+				SystemPermission.PLATFORM_USER_MANAGE,
+				SystemPermission.PLATFORM_ROLE_MANAGE
+		);
 
 		Team team = teamRepository.findById(tenantId, command.id())
 				.orElseThrow(() -> new DomainResourceNotFound(TeamErrorCode.TEAM_NOT_FOUND.code()));
@@ -169,7 +187,11 @@ public class TeamApplicationService implements TeamFacade {
 		Objects.requireNonNull(id, "id must not be null");
 		TenantId tenantId = currentTenant.requireTenantId();
 		ActorId actorId = currentActor.requireActorId();
-		authorizer.requirePermission(SystemPermission.PLATFORM_TEAM_MANAGE);
+		authorizer.requireAny(
+				SystemPermission.PLATFORM_TEAM_MANAGE,
+				SystemPermission.PLATFORM_USER_MANAGE,
+				SystemPermission.PLATFORM_ROLE_MANAGE
+		);
 
 		Team team = teamRepository.findById(tenantId, id)
 				.orElseThrow(() -> new DomainResourceNotFound(TeamErrorCode.TEAM_NOT_FOUND.code()));
@@ -188,7 +210,11 @@ public class TeamApplicationService implements TeamFacade {
 		Objects.requireNonNull(command, "command must not be null");
 		TenantId tenantId = currentTenant.requireTenantId();
 		ActorId actorId = currentActor.requireActorId();
-		authorizer.requirePermission(SystemPermission.PLATFORM_TEAM_MANAGE);
+		authorizer.requireAny(
+				SystemPermission.PLATFORM_TEAM_MANAGE,
+				SystemPermission.PLATFORM_USER_MANAGE,
+				SystemPermission.PLATFORM_ROLE_MANAGE
+		);
 
 		Team team = teamRepository.findById(tenantId, command.teamId())
 				.orElseThrow(() -> new DomainResourceNotFound(TeamErrorCode.TEAM_NOT_FOUND.code()));
@@ -224,7 +250,11 @@ public class TeamApplicationService implements TeamFacade {
 		Objects.requireNonNull(teamId, "teamId must not be null");
 		Objects.requireNonNull(userId, "userId must not be null");
 		TenantId tenantId = currentTenant.requireTenantId();
-		authorizer.requirePermission(SystemPermission.PLATFORM_TEAM_MANAGE);
+		authorizer.requireAny(
+				SystemPermission.PLATFORM_TEAM_MANAGE,
+				SystemPermission.PLATFORM_USER_MANAGE,
+				SystemPermission.PLATFORM_ROLE_MANAGE
+		);
 
 		teamRepository.findMember(tenantId, teamId, userId)
 				.orElseThrow(() -> new DomainResourceNotFound(TeamErrorCode.TEAM_MEMBER_NOT_FOUND.code()));
@@ -238,7 +268,11 @@ public class TeamApplicationService implements TeamFacade {
 		Objects.requireNonNull(teamId, "teamId must not be null");
 		Objects.requireNonNull(userId, "userId must not be null");
 		TenantId tenantId = currentTenant.requireTenantId();
-		authorizer.requirePermission(SystemPermission.PLATFORM_TEAM_MANAGE);
+		authorizer.requireAny(
+				SystemPermission.PLATFORM_TEAM_MANAGE,
+				SystemPermission.PLATFORM_USER_MANAGE,
+				SystemPermission.PLATFORM_ROLE_MANAGE
+		);
 
 		TeamMember member = teamRepository.findMember(tenantId, teamId, userId)
 				.orElseThrow(() -> new DomainResourceNotFound(TeamErrorCode.TEAM_MEMBER_NOT_FOUND.code()));

@@ -9,7 +9,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import com.crm.customer.account.domain.AccountOwnerType;
-import com.crm.customer.infrastructure.persistence.AccountScopeSql;
+import com.crm.foundation.persistence.OwnershipScopeSql;
 import com.crm.customer.opportunity.application.dto.OpportunitySummary;
 import com.crm.customer.opportunity.application.port.OpportunityRepository;
 import com.crm.customer.opportunity.application.query.OpportunitySearchQuery;
@@ -57,7 +57,7 @@ public class JdbcOpportunityRepository implements OpportunityRepository {
 	@Override
 	public Optional<Opportunity> findById(TenantId tenantId, OpportunityId opportunityId,
 			ActorId actorId, AuthorizedDataAccess access) {
-		AccountScopeSql scope = AccountScopeSql.resolve(actorId, access);
+		OwnershipScopeSql scope = OwnershipScopeSql.resolve(actorId, access);
 		Map<String, Object> parameters = new HashMap<>(scope.parameters());
 		parameters.put("tenantId", tenantId.toString());
 		parameters.put("opportunityId", opportunityId.toString());
@@ -77,7 +77,7 @@ public class JdbcOpportunityRepository implements OpportunityRepository {
 	public PageResult<OpportunitySummary> search(TenantId tenantId,
 			ActorId actorId, OpportunitySearchQuery query,
 			AuthorizedDataAccess access) {
-		AccountScopeSql scope = AccountScopeSql.resolve(actorId, access);
+		OwnershipScopeSql scope = OwnershipScopeSql.resolve(actorId, access);
 		Map<String, Object> parameters = new HashMap<>(scope.parameters());
 		parameters.put("tenantId", tenantId.toString());
 
@@ -91,7 +91,7 @@ public class JdbcOpportunityRepository implements OpportunityRepository {
 		long totalElements = jdbcClient.sql(scope.cte() + """
 				SELECT COUNT(o.id)
 				FROM crm_opportunities o
-				LEFT JOIN crm_pipeline_stages s ON o.current_stage_id = s.id AND s.tenant_id = o.tenant_id AND s.deleted_at IS NULL
+				LEFT JOIN crm_pipeline_stages s ON o.current_stage_id = s.id AND s.tenant_id = o.tenant_id
 				""" + criteria)
 				.params(parameters)
 				.query(Long.class)
@@ -102,7 +102,7 @@ public class JdbcOpportunityRepository implements OpportunityRepository {
 
 		List<OpportunitySummary> items = jdbcClient.sql(scope.cte() + SUMMARY_SELECT
 				+ """
-				LEFT JOIN crm_pipeline_stages s ON o.current_stage_id = s.id AND s.tenant_id = o.tenant_id AND s.deleted_at IS NULL
+				LEFT JOIN crm_pipeline_stages s ON o.current_stage_id = s.id AND s.tenant_id = o.tenant_id
 				"""
 				+ criteria + """
 				ORDER BY o.updated_at DESC, o.id DESC
@@ -147,7 +147,7 @@ public class JdbcOpportunityRepository implements OpportunityRepository {
 	@Override
 	public boolean existsAccount(TenantId tenantId, UUID accountId,
 			ActorId actorId, AuthorizedDataAccess access) {
-		AccountScopeSql scope = AccountScopeSql.resolve(actorId, access);
+		OwnershipScopeSql scope = OwnershipScopeSql.resolve(actorId, access);
 		Map<String, Object> parameters = new HashMap<>(scope.parameters());
 		parameters.put("tenantId", tenantId.toString());
 		parameters.put("accountId", accountId.toString());
@@ -200,7 +200,7 @@ public class JdbcOpportunityRepository implements OpportunityRepository {
 	@Override
 	public boolean existsContact(TenantId tenantId, UUID contactId,
 			ActorId actorId, AuthorizedDataAccess access) {
-		AccountScopeSql scope = AccountScopeSql.resolve(actorId, access);
+		OwnershipScopeSql scope = OwnershipScopeSql.resolve(actorId, access);
 		Map<String, Object> parameters = new HashMap<>(scope.parameters());
 		parameters.put("tenantId", tenantId.toString());
 		parameters.put("contactId", contactId.toString());

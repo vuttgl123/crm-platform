@@ -9,7 +9,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import com.crm.customer.account.domain.AccountOwnerType;
-import com.crm.customer.infrastructure.persistence.AccountScopeSql;
+import com.crm.foundation.persistence.OwnershipScopeSql;
 import com.crm.customer.lead.application.dto.LeadSummary;
 import com.crm.customer.lead.application.port.LeadRepository;
 import com.crm.customer.lead.application.query.LeadSearchQuery;
@@ -58,7 +58,7 @@ public class JdbcLeadRepository implements LeadRepository {
 	@Override
 	public Optional<Lead> findById(TenantId tenantId, LeadId leadId,
 			ActorId actorId, AuthorizedDataAccess access) {
-		AccountScopeSql scope = AccountScopeSql.resolve(actorId, access);
+		OwnershipScopeSql scope = OwnershipScopeSql.resolve(actorId, access);
 		Map<String, Object> parameters = new HashMap<>(scope.parameters());
 		parameters.put("tenantId", tenantId.toString());
 		parameters.put("leadId", leadId.toString());
@@ -78,7 +78,7 @@ public class JdbcLeadRepository implements LeadRepository {
 	public PageResult<LeadSummary> search(TenantId tenantId,
 			ActorId actorId, LeadSearchQuery query,
 			AuthorizedDataAccess access) {
-		AccountScopeSql scope = AccountScopeSql.resolve(actorId, access);
+		OwnershipScopeSql scope = OwnershipScopeSql.resolve(actorId, access);
 		Map<String, Object> parameters = new HashMap<>(scope.parameters());
 		parameters.put("tenantId", tenantId.toString());
 
@@ -176,7 +176,7 @@ public class JdbcLeadRepository implements LeadRepository {
 	@Override
 	public boolean existsAccount(TenantId tenantId, UUID accountId,
 			ActorId actorId, AuthorizedDataAccess access) {
-		AccountScopeSql scope = AccountScopeSql.resolve(actorId, access);
+		OwnershipScopeSql scope = OwnershipScopeSql.resolve(actorId, access);
 		Map<String, Object> parameters = new HashMap<>(scope.parameters());
 		parameters.put("tenantId", tenantId.toString());
 		parameters.put("accountId", accountId.toString());
@@ -195,7 +195,7 @@ public class JdbcLeadRepository implements LeadRepository {
 	@Override
 	public boolean existsContact(TenantId tenantId, UUID contactId,
 			ActorId actorId, AuthorizedDataAccess access) {
-		AccountScopeSql scope = AccountScopeSql.resolve(actorId, access);
+		OwnershipScopeSql scope = OwnershipScopeSql.resolve(actorId, access);
 		Map<String, Object> parameters = new HashMap<>(scope.parameters());
 		parameters.put("tenantId", tenantId.toString());
 		parameters.put("contactId", contactId.toString());

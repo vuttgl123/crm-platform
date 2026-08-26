@@ -22,16 +22,16 @@ public class JdbcTeamRepository implements TeamRepository {
 			SELECT t.tenant_id, t.id, t.name, t.description, t.parent_team_id,
 			       t.manager_user_id, t.status, t.created_at, t.updated_at,
 			       t.created_by, t.updated_by, t.deleted_at, t.deleted_by, t.version
-			FROM platform.teams t
+			FROM platform_teams t
 			""";
 
 	private static final String SUMMARY_SELECT = """
 			SELECT t.id, t.name, t.description, t.parent_team_id,
 			       pt.name AS parent_team_name, t.manager_user_id, t.status,
-			       (SELECT COUNT(*) FROM platform.team_members tm WHERE tm.tenant_id = t.tenant_id AND tm.team_id = t.id AND tm.left_at IS NULL) AS active_members_count,
+			       (SELECT COUNT(*) FROM platform_team_members tm WHERE tm.tenant_id = t.tenant_id AND tm.team_id = t.id AND tm.left_at IS NULL) AS active_members_count,
 			       t.updated_at, t.version
-			FROM platform.teams t
-			LEFT JOIN platform.teams pt ON pt.tenant_id = t.tenant_id AND pt.id = t.parent_team_id
+			FROM platform_teams t
+			LEFT JOIN platform_teams pt ON pt.tenant_id = t.tenant_id AND pt.id = t.parent_team_id
 			""";
 
 	private final JdbcClient jdbcClient;
@@ -72,7 +72,7 @@ public class JdbcTeamRepository implements TeamRepository {
 	public boolean existsByName(TenantId tenantId, String name) {
 		String sql = """
 				SELECT COUNT(*) > 0
-				FROM platform.teams t
+				FROM platform_teams t
 				WHERE t.tenant_id = :tenantId
 				  AND lower(t.name) = lower(:name)
 				  AND t.deleted_at IS NULL
@@ -100,7 +100,7 @@ public class JdbcTeamRepository implements TeamRepository {
 	@Override
 	public void insert(Team team) {
 		String sql = """
-				INSERT INTO platform.teams (
+				INSERT INTO platform_teams (
 				    tenant_id, id, name, description, parent_team_id,
 				    manager_user_id, status, created_at, updated_at,
 				    created_by, updated_by, deleted_at, deleted_by, version
@@ -131,7 +131,7 @@ public class JdbcTeamRepository implements TeamRepository {
 	@Override
 	public void update(Team team) {
 		String sql = """
-				UPDATE platform.teams
+				UPDATE platform_teams
 				SET name = :name,
 				    description = :description,
 				    parent_team_id = :parentTeamId,
@@ -169,7 +169,7 @@ public class JdbcTeamRepository implements TeamRepository {
 	@Override
 	public void insertMember(TeamMember member) {
 		String sql = """
-				INSERT INTO platform.team_members (
+				INSERT INTO platform_team_members (
 				    tenant_id, team_id, user_id, member_role,
 				    is_primary, joined_at, left_at, created_at, created_by
 				) VALUES (
@@ -193,7 +193,7 @@ public class JdbcTeamRepository implements TeamRepository {
 	@Override
 	public void updateMember(TeamMember member) {
 		String sql = """
-				UPDATE platform.team_members
+				UPDATE platform_team_members
 				SET member_role = :memberRole,
 				    is_primary = :isPrimary,
 				    left_at = :leftAt
@@ -214,7 +214,7 @@ public class JdbcTeamRepository implements TeamRepository {
 	@Override
 	public void removeMember(TenantId tenantId, TeamId teamId, UUID userId) {
 		String sql = """
-				DELETE FROM platform.team_members
+				DELETE FROM platform_team_members
 				WHERE tenant_id = :tenantId
 				  AND team_id = :teamId
 				  AND user_id = :userId
@@ -229,7 +229,7 @@ public class JdbcTeamRepository implements TeamRepository {
 	@Override
 	public void clearPrimaryForUser(TenantId tenantId, UUID userId) {
 		String sql = """
-				UPDATE platform.team_members
+				UPDATE platform_team_members
 				SET is_primary = false
 				WHERE tenant_id = :tenantId
 				  AND user_id = :userId
@@ -246,7 +246,7 @@ public class JdbcTeamRepository implements TeamRepository {
 		String sql = """
 				SELECT tm.tenant_id, tm.team_id, tm.user_id, tm.member_role,
 				       tm.is_primary, tm.joined_at, tm.left_at, tm.created_at, tm.created_by
-				FROM platform.team_members tm
+				FROM platform_team_members tm
 				WHERE tm.tenant_id = :tenantId
 				  AND tm.team_id = :teamId
 				  AND tm.user_id = :userId
@@ -265,8 +265,8 @@ public class JdbcTeamRepository implements TeamRepository {
 				SELECT tm.team_id, tm.user_id, u.display_name AS user_display_name,
 				       u.email AS user_email, tm.member_role, tm.is_primary,
 				       tm.joined_at, tm.left_at
-				FROM platform.team_members tm
-				JOIN platform.users u ON u.id = tm.user_id
+				FROM platform_team_members tm
+				JOIN platform_users u ON u.id = tm.user_id
 				WHERE tm.tenant_id = :tenantId
 				  AND tm.team_id = :teamId
 				ORDER BY tm.is_primary DESC, tm.joined_at ASC

@@ -10,7 +10,7 @@ import com.crm.customer.accountcommunicationchannel.application.port.AccountComm
 import com.crm.customer.accountcommunicationchannel.domain.AccountCommunicationChannel;
 import com.crm.customer.accountcommunicationchannel.domain.AccountCommunicationChannelId;
 import com.crm.customer.accountcommunicationchannel.domain.ChannelType;
-import com.crm.customer.infrastructure.persistence.AccountScopeSql;
+import com.crm.foundation.persistence.OwnershipScopeSql;
 import com.crm.foundation.security.AuthorizedDataAccess;
 import com.crm.sharedkernel.domain.ActorId;
 import com.crm.sharedkernel.domain.TenantId;
@@ -46,7 +46,7 @@ public class JdbcAccountCommunicationChannelRepository
 	@Override
 	public boolean accountAccessible(TenantId tenantId, AccountId accountId,
 			ActorId actorId, AuthorizedDataAccess access) {
-		AccountScopeSql scope = AccountScopeSql.resolve(actorId, access);
+		OwnershipScopeSql scope = OwnershipScopeSql.resolve(actorId, access);
 		return jdbcClient.sql(scope.cte() + """
 				SELECT a.id
 				FROM crm_accounts a
@@ -64,7 +64,7 @@ public class JdbcAccountCommunicationChannelRepository
 	@Override
 	public boolean lockAccount(TenantId tenantId, AccountId accountId,
 			ActorId actorId, AuthorizedDataAccess access) {
-		AccountScopeSql scope = AccountScopeSql.resolve(actorId, access);
+		OwnershipScopeSql scope = OwnershipScopeSql.resolve(actorId, access);
 		String sql = scope.cte() + """
 				SELECT a.id
 				FROM crm_accounts a
@@ -85,7 +85,7 @@ public class JdbcAccountCommunicationChannelRepository
 	public Optional<AccountCommunicationChannel> findById(TenantId tenantId,
 			AccountId accountId, AccountCommunicationChannelId channelId,
 			ActorId actorId, AuthorizedDataAccess access) {
-		AccountScopeSql scope = AccountScopeSql.resolve(actorId, access);
+		OwnershipScopeSql scope = OwnershipScopeSql.resolve(actorId, access);
 		Map<String, Object> parameters = channelParameters(scope, tenantId,
 				accountId);
 		parameters.put("channelId", channelId.toString());
@@ -106,7 +106,7 @@ public class JdbcAccountCommunicationChannelRepository
 	@Override
 	public List<AccountCommunicationChannel> findAll(TenantId tenantId,
 			AccountId accountId, ActorId actorId, AuthorizedDataAccess access) {
-		AccountScopeSql scope = AccountScopeSql.resolve(actorId, access);
+		OwnershipScopeSql scope = OwnershipScopeSql.resolve(actorId, access);
 		String sql = scope.cte() + CHANNEL_PROJECTION + SCOPED_CHANNEL_FROM + """
 				WHERE c.tenant_id = :tenantId
 				  AND c.account_id = :accountId
@@ -129,7 +129,7 @@ public class JdbcAccountCommunicationChannelRepository
 			ChannelType channelType, String canonicalValue,
 			AccountCommunicationChannelId excludedChannelId, ActorId actorId,
 			AuthorizedDataAccess access) {
-		AccountScopeSql scope = AccountScopeSql.resolve(actorId, access);
+		OwnershipScopeSql scope = OwnershipScopeSql.resolve(actorId, access);
 		Map<String, Object> parameters = channelParameters(scope, tenantId,
 				accountId);
 		parameters.put("channelType", channelType.name());
@@ -168,7 +168,7 @@ public class JdbcAccountCommunicationChannelRepository
 			AccountId accountId, ChannelType channelType,
 			AccountCommunicationChannelId excludedChannelId, ActorId actorId,
 			AuthorizedDataAccess access) {
-		AccountScopeSql scope = AccountScopeSql.resolve(actorId, access);
+		OwnershipScopeSql scope = OwnershipScopeSql.resolve(actorId, access);
 		Map<String, Object> parameters = channelParameters(scope, tenantId,
 				accountId);
 		parameters.put("channelType", channelType.name());
@@ -219,7 +219,7 @@ public class JdbcAccountCommunicationChannelRepository
 	@Override
 	public int update(AccountCommunicationChannel channel, long expectedVersion,
 			ActorId actorId, AuthorizedDataAccess access) {
-		AccountScopeSql scope = AccountScopeSql.resolve(actorId, access);
+		OwnershipScopeSql scope = OwnershipScopeSql.resolve(actorId, access);
 		Map<String, Object> parameters = mutationParameters(scope, channel);
 		parameters.put("expectedVersion", expectedVersion);
 		return jdbcClient.sql(scope.cte() + """
@@ -252,7 +252,7 @@ public class JdbcAccountCommunicationChannelRepository
 	@Override
 	public int softDelete(AccountCommunicationChannel channel,
 			long expectedVersion, ActorId actorId, AuthorizedDataAccess access) {
-		AccountScopeSql scope = AccountScopeSql.resolve(actorId, access);
+		OwnershipScopeSql scope = OwnershipScopeSql.resolve(actorId, access);
 		Map<String, Object> parameters = deletionParameters(scope, channel);
 		parameters.put("expectedVersion", expectedVersion);
 		return jdbcClient.sql(scope.cte() + """
@@ -278,7 +278,7 @@ public class JdbcAccountCommunicationChannelRepository
 				.update();
 	}
 
-	private static Map<String, Object> accountParameters(AccountScopeSql scope,
+	private static Map<String, Object> accountParameters(OwnershipScopeSql scope,
 			TenantId tenantId, AccountId accountId) {
 		Map<String, Object> parameters = new HashMap<>(scope.parameters());
 		parameters.put("tenantId", tenantId.toString());
@@ -286,7 +286,7 @@ public class JdbcAccountCommunicationChannelRepository
 		return parameters;
 	}
 
-	private static Map<String, Object> channelParameters(AccountScopeSql scope,
+	private static Map<String, Object> channelParameters(OwnershipScopeSql scope,
 			TenantId tenantId, AccountId accountId) {
 		return accountParameters(scope, tenantId, accountId);
 	}
@@ -305,7 +305,7 @@ public class JdbcAccountCommunicationChannelRepository
 		return parameters;
 	}
 
-	private static Map<String, Object> mutationParameters(AccountScopeSql scope,
+	private static Map<String, Object> mutationParameters(OwnershipScopeSql scope,
 			AccountCommunicationChannel channel) {
 		Map<String, Object> parameters = new HashMap<>(scope.parameters());
 		parameters.putAll(editableParameters(channel));
@@ -314,7 +314,7 @@ public class JdbcAccountCommunicationChannelRepository
 		return parameters;
 	}
 
-	private static Map<String, Object> deletionParameters(AccountScopeSql scope,
+	private static Map<String, Object> deletionParameters(OwnershipScopeSql scope,
 			AccountCommunicationChannel channel) {
 		Map<String, Object> parameters = new HashMap<>(scope.parameters());
 		parameters.put("tenantId", channel.tenantId().toString());

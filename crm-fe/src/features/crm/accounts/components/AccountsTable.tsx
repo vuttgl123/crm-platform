@@ -134,7 +134,7 @@ export const AccountsTable: React.FC<AccountsTableProps> = ({
                     <TableRow
                       key={acc.id}
                       className={`hover:bg-[#F1F2F4] border-b border-[#EBECF0] text-xs transition-colors ${
-                        node.level > 0 ? 'bg-slate-50/40' : ''
+                        node.level > 0 ? 'bg-slate-50/50 animate-tree-row' : ''
                       }`}
                     >
                       {/* Hierarchical Tree Cell */}
@@ -146,16 +146,17 @@ export const AccountsTable: React.FC<AccountsTableProps> = ({
                           {/* Tree Expand/Collapse Button or Leaf Branch Icon */}
                           {hasChildren ? (
                             <button
+                              type="button"
                               onClick={() => onToggleExpand(acc.id)}
                               className="p-1 rounded-[3px] text-slate-500 hover:text-slate-900 hover:bg-slate-200 transition-colors shrink-0"
                               title={isExpanded ? 'Collapse subsidiaries' : 'Expand subsidiaries'}
                               aria-label={isExpanded ? 'Collapse' : 'Expand'}
                             >
-                              {isExpanded ? (
-                                <ChevronDown className="w-3.5 h-3.5 text-blue-600 font-bold" />
-                              ) : (
-                                <ChevronRight className="w-3.5 h-3.5" />
-                              )}
+                              <ChevronRight
+                                className={`w-3.5 h-3.5 transition-transform duration-200 ${
+                                  isExpanded ? 'rotate-90 text-blue-600 font-bold' : 'text-slate-500'
+                                }`}
+                              />
                             </button>
                           ) : node.level > 0 ? (
                             <div className="w-5 flex items-center justify-center shrink-0">
@@ -279,43 +280,13 @@ export const AccountsTable: React.FC<AccountsTableProps> = ({
 
                       {/* Actions */}
                       <TableCell className="py-2.5 px-3 text-right pr-4">
-                        <div className="flex items-center justify-end gap-1">
-                          <ActionTooltip label="View account workspace">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              asChild
-                              className="h-7 w-7 rounded-[3px] text-slate-600 hover:text-blue-600 hover:bg-blue-50"
-                            >
-                              <Link
-                                to={`/app/crm/accounts/${acc.id}`}
-                                aria-label={`View account ${acc.displayName}`}
-                              >
-                                <Eye className="w-3.5 h-3.5" />
-                              </Link>
-                            </Button>
-                          </ActionTooltip>
-
-                          {canWrite && (
-                            <ActionTooltip label="Edit account">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => onEdit(acc)}
-                                className="h-7 w-7 rounded-[3px] text-slate-600 hover:text-blue-600 hover:bg-blue-50"
-                                aria-label={`Edit account ${acc.displayName}`}
-                              >
-                                <Edit className="w-3.5 h-3.5" />
-                              </Button>
-                            </ActionTooltip>
-                          )}
-
+                        <div className="flex items-center justify-end">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-7 w-7 rounded-[3px] text-slate-600 hover:text-slate-900"
+                                className="h-7 w-7 rounded-[3px] text-slate-600 hover:text-slate-900 hover:bg-slate-100"
                                 aria-label="More actions"
                               >
                                 <MoreHorizontal className="w-3.5 h-3.5" />
@@ -472,43 +443,13 @@ export const AccountsTable: React.FC<AccountsTableProps> = ({
 
                       {/* Actions */}
                       <TableCell className="py-2.5 px-3 text-right pr-4">
-                        <div className="flex items-center justify-end gap-1">
-                          <ActionTooltip label="View account workspace">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              asChild
-                              className="h-7 w-7 rounded-[3px] text-slate-600 hover:text-blue-600 hover:bg-blue-50"
-                            >
-                              <Link
-                                to={`/app/crm/accounts/${acc.id}`}
-                                aria-label={`View account ${acc.displayName}`}
-                              >
-                                <Eye className="w-3.5 h-3.5" />
-                              </Link>
-                            </Button>
-                          </ActionTooltip>
-
-                          {canWrite && (
-                            <ActionTooltip label="Edit account">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => onEdit(acc)}
-                                className="h-7 w-7 rounded-[3px] text-slate-600 hover:text-blue-600 hover:bg-blue-50"
-                                aria-label={`Edit account ${acc.displayName}`}
-                              >
-                                <Edit className="w-3.5 h-3.5" />
-                              </Button>
-                            </ActionTooltip>
-                          )}
-
+                        <div className="flex items-center justify-end">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-7 w-7 rounded-[3px] text-slate-600 hover:text-slate-900"
+                                className="h-7 w-7 rounded-[3px] text-slate-600 hover:text-slate-900 hover:bg-slate-100"
                                 aria-label="More actions"
                               >
                                 <MoreHorizontal className="w-3.5 h-3.5" />

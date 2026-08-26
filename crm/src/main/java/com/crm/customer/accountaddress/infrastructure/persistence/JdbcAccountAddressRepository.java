@@ -12,7 +12,7 @@ import com.crm.customer.accountaddress.application.query.AccountAddressSearchQue
 import com.crm.customer.accountaddress.domain.AccountAddress;
 import com.crm.customer.accountaddress.domain.AccountAddressId;
 import com.crm.customer.accountaddress.domain.AccountAddressType;
-import com.crm.customer.infrastructure.persistence.AccountScopeSql;
+import com.crm.foundation.persistence.OwnershipScopeSql;
 import com.crm.foundation.security.AuthorizedDataAccess;
 import com.crm.sharedkernel.domain.ActorId;
 import com.crm.sharedkernel.domain.TenantId;
@@ -54,7 +54,7 @@ public class JdbcAccountAddressRepository implements AccountAddressRepository {
 	@Override
 	public boolean accountAccessible(TenantId tenantId, AccountId accountId,
 			ActorId actorId, AuthorizedDataAccess access) {
-		AccountScopeSql scope = AccountScopeSql.resolve(actorId, access);
+		OwnershipScopeSql scope = OwnershipScopeSql.resolve(actorId, access);
 		return jdbcClient.sql(scope.cte() + """
 				SELECT a.id
 				FROM crm_accounts a
@@ -72,7 +72,7 @@ public class JdbcAccountAddressRepository implements AccountAddressRepository {
 	@Override
 	public boolean lockAccount(TenantId tenantId, AccountId accountId,
 			ActorId actorId, AuthorizedDataAccess access) {
-		AccountScopeSql scope = AccountScopeSql.resolve(actorId, access);
+		OwnershipScopeSql scope = OwnershipScopeSql.resolve(actorId, access);
 		String sql = scope.cte() + """
 				SELECT a.id
 				FROM crm_accounts a
@@ -93,7 +93,7 @@ public class JdbcAccountAddressRepository implements AccountAddressRepository {
 	public Optional<AccountAddress> findById(TenantId tenantId,
 			AccountId accountId, AccountAddressId addressId, ActorId actorId,
 			AuthorizedDataAccess access) {
-		AccountScopeSql scope = AccountScopeSql.resolve(actorId, access);
+		OwnershipScopeSql scope = OwnershipScopeSql.resolve(actorId, access);
 		Map<String, Object> parameters = accountParameters(scope, tenantId,
 				accountId);
 		parameters.put("addressId", addressId.toString());
@@ -113,7 +113,7 @@ public class JdbcAccountAddressRepository implements AccountAddressRepository {
 	public List<AccountAddress> findAll(TenantId tenantId, ActorId actorId,
 			AccountAddressSearchQuery query, LocalDate currentDate,
 			AuthorizedDataAccess access) {
-		AccountScopeSql scope = AccountScopeSql.resolve(actorId, access);
+		OwnershipScopeSql scope = OwnershipScopeSql.resolve(actorId, access);
 		Map<String, Object> parameters = accountParameters(scope, tenantId,
 				query.accountId());
 		parameters.put("currentDate", currentDate);
@@ -155,7 +155,7 @@ public class JdbcAccountAddressRepository implements AccountAddressRepository {
 			AccountId accountId, AccountAddressType addressType,
 			AccountAddressId excludedAddressId, LocalDate currentDate,
 			ActorId actorId, AuthorizedDataAccess access) {
-		AccountScopeSql scope = AccountScopeSql.resolve(actorId, access);
+		OwnershipScopeSql scope = OwnershipScopeSql.resolve(actorId, access);
 		Map<String, Object> parameters = accountParameters(scope, tenantId,
 				accountId);
 		parameters.put("addressType", addressType.name());
@@ -224,7 +224,7 @@ public class JdbcAccountAddressRepository implements AccountAddressRepository {
 	public int update(AccountAddress address,
 			AccountAddressType persistedAddressType, long expectedVersion,
 			ActorId actorId, AuthorizedDataAccess access) {
-		AccountScopeSql scope = AccountScopeSql.resolve(actorId, access);
+		OwnershipScopeSql scope = OwnershipScopeSql.resolve(actorId, access);
 		Map<String, Object> parameters = mutationParameters(scope, address,
 				persistedAddressType, expectedVersion);
 		int addressAffectedRows = jdbcClient.sql(scope.cte() + """
@@ -293,7 +293,7 @@ public class JdbcAccountAddressRepository implements AccountAddressRepository {
 		return associationAffectedRows;
 	}
 
-	private static Map<String, Object> accountParameters(AccountScopeSql scope,
+	private static Map<String, Object> accountParameters(OwnershipScopeSql scope,
 			TenantId tenantId, AccountId accountId) {
 		Map<String, Object> parameters = new HashMap<>(scope.parameters());
 		parameters.put("tenantId", tenantId.toString());
@@ -323,7 +323,7 @@ public class JdbcAccountAddressRepository implements AccountAddressRepository {
 		return parameters;
 	}
 
-	private static Map<String, Object> mutationParameters(AccountScopeSql scope,
+	private static Map<String, Object> mutationParameters(OwnershipScopeSql scope,
 			AccountAddress address, AccountAddressType persistedAddressType,
 			long expectedVersion) {
 		Map<String, Object> parameters = new HashMap<>(scope.parameters());

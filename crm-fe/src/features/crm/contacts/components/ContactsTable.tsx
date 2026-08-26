@@ -10,6 +10,13 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { ActionTooltip } from '@/components/ui/action-tooltip';
 import { renderLifecycleStageBadge } from '@/config/crmStatusConfig';
 import { formatDate } from '@/lib/formatters';
@@ -26,6 +33,7 @@ import {
   Phone,
   Smartphone,
   MessageSquare,
+  MoreHorizontal,
 } from 'lucide-react';
 
 interface ContactsTableProps {
@@ -60,7 +68,7 @@ export const ContactsTable: React.FC<ContactsTableProps> = ({
   };
 
   return (
-    <div className="bg-white border border-slate-200 rounded-[4px] overflow-hidden w-full">
+    <div className="bg-white border border-slate-200 rounded-[4px] overflow-hidden w-full font-sans shadow-2xs">
       <div className="overflow-x-auto">
         <Table>
           <TableHeader className="bg-[#F7F8F9] border-b border-slate-200">
@@ -72,7 +80,7 @@ export const ContactsTable: React.FC<ContactsTableProps> = ({
                 Account
               </TableHead>
               <TableHead className="text-[11px] font-semibold text-slate-600 uppercase py-2.5 px-3">
-                Role & Department
+                Role &amp; Department
               </TableHead>
               <TableHead className="text-[11px] font-semibold text-slate-600 uppercase py-2.5 px-3">
                 Ownership
@@ -86,7 +94,7 @@ export const ContactsTable: React.FC<ContactsTableProps> = ({
               <TableHead className="text-[11px] font-semibold text-slate-600 uppercase py-2.5 px-3">
                 Updated
               </TableHead>
-              <TableHead className="text-[11px] font-semibold text-slate-600 uppercase py-2.5 px-3 text-right pr-4 w-[110px]">
+              <TableHead className="text-[11px] font-semibold text-slate-600 uppercase py-2.5 px-3 text-right pr-4 w-[60px]">
                 Actions
               </TableHead>
             </TableRow>
@@ -99,14 +107,14 @@ export const ContactsTable: React.FC<ContactsTableProps> = ({
               >
                 {/* Column 1: Contact Name & Number */}
                 <TableCell className="py-2.5 px-3">
-                  <div className="flex flex-col">
+                  <div className="flex flex-col gap-0.5">
                     <button
                       onClick={() => onView(c)}
                       className="font-bold text-xs text-slate-900 hover:text-blue-600 text-left line-clamp-1 transition-colors"
                     >
                       {c.displayName}
                     </button>
-                    <span className="font-mono text-[11px] text-slate-400 mt-0.5">
+                    <span className="font-mono text-[11px] bg-slate-100 px-1.5 py-0.2 rounded-[2px] border border-slate-200/80 text-slate-600 w-fit">
                       {c.contactNumber}
                     </span>
                   </div>
@@ -202,49 +210,51 @@ export const ContactsTable: React.FC<ContactsTableProps> = ({
                   {formatDate(c.updatedAt)}
                 </TableCell>
 
-                {/* Column 8: Actions */}
+                {/* Column 8: Standard 3-Dot Actions */}
                 <TableCell className="py-2.5 px-3 text-right pr-4">
-                  <div className="flex items-center justify-end gap-1">
-                    <ActionTooltip label="View details">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => onView(c)}
-                        className="h-7 w-7 rounded-[3px] text-slate-600 hover:text-blue-600 hover:bg-blue-50"
-                        aria-label={`View details for ${c.displayName}`}
+                        className="h-7 w-7 rounded-[3px] text-slate-500 hover:text-slate-900 hover:bg-slate-100"
+                        aria-label={`Actions for ${c.displayName}`}
                       >
-                        <Eye className="w-3.5 h-3.5" />
+                        <MoreHorizontal className="w-3.5 h-3.5" />
                       </Button>
-                    </ActionTooltip>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-44 rounded-[3px] text-xs font-sans">
+                      <DropdownMenuItem
+                        onClick={() => onView(c)}
+                        className="gap-2 cursor-pointer text-xs"
+                      >
+                        <Eye className="w-3.5 h-3.5 text-blue-600" />
+                        <span>View Details</span>
+                      </DropdownMenuItem>
 
-                    {canWrite && (
-                      <>
-                        <ActionTooltip label="Edit contact">
-                          <Button
-                            variant="ghost"
-                            size="icon"
+                      {canWrite && (
+                        <>
+                          <DropdownMenuItem
                             onClick={() => onEdit(c)}
-                            className="h-7 w-7 rounded-[3px] text-slate-600 hover:text-blue-600 hover:bg-blue-50"
-                            aria-label={`Edit contact ${c.displayName}`}
+                            className="gap-2 cursor-pointer text-xs"
                           >
-                            <Edit className="w-3.5 h-3.5" />
-                          </Button>
-                        </ActionTooltip>
+                            <Edit className="w-3.5 h-3.5 text-slate-600" />
+                            <span>Edit Contact</span>
+                          </DropdownMenuItem>
 
-                        <ActionTooltip label="Delete contact">
-                          <Button
-                            variant="ghost"
-                            size="icon"
+                          <DropdownMenuSeparator />
+
+                          <DropdownMenuItem
                             onClick={() => onDelete(c)}
-                            className="h-7 w-7 rounded-[3px] text-slate-600 hover:text-rose-600 hover:bg-rose-50"
-                            aria-label={`Delete contact ${c.displayName}`}
+                            className="gap-2 cursor-pointer text-xs text-rose-600 focus:text-rose-700 focus:bg-rose-50"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
-                          </Button>
-                        </ActionTooltip>
-                      </>
-                    )}
-                  </div>
+                            <span>Delete Contact</span>
+                          </DropdownMenuItem>
+                        </>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </TableCell>
               </TableRow>
             ))}

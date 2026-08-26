@@ -19,18 +19,18 @@ interface RoleChangeReviewProps {
 export const RoleChangeReview: React.FC<RoleChangeReviewProps> = ({
   diff,
   draft,
-  catalog,
-  teams,
+  catalog = [],
+  teams = [],
 }) => {
   const permMap = useMemo(() => {
     const map = new Map<string, ExtendedPermission>();
-    catalog.forEach((p) => map.set(p.permissionCode, p));
+    (catalog || []).forEach((p) => map.set(p.permissionCode, p));
     return map;
   }, [catalog]);
 
   const teamMap = useMemo(() => {
     const map = new Map<string, string>();
-    teams.forEach((t) => map.set(t.id, t.name));
+    (teams || []).forEach((t) => map.set(t.id, t.name));
     return map;
   }, [teams]);
 

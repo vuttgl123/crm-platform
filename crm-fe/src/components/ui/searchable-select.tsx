@@ -136,12 +136,12 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
           align="start"
           style={popoverWidth ? { width: popoverWidth } : undefined}
           className={cn(
-            'p-0 z-50 rounded-lg border border-slate-200 bg-white shadow-lg text-slate-900 w-[var(--radix-popover-trigger-width)] min-w-[200px]',
+            'p-0 z-50 rounded-[4px] border border-slate-200 bg-white shadow-lg text-slate-900 w-[var(--radix-popover-trigger-width)] min-w-[200px]',
             popoverClassName
           )}
         >
           {/* Search Header */}
-          <div className="p-2 border-b border-slate-100 flex items-center gap-2 bg-slate-50/70 rounded-t-lg">
+          <div className="p-2 border-b border-slate-100 flex items-center gap-2 bg-slate-50/70 rounded-t-[3px]">
             <Search className="w-3.5 h-3.5 text-slate-400 shrink-0 ml-1" />
             <input
               ref={inputRef}
@@ -179,7 +179,7 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
                     disabled={option.disabled}
                     onClick={() => handleSelect(option.value)}
                     className={cn(
-                      'w-full text-left px-2.5 py-1.5 rounded-md text-xs transition-colors flex items-center justify-between gap-2',
+                      'w-full text-left px-2.5 py-1.5 rounded-[3px] text-xs transition-colors flex items-center justify-between gap-2',
                       isSelected
                         ? 'bg-blue-50 text-blue-700 font-semibold'
                         : 'text-slate-700 hover:bg-slate-100',
@@ -200,7 +200,7 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
                           )}
                         </div>
                         {option.badge && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-medium shrink-0">
+                          <span className="text-[10px] px-1.5 py-0.2 rounded-[2px] bg-slate-100 text-slate-600 font-mono font-medium shrink-0 border border-slate-200/60">
                             {option.badge}
                           </span>
                         )}

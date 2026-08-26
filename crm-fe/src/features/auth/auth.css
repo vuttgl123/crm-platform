@@ -1,120 +1,158 @@
-/* The editorial design tokens live on :root in the landing stylesheet. This
-   import makes the dependency explicit rather than relying on the landing
-   bundle happening to be loaded first; the bundler de-duplicates it, so the
-   stylesheet is not emitted twice. */
+/* ==========================================================================
+   VUM CRM — Authentication Gateway (Enterprise Editorial System)
+   Consumes the unified design tokens declared on :root in landing.css
+   ========================================================================== */
 @import '../landing/landing.css';
 
-/* ==========================================================================
-   VUM CRM — Authentication gateway
-   Consumes the editorial design system declared on :root in
-   features/landing/landing.css. The --auth-* names are kept as aliases onto
-   --ed-* so no page has to change: every existing var(--auth-*) reference
-   resolves through this block to the shared value.
-   ========================================================================== */
-
 .auth-theme {
-  --auth-canvas: var(--ed-surface);
-  --auth-surface: var(--ed-canvas);
-  --auth-surface-2: var(--ed-surface-2);
-  --auth-ink: var(--ed-primary);
-  --auth-muted: var(--ed-secondary);
-  --auth-subtle: var(--ed-muted);
-  --auth-line: var(--ed-hairline);
-  --auth-line-strong: var(--ed-hairline-strong);
-  --auth-blue: var(--ed-accent);
-  --auth-blue-hover: var(--ed-accent-hover);
-  --auth-blue-soft: var(--ed-accent-soft);
-  --auth-blue-border: var(--ed-accent-border);
-  --auth-danger: var(--ed-negative);
+  --auth-canvas: #FAFAF9;
+  --auth-surface: #FFFFFF;
+  --auth-surface-2: #F5F5F4;
+  --auth-ink: #1C1917;
+  --auth-muted: #57534E;
+  --auth-subtle: #78716C;
+  --auth-line: #E7E5E4;
+  --auth-line-strong: #D6D3D1;
+  --auth-blue: #1D4ED8;
+  --auth-blue-hover: #1E40AF;
+  --auth-blue-soft: #EFF6FF;
+  --auth-blue-border: #BFDBFE;
+  --auth-danger: #B91C1C;
   --auth-danger-soft: #FEF2F2;
-  --auth-positive: var(--ed-positive);
+  --auth-positive: #15803D;
 
   min-height: 100dvh;
-  background: var(--auth-canvas);
+  background-color: var(--auth-canvas);
   color: var(--auth-ink);
-  font-family: var(--ed-font-body);
+  font-family: var(--ed-font-body, system-ui, -apple-system, sans-serif);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: clip;
 }
 
 /* ==========================================================================
-   Frame
+   Page Frame Architecture & Silky Smooth Keyframe Curves
    ========================================================================== */
 
 .auth-theme .auth-frame {
-  width: min(calc(100% - 2rem), 74rem);
-  min-height: min(46rem, calc(100dvh - 4rem));
+  width: min(calc(100% - 2rem), 72rem);
+  min-height: min(44rem, calc(100dvh - 5rem));
   margin-inline: auto;
   display: grid;
   grid-template-columns: minmax(0, 44fr) minmax(0, 56fr);
   overflow: hidden;
   border: 1px solid var(--auth-line);
-  border-radius: var(--ed-radius-mockup);
+  border-radius: 12px;
   background: var(--auth-surface);
-  box-shadow: var(--ed-shadow-product);
+  box-shadow: 0 1px 3px rgba(28, 25, 23, 0.04), 0 20px 48px rgba(28, 25, 23, 0.06);
+  animation: authFrameEnter 400ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: transform, opacity;
 }
 
 .auth-theme .auth-frame--compact {
-  width: min(calc(100% - 2rem), 34rem);
+  width: min(calc(100% - 2rem), 32rem);
   min-height: auto;
   display: block;
+  box-shadow: 0 1px 3px rgba(28, 25, 23, 0.04), 0 16px 40px rgba(28, 25, 23, 0.06);
+}
+
+@keyframes authFrameEnter {
+  0% {
+    opacity: 0;
+    transform: translateY(6px) scale(0.995);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes authContentEnter {
+  0% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.auth-theme .auth-stagger-1 {
+  animation: authContentEnter 320ms cubic-bezier(0.16, 1, 0.3, 1) 30ms both;
+}
+
+.auth-theme .auth-stagger-2 {
+  animation: authContentEnter 320ms cubic-bezier(0.16, 1, 0.3, 1) 70ms both;
+}
+
+.auth-theme .auth-stagger-3 {
+  animation: authContentEnter 320ms cubic-bezier(0.16, 1, 0.3, 1) 110ms both;
 }
 
 .auth-theme .auth-display {
-  font-family: var(--ed-font-heading);
-  letter-spacing: -0.022em;
+  font-family: var(--ed-font-heading, system-ui, -apple-system, sans-serif);
+  letter-spacing: -0.025em;
   text-wrap: balance;
 }
 
-/* The brand panel is the one dark region in the gateway, mirroring how the
-   landing page reserves .editorial-dark-region for a few designated blocks. */
+/* ==========================================================================
+   Dark Brand Panel (Left Column)
+   ========================================================================== */
+
 .auth-theme .auth-brand-panel {
   display: flex;
   min-width: 0;
   flex-direction: column;
   justify-content: space-between;
-  padding: clamp(2.5rem, 5vw, 4rem);
-  background: var(--ed-ink);
-  color: var(--ed-inverse);
-  border-right: 1px solid var(--auth-line);
+  padding: clamp(2.5rem, 5vw, 3.75rem);
+  background: #1C1917;
+  color: #FAFAF9;
+  border-right: 1px solid #292524;
   position: relative;
   overflow: hidden;
 }
 
-/* Faint grid, the same restrained texture the landing dark regions use. */
+/* Subtle grid texture matching landing dark blocks */
 .auth-theme .auth-brand-panel::before {
   content: '';
   position: absolute;
   inset: 0;
   pointer-events: none;
   background-image:
-    linear-gradient(to right, rgba(250, 250, 249, .06) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(250, 250, 249, .06) 1px, transparent 1px);
-  background-size: 44px 44px;
-  -webkit-mask-image: radial-gradient(120% 90% at 20% 0%, #000, transparent 72%);
-  mask-image: radial-gradient(120% 90% at 20% 0%, #000, transparent 72%);
+    linear-gradient(to right, rgba(250, 250, 249, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(250, 250, 249, 0.05) 1px, transparent 1px);
+  background-size: 36px 36px;
+  -webkit-mask-image: radial-gradient(120% 90% at 20% 0%, #000, transparent 75%);
+  mask-image: radial-gradient(120% 90% at 20% 0%, #000, transparent 75%);
 }
 
 .auth-theme .auth-brand-panel > * {
   position: relative;
+  z-index: 1;
 }
+
+/* ==========================================================================
+   Form Region (Right Column)
+   ========================================================================== */
 
 .auth-theme .auth-form-region {
   display: flex;
   min-width: 0;
   flex-direction: column;
   background: var(--auth-surface);
+  justify-content: center;
 }
 
 .auth-theme .auth-form-column {
   width: min(100%, 27rem);
   margin: auto;
   padding: clamp(2rem, 4vw, 3.25rem) 2rem;
+  will-change: transform, opacity;
 }
 
 /* ==========================================================================
-   Controls
+   Enterprise Controls & Refined Micro-Interactions
    ========================================================================== */
 
 .auth-theme :where(a, button, input, select, textarea):focus-visible {
@@ -122,51 +160,51 @@
   outline-offset: 2px;
 }
 
-/* Inside the dark brand panel the accent is too dark to see. */
 .auth-theme .auth-brand-panel :where(a, button):focus-visible {
   outline-color: var(--auth-blue-border);
 }
 
 .auth-theme .auth-control {
-  min-height: 2.875rem;
-  border-radius: var(--ed-radius-input);
+  min-height: 2.75rem;
+  border-radius: 6px;
+  transition: all 180ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .auth-theme .auth-icon-button {
   display: inline-flex;
-  width: 2.5rem;
-  height: 2.5rem;
+  width: 2.25rem;
+  height: 2.25rem;
   align-items: center;
   justify-content: center;
-  border-radius: var(--ed-radius-button);
+  border-radius: 6px;
+  transition: all 180ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .auth-theme .auth-interactive {
-  transition-property: color, background-color, border-color, opacity, transform,
-    box-shadow;
-  transition-duration: 150ms;
+  transition-property: color, background-color, border-color, opacity, transform, box-shadow;
+  transition-duration: 180ms;
   transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .auth-theme .auth-interactive:active {
-  transform: translateY(1px);
+  transform: scale(0.985);
 }
 
 /* ==========================================================================
-   Responsive
+   Responsive Adaptations
    ========================================================================== */
 
 @media (max-width: 1023px) {
   .auth-theme .auth-frame {
-    width: min(calc(100% - 2rem), 32.5rem);
+    width: min(calc(100% - 2rem), 32rem);
     min-height: auto;
     grid-template-columns: 1fr;
   }
 
   .auth-theme .auth-brand-panel {
-    padding: 2rem;
+    padding: 2rem 1.75rem;
     border-right: none;
-    border-bottom: 1px solid var(--auth-line);
+    border-bottom: 1px solid #292524;
   }
 
   .auth-theme .auth-brand-capabilities {
@@ -174,7 +212,7 @@
   }
 }
 
-@media (max-width: 767px) {
+@media (max-width: 640px) {
   .auth-theme {
     background: var(--auth-surface);
   }

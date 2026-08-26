@@ -80,7 +80,7 @@ export const RoleBasicsStep: React.FC<RoleBasicsStepProps> = ({
                 })
               }
               placeholder="e.g. SALES_MANAGER_NORTH"
-              className={`h-8.5 text-xs font-mono rounded-[3px] ${
+              className={`h-8 text-xs font-mono rounded-[3px] ${
                 errors.roleCode ? 'border-rose-500 focus-visible:ring-rose-500' : 'border-slate-200'
               }`}
             />
@@ -107,7 +107,7 @@ export const RoleBasicsStep: React.FC<RoleBasicsStepProps> = ({
               disabled={isReadOnly}
               onChange={(e) => onChange({ name: e.target.value })}
               placeholder="e.g. Regional Sales Director (North)"
-              className={`h-8.5 text-xs rounded-[3px] ${
+              className={`h-8 text-xs rounded-[3px] ${
                 errors.name ? 'border-rose-500 focus-visible:ring-rose-500' : 'border-slate-200'
               }`}
             />

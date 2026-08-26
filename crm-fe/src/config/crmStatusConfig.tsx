@@ -42,11 +42,11 @@ export const LifecycleStageConfigMap: Record<AccountLifecycleStage, StatusBadgeC
 
 export const AccountTypeConfigMap: Record<AccountType, { label: string; className: string }> = {
   ORGANIZATION: {
-    label: 'ENTERPRISE',
+    label: 'ORGANIZATION',
     className: 'bg-[#DEEBFF] text-[#0747A6] border-0 font-bold rounded-[3px] text-[11px] uppercase tracking-wider px-1.5 py-0.5',
   },
   PERSON: {
-    label: 'INDIVIDUAL',
+    label: 'PERSON',
     className: 'bg-[#EBECF0] text-[#42526E] border-0 font-semibold rounded-[3px] text-[11px] uppercase tracking-wider px-1.5 py-0.5',
   },
   PARTNER: {

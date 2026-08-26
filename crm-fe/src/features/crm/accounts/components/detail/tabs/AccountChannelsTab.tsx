@@ -36,6 +36,14 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
 } from '@/components/ui/alert-dialog';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { ActionTooltip } from '@/components/ui/action-tooltip';
 import { toast } from 'sonner';
 import {
@@ -237,131 +245,178 @@ export const AccountChannelsTab: React.FC<AccountChannelsTabProps> = ({
 
       {/* Empty State */}
       {!isLoading && !isError && channels.length === 0 && (
-        <div className="py-12 bg-white rounded-[4px] border border-slate-200 text-center space-y-2 shadow-2xs">
-          <Mail className="w-8 h-8 text-slate-300 mx-auto" />
-          <h3 className="text-sm font-bold text-slate-900">No communication channels</h3>
-          <p className="text-xs text-slate-500 max-w-sm mx-auto">
-            Add email addresses, phone numbers, or social channels for this account.
-          </p>
+        <div className="bg-white border border-slate-200 rounded-[4px] p-10 text-center space-y-3 shadow-2xs">
+          <div className="w-12 h-12 rounded-full bg-slate-50 border border-slate-200 flex items-center justify-center mx-auto text-slate-400">
+            <Mail className="w-6 h-6" />
+          </div>
+          <div className="space-y-1">
+            <h3 className="text-sm font-bold text-slate-800">
+              No Communication Channels
+            </h3>
+            <p className="text-xs text-slate-500 max-w-md mx-auto">
+              Add email addresses, phone numbers, or social channels for this account.
+            </p>
+          </div>
           {canWrite && (
-            <div className="pt-2">
-              <Button size="sm" onClick={handleOpenCreate} className="rounded-[3px]">
-                Add Channel
-              </Button>
-            </div>
+            <Button
+              size="sm"
+              onClick={handleOpenCreate}
+              className="h-8 px-3 text-xs font-semibold bg-[#0C66E4] hover:bg-[#0052CC] text-white rounded-[3px] gap-1.5 shadow-none mt-2"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Add Channel</span>
+            </Button>
           )}
         </div>
       )}
 
-      {/* Channels Grid */}
+      {/* Channels Table */}
       {!isLoading && !isError && channels.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {channels.map((ch) => {
-            const isEmail = ch.channelType === 'EMAIL';
-            const isPhone = ['PHONE', 'MOBILE', 'SMS', 'WHATSAPP'].includes(ch.channelType);
+        <div className="bg-white border border-slate-200 rounded-[4px] overflow-hidden shadow-2xs">
+          <Table>
+            <TableHeader className="bg-[#F7F8F9] border-b border-slate-200">
+              <TableRow className="hover:bg-[#F7F8F9]">
+                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase py-2.5 px-3">
+                  Channel Type
+                </TableHead>
+                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase py-2.5 px-3">
+                  Contact Value / Address
+                </TableHead>
+                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase py-2.5 px-3">
+                  Label / Purpose
+                </TableHead>
+                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase py-2.5 px-3">
+                  Verification
+                </TableHead>
+                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase py-2.5 px-3">
+                  Outreach Status
+                </TableHead>
+                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase py-2.5 px-3 text-right pr-4">
+                  Action
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {channels.map((ch) => {
+                const isEmail = ch.channelType === 'EMAIL';
+                const isPhone = ['PHONE', 'MOBILE', 'SMS', 'WHATSAPP'].includes(ch.channelType);
 
-            return (
-              <div
-                key={ch.id}
-                className="p-4 rounded-[4px] bg-white border border-slate-200 shadow-2xs space-y-3"
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <div className="p-1.5 rounded-[3px] bg-slate-50 border border-slate-200">
-                      {getChannelIcon(ch.channelType)}
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="font-bold text-xs text-slate-900">
-                          {ch.channelType}
-                        </span>
-                        {ch.label && (
-                          <span className="text-[10px] text-slate-500 italic">
-                            ({ch.label})
+                return (
+                  <TableRow
+                    key={ch.id}
+                    className="hover:bg-[#F1F2F4] border-b border-[#EBECF0] text-xs transition-colors"
+                  >
+                    <TableCell className="py-2.5 px-3">
+                      <div className="flex items-center gap-2">
+                        <div className="p-1 rounded-[3px] bg-slate-50 border border-slate-200 text-slate-600">
+                          {getChannelIcon(ch.channelType)}
+                        </div>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="font-bold text-xs text-slate-900">
+                            {ch.channelType}
                           </span>
+                          {ch.isPrimary && (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.2 rounded-[2px]">
+                              <Star className="w-2.5 h-2.5 fill-blue-600 text-blue-600" />
+                              PRIMARY
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </TableCell>
+
+                    <TableCell className="py-2.5 px-3 font-mono text-xs font-semibold text-slate-900">
+                      <div className="flex items-center gap-2">
+                        <span>{ch.rawValue}</span>
+                        {isEmail && !ch.doNotUse && (
+                          <ActionTooltip label={`Send email to ${ch.rawValue}`}>
+                            <a
+                              href={`mailto:${ch.rawValue}`}
+                              className="text-blue-600 hover:text-blue-700 inline-flex items-center"
+                            >
+                              <ExternalLink className="w-3 h-3" />
+                            </a>
+                          </ActionTooltip>
                         )}
-                        {ch.isPrimary && (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.5 rounded-[2px]">
-                            <Star className="w-2.5 h-2.5 fill-blue-600 text-blue-600" />
-                            PRIMARY
-                          </span>
-                        )}
-                        {ch.isVerified && (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded-[2px]">
-                            <CheckCircle2 className="w-2.5 h-2.5" />
-                            VERIFIED
-                          </span>
-                        )}
-                        {ch.doNotUse && (
-                          <Badge
-                            variant="destructive"
-                            className="bg-rose-50 text-rose-700 border-rose-200 text-[10px] px-1.5 py-0 font-bold gap-1 rounded-[2px]"
-                          >
-                            <Ban className="w-2.5 h-2.5" />
-                            DO NOT USE
-                          </Badge>
+                        {isPhone && !ch.doNotUse && (
+                          <ActionTooltip label={`Call ${ch.rawValue}`}>
+                            <a
+                              href={`tel:${ch.rawValue}`}
+                              className="text-emerald-600 hover:text-emerald-700 inline-flex items-center"
+                            >
+                              <ExternalLink className="w-3 h-3" />
+                            </a>
+                          </ActionTooltip>
                         )}
                       </div>
-                    </div>
-                  </div>
+                    </TableCell>
 
-                  {canWrite && (
-                    <div className="flex items-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleOpenEdit(ch)}
-                        className="h-7 w-7 p-0 text-slate-600 hover:text-blue-600 rounded-[3px]"
-                        aria-label="Edit channel"
-                      >
-                        <Edit className="w-3.5 h-3.5" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setDeleteTarget(ch)}
-                        className="h-7 w-7 p-0 text-slate-600 hover:text-rose-600 rounded-[3px]"
-                        aria-label="Delete channel"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </Button>
-                    </div>
-                  )}
-                </div>
+                    <TableCell className="py-2.5 px-3 text-slate-600">
+                      {ch.label ? (
+                        <span className="text-xs font-medium text-slate-800">{ch.label}</span>
+                      ) : (
+                        <span className="text-slate-400 italic text-[11px]">General</span>
+                      )}
+                    </TableCell>
 
-                {/* Channel Value & Quick Action Link */}
-                <div className="pt-1 flex items-center justify-between gap-2 border-t border-slate-100">
-                  <span className="font-mono text-xs font-semibold text-slate-900 truncate">
-                    {ch.rawValue}
-                  </span>
+                    <TableCell className="py-2.5 px-3">
+                      {ch.isVerified ? (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded-[2px]">
+                          <CheckCircle2 className="w-2.5 h-2.5" />
+                          VERIFIED
+                        </span>
+                      ) : (
+                        <span className="text-[10px] text-slate-400 font-mono">Unverified</span>
+                      )}
+                    </TableCell>
 
-                  {isEmail && !ch.doNotUse && (
-                    <ActionTooltip label={`Send email to ${ch.rawValue}`}>
-                      <a
-                        href={`mailto:${ch.rawValue}`}
-                        className="text-blue-600 hover:text-blue-700 hover:underline inline-flex items-center gap-1 text-xs font-semibold"
-                      >
-                        <span>Email</span>
-                        <ExternalLink className="w-3 h-3" />
-                      </a>
-                    </ActionTooltip>
-                  )}
+                    <TableCell className="py-2.5 px-3">
+                      {ch.doNotUse ? (
+                        <Badge
+                          variant="destructive"
+                          className="bg-rose-50 text-rose-700 border-rose-200 text-[10px] px-1.5 py-0 font-bold gap-1 rounded-[2px]"
+                        >
+                          <Ban className="w-2.5 h-2.5" />
+                          DO NOT USE
+                        </Badge>
+                      ) : (
+                        <span className="text-[11px] text-emerald-700 font-medium">Allowed</span>
+                      )}
+                    </TableCell>
 
-                  {isPhone && !ch.doNotUse && (
-                    <ActionTooltip label={`Call ${ch.rawValue}`}>
-                      <a
-                        href={`tel:${ch.rawValue}`}
-                        className="text-emerald-600 hover:text-emerald-700 hover:underline inline-flex items-center gap-1 text-xs font-semibold"
-                      >
-                        <span>Call</span>
-                        <Phone className="w-3 h-3" />
-                      </a>
-                    </ActionTooltip>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+                    <TableCell className="py-2.5 px-3 text-right pr-4">
+                      {canWrite && (
+                        <div className="flex items-center justify-end gap-1">
+                          <ActionTooltip label="Edit channel">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleOpenEdit(ch)}
+                              className="h-7 w-7 rounded-[3px] text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                              aria-label="Edit channel"
+                            >
+                              <Edit className="w-3.5 h-3.5" />
+                            </Button>
+                          </ActionTooltip>
+                          <ActionTooltip label="Delete channel">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => setDeleteTarget(ch)}
+                              className="h-7 w-7 rounded-[3px] text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                              aria-label="Delete channel"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
+                          </ActionTooltip>
+                        </div>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
         </div>
       )}
 

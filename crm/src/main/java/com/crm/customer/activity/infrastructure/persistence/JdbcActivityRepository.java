@@ -13,7 +13,7 @@ import com.crm.customer.activity.application.port.ActivityRepository;
 import com.crm.customer.activity.application.query.ActivitySearchQuery;
 import com.crm.customer.activity.domain.Activity;
 import com.crm.customer.activity.domain.ActivityId;
-import com.crm.customer.infrastructure.persistence.AccountScopeSql;
+import com.crm.foundation.persistence.OwnershipScopeSql;
 import com.crm.foundation.security.AuthorizedDataAccess;
 import com.crm.sharedkernel.application.PageResult;
 import com.crm.sharedkernel.domain.ActorId;
@@ -51,7 +51,7 @@ public class JdbcActivityRepository implements ActivityRepository {
 	@Override
 	public Optional<Activity> findById(TenantId tenantId, ActivityId activityId,
 			ActorId actorId, AuthorizedDataAccess access) {
-		AccountScopeSql scope = AccountScopeSql.resolve(actorId, access);
+		OwnershipScopeSql scope = OwnershipScopeSql.resolve(actorId, access);
 		Map<String, Object> parameters = new HashMap<>(scope.parameters());
 		parameters.put("tenantId", tenantId.toString());
 		parameters.put("activityId", activityId.toString());
@@ -70,7 +70,7 @@ public class JdbcActivityRepository implements ActivityRepository {
 	public PageResult<ActivitySummary> search(TenantId tenantId,
 			ActorId actorId, ActivitySearchQuery query,
 			AuthorizedDataAccess access) {
-		AccountScopeSql scope = AccountScopeSql.resolve(actorId, access);
+		OwnershipScopeSql scope = OwnershipScopeSql.resolve(actorId, access);
 		Map<String, Object> parameters = new HashMap<>(scope.parameters());
 		parameters.put("tenantId", tenantId.toString());
 

@@ -30,6 +30,7 @@ const VALID_TABS: AccountDetailTab[] = [
   'addresses',
   'channels',
   'relationships',
+  'subsidiaries',
   'notes',
 ];
 const VALID_PAGE_SIZES = [10, 20, 50, 100];

@@ -14,10 +14,11 @@ import {
 } from '@/components/ui/select';
 
 interface DataScopeEditorProps {
-  dataScopes: RoleDataScope[];
-  isReadOnly: boolean;
+  dataScopes?: RoleDataScope[];
+  scopes?: RoleDataScope[];
+  isReadOnly?: boolean;
   onChange: (scopes: RoleDataScope[]) => void;
-  teams: TeamItem[];
+  teams?: TeamItem[];
 }
 
 const STANDARD_ENTITIES = [
@@ -34,12 +35,23 @@ const STANDARD_ENTITIES = [
 
 export const DataScopeEditor: React.FC<DataScopeEditorProps> = ({
   dataScopes,
-  isReadOnly,
+  scopes,
+  isReadOnly = false,
   onChange,
-  teams,
+  teams = [],
 }) => {
   const [customEntityInput, setCustomEntityInput] = useState('');
   const [selectedEntityAdd, setSelectedEntityAdd] = useState('ACCOUNT');
+
+  const activeScopes = React.useMemo(() => {
+    if (Array.isArray(dataScopes)) return dataScopes;
+    if (Array.isArray(scopes)) return scopes;
+    return [];
+  }, [dataScopes, scopes]);
+
+  const safeTeams = React.useMemo(() => {
+    return Array.isArray(teams) ? teams : [];
+  }, [teams]);
 
   const handleAddScope = () => {
     if (isReadOnly) return;
@@ -51,11 +63,11 @@ export const DataScopeEditor: React.FC<DataScopeEditorProps> = ({
     if (!entityType) return;
 
     // Check if duplicate
-    const exists = dataScopes.some((s) => s.entityType === entityType);
+    const exists = activeScopes.some((s) => s.entityType === entityType);
     if (exists) return;
 
     onChange([
-      ...dataScopes,
+      ...activeScopes,
       {
         entityType,
         type: 'OWN',
@@ -70,14 +82,15 @@ export const DataScopeEditor: React.FC<DataScopeEditorProps> = ({
     type: 'OWN' | 'TEAM' | 'TEAM_TREE' | 'TENANT'
   ) => {
     if (isReadOnly) return;
-    const next = [...dataScopes];
+    const next = [...activeScopes];
     const current = next[index];
+    if (!current) return;
 
     let teamId = current.teamId;
     if (type === 'OWN' || type === 'TENANT') {
       teamId = undefined;
-    } else if (!teamId && teams.length > 0) {
-      teamId = teams[0].id;
+    } else if (!teamId && safeTeams.length > 0) {
+      teamId = safeTeams[0].id;
     }
 
     next[index] = {
@@ -90,7 +103,8 @@ export const DataScopeEditor: React.FC<DataScopeEditorProps> = ({
 
   const handleUpdateTeam = (index: number, teamId: string) => {
     if (isReadOnly) return;
-    const next = [...dataScopes];
+    const next = [...activeScopes];
+    if (!next[index]) return;
     next[index] = {
       ...next[index],
       teamId,
@@ -100,7 +114,7 @@ export const DataScopeEditor: React.FC<DataScopeEditorProps> = ({
 
   const handleRemoveScope = (index: number) => {
     if (isReadOnly) return;
-    onChange(dataScopes.filter((_, i) => i !== index));
+    onChange(activeScopes.filter((_, i) => i !== index));
   };
 
   return (
@@ -165,14 +179,14 @@ export const DataScopeEditor: React.FC<DataScopeEditorProps> = ({
 
       {/* Configured Scopes List */}
       <div className="space-y-2">
-        {dataScopes.length === 0 ? (
+        {activeScopes.length === 0 ? (
           <div className="py-10 text-center text-slate-400 bg-slate-50 border border-slate-200 rounded-[4px]">
             <Building className="w-6 h-6 mx-auto mb-1.5 opacity-40" />
             <p className="text-xs font-medium">No granular data scoping rules configured.</p>
             <p className="text-[11px] text-slate-400 mt-0.5">Role members will operate with basic own-records permissions.</p>
           </div>
         ) : (
-          dataScopes.map((scope, index) => {
+          activeScopes.map((scope, index) => {
             const needsTeam = scope.type === 'TEAM' || scope.type === 'TEAM_TREE';
             const missingTeam = needsTeam && (!scope.teamId || scope.teamId.trim().length === 0);
 
@@ -238,7 +252,7 @@ export const DataScopeEditor: React.FC<DataScopeEditorProps> = ({
                           <SelectValue placeholder="Select target team..." />
                         </SelectTrigger>
                         <SelectContent className="rounded-[3px]">
-                          {teams.map((t) => (
+                          {safeTeams.map((t) => (
                             <SelectItem key={t.id} value={t.id}>
                               {t.name} ({t.code || 'TEAM'})
                             </SelectItem>

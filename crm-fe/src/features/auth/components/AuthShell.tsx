@@ -28,34 +28,36 @@ export function AuthShell({
       {/* Accessibility Skip Link */}
       <a
         href="#auth-main"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 z-50 bg-[var(--ed-accent)] text-white px-4 py-2 rounded-[8px] font-semibold text-xs"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 z-50 bg-[#1D4ED8] text-white px-4 py-2 rounded-[6px] font-semibold text-xs shadow-md"
       >
         {t('auth.gateway.common.skipToContent')}
       </a>
 
-      {/* Top Header Utilities */}
-      <div className="w-full max-w-[74rem] mx-auto px-4 sm:px-6 mb-4 flex items-center justify-between">
-        {utilityLink ? (
+      {/* Top Header Navigation */}
+      <header className="w-full max-w-[72rem] mx-auto px-4 sm:px-6 mb-6 flex items-center justify-between">
+        {/* Left: Back to Home Link */}
+        <Link
+          to="/"
+          className="inline-flex items-center gap-2 text-[13px] font-medium text-[#57534E] hover:text-[#1D4ED8] transition-colors py-2 group"
+        >
+          <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" aria-hidden="true" />
+          <span>{t('auth.gateway.common.backHome')}</span>
+        </Link>
+
+        {/* Right: Optional Utility Link only when explicitly passed */}
+        {utilityLink && (
           <Link
             to={utilityLink.to}
-            className="inline-flex items-center gap-1.5 text-xs font-medium text-[var(--ed-secondary)] hover:text-[var(--ed-accent)] transition-colors min-h-[44px]"
+            className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-[#1D4ED8] hover:text-[#1E40AF] transition-colors py-2"
           >
             {utilityLink.direction === 'back' && <ArrowLeft className="w-3.5 h-3.5" aria-hidden="true" />}
             <span>{t(utilityLink.labelKey)}</span>
             {utilityLink.direction === 'forward' && <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />}
           </Link>
-        ) : (
-          <Link
-            to="/"
-            className="inline-flex items-center gap-1.5 text-xs font-medium text-[var(--ed-secondary)] hover:text-[var(--ed-accent)] transition-colors min-h-[44px]"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" aria-hidden="true" />
-            <span>{t('auth.gateway.common.backHome')}</span>
-          </Link>
         )}
-      </div>
+      </header>
 
-      {/* Main Form Frame */}
+      {/* Main Unified Split Frame */}
       <div className={brandVariant === 'compact' ? 'auth-frame auth-frame--compact' : 'auth-frame'}>
         {brandVariant === 'full' && <AuthBrandPanel />}
 
@@ -67,31 +69,40 @@ export function AuthShell({
       </div>
 
       {/* Footer Legal & Copyright */}
-      <footer className="w-full max-w-[74rem] mx-auto px-4 sm:px-6 mt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-[var(--ed-muted)]">
-        <p translate="no">
-          © {new Date().getFullYear()} {t('auth.gateway.footer.copyright')}
+      <footer className="w-full max-w-[72rem] mx-auto px-4 sm:px-6 mt-8 flex flex-col sm:flex-row items-center justify-between gap-3 text-[12px] text-[#A8A29E]">
+        <p>
+          © {new Date().getFullYear()} VUM CRM Platform. {t('auth.gateway.footer.copyright', 'All rights reserved.')}
         </p>
 
         <div className="flex items-center gap-4">
-          {env.termsUrl && (
+          {env.termsUrl ? (
             <a
               href={env.termsUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:text-[var(--ed-primary)] transition-colors"
+              className="hover:text-[#1D4ED8] transition-colors"
             >
               {t('auth.gateway.register.terms')}
             </a>
+          ) : (
+            <Link to="/#faq" className="hover:text-[#1D4ED8] transition-colors">
+              {t('auth.gateway.register.terms')}
+            </Link>
           )}
-          {env.privacyPolicyUrl && (
+
+          {env.privacyPolicyUrl ? (
             <a
               href={env.privacyPolicyUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:text-[var(--ed-primary)] transition-colors"
+              className="hover:text-[#1D4ED8] transition-colors"
             >
               {t('auth.gateway.register.privacy')}
             </a>
+          ) : (
+            <Link to="/#security" className="hover:text-[#1D4ED8] transition-colors">
+              {t('auth.gateway.register.privacy')}
+            </Link>
           )}
         </div>
       </footer>

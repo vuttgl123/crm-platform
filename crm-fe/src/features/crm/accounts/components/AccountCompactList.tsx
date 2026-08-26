@@ -138,43 +138,13 @@ export const AccountCompactList: React.FC<AccountCompactListProps> = ({
                 Updated: {formatDate(acc.updatedAt)}
               </span>
 
-              <div className="flex items-center gap-1">
-                <ActionTooltip label="View account workspace">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    asChild
-                    className="h-8 w-8 p-0 text-slate-600 hover:text-blue-600 rounded-[3px]"
-                  >
-                    <Link
-                      to={`/app/crm/accounts/${acc.id}`}
-                      aria-label={`View account ${acc.displayName}`}
-                    >
-                      <Eye className="w-4 h-4" />
-                    </Link>
-                  </Button>
-                </ActionTooltip>
-
-                {canWrite && (
-                  <ActionTooltip label="Edit account">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onEdit(acc)}
-                      className="h-8 w-8 p-0 text-slate-600 hover:text-blue-600 rounded-[3px]"
-                      aria-label={`Edit account ${acc.displayName}`}
-                    >
-                      <Edit className="w-4 h-4" />
-                    </Button>
-                  </ActionTooltip>
-                )}
-
+              <div className="flex items-center">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-8 w-8 p-0 text-slate-600 rounded-[3px]"
+                      className="h-8 w-8 p-0 text-slate-600 hover:text-slate-900 rounded-[3px]"
                       aria-label="More actions"
                     >
                       <MoreHorizontal className="w-4 h-4" />

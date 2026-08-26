@@ -50,7 +50,7 @@ export const ContactsToolbar: React.FC<ContactsToolbarProps> = ({
   );
 
   return (
-    <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white p-3 border border-slate-200 rounded-[4px]">
+    <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white p-3 border border-slate-200 rounded-[4px] shadow-2xs">
       {/* Left side: Search and Filters */}
       <div className="flex flex-col sm:flex-row items-center gap-2.5 w-full sm:w-auto flex-1">
         {/* Search Input */}
@@ -69,7 +69,7 @@ export const ContactsToolbar: React.FC<ContactsToolbarProps> = ({
                 setLocalSearch('');
                 onFilterChange({ q: '', page: 1 });
               }}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5"
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 rounded-[2px]"
               aria-label="Clear search"
             >
               <X className="w-3.5 h-3.5" />
@@ -129,20 +129,20 @@ export const ContactsToolbar: React.FC<ContactsToolbarProps> = ({
             </SelectContent>
           </Select>
         </div>
-      </div>
 
-      {/* Right side: Reset Filters */}
-      {hasActiveFilters && (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onResetFilters}
-          className="h-8 px-3 text-xs font-semibold text-slate-600 hover:text-slate-900 rounded-[3px] gap-1 shrink-0"
-        >
-          <RotateCcw className="w-3.5 h-3.5" />
-          <span>Reset Filters</span>
-        </Button>
-      )}
+        {/* Reset Filters */}
+        {hasActiveFilters && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onResetFilters}
+            className="h-8 px-2.5 text-xs font-semibold text-slate-600 hover:text-slate-900 rounded-[3px] gap-1 shrink-0"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            <span>Reset</span>
+          </Button>
+        )}
+      </div>
     </div>
   );
 };

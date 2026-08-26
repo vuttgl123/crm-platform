@@ -42,6 +42,15 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
 } from '@/components/ui/alert-dialog';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { ActionTooltip } from '@/components/ui/action-tooltip';
 import { toast } from 'sonner';
 import {
   Network,
@@ -235,94 +244,135 @@ export const AccountRelationshipsTab: React.FC<AccountRelationshipsTabProps> = (
 
       {/* Empty State */}
       {!isLoading && !isError && relationships.length === 0 && (
-        <div className="py-12 bg-white rounded-[4px] border border-slate-200 text-center space-y-2 shadow-2xs">
-          <Network className="w-8 h-8 text-slate-300 mx-auto" />
-          <h3 className="text-sm font-bold text-slate-900">No commercial relationships</h3>
-          <p className="text-xs text-slate-500 max-w-sm mx-auto">
-            Link partners, suppliers, distributors, or affiliates to this account.
-          </p>
+        <div className="bg-white border border-slate-200 rounded-[4px] p-10 text-center space-y-3 shadow-2xs">
+          <div className="w-12 h-12 rounded-full bg-slate-50 border border-slate-200 flex items-center justify-center mx-auto text-slate-400">
+            <Network className="w-6 h-6" />
+          </div>
+          <div className="space-y-1">
+            <h3 className="text-sm font-bold text-slate-800">
+              No Commercial Relationships
+            </h3>
+            <p className="text-xs text-slate-500 max-w-md mx-auto">
+              Link partners, suppliers, distributors, or affiliates to this account.
+            </p>
+          </div>
           {canWrite && (
-            <div className="pt-2">
-              <Button size="sm" onClick={handleOpenCreate} className="rounded-[3px]">
-                Add Relationship
-              </Button>
-            </div>
+            <Button
+              size="sm"
+              onClick={handleOpenCreate}
+              className="h-8 px-3 text-xs font-semibold bg-[#0C66E4] hover:bg-[#0052CC] text-white rounded-[3px] gap-1.5 shadow-none mt-2"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Add Relationship</span>
+            </Button>
           )}
         </div>
       )}
 
-      {/* Relationships Grid */}
+      {/* Relationships Table */}
       {!isLoading && !isError && relationships.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {relationships.map((rel) => {
-            const isEnded = Boolean(rel.validTo);
-            const otherAccount =
-              rel.direction === 'OUTBOUND' ? rel.relatedAccount : rel.account;
+        <div className="bg-white border border-slate-200 rounded-[4px] overflow-hidden shadow-2xs">
+          <Table>
+            <TableHeader className="bg-[#F7F8F9] border-b border-slate-200">
+              <TableRow className="hover:bg-[#F7F8F9]">
+                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase py-2.5 px-3">
+                  Affiliated Organization
+                </TableHead>
+                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase py-2.5 px-3">
+                  Relationship Type
+                </TableHead>
+                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase py-2.5 px-3">
+                  Direction
+                </TableHead>
+                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase py-2.5 px-3">
+                  Context / Notes
+                </TableHead>
+                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase py-2.5 px-3">
+                  Validity Period
+                </TableHead>
+                <TableHead className="text-[11px] font-semibold text-slate-600 uppercase py-2.5 px-3 text-right pr-4">
+                  Action
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {relationships.map((rel) => {
+                const isEnded = Boolean(rel.validTo);
+                const otherAccount =
+                  rel.direction === 'OUTBOUND' ? rel.relatedAccount : rel.account;
 
-            return (
-              <div
-                key={rel.id}
-                className={`p-4 rounded-[4px] border ${
-                  isEnded ? 'bg-slate-50/70 border-slate-200 opacity-80' : 'bg-white border-slate-200 shadow-2xs'
-                } space-y-3`}
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    {getRelationshipBadge(rel.relationshipType)}
-                    <span className="inline-flex items-center gap-1 text-[10px] font-mono font-medium text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded-[2px]">
-                      {rel.direction === 'OUTBOUND' ? (
-                        <>
-                          <ArrowRight className="w-3 h-3 text-blue-600" /> Outbound
-                        </>
-                      ) : (
-                        <>
-                          <ArrowLeft className="w-3 h-3 text-indigo-600" /> Inbound
-                        </>
-                      )}
-                    </span>
-                    {isEnded && (
-                      <span className="text-[10px] font-bold text-slate-500 bg-slate-200 px-1.5 py-0.5 rounded-[2px]">
-                        ENDED ({rel.validTo})
+                return (
+                  <TableRow
+                    key={rel.id}
+                    className={`hover:bg-[#F1F2F4] border-b border-[#EBECF0] text-xs transition-colors ${
+                      isEnded ? 'opacity-60 bg-slate-50/50' : ''
+                    }`}
+                  >
+                    <TableCell className="py-2.5 px-3">
+                      <div className="flex flex-col min-w-0">
+                        <span className="font-bold text-slate-900 line-clamp-1">
+                          {otherAccount.displayName}
+                        </span>
+                        <span className="font-mono text-[10px] text-slate-400 font-semibold mt-0.5">
+                          {otherAccount.accountNumber}
+                        </span>
+                      </div>
+                    </TableCell>
+
+                    <TableCell className="py-2.5 px-3">
+                      {getRelationshipBadge(rel.relationshipType)}
+                    </TableCell>
+
+                    <TableCell className="py-2.5 px-3">
+                      <span className="inline-flex items-center gap-1 text-[10px] font-mono font-medium text-slate-600 bg-slate-100 px-2 py-0.5 rounded-[2px]">
+                        {rel.direction === 'OUTBOUND' ? (
+                          <>
+                            <ArrowRight className="w-3 h-3 text-blue-600" /> Outbound
+                          </>
+                        ) : (
+                          <>
+                            <ArrowLeft className="w-3 h-3 text-indigo-600" /> Inbound
+                          </>
+                        )}
                       </span>
-                    )}
-                  </div>
+                    </TableCell>
 
-                  {canWrite && !isEnded && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleOpenEnd(rel)}
-                      className="h-7 w-7 p-0 text-slate-600 hover:text-rose-600 rounded-[3px]"
-                      aria-label="End relationship"
-                    >
-                      <PowerOff className="w-3.5 h-3.5" />
-                    </Button>
-                  )}
-                </div>
+                    <TableCell className="py-2.5 px-3 text-slate-600 max-w-xs truncate">
+                      {rel.description || <span className="text-slate-400 italic text-[11px]">No notes</span>}
+                    </TableCell>
 
-                <div className="space-y-1">
-                  <span className="text-[10px] uppercase font-bold text-slate-400 block">
-                    Affiliated Organization
-                  </span>
-                  <p className="font-bold text-xs text-slate-900">{otherAccount.displayName}</p>
-                  <p className="font-mono text-[11px] text-slate-500">{otherAccount.accountNumber}</p>
-                </div>
+                    <TableCell className="py-2.5 px-3 font-mono text-[11px] text-slate-500">
+                      {rel.validFrom ? (
+                        <span>
+                          {rel.validFrom} → {rel.validTo || 'Present'}
+                        </span>
+                      ) : (
+                        <span>Ongoing</span>
+                      )}
+                    </TableCell>
 
-                {rel.description && (
-                  <p className="text-slate-600 text-xs italic pt-1 border-t border-slate-100">
-                    "{rel.description}"
-                  </p>
-                )}
-
-                {rel.validFrom && (
-                  <div className="flex items-center gap-1 text-[10px] text-slate-400 font-mono pt-1">
-                    <Calendar className="w-3 h-3" />
-                    <span>Effective from: {rel.validFrom}</span>
-                  </div>
-                )}
-              </div>
-            );
-          })}
+                    <TableCell className="py-2.5 px-3 text-right pr-4">
+                      {canWrite && !isEnded && (
+                        <div className="flex items-center justify-end">
+                          <ActionTooltip label="End relationship">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleOpenEnd(rel)}
+                              className="h-7 w-7 rounded-[3px] text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                              aria-label="End relationship"
+                            >
+                              <PowerOff className="w-3.5 h-3.5" />
+                            </Button>
+                          </ActionTooltip>
+                        </div>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
         </div>
       )}
 

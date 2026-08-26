@@ -26,7 +26,7 @@ import { ContactEditorSheet } from './components/ContactEditorSheet';
 import { ContactDeleteDialog } from './components/ContactDeleteDialog';
 import { Button } from '@/components/ui/button';
 import { ActionTooltip } from '@/components/ui/action-tooltip';
-import { Plus, RefreshCw } from 'lucide-react';
+import { Plus, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 
 export const ContactsPage: React.FC = () => {
@@ -228,7 +228,7 @@ export const ContactsPage: React.FC = () => {
                 className="h-8 px-2.5 text-xs font-semibold text-slate-600 hover:text-slate-900 border-slate-200 rounded-[3px] gap-1.5"
                 aria-label="Refresh contacts"
               >
-                <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
+                <RotateCcw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
                 <span className="hidden sm:inline">Refresh</span>
               </Button>
             </ActionTooltip>

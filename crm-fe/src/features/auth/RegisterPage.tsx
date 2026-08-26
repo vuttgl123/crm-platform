@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import type { TFunction } from 'i18next';
 import { User, Mail, Building2, ArrowRight, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { env } from '@/config/env';
 import { useAuth } from '@/core/session/useAuth';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -90,6 +91,11 @@ export const RegisterPage: React.FC = () => {
       const isPending =
         returnedSession.membership?.membership_status === 'INVITED' &&
         returnedSession.membership?.is_tenant_admin !== true;
+      toast.success(t('auth.registerSuccess'), {
+        description: isPending
+          ? t('auth.pendingNotice')
+          : t('auth.welcome'),
+      });
       navigate(isPending ? '/app/pending-approval' : '/app/overview', {
         replace: true,
       });
@@ -103,63 +109,47 @@ export const RegisterPage: React.FC = () => {
     session?.membership?.is_tenant_admin !== true;
 
   return (
-    <AuthShell
-      utilityLink={{
-        to: '/login',
-        labelKey: 'auth.gateway.common.openLogin',
-        direction: 'back',
-      }}
-    >
-      <AuthPageHeader
-        titleKey="auth.gateway.register.title"
-        descriptionKey="auth.gateway.register.description"
-      />
+    <AuthShell>
+      <div className="auth-stagger-1">
+        <AuthPageHeader
+          titleKey="auth.gateway.register.title"
+          descriptionKey="auth.gateway.register.description"
+        />
 
-      <AuthFormError
-        errorCode={localErrorCode}
-        fallbackMessageKey="auth.gateway.errors.unknown"
-      />
+        <AuthFormError
+          errorCode={localErrorCode}
+          fallbackMessageKey="auth.gateway.errors.unknown"
+        />
 
-      {localErrorCode === 'SELF_REGISTRATION_DISABLED' && (
-        <div className="mb-4 text-left">
-          <Link
-            to="/demo"
-            className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--auth-blue)] hover:underline"
-          >
-            <span>{t('auth.gateway.common.openDemo')}</span>
-            <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
-          </Link>
-        </div>
-      )}
+        {localErrorCode === 'EMAIL_ALREADY_REGISTERED' && (
+          <div className="mb-4 text-left">
+            <Link
+              to="/login"
+              className="inline-flex items-center gap-1 text-[13px] font-semibold text-[#1D4ED8] hover:underline"
+            >
+              <span>{t('auth.gateway.common.openLogin')}</span>
+              <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
+            </Link>
+          </div>
+        )}
 
-      {localErrorCode === 'EMAIL_ALREADY_REGISTERED' && (
-        <div className="mb-4 text-left">
-          <Link
-            to="/login"
-            className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--auth-blue)] hover:underline"
-          >
-            <span>{t('auth.gateway.common.openLogin')}</span>
-            <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
-          </Link>
-        </div>
-      )}
+        {localErrorCode === 'MEMBERSHIP_REQUEST_ALREADY_PENDING' && isInvitedSession && (
+          <div className="mb-4 text-left">
+            <Link
+              to="/app/pending-approval"
+              className="inline-flex items-center gap-1 text-[13px] font-semibold text-[#1D4ED8] hover:underline"
+            >
+              <span>{t('auth.gateway.pending.title')}</span>
+              <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
+            </Link>
+          </div>
+        )}
+      </div>
 
-      {localErrorCode === 'MEMBERSHIP_REQUEST_ALREADY_PENDING' && isInvitedSession && (
-        <div className="mb-4 text-left">
-          <Link
-            to="/app/pending-approval"
-            className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--auth-blue)] hover:underline"
-          >
-            <span>{t('auth.gateway.pending.title')}</span>
-            <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
-          </Link>
-        </div>
-      )}
-
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 text-left" noValidate>
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 text-left auth-stagger-2" noValidate>
         {/* Full Name */}
         <div className="space-y-1.5">
-          <label htmlFor="register-name" className="text-xs font-semibold text-[var(--auth-ink)]">
+          <label htmlFor="register-name" className="block text-[13px] font-semibold text-[#1C1917]">
             {t('auth.gateway.register.fullNameLabel')}
           </label>
           <div className="relative">
@@ -170,18 +160,18 @@ export const RegisterPage: React.FC = () => {
               placeholder={t('auth.gateway.register.fullNamePlaceholder')}
               aria-invalid={Boolean(errors.displayName)}
               aria-describedby={errors.displayName ? 'register-name-error' : undefined}
-              className={`auth-control auth-interactive flex w-full border bg-white px-3.5 pl-10 text-sm text-[var(--auth-ink)] placeholder:text-slate-400 focus-visible:border-[var(--auth-blue)] ${
-                errors.displayName ? 'border-rose-400 focus-visible:ring-rose-500' : 'border-[var(--auth-line)]'
+              className={`flex w-full h-11 border bg-white px-3.5 pl-10 text-[14px] text-[#1C1917] rounded-[6px] placeholder:text-[#A8A29E] focus:outline-none focus:ring-2 focus:ring-[#1D4ED8] focus:border-transparent transition-all ${
+                errors.displayName ? 'border-[#FECACA] bg-[#FEF2F2]/30 focus:ring-[#B91C1C]' : 'border-[#E7E5E4]'
               }`}
               {...register('displayName')}
             />
             <User
-              className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"
+              className="w-4 h-4 text-[#A8A29E] absolute left-3.5 top-1/2 -translate-y-1/2"
               aria-hidden="true"
             />
           </div>
           {errors.displayName && (
-            <p id="register-name-error" className="text-xs text-rose-600 mt-1">
+            <p id="register-name-error" className="text-[12px] text-[#B91C1C] mt-1 font-medium">
               {errors.displayName.message}
             </p>
           )}
@@ -189,7 +179,7 @@ export const RegisterPage: React.FC = () => {
 
         {/* Work Email */}
         <div className="space-y-1.5">
-          <label htmlFor="register-email" className="text-xs font-semibold text-[var(--auth-ink)]">
+          <label htmlFor="register-email" className="block text-[13px] font-semibold text-[#1C1917]">
             {t('auth.gateway.register.emailLabel')}
           </label>
           <div className="relative">
@@ -202,18 +192,18 @@ export const RegisterPage: React.FC = () => {
               placeholder={t('auth.gateway.register.emailPlaceholder')}
               aria-invalid={Boolean(errors.email)}
               aria-describedby={errors.email ? 'register-email-error' : undefined}
-              className={`auth-control auth-interactive flex w-full border bg-white px-3.5 pl-10 text-sm text-[var(--auth-ink)] placeholder:text-slate-400 focus-visible:border-[var(--auth-blue)] ${
-                errors.email ? 'border-rose-400 focus-visible:ring-rose-500' : 'border-[var(--auth-line)]'
+              className={`flex w-full h-11 border bg-white px-3.5 pl-10 text-[14px] text-[#1C1917] rounded-[6px] placeholder:text-[#A8A29E] focus:outline-none focus:ring-2 focus:ring-[#1D4ED8] focus:border-transparent transition-all ${
+                errors.email ? 'border-[#FECACA] bg-[#FEF2F2]/30 focus:ring-[#B91C1C]' : 'border-[#E7E5E4]'
               }`}
               {...register('email')}
             />
             <Mail
-              className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"
+              className="w-4 h-4 text-[#A8A29E] absolute left-3.5 top-1/2 -translate-y-1/2"
               aria-hidden="true"
             />
           </div>
           {errors.email && (
-            <p id="register-email-error" className="text-xs text-rose-600 mt-1">
+            <p id="register-email-error" className="text-[12px] text-[#B91C1C] mt-1 font-medium">
               {errors.email.message}
             </p>
           )}
@@ -221,7 +211,7 @@ export const RegisterPage: React.FC = () => {
 
         {/* Tenant Code */}
         <div className="space-y-1.5">
-          <label htmlFor="register-tenant" className="text-xs font-semibold text-[var(--auth-ink)]">
+          <label htmlFor="register-tenant" className="block text-[13px] font-semibold text-[#1C1917]">
             {t('auth.gateway.register.tenantCodeLabel')}
           </label>
           <div className="relative">
@@ -237,22 +227,22 @@ export const RegisterPage: React.FC = () => {
                   ? 'register-tenant-error'
                   : 'register-tenant-help'
               }
-              className={`auth-control auth-interactive flex w-full border bg-white px-3.5 pl-10 text-sm text-[var(--auth-ink)] placeholder:text-slate-400 focus-visible:border-[var(--auth-blue)] ${
-                errors.tenantCode ? 'border-rose-400 focus-visible:ring-rose-500' : 'border-[var(--auth-line)]'
+              className={`flex w-full h-11 border bg-white px-3.5 pl-10 text-[14px] text-[#1C1917] rounded-[6px] placeholder:text-[#A8A29E] focus:outline-none focus:ring-2 focus:ring-[#1D4ED8] focus:border-transparent transition-all ${
+                errors.tenantCode ? 'border-[#FECACA] bg-[#FEF2F2]/30 focus:ring-[#B91C1C]' : 'border-[#E7E5E4]'
               }`}
               {...register('tenantCode')}
             />
             <Building2
-              className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"
+              className="w-4 h-4 text-[#A8A29E] absolute left-3.5 top-1/2 -translate-y-1/2"
               aria-hidden="true"
             />
           </div>
           {errors.tenantCode ? (
-            <p id="register-tenant-error" className="text-xs text-rose-600 mt-1">
+            <p id="register-tenant-error" className="text-[12px] text-[#B91C1C] mt-1 font-medium">
               {errors.tenantCode.message}
             </p>
           ) : (
-            <p id="register-tenant-help" className="text-xs text-[var(--auth-muted)] mt-1">
+            <p id="register-tenant-help" className="text-[12px] text-[#78716C] mt-1">
               {t('auth.gateway.register.tenantCodeHelper')}
             </p>
           )}
@@ -289,13 +279,13 @@ export const RegisterPage: React.FC = () => {
                   onCheckedChange={(checked) => field.onChange(checked === true)}
                   aria-invalid={Boolean(errors.legalConsent)}
                   aria-describedby={errors.legalConsent ? 'legalConsent-error' : undefined}
-                  className="mt-0.5 border-[var(--auth-line)] data-[state=checked]:bg-[var(--auth-blue)] data-[state=checked]:border-[var(--auth-blue)]"
+                  className="mt-0.5"
                 />
               )}
             />
             <label
               htmlFor="legalConsent"
-              className="text-xs text-[var(--auth-muted)] leading-relaxed cursor-pointer select-none font-normal"
+              className="text-[12px] text-[#57534E] leading-relaxed cursor-pointer select-none font-normal"
             >
               {t('auth.gateway.register.consentPrefix')}{' '}
               {env.termsUrl ? (
@@ -303,12 +293,12 @@ export const RegisterPage: React.FC = () => {
                   href={env.termsUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-[var(--auth-blue)] font-semibold underline hover:text-[var(--auth-blue-hover)]"
+                  className="text-[#1D4ED8] font-semibold hover:underline"
                 >
                   {t('auth.gateway.register.terms')}
                 </a>
               ) : (
-                <span className="font-semibold text-[var(--auth-ink)]">{t('auth.gateway.register.terms')}</span>
+                <span className="font-semibold text-[#1C1917]">{t('auth.gateway.register.terms')}</span>
               )}{' '}
               {t('auth.gateway.register.connector')}{' '}
               {env.privacyPolicyUrl ? (
@@ -316,18 +306,18 @@ export const RegisterPage: React.FC = () => {
                   href={env.privacyPolicyUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-[var(--auth-blue)] font-semibold underline hover:text-[var(--auth-blue-hover)]"
+                  className="text-[#1D4ED8] font-semibold hover:underline"
                 >
                   {t('auth.gateway.register.privacy')}
                 </a>
               ) : (
-                <span className="font-semibold text-[var(--auth-ink)]">{t('auth.gateway.register.privacy')}</span>
+                <span className="font-semibold text-[#1C1917]">{t('auth.gateway.register.privacy')}</span>
               )}{' '}
               {t('auth.gateway.register.consentSuffix')}
             </label>
           </div>
           {errors.legalConsent && (
-            <p id="legalConsent-error" className="text-xs text-rose-600 mt-1">
+            <p id="legalConsent-error" className="text-[12px] text-[#B91C1C] mt-1 font-medium">
               {errors.legalConsent.message}
             </p>
           )}
@@ -338,7 +328,7 @@ export const RegisterPage: React.FC = () => {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="auth-control auth-interactive w-full bg-[var(--auth-blue)] hover:bg-[var(--auth-blue-hover)] text-white font-semibold text-sm shadow-xs flex items-center justify-center gap-2 disabled:opacity-60"
+            className="w-full h-11 rounded-[6px] bg-[#1D4ED8] hover:bg-[#1E40AF] text-white font-semibold text-[14px] shadow-[0_1px_2px_rgba(29,78,216,0.2)] flex items-center justify-center gap-2 active:scale-[0.98] transition-all disabled:opacity-60"
           >
             {isSubmitting ? (
               <>
@@ -352,24 +342,13 @@ export const RegisterPage: React.FC = () => {
         </div>
 
         {/* Already Have Account */}
-        <div className="pt-2 text-center text-xs text-[var(--auth-muted)]">
+        <div className="pt-2 text-center text-[13px] text-[#57534E]">
           <span>{t('auth.gateway.register.hasAccount')} </span>
           <Link
             to="/login"
-            className="font-semibold text-[var(--auth-blue)] hover:underline"
+            className="font-semibold text-[#1D4ED8] hover:text-[#1E40AF] hover:underline"
           >
             {t('auth.gateway.register.loginLink')}
-          </Link>
-        </div>
-
-        {/* New Organization Help */}
-        <div className="pt-3 border-t border-[var(--auth-line)] text-center text-xs text-[var(--auth-muted)]">
-          <span>{t('auth.gateway.register.organizationHelp')} </span>
-          <Link
-            to="/demo"
-            className="font-semibold text-[var(--auth-blue)] hover:underline"
-          >
-            {t('auth.gateway.register.demoLink')}
           </Link>
         </div>
       </form>

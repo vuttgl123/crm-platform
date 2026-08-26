@@ -1,8 +1,7 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import type { UseFormRegisterReturn } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { Eye, EyeOff } from 'lucide-react';
-import { Label } from '@/components/ui/label';
+import { Eye, EyeOff, Lock } from 'lucide-react';
 
 export interface PasswordFieldProps {
   id: string;
@@ -36,9 +35,9 @@ export function PasswordField({
 
   return (
     <div className="space-y-1.5 text-left">
-      <Label htmlFor={id} className="text-xs font-semibold text-[var(--auth-ink)]">
+      <label htmlFor={id} className="block text-[13px] font-semibold text-[#1C1917]">
         {label}
-      </Label>
+      </label>
 
       <div className="relative">
         <input
@@ -48,16 +47,20 @@ export function PasswordField({
           autoComplete={autoComplete}
           aria-invalid={Boolean(error)}
           aria-describedby={computedDescribedBy}
-          className={`auth-control auth-interactive flex w-full border bg-white px-3.5 pr-11 text-sm text-[var(--auth-ink)] placeholder:text-slate-400 focus-visible:border-[var(--auth-blue)] ${
-            error ? 'border-rose-400 focus-visible:ring-rose-500' : 'border-[var(--auth-line)]'
+          className={`flex w-full h-11 border bg-white px-3.5 pl-10 pr-11 text-[14px] text-[#1C1917] rounded-[6px] placeholder:text-[#A8A29E] focus:outline-none focus:ring-2 focus:ring-[#1D4ED8] focus:border-transparent transition-all ${
+            error ? 'border-[#FECACA] bg-[#FEF2F2]/30 focus:ring-[#B91C1C]' : 'border-[#E7E5E4]'
           }`}
           {...registration}
+        />
+        <Lock
+          className="w-4 h-4 text-[#A8A29E] absolute left-3.5 top-1/2 -translate-y-1/2"
+          aria-hidden="true"
         />
 
         <button
           type="button"
           onClick={() => setVisible((prev) => !prev)}
-          className="auth-icon-button auth-interactive absolute right-1 top-1/2 -translate-y-1/2 text-slate-400 hover:text-[var(--auth-ink)]"
+          className="w-8 h-8 absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center justify-center text-[#A8A29E] hover:text-[#1C1917] transition-colors focus:outline-none"
           aria-label={
             visible
               ? t('auth.gateway.password.hide')
@@ -73,11 +76,11 @@ export function PasswordField({
       </div>
 
       {error ? (
-        <p id={errorId} className="text-xs text-rose-600 mt-1">
+        <p id={errorId} className="text-[12px] text-[#B91C1C] mt-1 font-medium">
           {error}
         </p>
       ) : helperText ? (
-        <p id={helpId} className="text-xs text-[var(--auth-muted)] mt-1">
+        <p id={helpId} className="text-[12px] text-[#78716C] mt-1">
           {helperText}
         </p>
       ) : null}

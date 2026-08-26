@@ -4,8 +4,14 @@ import { renderLifecycleStageBadge } from '@/config/crmStatusConfig';
 import { formatDate } from '@/lib/formatters';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Eye, Edit, Trash2, Ban } from 'lucide-react';
-import { ActionTooltip } from '@/components/ui/action-tooltip';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Eye, Edit, Trash2, Ban, MoreHorizontal } from 'lucide-react';
 
 interface ContactMobileListProps {
   contacts: ContactSummaryResponse[];
@@ -23,7 +29,7 @@ export const ContactMobileList: React.FC<ContactMobileListProps> = ({
   onDelete,
 }) => {
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 font-sans">
       {contacts.map((c) => (
         <div
           key={c.id}
@@ -51,7 +57,7 @@ export const ContactMobileList: React.FC<ContactMobileListProps> = ({
           <div className="grid grid-cols-2 gap-2 text-xs border-t border-slate-100 pt-2.5">
             <div>
               <span className="text-[10px] uppercase font-bold text-slate-400 block">
-                Job Title & Department
+                Job Title &amp; Department
               </span>
               <span className="text-slate-700 font-medium line-clamp-1 mt-0.5">
                 {c.jobTitle || '—'} {c.department ? `(${c.department})` : ''}
@@ -87,47 +93,49 @@ export const ContactMobileList: React.FC<ContactMobileListProps> = ({
               Updated: {formatDate(c.updatedAt)}
             </span>
 
-            <div className="flex items-center gap-1">
-              <ActionTooltip label="View details">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
-                  size="sm"
-                  onClick={() => onView(c)}
-                  className="h-8 w-8 p-0 text-slate-600 hover:text-blue-600 rounded-[3px]"
-                  aria-label={`View details for ${c.displayName}`}
+                  size="icon"
+                  className="h-7 w-7 rounded-[3px] text-slate-500 hover:text-slate-900 hover:bg-slate-100"
+                  aria-label={`Actions for ${c.displayName}`}
                 >
-                  <Eye className="w-4 h-4" />
+                  <MoreHorizontal className="w-3.5 h-3.5" />
                 </Button>
-              </ActionTooltip>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-44 rounded-[3px] text-xs font-sans">
+                <DropdownMenuItem
+                  onClick={() => onView(c)}
+                  className="gap-2 cursor-pointer text-xs"
+                >
+                  <Eye className="w-3.5 h-3.5 text-blue-600" />
+                  <span>View Details</span>
+                </DropdownMenuItem>
 
-              {canWrite && (
-                <>
-                  <ActionTooltip label="Edit contact">
-                    <Button
-                      variant="ghost"
-                      size="sm"
+                {canWrite && (
+                  <>
+                    <DropdownMenuItem
                       onClick={() => onEdit(c)}
-                      className="h-8 w-8 p-0 text-slate-600 hover:text-blue-600 rounded-[3px]"
-                      aria-label={`Edit contact ${c.displayName}`}
+                      className="gap-2 cursor-pointer text-xs"
                     >
-                      <Edit className="w-4 h-4" />
-                    </Button>
-                  </ActionTooltip>
+                      <Edit className="w-3.5 h-3.5 text-slate-600" />
+                      <span>Edit Contact</span>
+                    </DropdownMenuItem>
 
-                  <ActionTooltip label="Delete contact">
-                    <Button
-                      variant="ghost"
-                      size="sm"
+                    <DropdownMenuSeparator />
+
+                    <DropdownMenuItem
                       onClick={() => onDelete(c)}
-                      className="h-8 w-8 p-0 text-slate-600 hover:text-rose-600 rounded-[3px]"
-                      aria-label={`Delete contact ${c.displayName}`}
+                      className="gap-2 cursor-pointer text-xs text-rose-600 focus:text-rose-700 focus:bg-rose-50"
                     >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </ActionTooltip>
-                </>
-              )}
-            </div>
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Delete Contact</span>
+                    </DropdownMenuItem>
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       ))}

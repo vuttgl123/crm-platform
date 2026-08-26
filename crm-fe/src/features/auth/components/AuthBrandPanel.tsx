@@ -1,18 +1,19 @@
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Check, ShieldCheck } from 'lucide-react';
-import { authBrandCapabilityKeys } from '../content/authContent';
 
 export interface AuthBrandPanelProps {
   compact?: boolean;
 }
 
-/**
- * The gateway's dark region, matching how the landing page reserves
- * .editorial-dark-region for a few designated blocks. Every colour here is an
- * on-dark value: the --auth-ink / --auth-muted scale is for light surfaces and
- * would be invisible against this panel.
- */
+const capabilityKeys = [
+  'auth.gateway.brand.capabilities.pipeline',
+  'auth.gateway.brand.capabilities.cpq',
+  'auth.gateway.brand.capabilities.contracts',
+  'auth.gateway.brand.capabilities.permissions',
+] as const;
+
 export function AuthBrandPanel({
   compact = false,
 }: AuthBrandPanelProps): JSX.Element {
@@ -20,58 +21,57 @@ export function AuthBrandPanel({
 
   return (
     <aside className="auth-brand-panel">
-      <div className="space-y-7">
+      <div className="space-y-8">
         {/* Brand header */}
         <Link
           to="/"
           className="group inline-flex items-center gap-2.5"
           aria-label="VUM CRM"
         >
-          <div className="flex h-9 w-9 items-center justify-center rounded-[8px] bg-[var(--ed-inverse)] text-[var(--ed-ink)] transition-colors group-hover:bg-[var(--ed-accent-border)]">
-            <span
-              className="text-lg font-extrabold tracking-tight"
-              translate="no"
-            >
-              V
-            </span>
+          <div className="flex h-7 w-7 items-center justify-center rounded-[6px] bg-white text-[#1C1917] font-mono font-bold text-xs transition-colors group-hover:bg-[#BFDBFE]">
+            V
           </div>
-          <div className="flex flex-col">
+          <div className="flex items-center gap-2">
             <span
-              className="text-lg font-extrabold leading-none tracking-tight text-[var(--ed-inverse)]"
+              className="text-[17px] font-bold tracking-tight text-white"
               translate="no"
             >
               VUM CRM
             </span>
-            <span className="mt-1 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-white/45">
+            <span className="font-mono text-[10px] font-semibold uppercase tracking-wider text-[#A8A29E] bg-[#292524] px-2 py-0.5 rounded-[4px] border border-[#44403C]">
               Enterprise
             </span>
           </div>
         </Link>
 
         {/* Narrative */}
-        <div className="max-w-[28rem] space-y-3">
-          <span className="block font-mono text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--ed-accent-border)]">
+        <div className="space-y-3.5 max-w-sm">
+          <p className="text-[12px] uppercase tracking-[0.08em] font-semibold text-[#A8A29E] flex items-center gap-2">
+            <span className="w-1.5 h-1.5 bg-[#BFDBFE] inline-block shrink-0 rounded-full" />
             {t('auth.gateway.brand.descriptor')}
-          </span>
-          <h2 className="auth-display text-2xl font-extrabold leading-tight text-[var(--ed-inverse)] sm:text-3xl">
+          </p>
+          <h2 className="text-[26px] sm:text-[30px] font-bold leading-tight text-white tracking-tight">
             {t('auth.gateway.brand.statement')}
           </h2>
+          <p className="text-[14px] text-[#A8A29E] leading-relaxed">
+            {t('auth.gateway.brand.description')}
+          </p>
         </div>
       </div>
 
-      {/* Capability highlights */}
+      {/* Capability Highlights */}
       {!compact && (
-        <div className="auth-brand-capabilities space-y-6 pt-8">
+        <div className="auth-brand-capabilities space-y-6 pt-6 border-t border-[#292524]">
           <ul
-            className="space-y-3.5"
+            className="space-y-3"
             aria-label={t('auth.gateway.brand.capabilitiesLabel')}
           >
-            {authBrandCapabilityKeys.map((key) => (
+            {capabilityKeys.map((key) => (
               <li
                 key={key}
-                className="flex items-center gap-3 text-sm font-medium text-white/85"
+                className="flex items-center gap-3 text-[13px] font-medium text-white/90"
               >
-                <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-white/20 bg-white/10 text-[var(--ed-accent-border)]">
+                <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#292524] border border-[#44403C] text-[#BFDBFE]">
                   <Check className="h-3 w-3" aria-hidden="true" />
                 </div>
                 <span>{t(key)}</span>
@@ -79,9 +79,9 @@ export function AuthBrandPanel({
             ))}
           </ul>
 
-          <div className="flex items-center gap-2 border-t border-white/10 pt-5 text-xs font-medium text-white/55">
+          <div className="flex items-center gap-2 pt-2 text-[12px] font-medium text-[#A8A29E]">
             <ShieldCheck
-              className="h-4 w-4 text-[var(--ed-accent-border)]"
+              className="h-4 w-4 text-[#BFDBFE] shrink-0"
               aria-hidden="true"
             />
             <span>{t('auth.gateway.brand.assurance')}</span>

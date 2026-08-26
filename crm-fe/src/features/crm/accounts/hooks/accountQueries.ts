@@ -78,6 +78,24 @@ export function useParentAccountOptionsQuery(
   });
 }
 
+export function useSubsidiaryAccountsQuery(
+  parentAccountId?: string | null,
+  tenantId: string = 'default'
+) {
+  return useQuery<AccountSummaryResponse[]>({
+    queryKey: ['subsidiary-accounts', tenantId, parentAccountId],
+    queryFn: async ({ signal }) => {
+      if (!parentAccountId) return [];
+      const res = await accountApi.search({ size: 100 }, { signal });
+      return (res?.items || []).filter(
+        (acc) => acc.parentAccountId === parentAccountId
+      );
+    },
+    enabled: Boolean(parentAccountId),
+    staleTime: 10000,
+  });
+}
+
 export function useCreateAccountMutation(tenantId: string = 'default') {
   const queryClient = useQueryClient();
 

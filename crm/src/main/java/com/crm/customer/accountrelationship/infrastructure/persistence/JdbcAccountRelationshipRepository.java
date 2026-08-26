@@ -11,7 +11,7 @@ import com.crm.customer.accountrelationship.application.port.AccountRelationship
 import com.crm.customer.accountrelationship.application.query.AccountRelationshipSearchQuery;
 import com.crm.customer.accountrelationship.domain.AccountRelationship;
 import com.crm.customer.accountrelationship.domain.AccountRelationshipId;
-import com.crm.customer.infrastructure.persistence.AccountScopeSql;
+import com.crm.foundation.persistence.OwnershipScopeSql;
 import com.crm.foundation.security.AuthorizedDataAccess;
 import com.crm.sharedkernel.application.PageResult;
 import com.crm.sharedkernel.domain.ActorId;
@@ -66,7 +66,7 @@ public class JdbcAccountRelationshipRepository
 	@Override
 	public boolean accountAccessible(TenantId tenantId, AccountId accountId,
 			ActorId actorId, AuthorizedDataAccess access) {
-		AccountScopeSql scope = AccountScopeSql.resolve(actorId, access);
+		OwnershipScopeSql scope = OwnershipScopeSql.resolve(actorId, access);
 		Map<String, Object> parameters = new HashMap<>(scope.parameters());
 		parameters.put("tenantId", tenantId.toString());
 		parameters.put("accountId", accountId.toString());
@@ -108,7 +108,7 @@ public class JdbcAccountRelationshipRepository
 	public Optional<AccountRelationship> findForEnd(TenantId tenantId,
 			AccountId pathAccountId, AccountRelationshipId relationshipId,
 			ActorId actorId, AuthorizedDataAccess access) {
-		AccountScopeSql scope = AccountScopeSql.resolve(actorId, access);
+		OwnershipScopeSql scope = OwnershipScopeSql.resolve(actorId, access);
 		Map<String, Object> parameters = relationshipLookupParameters(scope,
 				tenantId, pathAccountId, relationshipId);
 		String sql = scope.cte() + DOMAIN_PROJECTION + RELATIONSHIP_FROM + """
@@ -130,7 +130,7 @@ public class JdbcAccountRelationshipRepository
 	@Override
 	public int end(AccountRelationship relationship, AccountId pathAccountId,
 			ActorId actorId, AuthorizedDataAccess access) {
-		AccountScopeSql scope = AccountScopeSql.resolve(actorId, access);
+		OwnershipScopeSql scope = OwnershipScopeSql.resolve(actorId, access);
 		Map<String, Object> parameters = new HashMap<>(scope.parameters());
 		parameters.put("tenantId", relationship.tenantId().toString());
 		parameters.put("relationshipId", relationship.id().toString());
@@ -164,7 +164,7 @@ public class JdbcAccountRelationshipRepository
 	public Optional<AccountRelationshipDetails> findDetails(TenantId tenantId,
 			AccountId pathAccountId, AccountRelationshipId relationshipId,
 			ActorId actorId, AuthorizedDataAccess access) {
-		AccountScopeSql scope = AccountScopeSql.resolve(actorId, access);
+		OwnershipScopeSql scope = OwnershipScopeSql.resolve(actorId, access);
 		Map<String, Object> parameters = relationshipLookupParameters(scope,
 				tenantId, pathAccountId, relationshipId);
 		String sql = scope.cte() + DETAILS_PROJECTION + RELATIONSHIP_FROM + """
@@ -186,7 +186,7 @@ public class JdbcAccountRelationshipRepository
 	public PageResult<AccountRelationshipDetails> search(TenantId tenantId,
 			ActorId actorId, AccountRelationshipSearchQuery query,
 			AuthorizedDataAccess access) {
-		AccountScopeSql scope = AccountScopeSql.resolve(actorId, access);
+		OwnershipScopeSql scope = OwnershipScopeSql.resolve(actorId, access);
 		Map<String, Object> parameters = new HashMap<>(scope.parameters());
 		parameters.put("tenantId", tenantId.toString());
 		parameters.put("pathAccountId", query.accountId().toString());
@@ -222,7 +222,7 @@ public class JdbcAccountRelationshipRepository
 	}
 
 	private static Map<String, Object> relationshipLookupParameters(
-			AccountScopeSql scope, TenantId tenantId, AccountId pathAccountId,
+			OwnershipScopeSql scope, TenantId tenantId, AccountId pathAccountId,
 			AccountRelationshipId relationshipId) {
 		Map<String, Object> parameters = new HashMap<>(scope.parameters());
 		parameters.put("tenantId", tenantId.toString());

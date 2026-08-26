@@ -15,6 +15,9 @@ import com.crm.sales.forecast.domain.ForecastPeriodPreset;
 import com.crm.sales.forecast.infrastructure.persistence.SalesForecastReadRepository;
 import com.crm.sharedkernel.domain.ActorId;
 import com.crm.sharedkernel.domain.TenantId;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,6 +25,9 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Transactional(readOnly = true)
 public class SalesForecastService {
+
+	private static final Logger LOGGER =
+			LoggerFactory.getLogger(SalesForecastService.class);
 
 	private final CurrentTenant currentTenant;
 	private final CurrentActor currentActor;
@@ -111,14 +117,16 @@ public class SalesForecastService {
 		try {
 			return jdbcClient.sql("""
 					SELECT default_timezone
-					FROM platform.tenants
+					FROM platform_tenants
 					WHERE id = :tenantId
 					""")
 					.param("tenantId", tenantId.value())
 					.query(String.class)
 					.optional()
 					.orElse("UTC");
-		} catch (Exception e) {
+		} catch (DataAccessException e) {
+			LOGGER.warn("Falling back to UTC: could not read the default timezone for tenant {}",
+					tenantId.value(), e);
 			return "UTC";
 		}
 	}

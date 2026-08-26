@@ -13,7 +13,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-import com.crm.customer.infrastructure.persistence.AccountScopeSql;
+import com.crm.foundation.persistence.OwnershipScopeSql;
 import com.crm.foundation.security.AuthorizedDataAccess;
 import com.crm.sales.forecast.application.dto.AppliedForecastFilters;
 import com.crm.sales.forecast.application.dto.ForecastBreakdownResponse;
@@ -52,7 +52,7 @@ public class SalesForecastReadRepository {
 			UUID ownerId,
 			String currencyCode
 	) {
-		AccountScopeSql scope = AccountScopeSql.resolve(actorId, access);
+		OwnershipScopeSql scope = OwnershipScopeSql.resolve(actorId, access);
 		Map<String, Object> params = new HashMap<>(scope.parameters());
 		params.put("tenantId", tenantId.value());
 		params.put("fromDate", period.fromDate());
@@ -90,7 +90,7 @@ public class SalesForecastReadRepository {
 				           ELSE 0
 				       END) AS weighted_amount
 				FROM crm_opportunities o
-				JOIN crm_pipeline_stages s ON o.current_stage_id = s.id AND s.tenant_id = o.tenant_id AND s.deleted_at IS NULL
+				JOIN crm_pipeline_stages s ON o.current_stage_id = s.id AND s.tenant_id = o.tenant_id
 				WHERE o.tenant_id = :tenantId
 				  AND o.deleted_at IS NULL
 				  AND (%s)
@@ -112,7 +112,7 @@ public class SalesForecastReadRepository {
 				       SUM(o.amount) AS total_amount,
 				       COUNT(o.id) AS opp_count
 				FROM crm_opportunities o
-				JOIN crm_pipeline_stages s ON o.current_stage_id = s.id AND s.tenant_id = o.tenant_id AND s.deleted_at IS NULL
+				JOIN crm_pipeline_stages s ON o.current_stage_id = s.id AND s.tenant_id = o.tenant_id
 				WHERE o.tenant_id = :tenantId
 				  AND o.deleted_at IS NULL
 				  AND (%s)
@@ -132,7 +132,7 @@ public class SalesForecastReadRepository {
 				       SUM(o.amount) AS total_amount,
 				       COUNT(o.id) AS opp_count
 				FROM crm_opportunities o
-				JOIN crm_pipeline_stages s ON o.current_stage_id = s.id AND s.tenant_id = o.tenant_id AND s.deleted_at IS NULL
+				JOIN crm_pipeline_stages s ON o.current_stage_id = s.id AND s.tenant_id = o.tenant_id
 				WHERE o.tenant_id = :tenantId
 				  AND o.deleted_at IS NULL
 				  AND (%s)
@@ -337,7 +337,7 @@ public class SalesForecastReadRepository {
 			int page,
 			int size
 	) {
-		AccountScopeSql scope = AccountScopeSql.resolve(actorId, access);
+		OwnershipScopeSql scope = OwnershipScopeSql.resolve(actorId, access);
 		Map<String, Object> params = new HashMap<>(scope.parameters());
 		params.put("tenantId", tenantId.value());
 		params.put("fromDate", period.fromDate());
@@ -370,9 +370,8 @@ public class SalesForecastReadRepository {
 			String countSql = scope.cte() + """
 					SELECT COUNT(DISTINCT s.id)
 					FROM crm_pipeline_stages s
-					JOIN crm_pipelines p ON s.pipeline_id = p.id AND p.tenant_id = s.tenant_id AND p.deleted_at IS NULL
+					JOIN crm_pipelines p ON s.pipeline_id = p.id AND p.tenant_id = s.tenant_id
 					WHERE s.tenant_id = :tenantId
-					  AND s.deleted_at IS NULL
 					""";
 			if (pipelineId != null) {
 				countSql += " AND s.pipeline_id = :pipelineId";
@@ -398,7 +397,7 @@ public class SalesForecastReadRepository {
 					           ELSE 0
 					       END), 0) AS weighted_amount
 					FROM crm_pipeline_stages s
-					JOIN crm_pipelines p ON s.pipeline_id = p.id AND p.tenant_id = s.tenant_id AND p.deleted_at IS NULL
+					JOIN crm_pipelines p ON s.pipeline_id = p.id AND p.tenant_id = s.tenant_id
 					LEFT JOIN crm_opportunities o ON o.current_stage_id = s.id
 					                             AND o.tenant_id = s.tenant_id
 					                             AND o.deleted_at IS NULL
@@ -411,7 +410,6 @@ public class SalesForecastReadRepository {
 					                                 (o.status = 'OPEN' AND s.stage_category = 'OPEN' AND s.forecast_category IN ('COMMIT', 'BEST_CASE', 'PIPELINE', 'OMITTED') AND o.expected_close_date BETWEEN :fromDate AND :toDate)
 					                             )
 					WHERE s.tenant_id = :tenantId
-					  AND s.deleted_at IS NULL
 					  %s
 					GROUP BY s.id, s.name, s.display_order, s.stage_category, s.forecast_category, p.id, p.name
 					ORDER BY p.name ASC, s.display_order ASC
@@ -421,9 +419,9 @@ public class SalesForecastReadRepository {
 			List<Map<String, Object>> stageList = jdbcClient.sql(stageSql).params(params).query().listOfRows();
 
 			for (Map<String, Object> r : stageList) {
-				UUID stageId = (UUID) r.get("stage_id");
+				UUID stageId = toUuid(r.get("stage_id"));
 				String stageName = String.valueOf(r.get("stage_name"));
-				UUID pId = (UUID) r.get("pipeline_id");
+				UUID pId = toUuid(r.get("pipeline_id"));
 				String pName = String.valueOf(r.get("pipeline_name"));
 				Integer displayOrder = r.get("display_order") != null ? ((Number) r.get("display_order")).intValue() : 0;
 				String stgCat = r.get("stage_category") != null ? String.valueOf(r.get("stage_category")) : "OPEN";
@@ -470,7 +468,7 @@ public class SalesForecastReadRepository {
 			String countSql = scope.cte() + """
 					SELECT COUNT(DISTINCT COALESCE(o.owner_user_id, o.owner_team_id, '00000000-0000-0000-0000-000000000000'))
 					FROM crm_opportunities o
-					JOIN crm_pipeline_stages s ON o.current_stage_id = s.id AND s.tenant_id = o.tenant_id AND s.deleted_at IS NULL
+					JOIN crm_pipeline_stages s ON o.current_stage_id = s.id AND s.tenant_id = o.tenant_id
 					WHERE o.tenant_id = :tenantId
 					  AND o.deleted_at IS NULL
 					  AND o.currency_code = :currencyCode
@@ -510,9 +508,9 @@ public class SalesForecastReadRepository {
 					       SUM(CASE WHEN s.forecast_category = 'OMITTED' THEN o.amount ELSE 0 END) AS omitted_amount,
 					       COUNT(CASE WHEN s.forecast_category = 'OMITTED' THEN o.id ELSE NULL END) AS omitted_count
 					FROM crm_opportunities o
-					JOIN crm_pipeline_stages s ON o.current_stage_id = s.id AND s.tenant_id = o.tenant_id AND s.deleted_at IS NULL
-					LEFT JOIN platform.users u ON u.id = o.owner_user_id
-					LEFT JOIN platform.teams t ON t.id = o.owner_team_id
+					JOIN crm_pipeline_stages s ON o.current_stage_id = s.id AND s.tenant_id = o.tenant_id
+					LEFT JOIN platform_users u ON u.id = o.owner_user_id
+					LEFT JOIN platform_teams t ON t.id = o.owner_team_id
 					WHERE o.tenant_id = :tenantId
 					  AND o.deleted_at IS NULL
 					  AND o.currency_code = :currencyCode
@@ -531,8 +529,8 @@ public class SalesForecastReadRepository {
 			List<Map<String, Object>> ownerList = jdbcClient.sql(ownerSql).params(params).query().listOfRows();
 
 			for (Map<String, Object> r : ownerList) {
-				UUID uId = (UUID) r.get("owner_user_id");
-				UUID tId = (UUID) r.get("owner_team_id");
+				UUID uId = toUuid(r.get("owner_user_id"));
+				UUID tId = toUuid(r.get("owner_team_id"));
 				String uName = r.get("user_name") != null ? String.valueOf(r.get("user_name")) : null;
 				String tName = r.get("team_name") != null ? String.valueOf(r.get("team_name")) : null;
 
@@ -624,6 +622,21 @@ public class SalesForecastReadRepository {
 				totalPages,
 				Instant.now().toString()
 		);
+	}
+
+	/**
+	 * Reads an identifier column that MySQL returns as CHAR(36) text and
+	 * PostgreSQL may return as a native uuid.
+	 */
+	private static UUID toUuid(Object val) {
+		if (val == null) {
+			return null;
+		}
+		if (val instanceof UUID uuid) {
+			return uuid;
+		}
+		String text = String.valueOf(val).trim();
+		return text.isEmpty() ? null : UUID.fromString(text);
 	}
 
 	private static BigDecimal toBigDecimal(Object val) {

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { useParams, useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/core/session/useAuth';
 import { can } from '@/core/permissions/evaluator';
@@ -14,9 +14,11 @@ import { AccountOverviewTab } from './components/detail/tabs/AccountOverviewTab'
 import { AccountAddressesTab } from './components/detail/tabs/AccountAddressesTab';
 import { AccountChannelsTab } from './components/detail/tabs/AccountChannelsTab';
 import { AccountRelationshipsTab } from './components/detail/tabs/AccountRelationshipsTab';
+import { AccountSubsidiariesTab } from './components/detail/tabs/AccountSubsidiariesTab';
 import { AccountNotesTab } from './components/detail/tabs/AccountNotesTab';
 import { AccountEditorSheet } from './components/AccountEditorSheet';
 import { AccountDeleteDialog } from './components/AccountDeleteDialog';
+import { StandardGlidingTabs, TabItem } from '@/components/common/StandardGlidingTabs';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import {
@@ -24,11 +26,11 @@ import {
   MapPin,
   Mail,
   Network,
+  GitFork,
   StickyNote,
   Loader2,
   AlertTriangle,
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
 
 export const AccountDetailPage: React.FC = () => {
   const { id: accountId } = useParams<{ id: string }>();
@@ -143,8 +145,9 @@ export const AccountDetailPage: React.FC = () => {
     );
   }
 
-  const tabs: { id: AccountDetailTab; label: string; icon: React.ElementType }[] = [
+  const tabs: TabItem<AccountDetailTab>[] = [
     { id: 'overview', label: 'Overview', icon: Building2 },
+    { id: 'subsidiaries', label: 'Subsidiaries', icon: GitFork },
     { id: 'addresses', label: 'Addresses', icon: MapPin },
     { id: 'channels', label: 'Communication Channels', icon: Mail },
     { id: 'relationships', label: 'Commercial Relationships', icon: Network },
@@ -158,38 +161,28 @@ export const AccountDetailPage: React.FC = () => {
         account={account}
         canWrite={canWrite}
         onEdit={() => setEditorState({ open: true, mode: 'edit' })}
-        onAddSubsidiary={() =>
-          setEditorState({ open: true, mode: 'subsidiary', parentId: account.id })
-        }
         onDelete={() => setDeleteOpen(true)}
       />
 
-      {/* Tabs Navigation Bar */}
-      <div className="flex items-center gap-1 border-b border-slate-200 bg-white px-2 rounded-[4px] shadow-2xs overflow-x-auto">
-        {tabs.map((t) => {
-          const Icon = t.icon;
-          const isActive = currentTab === t.id;
-          return (
-            <button
-              key={t.id}
-              onClick={() => handleTabChange(t.id)}
-              className={cn(
-                'flex items-center gap-1.5 px-3.5 py-2.5 text-xs font-semibold border-b-2 whitespace-nowrap transition-colors rounded-t-[3px]',
-                isActive
-                  ? 'border-blue-600 text-blue-600 bg-blue-50/50'
-                  : 'border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-              )}
-            >
-              <Icon className={cn('w-3.5 h-3.5', isActive ? 'text-blue-600' : 'text-slate-400')} />
-              <span>{t.label}</span>
-            </button>
-          );
-        })}
-      </div>
+      {/* Reusable Standard Gliding Tabs Navigation Bar */}
+      <StandardGlidingTabs
+        tabs={tabs}
+        activeTab={currentTab}
+        onChange={handleTabChange}
+      />
 
-      {/* Active Tab Content Surface */}
-      <div className="pt-1">
+      {/* Active Tab Content Surface with smooth gliding entrance */}
+      <div key={currentTab} className="pt-1 animate-tab-content">
         {currentTab === 'overview' && <AccountOverviewTab account={account} />}
+        {currentTab === 'subsidiaries' && (
+          <AccountSubsidiariesTab
+            account={account}
+            canWrite={canWrite}
+            onAddSubsidiary={() =>
+              setEditorState({ open: true, mode: 'subsidiary', parentId: account.id })
+            }
+          />
+        )}
         {currentTab === 'addresses' && (
           <AccountAddressesTab accountId={account.id} canWrite={canWrite} />
         )}
@@ -225,3 +218,5 @@ export const AccountDetailPage: React.FC = () => {
     </div>
   );
 };
+
+export default AccountDetailPage;

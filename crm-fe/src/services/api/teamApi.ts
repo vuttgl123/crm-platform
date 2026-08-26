@@ -61,12 +61,12 @@ export const teamApi = {
     };
   },
 
-  createTeam: async (data: { code: string; name: string; description?: string; leaderId?: string }): Promise<TeamItem> => {
+  createTeam: async (data: { code?: string; name: string; description?: string; leaderId?: string }): Promise<TeamItem> => {
+    const isUuid = data.leaderId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(data.leaderId);
     const payload = {
-      teamCode: data.code,
       name: data.name,
       description: data.description,
-      leaderId: data.leaderId,
+      managerUserId: isUuid ? data.leaderId : undefined,
     };
     return apiFetch<TeamItem>('/platform/teams', {
       method: 'POST',
@@ -75,9 +75,17 @@ export const teamApi = {
   },
 
   updateTeam: async (id: string, data: { version: number; name: string; description?: string; leaderId?: string; active?: boolean }): Promise<TeamItem> => {
+    const isUuid = data.leaderId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(data.leaderId);
+    const payload = {
+      version: data.version || 1,
+      name: data.name,
+      description: data.description,
+      managerUserId: isUuid ? data.leaderId : undefined,
+      status: data.active === false ? 'INACTIVE' : 'ACTIVE',
+    };
     return apiFetch<TeamItem>(`/platform/teams/${id}`, {
       method: 'PUT',
-      body: JSON.stringify(data),
+      body: JSON.stringify(payload),
     });
   },
 

@@ -9,6 +9,16 @@ import {
 } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from '@/components/ui/alert-dialog';
+import {
   Shield,
   Key,
   Database,
@@ -224,8 +234,23 @@ export const RoleEditorSheet: React.FC<RoleEditorSheetProps> = ({
     }
   };
 
+  // Determine if draft is actually dirty to avoid false warnings on empty new roles
+  const isDirty = useMemo(() => {
+    if (mode === 'view') return false;
+    if (mode === 'create') {
+      return Boolean(
+        draft.roleCode.trim() ||
+        draft.name.trim() ||
+        draft.description.trim() ||
+        draft.permissionCodes.length > 0 ||
+        draft.dataScopes.length > 0
+      );
+    }
+    return diffResult.hasChanges;
+  }, [mode, draft, diffResult.hasChanges]);
+
   const handleAttemptClose = () => {
-    if (diffResult.hasChanges && mode !== 'view') {
+    if (isDirty) {
       setShowUnsavedWarning(true);
     } else {
       onClose();
@@ -261,7 +286,7 @@ export const RoleEditorSheet: React.FC<RoleEditorSheetProps> = ({
           </div>
 
           {/* Step Indicator Navigation */}
-          <div className="grid grid-cols-4 gap-1 pt-3">
+          <div className="grid grid-cols-4 gap-2 pt-3 border-t border-slate-100 mt-2">
             {STEPS.map((step, idx) => {
               const Icon = step.icon;
               const isActive = currentStep === step.id;
@@ -278,13 +303,21 @@ export const RoleEditorSheet: React.FC<RoleEditorSheetProps> = ({
                   }}
                   className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-[3px] text-xs font-semibold border transition-all ${
                     isActive
-                      ? 'bg-blue-50 text-blue-700 border-blue-300'
+                      ? 'bg-blue-50 text-blue-700 border-blue-300 font-bold'
                       : isPast
                       ? 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
-                      : 'bg-slate-100 text-slate-400 border-transparent cursor-not-allowed'
+                      : 'bg-slate-50 text-slate-400 border-slate-200/60'
                   }`}
                 >
-                  <Icon className="w-3.5 h-3.5" />
+                  <Icon
+                    className={`w-3.5 h-3.5 ${
+                      isActive
+                        ? 'text-blue-600'
+                        : isPast
+                        ? 'text-emerald-600'
+                        : 'text-slate-400'
+                    }`}
+                  />
                   <span className="hidden sm:inline">{step.title}</span>
                 </button>
               );
@@ -322,59 +355,61 @@ export const RoleEditorSheet: React.FC<RoleEditorSheetProps> = ({
 
               {currentStep === 'scopes' && (
                 <DataScopeEditor
-                  dataScopes={draft.dataScopes}
+                  dataScopes={draft.dataScopes || []}
+                  scopes={draft.dataScopes || []}
+                  teams={teams || []}
                   isReadOnly={isReadOnly}
                   onChange={(scopes) => handleDraftChange({ dataScopes: scopes })}
-                  teams={teams}
                 />
               )}
 
               {currentStep === 'review' && (
                 <RoleChangeReview
-                  diff={diffResult}
                   draft={draft}
+                  diff={diffResult}
                   catalog={catalog}
                   teams={teams}
+                  mode={mode}
                 />
               )}
             </>
           )}
         </div>
 
-        {/* Footer Actions */}
-        <SheetFooter className="p-3 bg-white border-t border-slate-200 flex flex-row items-center justify-between gap-2">
+        {/* Footer */}
+        <SheetFooter className="p-4 bg-white border-t border-slate-200 flex items-center justify-between flex-row">
           <div>
-            {currentStep !== 'basics' ? (
+            {currentStep !== 'basics' && (
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
                 onClick={handlePrevStep}
-                className="h-8 px-3 text-xs font-semibold border-slate-200 rounded-[3px] gap-1"
+                className="h-8 text-xs font-semibold rounded-[3px] border-slate-200 gap-1"
               >
                 <ChevronLeft className="w-3.5 h-3.5" />
                 <span>Back</span>
-              </Button>
-            ) : (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={handleAttemptClose}
-                className="h-8 px-3 text-xs font-semibold text-slate-600 rounded-[3px]"
-              >
-                Cancel
               </Button>
             )}
           </div>
 
           <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleAttemptClose}
+              className="h-8 text-xs font-semibold rounded-[3px] border-slate-200"
+            >
+              Cancel
+            </Button>
+
             {currentStep !== 'review' ? (
               <Button
                 type="button"
                 size="sm"
                 onClick={handleNextStep}
-                className="h-8 px-4 text-xs font-semibold bg-[#0C66E4] hover:bg-[#0052CC] text-white rounded-[3px] gap-1"
+                className="h-8 px-4 text-xs font-semibold bg-[#0C66E4] hover:bg-[#0052CC] text-white rounded-[3px] gap-1 shadow-none"
               >
                 <span>Continue</span>
                 <ChevronRight className="w-3.5 h-3.5" />
@@ -383,19 +418,23 @@ export const RoleEditorSheet: React.FC<RoleEditorSheetProps> = ({
               <Button
                 type="button"
                 size="sm"
-                disabled={isSaving}
                 onClick={handleSave}
+                disabled={isSaving}
                 className="h-8 px-4 text-xs font-semibold bg-[#0C66E4] hover:bg-[#0052CC] text-white rounded-[3px] gap-1.5 shadow-none"
               >
                 {isSaving ? (
                   <>
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    <span>Saving…</span>
+                    <span>Saving Role…</span>
                   </>
                 ) : (
                   <>
                     <Save className="w-3.5 h-3.5" />
-                    <span>Confirm &amp; Save Role</span>
+                    <span>
+                      {mode === 'create' || mode === 'clone'
+                        ? 'Confirm & Create Role'
+                        : 'Save Role Changes'}
+                    </span>
                   </>
                 )}
               </Button>
@@ -413,40 +452,38 @@ export const RoleEditorSheet: React.FC<RoleEditorSheetProps> = ({
         </SheetFooter>
 
         {/* Unsaved Changes Confirmation Modal */}
-        {showUnsavedWarning && (
-          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-[4px] p-4 max-w-sm w-full shadow-xl border border-slate-200 space-y-3">
-              <div className="flex items-center gap-2 text-amber-600">
+        <AlertDialog open={showUnsavedWarning} onOpenChange={setShowUnsavedWarning}>
+          <AlertDialogContent className="max-w-md font-sans rounded-[4px]">
+            <AlertDialogHeader>
+              <div className="flex items-center gap-2 text-amber-600 mb-1">
                 <AlertTriangle className="w-5 h-5" />
-                <span className="font-bold text-sm text-slate-900">Discard Unsaved Changes?</span>
+                <AlertDialogTitle className="text-base font-bold text-slate-900">
+                  Discard Unsaved Changes?
+                </AlertDialogTitle>
               </div>
-              <p className="text-xs text-slate-600">
+              <AlertDialogDescription className="text-xs text-slate-600">
                 You have unsaved changes in this role draft. Closing now will discard all edits.
-              </p>
-              <div className="flex items-center justify-end gap-2 pt-1">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setShowUnsavedWarning(false)}
-                  className="h-7.5 text-xs rounded-[3px]"
-                >
-                  Keep Editing
-                </Button>
-                <Button
-                  size="sm"
-                  variant="destructive"
-                  onClick={() => {
-                    setShowUnsavedWarning(false);
-                    onClose();
-                  }}
-                  className="h-7.5 text-xs rounded-[3px] bg-rose-600 hover:bg-rose-700"
-                >
-                  Discard Changes
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter className="gap-2 pt-2">
+              <AlertDialogCancel
+                onClick={() => setShowUnsavedWarning(false)}
+                className="h-8 text-xs font-semibold rounded-[3px] border-slate-200"
+              >
+                Keep Editing
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  setShowUnsavedWarning(false);
+                  onClose();
+                }}
+                className="h-8 text-xs font-semibold rounded-[3px] bg-rose-600 hover:bg-rose-700 text-white"
+              >
+                Discard Changes
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </SheetContent>
     </Sheet>
   );

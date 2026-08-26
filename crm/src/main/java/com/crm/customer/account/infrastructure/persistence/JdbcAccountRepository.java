@@ -15,7 +15,7 @@ import com.crm.customer.account.domain.AccountId;
 import com.crm.customer.account.domain.AccountOwner;
 import com.crm.customer.account.domain.AccountOwnerType;
 import com.crm.customer.account.domain.AnnualRevenue;
-import com.crm.customer.infrastructure.persistence.AccountScopeSql;
+import com.crm.foundation.persistence.OwnershipScopeSql;
 import com.crm.foundation.security.AuthorizedDataAccess;
 import com.crm.foundation.security.DataScopeType;
 import com.crm.sharedkernel.application.PageResult;
@@ -57,7 +57,7 @@ public class JdbcAccountRepository implements AccountRepository {
 	@Override
 	public Optional<Account> findById(TenantId tenantId, AccountId accountId,
 			ActorId actorId, AuthorizedDataAccess access) {
-		AccountScopeSql scope = AccountScopeSql.resolve(actorId, access);
+		OwnershipScopeSql scope = OwnershipScopeSql.resolve(actorId, access);
 		Map<String, Object> parameters = new HashMap<>(scope.parameters());
 		parameters.put("tenantId", tenantId.toString());
 		parameters.put("accountId", accountId.toString());
@@ -77,7 +77,7 @@ public class JdbcAccountRepository implements AccountRepository {
 	public PageResult<AccountSummary> search(TenantId tenantId,
 			ActorId actorId, AccountSearchQuery query,
 			AuthorizedDataAccess access) {
-		AccountScopeSql scope = AccountScopeSql.resolve(actorId, access);
+		OwnershipScopeSql scope = OwnershipScopeSql.resolve(actorId, access);
 		Map<String, Object> parameters = new HashMap<>(scope.parameters());
 		parameters.put("tenantId", tenantId.toString());
 
@@ -164,7 +164,7 @@ public class JdbcAccountRepository implements AccountRepository {
 	public boolean ownerAllowed(TenantId tenantId, ActorId actorId,
 			AccountOwner owner, AuthorizedDataAccess access) {
 		Objects.requireNonNull(owner, "owner must not be null");
-		AccountScopeSql scope = AccountScopeSql.resolve(actorId, access);
+		OwnershipScopeSql scope = OwnershipScopeSql.resolve(actorId, access);
 		if (scope.includes(DataScopeType.TENANT)) {
 			return true;
 		}
@@ -182,7 +182,7 @@ public class JdbcAccountRepository implements AccountRepository {
 	@Override
 	public boolean parentAllowed(TenantId tenantId, ActorId actorId,
 			AccountId parentAccountId, AuthorizedDataAccess access) {
-		AccountScopeSql scope = AccountScopeSql.resolve(actorId, access);
+		OwnershipScopeSql scope = OwnershipScopeSql.resolve(actorId, access);
 		Map<String, Object> parameters = new HashMap<>(scope.parameters());
 		parameters.put("tenantId", tenantId.toString());
 		parameters.put("parentAccountId", parentAccountId.toString());
@@ -233,7 +233,7 @@ public class JdbcAccountRepository implements AccountRepository {
 	@Override
 	public int update(Account account, long expectedVersion, ActorId actorId,
 			AuthorizedDataAccess access) {
-		AccountScopeSql scope = AccountScopeSql.resolve(actorId, access);
+		OwnershipScopeSql scope = OwnershipScopeSql.resolve(actorId, access);
 		Map<String, Object> parameters = new HashMap<>(scope.parameters());
 		parameters.putAll(mutationParameters(account));
 		parameters.put("expectedVersion", expectedVersion);
@@ -272,7 +272,7 @@ public class JdbcAccountRepository implements AccountRepository {
 	@Override
 	public int softDelete(Account account, long expectedVersion,
 			ActorId actorId, AuthorizedDataAccess access) {
-		AccountScopeSql scope = AccountScopeSql.resolve(actorId, access);
+		OwnershipScopeSql scope = OwnershipScopeSql.resolve(actorId, access);
 		Map<String, Object> parameters = new HashMap<>(scope.parameters());
 		parameters.put("tenantId", account.tenantId().toString());
 		parameters.put("id", account.id().toString());
@@ -302,7 +302,7 @@ public class JdbcAccountRepository implements AccountRepository {
 	}
 
 	private boolean treeContainsTeam(TenantId tenantId, AccountOwner owner,
-			AccountScopeSql scope) {
+			OwnershipScopeSql scope) {
 		Map<String, Object> parameters = new HashMap<>(scope.parameters());
 		parameters.put("tenantId", tenantId.toString());
 		parameters.put("ownerTeamId", owner.id().toString());

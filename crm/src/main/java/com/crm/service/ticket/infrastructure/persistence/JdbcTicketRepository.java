@@ -5,7 +5,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 
 import com.crm.service.ticket.application.dto.TicketCommentDetails;
 import com.crm.service.ticket.application.dto.TicketSummary;
@@ -32,7 +31,7 @@ public class JdbcTicketRepository implements TicketRepository {
 			       t.first_response_due_at, t.resolution_due_at, t.first_responded_at,
 			       t.resolved_at, t.closed_at, t.satisfaction_score, t.satisfaction_comment,
 			       t.created_at, t.updated_at, t.created_by, t.updated_by, t.version
-			FROM service.tickets t
+			FROM service_tickets t
 			""";
 
 	private static final String SUMMARY_SELECT = """
@@ -45,14 +44,14 @@ public class JdbcTicketRepository implements TicketRepository {
 			       t.assigned_team_id, tm.name AS assigned_team_name,
 			       t.first_response_due_at, t.resolution_due_at, t.resolved_at,
 			       t.closed_at,
-			       (SELECT COUNT(*) FROM service.ticket_comments c WHERE c.tenant_id = t.tenant_id AND c.ticket_id = t.id AND c.deleted_at IS NULL) AS comments_count,
+			       (SELECT COUNT(*) FROM service_ticket_comments c WHERE c.tenant_id = t.tenant_id AND c.ticket_id = t.id AND c.deleted_at IS NULL) AS comments_count,
 			       t.updated_at, t.version
-			FROM service.tickets t
-			LEFT JOIN crm.accounts a ON a.tenant_id = t.tenant_id AND a.id = t.account_id
-			LEFT JOIN crm.contacts ct ON ct.tenant_id = t.tenant_id AND ct.id = t.contact_id
-			LEFT JOIN service.ticket_categories tc ON tc.tenant_id = t.tenant_id AND tc.id = t.category_id
-			LEFT JOIN platform.teams tm ON tm.tenant_id = t.tenant_id AND tm.id = t.assigned_team_id
-			LEFT JOIN platform.users u ON u.id = t.assigned_user_id
+			FROM service_tickets t
+			LEFT JOIN crm_accounts a ON a.tenant_id = t.tenant_id AND a.id = t.account_id
+			LEFT JOIN crm_contacts ct ON ct.tenant_id = t.tenant_id AND ct.id = t.contact_id
+			LEFT JOIN service_ticket_categories tc ON tc.tenant_id = t.tenant_id AND tc.id = t.category_id
+			LEFT JOIN platform_teams tm ON tm.tenant_id = t.tenant_id AND tm.id = t.assigned_team_id
+			LEFT JOIN platform_users u ON u.id = t.assigned_user_id
 			""";
 
 	private final JdbcClient jdbcClient;
@@ -91,7 +90,7 @@ public class JdbcTicketRepository implements TicketRepository {
 	public boolean existsByTicketNumber(TenantId tenantId, String ticketNumber) {
 		String sql = """
 				SELECT COUNT(*) > 0
-				FROM service.tickets t
+				FROM service_tickets t
 				WHERE t.tenant_id = :tenantId
 				  AND t.ticket_number = :ticketNumber
 				""";
@@ -143,7 +142,7 @@ public class JdbcTicketRepository implements TicketRepository {
 			whereClause.append(" AND t.assigned_team_id = :assignedTeamId ");
 		}
 
-		String countSql = "SELECT COUNT(*) FROM service.tickets t " + whereClause;
+		String countSql = "SELECT COUNT(*) FROM service_tickets t " + whereClause;
 		Long totalElements = jdbcClient.sql(countSql)
 				.params(params)
 				.query(Long.class)
@@ -170,9 +169,9 @@ public class JdbcTicketRepository implements TicketRepository {
 				       NULLIF(TRIM(CONCAT(ct.first_name, ' ', ct.last_name)), '') AS author_contact_name,
 				       c.body, c.visibility, c.channel, c.external_message_id,
 				       c.created_by, c.created_at, c.updated_by, c.updated_at, c.version
-				FROM service.ticket_comments c
-				LEFT JOIN platform.users u ON u.id = c.author_user_id
-				LEFT JOIN crm.contacts ct ON ct.tenant_id = c.tenant_id AND ct.id = c.author_contact_id
+				FROM service_ticket_comments c
+				LEFT JOIN platform_users u ON u.id = c.author_user_id
+				LEFT JOIN crm_contacts ct ON ct.tenant_id = c.tenant_id AND ct.id = c.author_contact_id
 				WHERE c.tenant_id = :tenantId
 				  AND c.ticket_id = :ticketId
 				  AND c.deleted_at IS NULL
@@ -192,7 +191,7 @@ public class JdbcTicketRepository implements TicketRepository {
 				       c.author_contact_id, c.body, c.visibility, c.channel,
 				       c.external_message_id, c.created_at, c.updated_at,
 				       c.created_by, c.updated_by, c.deleted_at, c.deleted_by, c.version
-				FROM service.ticket_comments c
+				FROM service_ticket_comments c
 				WHERE c.tenant_id = :tenantId
 				  AND c.id = :id
 				  AND c.deleted_at IS NULL
@@ -207,7 +206,7 @@ public class JdbcTicketRepository implements TicketRepository {
 	@Override
 	public void insert(Ticket ticket) {
 		String sql = """
-				INSERT INTO service.tickets (
+				INSERT INTO service_tickets (
 				    tenant_id, id, ticket_number, account_id, contact_id,
 				    subject, description, channel, category_id, priority,
 				    severity, status, assigned_user_id, assigned_team_id,
@@ -261,7 +260,7 @@ public class JdbcTicketRepository implements TicketRepository {
 	@Override
 	public void update(Ticket ticket) {
 		String sql = """
-				UPDATE service.tickets
+				UPDATE service_tickets
 				SET account_id = :accountId,
 				    contact_id = :contactId,
 				    subject = :subject,
@@ -323,7 +322,7 @@ public class JdbcTicketRepository implements TicketRepository {
 	@Override
 	public void delete(TenantId tenantId, TicketId id, long version) {
 		String sql = """
-				DELETE FROM service.tickets
+				DELETE FROM service_tickets
 				WHERE tenant_id = :tenantId
 				  AND id = :id
 				  AND version = :version
@@ -341,7 +340,7 @@ public class JdbcTicketRepository implements TicketRepository {
 	@Override
 	public void insertComment(TicketComment comment) {
 		String sql = """
-				INSERT INTO service.ticket_comments (
+				INSERT INTO service_ticket_comments (
 				    tenant_id, id, ticket_id, author_user_id, author_contact_id,
 				    body, visibility, channel, external_message_id, created_at,
 				    updated_at, created_by, updated_by, version
@@ -372,7 +371,7 @@ public class JdbcTicketRepository implements TicketRepository {
 	@Override
 	public void updateComment(TicketComment comment) {
 		String sql = """
-				UPDATE service.ticket_comments
+				UPDATE service_ticket_comments
 				SET body = :body,
 				    visibility = :visibility,
 				    updated_at = :updatedAt,

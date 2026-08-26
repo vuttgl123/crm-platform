@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import type { TFunction } from 'i18next';
 import { Mail, ArrowRight, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { env } from '@/config/env';
 import { useAuth } from '@/core/session/useAuth';
 import type { LoginCredentials } from '@/types/auth';
@@ -107,6 +108,9 @@ export const LoginPage: React.FC = () => {
     setPendingAction('credentials');
     try {
       await login(values);
+      toast.success(t('auth.loginSuccess'), {
+        description: t('auth.welcomeBack'),
+      });
       navigate(returnUrl, { replace: true });
     } catch (error: unknown) {
       setLocalErrorCode(normalizeAuthError(error));
@@ -122,6 +126,9 @@ export const LoginPage: React.FC = () => {
     try {
       await loginWithSSO({ provider });
       if (env.useMocks) {
+        toast.success(t('auth.loginSuccess'), {
+          description: t('auth.welcomeBack'),
+        });
         navigate(returnUrl, { replace: true });
         setPendingAction(null);
       }
@@ -141,68 +148,50 @@ export const LoginPage: React.FC = () => {
   const isBusy = pendingAction !== null;
 
   return (
-    <AuthShell
-      utilityLink={{
-        to: '/demo',
-        labelKey: 'auth.gateway.common.openDemo',
-        direction: 'forward',
-      }}
-    >
-      <AuthPageHeader
-        titleKey="auth.gateway.login.title"
-        descriptionKey="auth.gateway.login.description"
-      />
+    <AuthShell>
+      <div className="auth-stagger-1">
+        <AuthPageHeader
+          titleKey="auth.gateway.login.title"
+          descriptionKey="auth.gateway.login.description"
+        />
 
-      <AuthFormError
-        errorCode={effectiveErrorCode}
-        fallbackMessageKey="auth.gateway.errors.unknown"
-        messageKeyOverride={
-          effectiveErrorCode === 'ACCOUNT_LOCKED' && lockedUntil
-            ? 'auth.gateway.errors.accountLockedUntil'
-            : undefined
-        }
-        messageValues={
-          effectiveErrorCode === 'ACCOUNT_LOCKED' && lockedUntil
-            ? {
-                // Formatted here, in the browser: only it knows the viewer's
-                // timezone and locale. The server sends an ISO instant.
-                time: new Date(lockedUntil).toLocaleTimeString(undefined, {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                }),
-              }
-            : undefined
-        }
-      />
+        <AuthFormError
+          errorCode={effectiveErrorCode}
+          fallbackMessageKey="auth.gateway.errors.unknown"
+          messageKeyOverride={
+            effectiveErrorCode === 'ACCOUNT_LOCKED' && lockedUntil
+              ? 'auth.gateway.errors.accountLockedUntil'
+              : undefined
+          }
+          messageValues={
+            effectiveErrorCode === 'ACCOUNT_LOCKED' && lockedUntil
+              ? {
+                  time: new Date(lockedUntil).toLocaleTimeString(undefined, {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  }),
+                }
+              : undefined
+          }
+        />
 
-      {effectiveErrorCode === 'ACCOUNT_LOCKED' && (
-        <div className="mb-4 text-left">
-          <Link
-            to="/forgot-password"
-            className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--auth-blue)] hover:underline"
-          >
-            <span>{t('auth.gateway.login.unlockViaReset')}</span>
-            <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
-          </Link>
-        </div>
-      )}
+        {effectiveErrorCode === 'ACCOUNT_LOCKED' && (
+          <div className="mb-4 text-left">
+            <Link
+              to="/forgot-password"
+              className="inline-flex items-center gap-1 text-[13px] font-semibold text-[#1D4ED8] hover:underline"
+            >
+              <span>{t('auth.gateway.login.unlockViaReset')}</span>
+              <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
+            </Link>
+          </div>
+        )}
+      </div>
 
-      {effectiveErrorCode === 'SELF_REGISTRATION_DISABLED' && (
-        <div className="mb-4 text-left">
-          <Link
-            to="/demo"
-            className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--auth-blue)] hover:underline"
-          >
-            <span>{t('auth.gateway.common.openDemo')}</span>
-            <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
-          </Link>
-        </div>
-      )}
-
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 text-left" noValidate>
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 text-left auth-stagger-2" noValidate>
         {/* Email Field */}
         <div className="space-y-1.5">
-          <label htmlFor="login-email" className="text-xs font-semibold text-[var(--auth-ink)]">
+          <label htmlFor="login-email" className="block text-[13px] font-semibold text-[#1C1917]">
             {t('auth.gateway.login.emailLabel')}
           </label>
           <div className="relative">
@@ -215,18 +204,18 @@ export const LoginPage: React.FC = () => {
               placeholder={t('auth.gateway.login.emailPlaceholder')}
               aria-invalid={Boolean(errors.email)}
               aria-describedby={errors.email ? 'login-email-error' : undefined}
-              className={`auth-control auth-interactive flex w-full border bg-white px-3.5 pl-10 text-sm text-[var(--auth-ink)] placeholder:text-slate-400 focus-visible:border-[var(--auth-blue)] ${
-                errors.email ? 'border-rose-400 focus-visible:ring-rose-500' : 'border-[var(--auth-line)]'
+              className={`flex w-full h-11 border bg-white px-3.5 pl-10 text-[14px] text-[#1C1917] rounded-[6px] placeholder:text-[#A8A29E] focus:outline-none focus:ring-2 focus:ring-[#1D4ED8] focus:border-transparent transition-all ${
+                errors.email ? 'border-[#FECACA] bg-[#FEF2F2]/30 focus:ring-[#B91C1C]' : 'border-[#E7E5E4]'
               }`}
               {...register('email')}
             />
             <Mail
-              className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"
+              className="w-4 h-4 text-[#A8A29E] absolute left-3.5 top-1/2 -translate-y-1/2"
               aria-hidden="true"
             />
           </div>
           {errors.email && (
-            <p id="login-email-error" className="text-xs text-rose-600 mt-1">
+            <p id="login-email-error" className="text-[12px] text-[#B91C1C] mt-1 font-medium">
               {errors.email.message}
             </p>
           )}
@@ -242,22 +231,22 @@ export const LoginPage: React.FC = () => {
           registration={register('password')}
         />
 
-        {/* Without this link the recovery flow exists but nobody can find it. */}
+        {/* Forgot Password Link */}
         <div className="-mt-1 flex justify-end">
           <Link
             to="/forgot-password"
-            className="inline-flex min-h-[44px] items-center text-xs font-semibold text-[var(--auth-blue)] hover:underline underline-offset-4"
+            className="inline-flex items-center text-[12px] font-semibold text-[#1D4ED8] hover:text-[#1E40AF] hover:underline"
           >
             {t('auth.gateway.login.forgotPassword')}
           </Link>
         </div>
 
         {/* Submit Button */}
-        <div className="pt-2">
+        <div className="pt-1">
           <button
             type="submit"
             disabled={isBusy}
-            className="auth-control auth-interactive w-full bg-[var(--auth-blue)] hover:bg-[var(--auth-blue-hover)] text-white font-semibold text-sm shadow-xs flex items-center justify-center gap-2 disabled:opacity-60"
+            className="w-full h-11 rounded-[6px] bg-[#1D4ED8] hover:bg-[#1E40AF] text-white font-semibold text-[14px] shadow-[0_1px_2px_rgba(29,78,216,0.2)] flex items-center justify-center gap-2 active:scale-[0.98] transition-all disabled:opacity-60"
           >
             {pendingAction === 'credentials' ? (
               <>
@@ -272,12 +261,12 @@ export const LoginPage: React.FC = () => {
 
         {/* SSO Options */}
         {(env.googleSsoEnabled || env.microsoftSsoEnabled) && (
-          <div className="pt-2 space-y-3">
+          <div className="pt-2 space-y-3 auth-stagger-3">
             <div className="relative flex items-center justify-center">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-[var(--auth-line)]" />
+                <div className="w-full border-t border-[#E7E5E4]" />
               </div>
-              <span className="relative bg-white px-3 text-[11px] font-semibold text-[var(--auth-muted)] uppercase">
+              <span className="relative bg-white px-3 text-[11px] font-semibold text-[#78716C] uppercase">
                 {t('auth.gateway.login.ssoDivider')}
               </span>
             </div>
@@ -288,7 +277,7 @@ export const LoginPage: React.FC = () => {
                   type="button"
                   disabled={isBusy}
                   onClick={() => handleSSO('GOOGLE')}
-                  className="auth-control auth-interactive flex items-center justify-center gap-2 border border-[var(--auth-line)] bg-white hover:bg-[var(--auth-canvas)] text-xs font-semibold text-[var(--auth-ink)] disabled:opacity-50"
+                  className="h-11 rounded-[6px] border border-[#E7E5E4] bg-white hover:bg-[#FAFAF9] hover:border-[#D6D3D1] text-[13px] font-medium text-[#1C1917] flex items-center justify-center gap-2 transition-all active:scale-[0.98] disabled:opacity-50"
                 >
                   {pendingAction === 'GOOGLE' ? (
                     <>
@@ -309,7 +298,7 @@ export const LoginPage: React.FC = () => {
                   type="button"
                   disabled={isBusy}
                   onClick={() => handleSSO('MICROSOFT')}
-                  className="auth-control auth-interactive flex items-center justify-center gap-2 border border-[var(--auth-line)] bg-white hover:bg-[var(--auth-canvas)] text-xs font-semibold text-[var(--auth-ink)] disabled:opacity-50"
+                  className="h-11 rounded-[6px] border border-[#E7E5E4] bg-white hover:bg-[#FAFAF9] hover:border-[#D6D3D1] text-[13px] font-medium text-[#1C1917] flex items-center justify-center gap-2 transition-all active:scale-[0.98] disabled:opacity-50"
                 >
                   {pendingAction === 'MICROSOFT' ? (
                     <>
@@ -334,11 +323,11 @@ export const LoginPage: React.FC = () => {
         )}
 
         {/* Register Account Prompt */}
-        <div className="pt-3 text-center text-xs text-[var(--auth-muted)]">
+        <div className="pt-2 text-center text-[13px] text-[#57534E]">
           <span>{t('auth.gateway.login.noAccount')} </span>
           <Link
             to="/register"
-            className="font-semibold text-[var(--auth-blue)] hover:underline"
+            className="font-semibold text-[#1D4ED8] hover:text-[#1E40AF] hover:underline"
           >
             {t('auth.gateway.login.registerLink')}
           </Link>

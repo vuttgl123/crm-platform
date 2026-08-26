@@ -12,8 +12,6 @@ import {
   Search,
   X,
   RotateCcw,
-  Network,
-  List,
   ChevronDown,
   ChevronRight,
 } from 'lucide-react';
@@ -184,68 +182,31 @@ export const AccountsToolbar: React.FC<AccountsToolbarProps> = ({
         )}
       </div>
 
-      {/* Right side: View Mode Toggle & Tree Controls */}
-      <div className="flex items-center gap-2 shrink-0 self-end lg:self-auto">
-        {filters.viewMode === 'tree' && (
-          <div className="flex items-center gap-1">
-            <ActionTooltip label="Expand all subsidiary branches">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onExpandAll}
-                className="h-7 px-2 text-[11px] font-semibold text-slate-600 border-slate-200 rounded-[3px] gap-1"
-              >
-                <ChevronDown className="w-3 h-3 text-slate-500" />
-                <span>Expand All</span>
-              </Button>
-            </ActionTooltip>
+      {/* Right side: Tree Expand / Collapse Controls */}
+      <div className="flex items-center gap-1 shrink-0 self-end lg:self-auto">
+        <ActionTooltip label="Expand all subsidiary branches">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onExpandAll}
+            className="h-7 px-2 text-[11px] font-semibold text-slate-600 border-slate-200 rounded-[3px] gap-1 hover:bg-slate-50 hover:text-slate-900"
+          >
+            <ChevronDown className="w-3 h-3 text-slate-500" />
+            <span>Expand All</span>
+          </Button>
+        </ActionTooltip>
 
-            <ActionTooltip label="Collapse all subsidiary branches">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onCollapseAll}
-                className="h-7 px-2 text-[11px] font-semibold text-slate-600 border-slate-200 rounded-[3px] gap-1"
-              >
-                <ChevronRight className="w-3 h-3 text-slate-500" />
-                <span>Collapse All</span>
-              </Button>
-            </ActionTooltip>
-          </div>
-        )}
-
-        {/* View Mode Switcher */}
-        <div className="flex items-center p-0.5 bg-slate-100 border border-slate-200 rounded-[3px]">
-          <ActionTooltip label="Hierarchical Tree View (Parent & Subsidiaries)">
-            <button
-              onClick={() => onFilterChange({ viewMode: 'tree' })}
-              className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-[2px] transition-colors ${
-                filters.viewMode === 'tree'
-                  ? 'bg-white text-blue-600 shadow-2xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-              aria-label="Tree view"
-            >
-              <Network className="w-3.5 h-3.5" />
-              <span>Tree</span>
-            </button>
-          </ActionTooltip>
-
-          <ActionTooltip label="Flat List View">
-            <button
-              onClick={() => onFilterChange({ viewMode: 'flat' })}
-              className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-[2px] transition-colors ${
-                filters.viewMode === 'flat'
-                  ? 'bg-white text-blue-600 shadow-2xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-              aria-label="Flat list view"
-            >
-              <List className="w-3.5 h-3.5" />
-              <span>List</span>
-            </button>
-          </ActionTooltip>
-        </div>
+        <ActionTooltip label="Collapse all subsidiary branches">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onCollapseAll}
+            className="h-7 px-2 text-[11px] font-semibold text-slate-600 border-slate-200 rounded-[3px] gap-1 hover:bg-slate-50 hover:text-slate-900"
+          >
+            <ChevronRight className="w-3 h-3 text-slate-500" />
+            <span>Collapse All</span>
+          </Button>
+        </ActionTooltip>
       </div>
     </div>
   );

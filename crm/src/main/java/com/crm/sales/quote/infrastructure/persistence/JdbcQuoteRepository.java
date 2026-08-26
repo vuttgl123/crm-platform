@@ -18,7 +18,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
-import com.crm.customer.infrastructure.persistence.AccountScopeSql;
+import com.crm.foundation.persistence.OwnershipScopeSql;
 import com.crm.foundation.security.AuthorizedDataAccess;
 import com.crm.sales.quote.application.dto.QuoteDetails;
 import com.crm.sales.quote.application.dto.QuoteDocumentDto;
@@ -142,7 +142,7 @@ public class JdbcQuoteRepository implements QuoteRepository, InitializingBean {
 	@Override
 	public Optional<Quote> findById(TenantId tenantId, QuoteId quoteId,
 			ActorId actorId, AuthorizedDataAccess access) {
-		AccountScopeSql scope = AccountScopeSql.resolve(actorId, access);
+		OwnershipScopeSql scope = OwnershipScopeSql.resolve(actorId, access);
 		Map<String, Object> parameters = new HashMap<>(scope.parameters());
 		parameters.put("tenantId", tenantId.value());
 		parameters.put("quoteId", quoteId.value().toString());
@@ -196,7 +196,7 @@ public class JdbcQuoteRepository implements QuoteRepository, InitializingBean {
 	@Override
 	public Optional<QuoteDetails> findDetailsById(TenantId tenantId, QuoteId quoteId,
 			ActorId actorId, AuthorizedDataAccess access) {
-		AccountScopeSql scope = AccountScopeSql.resolve(actorId, access);
+		OwnershipScopeSql scope = OwnershipScopeSql.resolve(actorId, access);
 		Map<String, Object> parameters = new HashMap<>(scope.parameters());
 		parameters.put("tenantId", tenantId.value());
 		parameters.put("quoteId", quoteId.value().toString());
@@ -267,7 +267,7 @@ public class JdbcQuoteRepository implements QuoteRepository, InitializingBean {
 	public PageResult<QuoteSummary> search(TenantId tenantId,
 			ActorId actorId, QuoteSearchQuery query,
 			AuthorizedDataAccess access) {
-		AccountScopeSql scope = AccountScopeSql.resolve(actorId, access);
+		OwnershipScopeSql scope = OwnershipScopeSql.resolve(actorId, access);
 		Map<String, Object> parameters = new HashMap<>(scope.parameters());
 		parameters.put("tenantId", tenantId.value());
 
@@ -331,7 +331,7 @@ public class JdbcQuoteRepository implements QuoteRepository, InitializingBean {
 	@Override
 	public QuotePulseDto getPulse(TenantId tenantId, ActorId actorId, QuoteSearchQuery query,
 			AuthorizedDataAccess access, String tenantTimezone) {
-		AccountScopeSql scope = AccountScopeSql.resolve(actorId, access);
+		OwnershipScopeSql scope = OwnershipScopeSql.resolve(actorId, access);
 		Map<String, Object> parameters = new HashMap<>(scope.parameters());
 		parameters.put("tenantId", tenantId.value());
 
@@ -398,7 +398,7 @@ public class JdbcQuoteRepository implements QuoteRepository, InitializingBean {
 	@Override
 	public List<QuoteRevisionDto> findRevisions(TenantId tenantId, QuoteId quoteId,
 			ActorId actorId, AuthorizedDataAccess access) {
-		AccountScopeSql scope = AccountScopeSql.resolve(actorId, access);
+		OwnershipScopeSql scope = OwnershipScopeSql.resolve(actorId, access);
 		Map<String, Object> parameters = new HashMap<>(scope.parameters());
 		parameters.put("tenantId", tenantId.value());
 		parameters.put("quoteId", quoteId.value().toString());
@@ -561,7 +561,7 @@ public class JdbcQuoteRepository implements QuoteRepository, InitializingBean {
 	@Override
 	public boolean existsAccount(TenantId tenantId, UUID accountId,
 			ActorId actorId, AuthorizedDataAccess access) {
-		AccountScopeSql scope = AccountScopeSql.resolve(actorId, access);
+		OwnershipScopeSql scope = OwnershipScopeSql.resolve(actorId, access);
 		Map<String, Object> parameters = new HashMap<>(scope.parameters());
 		parameters.put("tenantId", tenantId.value());
 		parameters.put("accountId", accountId.toString());
@@ -580,7 +580,7 @@ public class JdbcQuoteRepository implements QuoteRepository, InitializingBean {
 	@Override
 	public boolean existsContact(TenantId tenantId, UUID contactId,
 			ActorId actorId, AuthorizedDataAccess access) {
-		AccountScopeSql scope = AccountScopeSql.resolve(actorId, access);
+		OwnershipScopeSql scope = OwnershipScopeSql.resolve(actorId, access);
 		Map<String, Object> parameters = new HashMap<>(scope.parameters());
 		parameters.put("tenantId", tenantId.value());
 		parameters.put("contactId", contactId.toString());
@@ -599,7 +599,7 @@ public class JdbcQuoteRepository implements QuoteRepository, InitializingBean {
 	@Override
 	public boolean existsOpportunity(TenantId tenantId, UUID opportunityId,
 			ActorId actorId, AuthorizedDataAccess access) {
-		AccountScopeSql scope = AccountScopeSql.resolve(actorId, access);
+		OwnershipScopeSql scope = OwnershipScopeSql.resolve(actorId, access);
 		Map<String, Object> parameters = new HashMap<>(scope.parameters());
 		parameters.put("tenantId", tenantId.value());
 		parameters.put("opportunityId", opportunityId.toString());

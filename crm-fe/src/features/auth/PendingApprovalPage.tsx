@@ -27,60 +27,62 @@ export const PendingApprovalPage: React.FC = () => {
 
   return (
     <AuthShell brandVariant="compact">
-      <AuthPageHeader
-        titleKey="auth.gateway.pending.title"
-        descriptionKey="auth.gateway.pending.description"
-      />
+      <div className="auth-stagger-1">
+        <AuthPageHeader
+          titleKey="auth.gateway.pending.title"
+          descriptionKey="auth.gateway.pending.description"
+        />
+      </div>
 
-      <div className="space-y-4 text-left">
-        {/* Definition List */}
-        <div className="p-4 rounded-xl bg-[var(--auth-canvas)] border border-[var(--auth-line)] space-y-2.5 text-xs">
+      <div className="space-y-4 text-left auth-stagger-2">
+        {/* Organization & User Overview Pod */}
+        <div className="p-4 rounded-[8px] bg-[#FAFAF9] border border-[#E7E5E4] space-y-2.5 text-[13px]">
           <div className="flex items-center justify-between">
-            <span className="text-[var(--auth-muted)] font-medium">
+            <span className="text-[#57534E] font-medium">
               {t('auth.gateway.pending.account')}:
             </span>
-            <span className="font-semibold text-[var(--auth-ink)]">
+            <span className="font-semibold text-[#1C1917] font-mono">
               {session?.user.email || '—'}
             </span>
           </div>
 
           <div className="flex items-center justify-between">
-            <span className="text-[var(--auth-muted)] font-medium">
+            <span className="text-[#57534E] font-medium">
               {t('auth.gateway.pending.organization')}:
             </span>
-            <span className="font-bold text-[var(--auth-blue)]">
+            <span className="font-bold text-[#1D4ED8]">
               {organizationName}
             </span>
           </div>
 
           <div className="flex items-center justify-between">
-            <span className="text-[var(--auth-muted)] font-medium">
+            <span className="text-[#57534E] font-medium">
               {t('auth.gateway.pending.status')}:
             </span>
-            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-amber-50 text-amber-800 font-semibold border border-amber-200 text-[11px]">
-              <Clock className="w-3 h-3 text-amber-600" aria-hidden="true" />
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-[4px] bg-[#FEF3C7] text-[#92400E] font-semibold border border-[#FDE68A] text-[11px]">
+              <Clock className="w-3 h-3 text-[#D97706]" aria-hidden="true" />
               <span>{t('auth.gateway.pending.statusInvited')}</span>
             </span>
           </div>
         </div>
 
         {/* Process Explanation */}
-        <div className="p-3.5 rounded-xl bg-[var(--auth-blue-soft)] border border-[var(--auth-line)] space-y-1 text-xs">
-          <div className="font-bold text-[var(--auth-blue)] flex items-center gap-1.5">
-            <Info className="w-4 h-4 text-[var(--auth-blue)]" aria-hidden="true" />
+        <div className="p-3.5 rounded-[8px] bg-[#EFF6FF] border border-[#BFDBFE] space-y-1 text-[12px]">
+          <div className="font-semibold text-[#1D4ED8] flex items-center gap-1.5">
+            <Info className="w-4 h-4 text-[#1D4ED8]" aria-hidden="true" />
             <span>{t('auth.gateway.pending.processTitle')}</span>
           </div>
-          <p className="text-[var(--auth-muted)] leading-relaxed font-normal text-[11px]">
+          <p className="text-[#57534E] leading-relaxed font-normal">
             {t('auth.gateway.pending.processDescription')}
           </p>
         </div>
 
         {/* Action Buttons */}
-        <div className="pt-2 space-y-2">
+        <div className="pt-2 space-y-2 auth-stagger-3">
           <button
             type="button"
             onClick={handleRefreshStatus}
-            className="auth-control auth-interactive w-full bg-[var(--auth-blue)] hover:bg-[var(--auth-blue-hover)] text-white font-semibold text-xs sm:text-sm shadow-xs flex items-center justify-center gap-2"
+            className="w-full h-11 rounded-[6px] bg-[#1D4ED8] hover:bg-[#1E40AF] text-white font-semibold text-[14px] shadow-[0_1px_2px_rgba(29,78,216,0.2)] flex items-center justify-center gap-2 active:scale-[0.98] transition-all"
           >
             <RefreshCw className="w-3.5 h-3.5" aria-hidden="true" />
             <span>{t('auth.gateway.pending.refresh')}</span>
@@ -89,9 +91,9 @@ export const PendingApprovalPage: React.FC = () => {
           <button
             type="button"
             onClick={handleLogout}
-            className="auth-control auth-interactive w-full border border-[var(--auth-line)] bg-white hover:bg-[var(--auth-canvas)] text-[var(--auth-ink)] font-semibold text-xs sm:text-sm flex items-center justify-center gap-2"
+            className="w-full h-11 rounded-[6px] border border-[#E7E5E4] bg-white hover:bg-[#FAFAF9] text-[#1C1917] font-semibold text-[14px] flex items-center justify-center gap-2 active:scale-[0.98] transition-all"
           >
-            <LogOut className="w-3.5 h-3.5 text-[var(--auth-muted)]" aria-hidden="true" />
+            <LogOut className="w-3.5 h-3.5 text-[#57534E]" aria-hidden="true" />
             <span>{t('auth.gateway.pending.logout')}</span>
           </button>
         </div>

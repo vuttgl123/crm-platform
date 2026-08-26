@@ -1,7 +1,7 @@
 import React from 'react';
 import { BrowserRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Toaster } from 'sonner';
+import { Toaster } from '@/components/ui/sonner';
 import { AuthProvider } from '@/core/session/AuthContext';
 import { AppRoutes } from '@/routes/AppRoutes';
 import '@/i18n/config';
@@ -21,7 +21,7 @@ export const App: React.FC = () => {
       <BrowserRouter>
         <AuthProvider>
           <AppRoutes />
-          <Toaster position="top-right" richColors />
+          <Toaster position="top-right" richColors closeButton />
         </AuthProvider>
       </BrowserRouter>
     </QueryClientProvider>

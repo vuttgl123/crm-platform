@@ -14,7 +14,7 @@ import com.crm.customer.contact.application.port.ContactRepository;
 import com.crm.customer.contact.application.query.ContactSearchQuery;
 import com.crm.customer.contact.domain.Contact;
 import com.crm.customer.contact.domain.ContactId;
-import com.crm.customer.infrastructure.persistence.AccountScopeSql;
+import com.crm.foundation.persistence.OwnershipScopeSql;
 import com.crm.foundation.security.AuthorizedDataAccess;
 import com.crm.sharedkernel.application.PageResult;
 import com.crm.sharedkernel.domain.ActorId;
@@ -55,7 +55,7 @@ public class JdbcContactRepository implements ContactRepository {
 	@Override
 	public Optional<Contact> findById(TenantId tenantId, ContactId contactId,
 			ActorId actorId, AuthorizedDataAccess access) {
-		AccountScopeSql scope = AccountScopeSql.resolve(actorId, access);
+		OwnershipScopeSql scope = OwnershipScopeSql.resolve(actorId, access);
 		Map<String, Object> parameters = new HashMap<>(scope.parameters());
 		parameters.put("tenantId", tenantId.toString());
 		parameters.put("contactId", contactId.toString());
@@ -75,7 +75,7 @@ public class JdbcContactRepository implements ContactRepository {
 	public PageResult<ContactSummary> search(TenantId tenantId,
 			ActorId actorId, ContactSearchQuery query,
 			AuthorizedDataAccess access) {
-		AccountScopeSql scope = AccountScopeSql.resolve(actorId, access);
+		OwnershipScopeSql scope = OwnershipScopeSql.resolve(actorId, access);
 		Map<String, Object> parameters = new HashMap<>(scope.parameters());
 		parameters.put("tenantId", tenantId.toString());
 
@@ -141,7 +141,7 @@ public class JdbcContactRepository implements ContactRepository {
 	@Override
 	public boolean existsAccount(TenantId tenantId, AccountId accountId,
 			ActorId actorId, AuthorizedDataAccess access) {
-		AccountScopeSql scope = AccountScopeSql.resolve(actorId, access);
+		OwnershipScopeSql scope = OwnershipScopeSql.resolve(actorId, access);
 		Map<String, Object> parameters = new HashMap<>(scope.parameters());
 		parameters.put("tenantId", tenantId.toString());
 		parameters.put("accountId", accountId.toString());

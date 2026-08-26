@@ -7,6 +7,7 @@ import {
   Trash2,
   Lock,
   Loader2,
+  MoreHorizontal,
 } from 'lucide-react';
 import { RoleSummaryResponse } from '@/services/api/roleApi';
 import { Badge } from '@/components/ui/badge';
@@ -19,8 +20,14 @@ import {
   TableBody,
   TableCell,
 } from '@/components/ui/table';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { EmptyState } from '@/components/common/EmptyState';
-import { ActionTooltip } from '@/components/ui/action-tooltip';
 
 interface RolesTableProps {
   roles: RoleSummaryResponse[];
@@ -67,19 +74,33 @@ export const RolesTable: React.FC<RolesTableProps> = ({
   }
 
   return (
-    <div className="bg-white border border-slate-200 rounded-[4px] overflow-hidden">
+    <div className="bg-white border border-slate-200 rounded-[4px] overflow-hidden w-full font-sans shadow-2xs">
       {/* Desktop & Tablet Table */}
       <div className="overflow-x-auto">
         <Table>
           <TableHeader className="bg-[#F7F8F9] border-b border-slate-200">
             <TableRow className="hover:bg-[#F7F8F9]">
-              <TableHead className="text-[11px] font-semibold text-slate-600 uppercase py-2.5 px-3">Role Code</TableHead>
-              <TableHead className="text-[11px] font-semibold text-slate-600 uppercase py-2.5 px-3">Role Name &amp; Duty</TableHead>
-              <TableHead className="text-[11px] font-semibold text-slate-600 uppercase py-2.5 px-3 text-center">Permissions</TableHead>
-              <TableHead className="text-[11px] font-semibold text-slate-600 uppercase py-2.5 px-3">Type</TableHead>
-              <TableHead className="text-[11px] font-semibold text-slate-600 uppercase py-2.5 px-3">Status</TableHead>
-              <TableHead className="text-[11px] font-semibold text-slate-600 uppercase py-2.5 px-3">Last Updated</TableHead>
-              <TableHead className="text-[11px] font-semibold text-slate-600 uppercase py-2.5 px-3 text-right pr-4">Actions</TableHead>
+              <TableHead className="text-[11px] font-semibold text-slate-600 uppercase py-2.5 px-3">
+                Role Code
+              </TableHead>
+              <TableHead className="text-[11px] font-semibold text-slate-600 uppercase py-2.5 px-3 min-w-[220px]">
+                Role Name &amp; Duty
+              </TableHead>
+              <TableHead className="text-[11px] font-semibold text-slate-600 uppercase py-2.5 px-3 text-center">
+                Permissions
+              </TableHead>
+              <TableHead className="text-[11px] font-semibold text-slate-600 uppercase py-2.5 px-3">
+                Type
+              </TableHead>
+              <TableHead className="text-[11px] font-semibold text-slate-600 uppercase py-2.5 px-3">
+                Status
+              </TableHead>
+              <TableHead className="text-[11px] font-semibold text-slate-600 uppercase py-2.5 px-3">
+                Last Updated
+              </TableHead>
+              <TableHead className="text-[11px] font-semibold text-slate-600 uppercase py-2.5 px-3 text-right pr-4 w-[80px]">
+                Actions
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -116,7 +137,7 @@ export const RolesTable: React.FC<RolesTableProps> = ({
 
                   {/* Permissions count */}
                   <TableCell className="py-2.5 px-3 text-center">
-                    <span className="font-mono font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-[2px] text-[11px] border border-blue-200/80">
+                    <span className="font-mono font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-[2px] text-[11px] border border-blue-200">
                       {r.permissionCount}
                     </span>
                   </TableCell>
@@ -134,7 +155,7 @@ export const RolesTable: React.FC<RolesTableProps> = ({
                     ) : (
                       <Badge
                         variant="outline"
-                        className="bg-blue-50 text-blue-700 border-blue-200 font-semibold text-[10px] rounded-[2px]"
+                        className="bg-[#DEEBFF] text-[#0747A6] border-0 font-bold text-[10px] rounded-[2px]"
                       >
                         CUSTOM
                       </Badge>
@@ -145,10 +166,10 @@ export const RolesTable: React.FC<RolesTableProps> = ({
                   <TableCell className="py-2.5 px-3">
                     <Badge
                       variant="outline"
-                      className={`text-[10px] font-bold rounded-[2px] shadow-none ${
+                      className={`text-[10px] font-bold rounded-[2px] shadow-none px-1.5 py-0.5 ${
                         r.status === 'ACTIVE'
-                          ? 'bg-[#E3FCEF] text-[#006644] border-emerald-300'
-                          : 'bg-[#FFFAE6] text-[#974F0C] border-amber-200'
+                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200 font-bold'
+                          : 'bg-amber-50 text-amber-700 border-amber-200 font-semibold'
                       }`}
                     >
                       {r.status}
@@ -166,62 +187,63 @@ export const RolesTable: React.FC<RolesTableProps> = ({
                       : '—'}
                   </TableCell>
 
-                  {/* Actions */}
-                  <TableCell className="text-right pr-4 py-2.5 px-3">
-                    <div className="flex items-center justify-end gap-1">
-                      {isSystem || !canManage ? (
-                        <ActionTooltip label="View details">
+                  {/* Actions - Single 3-dot dropdown */}
+                  <TableCell className="py-2.5 px-3 text-right pr-4">
+                    <div className="flex items-center justify-end">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
                           <Button
                             variant="ghost"
-                            size="sm"
+                            size="icon"
+                            className="h-7 w-7 rounded-[3px] text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+                            aria-label={`Actions for role ${r.name}`}
+                          >
+                            <MoreHorizontal className="w-3.5 h-3.5" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-48 text-xs font-sans">
+                          <DropdownMenuItem
                             onClick={() => onView(r)}
-                            aria-label={`View role details for ${r.name}`}
-                            className="h-7 w-7 p-0 text-slate-600 hover:text-blue-600 rounded-[3px]"
+                            className="gap-2 text-xs cursor-pointer"
                           >
-                            <Eye className="w-3.5 h-3.5" />
-                          </Button>
-                        </ActionTooltip>
-                      ) : (
-                        <ActionTooltip label="Edit role">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => onEdit(r)}
-                            aria-label={`Edit role ${r.name}`}
-                            className="h-7 w-7 p-0 text-slate-600 hover:text-blue-600 rounded-[3px]"
-                          >
-                            <Edit className="w-3.5 h-3.5" />
-                          </Button>
-                        </ActionTooltip>
-                      )}
+                            <Eye className="w-3.5 h-3.5 text-blue-600" />
+                            <span>View Role Details</span>
+                          </DropdownMenuItem>
 
-                      {canManage && (
-                        <ActionTooltip label="Clone role">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => onClone(r)}
-                            aria-label={`Clone role ${r.name}`}
-                            className="h-7 w-7 p-0 text-slate-600 hover:text-indigo-600 rounded-[3px]"
-                          >
-                            <Copy className="w-3.5 h-3.5" />
-                          </Button>
-                        </ActionTooltip>
-                      )}
+                          {canManage && (
+                            <DropdownMenuItem
+                              onClick={() => onClone(r)}
+                              className="gap-2 text-xs cursor-pointer"
+                            >
+                              <Copy className="w-3.5 h-3.5 text-indigo-600" />
+                              <span>Clone Configuration</span>
+                            </DropdownMenuItem>
+                          )}
 
-                      {!isSystem && canManage && (
-                        <ActionTooltip label="Delete role">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => onDelete(r)}
-                            aria-label={`Delete custom role ${r.name}`}
-                            className="h-7 w-7 p-0 text-slate-600 hover:text-rose-600 rounded-[3px]"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </Button>
-                        </ActionTooltip>
-                      )}
+                          {!isSystem && canManage && (
+                            <DropdownMenuItem
+                              onClick={() => onEdit(r)}
+                              className="gap-2 text-xs cursor-pointer"
+                            >
+                              <Edit className="w-3.5 h-3.5 text-slate-600" />
+                              <span>Edit Role</span>
+                            </DropdownMenuItem>
+                          )}
+
+                          {!isSystem && canManage && (
+                            <>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                onClick={() => onDelete(r)}
+                                className="gap-2 text-xs text-rose-600 focus:text-rose-600 focus:bg-rose-50 cursor-pointer"
+                              >
+                                <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                                <span>Delete Role</span>
+                              </DropdownMenuItem>
+                            </>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </TableCell>
                 </TableRow>

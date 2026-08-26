@@ -29,6 +29,7 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
 } from '@/components/ui/alert-dialog';
+import { ActionTooltip } from '@/components/ui/action-tooltip';
 import { toast } from 'sonner';
 import {
   StickyNote,
@@ -216,12 +217,18 @@ export const AccountNotesTab: React.FC<AccountNotesTabProps> = ({
 
       {/* Empty State */}
       {!isLoading && !isError && notes.length === 0 && (
-        <div className="py-12 bg-white rounded-[4px] border border-slate-200 text-center space-y-2 shadow-2xs">
-          <StickyNote className="w-8 h-8 text-slate-300 mx-auto" />
-          <h3 className="text-sm font-bold text-slate-900">No account notes</h3>
-          <p className="text-xs text-slate-500 max-w-sm mx-auto">
-            Post background notes and collaboration updates for this account above.
-          </p>
+        <div className="bg-white border border-slate-200 rounded-[4px] p-10 text-center space-y-3 shadow-2xs">
+          <div className="w-12 h-12 rounded-full bg-slate-50 border border-slate-200 flex items-center justify-center mx-auto text-slate-400">
+            <StickyNote className="w-6 h-6" />
+          </div>
+          <div className="space-y-1">
+            <h3 className="text-sm font-bold text-slate-800">
+              No Account Notes
+            </h3>
+            <p className="text-xs text-slate-500 max-w-md mx-auto">
+              Post background notes and collaboration updates for this account using the editor above.
+            </p>
+          </div>
         </div>
       )}
 
@@ -248,15 +255,17 @@ export const AccountNotesTab: React.FC<AccountNotesTabProps> = ({
                 </div>
 
                 {canWrite && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setDeleteTarget(note)}
-                    className="h-7 w-7 p-0 text-slate-400 hover:text-rose-600 rounded-[3px]"
-                    aria-label="Delete note"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </Button>
+                  <ActionTooltip label="Delete note">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setDeleteTarget(note)}
+                      className="h-7 w-7 rounded-[3px] text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                      aria-label="Delete note"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </Button>
+                  </ActionTooltip>
                 )}
               </div>
 

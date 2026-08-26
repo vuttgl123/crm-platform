@@ -1,10 +1,17 @@
 import React, { useState, useMemo } from 'react';
-import { Search, ShieldAlert, Filter } from 'lucide-react';
+import { Search, ShieldAlert, Filter, X, RotateCcw } from 'lucide-react';
 import { ExtendedPermission } from '../model/roleTypes';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   Dialog,
   DialogContent,
@@ -100,6 +107,17 @@ export const PermissionMatrix: React.FC<PermissionMatrixProps> = ({
     }>;
   }, [moduleGroups, search, selectedModule, selectedRisk, selectedOnly, selectedSet]);
 
+  const hasActiveFilters = Boolean(
+    search.trim() || selectedModule !== 'ALL' || selectedRisk !== 'ALL' || selectedOnly
+  );
+
+  const handleResetFilters = () => {
+    setSearch('');
+    setSelectedModule('ALL');
+    setSelectedRisk('ALL');
+    setSelectedOnly(false);
+  };
+
   const handleModuleSelectToggle = (
     modulePermissions: ExtendedPermission[],
     moduleName: string
@@ -138,45 +156,69 @@ export const PermissionMatrix: React.FC<PermissionMatrixProps> = ({
   };
 
   return (
-    <div className="space-y-3">
-      {/* Search & Filters */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-2.5 bg-slate-50 p-2.5 border border-slate-200 rounded-[4px]">
-        <div className="relative w-full sm:w-64">
-          <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+    <div className="space-y-3 font-sans">
+      {/* Search & Filters Toolbar */}
+      <div className="bg-white p-3 border border-slate-200 rounded-[4px] shadow-2xs flex flex-col md:flex-row items-center justify-between gap-2.5">
+        {/* Search Input */}
+        <div className="relative w-full md:flex-1 md:max-w-xs">
+          <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400" />
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search permissions..."
-            className="pl-8 h-7.5 text-xs bg-white border-slate-200 rounded-[3px] w-full"
+            className="pl-8 pr-7 h-8 text-xs bg-white border-slate-200 rounded-[3px] w-full"
           />
+          {search && (
+            <button
+              type="button"
+              onClick={() => setSearch('')}
+              className="absolute right-2 top-2 text-slate-400 hover:text-slate-600"
+              aria-label="Clear search"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto flex-wrap">
-          {/* Module Quick Filter */}
-          <select
-            value={selectedModule}
-            onChange={(e) => setSelectedModule(e.target.value)}
-            className="h-7.5 text-xs bg-white border border-slate-200 rounded-[3px] px-2 text-slate-700 font-medium"
-          >
-            <option value="ALL">All Modules ({moduleGroups.length})</option>
-            {moduleGroups.map(([code, g]) => (
-              <option key={code} value={code}>
-                {g.moduleNameEn}
-              </option>
-            ))}
-          </select>
+        {/* Filter Dropdowns & Controls */}
+        <div className="flex items-center gap-2 w-full md:w-auto flex-wrap">
+          {/* Module Filter */}
+          <Select value={selectedModule} onValueChange={setSelectedModule}>
+            <SelectTrigger className="h-8 text-xs font-semibold rounded-[3px] border-slate-200 bg-white min-w-[145px] w-auto">
+              <SelectValue placeholder="All Modules" />
+            </SelectTrigger>
+            <SelectContent className="rounded-[4px] text-xs font-sans">
+              <SelectItem value="ALL" className="text-xs">
+                All Modules ({moduleGroups.length})
+              </SelectItem>
+              {moduleGroups.map(([code, g]) => (
+                <SelectItem key={code} value={code} className="text-xs">
+                  {g.moduleNameEn}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
           {/* Risk Filter */}
-          <select
-            value={selectedRisk}
-            onChange={(e) => setSelectedRisk(e.target.value)}
-            className="h-7.5 text-xs bg-white border border-slate-200 rounded-[3px] px-2 text-slate-700 font-medium"
-          >
-            <option value="ALL">All Risk Levels</option>
-            <option value="NORMAL">NORMAL</option>
-            <option value="SENSITIVE">SENSITIVE</option>
-            <option value="PRIVILEGED">PRIVILEGED</option>
-          </select>
+          <Select value={selectedRisk} onValueChange={setSelectedRisk}>
+            <SelectTrigger className="h-8 text-xs font-semibold rounded-[3px] border-slate-200 bg-white min-w-[125px] w-auto">
+              <SelectValue placeholder="All Risk Levels" />
+            </SelectTrigger>
+            <SelectContent className="rounded-[4px] text-xs font-sans">
+              <SelectItem value="ALL" className="text-xs">
+                All Risk Levels
+              </SelectItem>
+              <SelectItem value="NORMAL" className="text-xs">
+                NORMAL
+              </SelectItem>
+              <SelectItem value="SENSITIVE" className="text-xs">
+                SENSITIVE
+              </SelectItem>
+              <SelectItem value="PRIVILEGED" className="text-xs">
+                PRIVILEGED
+              </SelectItem>
+            </SelectContent>
+          </Select>
 
           {/* Selected Only toggle */}
           <Button
@@ -184,13 +226,29 @@ export const PermissionMatrix: React.FC<PermissionMatrixProps> = ({
             variant={selectedOnly ? 'default' : 'outline'}
             size="sm"
             onClick={() => setSelectedOnly(!selectedOnly)}
-            className={`h-7.5 px-2 text-xs rounded-[3px] gap-1 font-semibold ${
-              selectedOnly ? 'bg-blue-600 text-white' : 'bg-white text-slate-700 border-slate-200'
+            className={`h-8 px-2.5 text-xs font-semibold rounded-[3px] gap-1.5 shrink-0 ${
+              selectedOnly
+                ? 'bg-[#0C66E4] hover:bg-[#0052CC] text-white shadow-none'
+                : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
             }`}
           >
-            <Filter className="w-3 h-3" />
+            <Filter className="w-3.5 h-3.5" />
             <span>Selected ({selectedCodes.length})</span>
           </Button>
+
+          {/* Reset button */}
+          {hasActiveFilters && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={handleResetFilters}
+              className="h-8 px-2 text-xs font-semibold text-slate-600 hover:text-slate-900 rounded-[3px] gap-1 shrink-0"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>Reset</span>
+            </Button>
+          )}
         </div>
       </div>
 
@@ -210,10 +268,10 @@ export const PermissionMatrix: React.FC<PermissionMatrixProps> = ({
             return (
               <div
                 key={group.modCode}
-                className="bg-white border border-slate-200 rounded-[4px] overflow-hidden"
+                className="bg-white border border-slate-200 rounded-[4px] overflow-hidden shadow-2xs"
               >
                 {/* Module Header with Select All */}
-                <div className="bg-[#F7F8F9] px-3 py-2 border-b border-slate-200 flex items-center justify-between">
+                <div className="bg-[#F7F8F9] px-3.5 py-2 border-b border-slate-200 flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-bold text-slate-900 uppercase tracking-wide">
                       {group.moduleNameEn}
@@ -229,7 +287,7 @@ export const PermissionMatrix: React.FC<PermissionMatrixProps> = ({
                       onClick={() =>
                         handleModuleSelectToggle(group.allModulePermissions, group.moduleNameEn)
                       }
-                      className="text-[11px] font-semibold text-blue-600 hover:text-blue-800 hover:underline"
+                      className="text-[11px] font-semibold text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
                     >
                       {isAllModuleSelected ? 'Deselect Module' : 'Select All in Module'}
                     </button>
@@ -244,11 +302,11 @@ export const PermissionMatrix: React.FC<PermissionMatrixProps> = ({
                     return (
                       <label
                         key={p.permissionCode}
-                        className={`flex items-start gap-2.5 p-2 rounded-[3px] border transition-colors select-none ${
+                        className={`flex items-start gap-2.5 p-2.5 rounded-[4px] border transition-colors select-none ${
                           isReadOnly ? 'cursor-default' : 'cursor-pointer'
                         } ${
                           isChecked
-                            ? 'bg-blue-50/40 border-blue-200'
+                            ? 'bg-blue-50/50 border-blue-200 ring-1 ring-blue-200/50'
                             : 'bg-white border-slate-200 hover:bg-slate-50'
                         }`}
                       >

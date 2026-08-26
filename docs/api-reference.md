@@ -228,6 +228,7 @@ HttpOnly cookie and never appears in this JSON object.
 | `GET` | `/api/accounts/{accountId}/addresses` | Bearer token, tenant, `crm_account.read`, resolved `ACCOUNT` data scope | `200 OK` |
 | `PUT` | `/api/accounts/{accountId}/addresses/{addressId}` | Bearer token, tenant, `crm_account.write`, resolved `ACCOUNT` data scope | `200 OK` |
 | `POST` | `/api/accounts/{accountId}/addresses/{addressId}/end` | Bearer token, tenant, `crm_account.write`, resolved `ACCOUNT` data scope | `200 OK` |
+| `GET` | `/api/overview` | Bearer token and active tenant; blocks gated per permission | `200 OK` |
 
 ## Authentication Endpoints
 
@@ -8787,6 +8788,208 @@ X-Tenant-ID: 22222222-2222-2222-2222-222222222222
 
 ---
 
+## Overview Dashboard API
+
+### Get Overview
+
+```http
+GET /api/overview?period={THIS_MONTH|THIS_QUARTER|THIS_YEAR}
+```
+
+Returns the whole overview screen in one response. Six blocks are computed
+independently, each gated on its own permission and data scope.
+
+Required permissions: none as a whole. Each block requires its own permission
+and a resolved data scope for the matching entity type:
+
+| Block | Permission | Entity type |
+|---|---|---|
+| `revenue` | `crm_opportunity.read` | `OPPORTUNITY` |
+| `funnel` | `crm_opportunity.read` | `OPPORTUNITY` |
+| `topOpportunities` | `crm_opportunity.read` | `OPPORTUNITY` |
+| `leaderboard` | `crm_opportunity.read` plus a scope wider than `OWN` | `OPPORTUNITY` |
+| `customerBase` | `crm_account.read` | `ACCOUNT` |
+| `myDay` | `crm_activity.read` | `ACTIVITY` |
+
+A block the caller cannot reach is returned as `null`; the request still
+succeeds with `200 OK`. A block that is present but holds an empty collection
+means the caller may see that data and there is none. Clients must treat the
+two cases differently: hide the block for `null`, show an empty state for an
+empty collection.
+
+`leaderboard` is additionally omitted when the caller's resolved data scope is
+`OWN` only, because a ranking that contains one person ranks nothing.
+
+#### Request Headers
+```http
+Authorization: Bearer <access-token>
+X-Tenant-ID: <tenant-id>
+```
+
+#### Query Parameters
+- `period` (optional): reporting window (`THIS_MONTH`, `THIS_QUARTER`,
+  `THIS_YEAR`). Default is `THIS_QUARTER`. The same vocabulary as
+  `/api/sales/forecast`.
+
+#### Currency and Timezone
+
+Every monetary figure is denominated in the tenant's `default_currency_code`
+and no other currency is mixed in, because the platform stores no exchange
+rates. `topOpportunities` is therefore a ranking within that one currency, not
+across all of them.
+
+Period boundaries and the definition of "today" are computed in the tenant's
+`default_timezone`.
+
+#### Which Blocks Respond to `period`
+
+`revenue`, `funnel` and `leaderboard` are period metrics and change when
+`period` changes.
+
+`topOpportunities`, `customerBase` and `myDay` are snapshots of the present and
+do not change with `period`. The largest open deals and the shape of the
+customer base are states, not flows, and filtering them by a reporting window
+would answer a question nobody asked. `myDay` is always today.
+
+#### Period Comparison
+
+`period.previousFromDate` and `period.previousToDate` describe the window of
+equal length immediately preceding the selected one. It ends on the day before
+the selected window opens. `revenue.closedWonChangePercent` compares the two
+and is `null` when the previous window closed nothing, because growth from
+zero has no defined percentage.
+
+#### Response `200 OK`
+```json
+{
+  "period": {
+    "preset": "THIS_QUARTER",
+    "fromDate": "2026-07-01",
+    "toDate": "2026-09-30",
+    "previousFromDate": "2026-04-01",
+    "previousToDate": "2026-06-30",
+    "timezone": "Asia/Ho_Chi_Minh"
+  },
+  "asOf": "2026-08-26T07:03:11.482Z",
+  "revenue": {
+    "currencyCode": "VND",
+    "closedWonAmount": "4820000000.000000",
+    "previousClosedWonAmount": "4075000000.000000",
+    "closedWonChangePercent": 18.28,
+    "closedWonCount": 24,
+    "openPipelineAmount": "9310000000.000000",
+    "weightedForecastAmount": "5642000000.000000",
+    "openOpportunityCount": 63
+  },
+  "funnel": {
+    "currencyCode": "VND",
+    "stages": [
+      {
+        "stageId": "6f1d0a1e-0000-4000-8000-00000000a001",
+        "stageName": "Qualification",
+        "pipelineName": "Enterprise Sales",
+        "displayOrder": 1,
+        "stageCategory": "OPEN",
+        "openPipelineAmount": "3120000000.000000",
+        "opportunityCount": 28
+      },
+      {
+        "stageId": "6f1d0a1e-0000-4000-8000-00000000a002",
+        "stageName": "Proposal",
+        "pipelineName": "Enterprise Sales",
+        "displayOrder": 2,
+        "stageCategory": "OPEN",
+        "openPipelineAmount": "4180000000.000000",
+        "opportunityCount": 21
+      }
+    ]
+  },
+  "topOpportunities": {
+    "currencyCode": "VND",
+    "items": [
+      {
+        "id": "8c2b41d7-0000-4000-8000-00000000b001",
+        "name": "Platform rollout - phase 2",
+        "accountName": "Northwind Manufacturing",
+        "stageName": "Proposal",
+        "ownerName": "Sales Rep A",
+        "amount": "1250000000.000000",
+        "currencyCode": "VND",
+        "probability": 60.0,
+        "expectedCloseDate": "2026-09-15"
+      }
+    ]
+  },
+  "leaderboard": {
+    "currencyCode": "VND",
+    "entries": [
+      {
+        "ownerKind": "USER",
+        "ownerId": "3a9f77c2-0000-4000-8000-00000000c001",
+        "ownerLabel": "Sales Rep A",
+        "closedWonAmount": "1840000000.000000",
+        "openPipelineAmount": "2210000000.000000",
+        "weightedForecastAmount": "2965000000.000000",
+        "opportunityCount": 19
+      }
+    ]
+  },
+  "customerBase": {
+    "totalCount": 412,
+    "stages": [
+      { "lifecycleStage": "PROSPECT", "accountCount": 168 },
+      { "lifecycleStage": "QUALIFIED", "accountCount": 94 },
+      { "lifecycleStage": "CUSTOMER", "accountCount": 121 },
+      { "lifecycleStage": "INACTIVE", "accountCount": 12 },
+      { "lifecycleStage": "CHURNED", "accountCount": 17 }
+    ],
+    "churnedSharePercent": 4.13
+  },
+  "myDay": {
+    "overdueCount": 3,
+    "dueTodayCount": 5,
+    "items": [
+      {
+        "id": "c41e9b60-0000-4000-8000-00000000d001",
+        "subject": "Follow up on renewal terms",
+        "activityType": "CALL",
+        "priority": "HIGH",
+        "status": "PLANNED",
+        "scheduledStartAt": "2026-08-25T02:30:00Z",
+        "accountName": "Northwind Manufacturing",
+        "overdue": true
+      }
+    ]
+  }
+}
+```
+
+#### Field Notes
+
+- `customerBase.stages` always lists all five lifecycle values in progression
+  order, padding absent stages with `0`, so clients never have to infer which
+  stage is missing.
+- `customerBase.churnedSharePercent` is `null` when the caller can see no
+  accounts at all.
+- `myDay.overdueCount` and `myDay.dueTodayCount` cover every matching activity.
+  `myDay.items` is capped at ten, so its length must not be used as a count.
+- `myDay.items[].overdue` is `true` when the activity was scheduled to start
+  before today began in the tenant's timezone.
+- `myDay` covers activities in `PLANNED` or `IN_PROGRESS` status that have a
+  `scheduledStartAt` earlier than the end of today. Activities with no
+  scheduled start are not included, because they have no due date to be at.
+- All amounts are decimal strings with six fraction digits, matching the
+  `DECIMAL(20,6)` money columns and the `/api/sales/forecast` responses.
+
+#### Error Responses
+
+- `401 Unauthorized`: missing or invalid access token.
+- `400 Bad Request`: `period` is not one of the three accepted values.
+
+A caller who holds none of the three read permissions receives `200 OK` with
+all six blocks `null`.
+
+
 ## Sales Quotes
 
 ### Create Draft Quote
@@ -9097,6 +9300,76 @@ All mutating lifecycle endpoints require optimistic locking header `If-Match: "{
 - `GET /api/sales/orders/{id}/document` — Returns printable document projection.
 - `GET /api/sales/orders/{id}/history` — Returns complete audit trail of status transitions.
 - `GET /api/sales/orders/{id}/fulfillments` — Returns all ledger fulfillment events (recorded & voided).
+
+---
+
+## Platform Teams & Organizations
+
+### List Teams
+
+```http
+GET /api/platform/teams
+```
+
+Retrieves the list of active department teams configured for the tenant.
+
+- Required Permission: `platform_team.read` (or `platform_role.read` / `platform_user.manage` / `crm_account.read`)
+- Response: `200 OK` with JSON array of `TeamSummaryResponse` objects.
+
+### Get Team Details
+
+```http
+GET /api/platform/teams/{id}
+```
+
+- Required Permission: `platform_team.read` (or `platform_role.read` / `platform_user.manage` / `crm_account.read`)
+- Response: `200 OK` with JSON `TeamResponse` object including members list.
+
+### Create Team
+
+```http
+POST /api/platform/teams
+Content-Type: application/json
+
+{
+  "name": "Strategic Enterprise Commercial Group",
+  "description": "Enterprise accounts territory management",
+  "parentTeamId": null,
+  "managerUserId": null
+}
+```
+
+- Required Permission: `platform_team.manage` (or `platform_user.manage` / `platform_role.manage`)
+- Response: `201 Created` with JSON `TeamResponse` object.
+
+### Update Team
+
+```http
+PUT /api/platform/teams/{id}
+Content-Type: application/json
+
+{
+  "version": 1,
+  "name": "Strategic Enterprise Commercial Group Updated",
+  "description": "Updated mission description",
+  "parentTeamId": null,
+  "managerUserId": null,
+  "status": "ACTIVE"
+}
+```
+
+- Required Permission: `platform_team.manage` (or `platform_user.manage` / `platform_role.manage`)
+- Response: `200 OK` with JSON `TeamResponse` object.
+
+### Delete Team
+
+```http
+DELETE /api/platform/teams/{id}
+If-Match: "1"
+```
+
+- Required Permission: `platform_team.manage` (or `platform_user.manage` / `platform_role.manage`)
+- Response: `204 No Content`.
 
 ---
 

@@ -17,6 +17,12 @@ export interface ProblemDetail {
   path?: string;
   traceId?: string;
   errors?: ApiErrorDetail[];
+  /**
+   * ISO-8601 instant, sent only with ACCOUNT_LOCKED. The server deliberately
+   * sends the timestamp as structured data rather than inside `detail`, so the
+   * client can render it in the viewer's own timezone and language.
+   */
+  lockedUntil?: string;
 }
 
 export class ApiError extends Error {

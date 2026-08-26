@@ -2,6 +2,12 @@ import React, { useState } from 'react';
 import { useAuth } from '@/core/session/useAuth';
 import { toast } from 'sonner';
 import { ProfileHeaderCard } from '@/components/common/ProfileHeaderCard';
+import { changePassword } from '@/features/auth/services/passwordResetService';
+import {
+  evaluatePassword,
+  PASSWORD_VIOLATION_MESSAGES,
+} from '@/features/auth/utils/passwordPolicy';
+import { normalizeAuthError } from '@/features/auth/utils/authErrorMessages';
 import {
   User,
   Shield,
@@ -163,14 +169,10 @@ export const UserProfilePage: React.FC = () => {
     }, 600);
   };
 
-  const handleChangePassword = (e: React.FormEvent) => {
+  const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentPassword) {
       toast.error('Please enter your current password');
-      return;
-    }
-    if (newPassword.length < 12) {
-      toast.error('New password must contain at least 12 characters');
       return;
     }
     if (newPassword !== confirmPassword) {
@@ -178,14 +180,43 @@ export const UserProfilePage: React.FC = () => {
       return;
     }
 
+    // Mirrors PasswordPolicy on the backend so the user is told before
+    // submitting; the server remains the authority and re-checks.
+    const assessment = evaluatePassword(
+      newPassword,
+      session?.user?.email,
+      session?.user?.display_name
+    );
+    if (assessment.violation) {
+      toast.error(PASSWORD_VIOLATION_MESSAGES[assessment.violation]);
+      return;
+    }
+
     setIsChangingPass(true);
-    setTimeout(() => {
-      setIsChangingPass(false);
+    try {
+      await changePassword(currentPassword, newPassword);
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
-      toast.success('Password updated successfully!');
-    }, 600);
+      // The endpoint revokes every other session, so say so rather than
+      // letting the user discover it by being signed out elsewhere.
+      toast.success(
+        'Password updated. Your other sessions have been signed out.'
+      );
+    }
+    catch (error) {
+      const code = normalizeAuthError(error);
+      toast.error(
+        code === 'INVALID_CREDENTIALS'
+          ? 'Your current password is incorrect'
+          : code === 'WEAK_PASSWORD'
+            ? 'Choose a stronger password'
+            : 'Could not update the password. Please try again.'
+      );
+    }
+    finally {
+      setIsChangingPass(false);
+    }
   };
 
   const getInitials = (name?: string) => {

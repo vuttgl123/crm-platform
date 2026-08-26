@@ -7,6 +7,7 @@ import java.util.Locale;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
+import com.crm.foundation.security.AccountLockedException;
 import com.crm.foundation.security.CodedAccessDeniedException;
 import com.crm.foundation.security.CodedAuthenticationException;
 import com.crm.foundation.tenancy.MissingTenantContextException;
@@ -187,6 +188,17 @@ public final class GlobalExceptionHandler {
 				.body(problemFactory.create(HttpStatus.UNAUTHORIZED,
 						CommonErrorCode.AUTHENTICATION_REQUIRED, request,
 						currentLocale()));
+	}
+
+	@ExceptionHandler(AccountLockedException.class)
+	public ResponseEntity<ProblemDetail> handleAccountLocked(
+			AccountLockedException exception, HttpServletRequest request) {
+		ProblemDetail problem = problemFactory.create(HttpStatus.UNAUTHORIZED,
+				exception.errorCode(), request, currentLocale());
+		// Structured, not baked into the message: only the frontend knows the
+		// viewer's timezone and display language.
+		problem.setProperty("lockedUntil", exception.lockedUntil().toString());
+		return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(problem);
 	}
 
 	@ExceptionHandler(CodedAuthenticationException.class)

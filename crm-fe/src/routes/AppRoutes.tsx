@@ -14,6 +14,8 @@ import { RouteAccessBoundary } from '@/components/common/RouteAccessBoundary';
 import AuthLogin from '@/features/auth/AuthLogin';
 import AuthRegister from '@/features/auth/AuthRegister';
 import { AuthCallbackPage } from '@/features/auth/AuthCallbackPage';
+import ForgotPasswordPage from '@/features/auth/ForgotPasswordPage';
+import ResetPasswordPage from '@/features/auth/ResetPasswordPage';
 import { TenantSetupPage } from '@/features/tenant/TenantSetupPage';
 import { PendingApprovalPage } from '@/features/auth/PendingApprovalPage';
 import { UsersPage } from '@/features/platform/users/UsersPage';
@@ -89,12 +91,14 @@ export const AppRoutes: React.FC = () => {
         <Route path="/solutions" element={<SolutionsPage />} />
         <Route path="/features" element={<FeaturesPage />} />
         <Route path="/pricing" element={<PricingPage />} />
-        <Route path="/demo" element={<DemoPage />} />
+        <Route path="/demo" element={<Navigate to="/" replace />} />
       </Route>
 
       {/* Public / Auth routes */}
       <Route path="/login" element={<AuthLogin />} />
       <Route path="/register" element={<AuthRegister />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/auth/callback" element={<AuthCallbackPage />} />
       <Route path="/auth/session-expired" element={<SessionExpired />} />
       <Route path="/403" element={<ForbiddenPage />} />

@@ -2,6 +2,16 @@ spring:
   application:
     name: crm
 
+  mail:
+    host: ${CRM_MAIL_HOST:}
+    port: ${CRM_MAIL_PORT:587}
+    username: ${CRM_MAIL_USERNAME:}
+    password: ${CRM_MAIL_PASSWORD:}
+    from: ${CRM_MAIL_FROM:no-reply@vumcrm.local}
+    properties:
+      mail.smtp.auth: ${CRM_MAIL_SMTP_AUTH:true}
+      mail.smtp.starttls.enable: ${CRM_MAIL_STARTTLS:true}
+
   # PostgreSQL / Supabase connection (temporarily disabled)
   # datasource:
   #   url: jdbc:postgresql://aws-1-ap-south-1.pooler.supabase.com:5432/postgres?sslmode=require
@@ -42,6 +52,11 @@ crm:
     self-registration-enabled: ${CRM_SELF_REGISTRATION_ENABLED:true}
     max-failed-attempts: ${CRM_MAX_FAILED_ATTEMPTS:5}
     lock-duration: ${CRM_ACCOUNT_LOCK_DURATION:PT15M}
+    password-reset-ttl: ${CRM_PASSWORD_RESET_TTL:PT30M}
+    password-reset-limits:
+      minimum-interval: ${CRM_PASSWORD_RESET_MIN_INTERVAL:PT60S}
+      max-per-hour: ${CRM_PASSWORD_RESET_MAX_PER_HOUR:5}
+      reset-url-template: ${CRM_PASSWORD_RESET_URL:http://localhost:3000/reset-password?token=%s}
     allowed-origins:
       - ${CRM_WEB_ORIGIN:http://localhost:3000}
       - http://localhost:3001

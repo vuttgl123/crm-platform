@@ -150,6 +150,37 @@ public class JdbcIdentityRepository implements IdentityRepository {
 	}
 
 	@Override
+	public void updatePasswordAndClearLock(UUID userId, String passwordHash,
+			Instant now) {
+		jdbcClient.sql("""
+				UPDATE platform_user_credentials
+				SET password_hash = :passwordHash,
+				    password_changed_at = :now,
+				    failed_login_attempts = 0,
+				    locked_until = NULL,
+				    version = version + 1
+				WHERE user_id = :userId
+				""")
+				.param("passwordHash", passwordHash)
+				.param("now", Timestamp.from(now))
+				.param("userId", userId.toString())
+				.update();
+	}
+
+	@Override
+	public void revokeAllSessions(UUID userId, Instant now, String reason) {
+		jdbcClient.sql("""
+				UPDATE platform_auth_sessions
+				SET revoked_at = :now, revoke_reason = :reason
+				WHERE user_id = :userId AND revoked_at IS NULL
+				""")
+				.param("now", Timestamp.from(now))
+				.param("reason", reason)
+				.param("userId", userId.toString())
+				.update();
+	}
+
+	@Override
 	public void recordSuccessfulLogin(UUID userId, Instant now) {
 		jdbcClient.sql("""
 				UPDATE platform_user_credentials

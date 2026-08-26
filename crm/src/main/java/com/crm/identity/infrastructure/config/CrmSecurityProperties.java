@@ -16,10 +16,18 @@ public record CrmSecurityProperties(
 		boolean selfRegistrationEnabled,
 		int maxFailedAttempts,
 		Duration lockDuration,
+		Duration passwordResetTtl,
+		PasswordResetLimits passwordResetLimits,
 		List<String> allowedOrigins,
 		Jwt jwt,
 		RefreshCookie refreshCookie,
 		OAuth2 oauth2) {
+
+	public record PasswordResetLimits(
+			Duration minimumInterval,
+			int maxPerHour,
+			String resetUrlTemplate) {
+	}
 
 	public record Jwt(
 			Resource privateKeyLocation,

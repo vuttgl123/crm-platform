@@ -98,44 +98,35 @@ const createDemoRequestSchema = (t: TFunction) =>
     message: z
       .string()
       .trim()
-      .max(1000, t('landing.demo.validation.message'))
+      .max(2000, t('landing.demo.validation.message'))
       .optional()
       .or(z.literal('')),
-    privacyConsent: z.boolean().refine((val) => val === true, {
-      message: t('landing.demo.validation.privacyConsent'),
-    }),
+    consent: z
+      .boolean()
+      .refine((val) => val === true, t('landing.demo.validation.consent')),
   });
 
-type DemoFormData = z.infer<ReturnType<typeof createDemoRequestSchema>>;
+type DemoRequestFormData = z.infer<ReturnType<typeof createDemoRequestSchema>>;
 
 export interface DemoRequestFormProps {
-  privacyPolicyUrl: string;
+  headingLevel?: 'h1' | 'h2' | 'h3';
   salesEmail?: string;
   salesPhone?: string;
-  headingAs?: 'h2' | 'h3';
+  onSuccess?: () => void;
 }
 
-const primaryNeedOptions = [
-  { value: 'CUSTOMER_360' as const, labelKey: 'landing.demo.needs.CUSTOMER_360' },
-  { value: 'SALES_PIPELINE' as const, labelKey: 'landing.demo.needs.SALES_PIPELINE' },
-  { value: 'QUOTES_CONTRACTS' as const, labelKey: 'landing.demo.needs.QUOTES_CONTRACTS' },
-  { value: 'AUTOMATION_FORECAST' as const, labelKey: 'landing.demo.needs.AUTOMATION_FORECAST' },
-  { value: 'SECURITY_INTEGRATION' as const, labelKey: 'landing.demo.needs.SECURITY_INTEGRATION' },
-  { value: 'OTHER' as const, labelKey: 'landing.demo.needs.OTHER' },
-];
-
 export function DemoRequestForm({
-  privacyPolicyUrl,
+  headingLevel = 'h2',
   salesEmail,
   salesPhone,
-  headingAs = 'h2',
+  onSuccess,
 }: DemoRequestFormProps): ReactElement {
   const { t, i18n } = useTranslation();
   const location = useLocation();
-  const [submissionStatus, setSubmissionStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [submissionStatus, setSubmissionStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
+  const [submittedData, setSubmittedData] = useState<DemoRequestFormData | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const FormHeading = headingAs;
   const schema = createDemoRequestSchema(t);
 
   const {
@@ -143,28 +134,39 @@ export function DemoRequestForm({
     handleSubmit,
     control,
     reset,
-    watch,
-    setValue,
     formState: { errors, isSubmitting },
-  } = useForm<DemoFormData>({
+  } = useForm<DemoRequestFormData>({
     resolver: zodResolver(schema),
     defaultValues: {
       fullName: '',
       workEmail: '',
       phone: '',
       companyName: '',
-      primaryNeed: 'CUSTOMER_360',
+      companySize: undefined,
+      industry: undefined,
+      primaryNeed: undefined,
       message: '',
-      privacyConsent: false,
+      consent: false,
     },
+    mode: 'onTouched',
   });
 
-  const selectedNeed = watch('primaryNeed');
+  const getUtmParams = () => {
+    const params = new URLSearchParams(location.search);
+    return {
+      utmSource: params.get('utm_source') || undefined,
+      utmMedium: params.get('utm_medium') || undefined,
+      utmCampaign: params.get('utm_campaign') || undefined,
+      utmTerm: params.get('utm_term') || undefined,
+      utmContent: params.get('utm_content') || undefined,
+    };
+  };
 
-  const onSubmit = async (data: DemoFormData) => {
-    setSubmissionStatus('idle');
+  const onSubmit = async (data: DemoRequestFormData) => {
+    setSubmissionStatus('submitting');
     setErrorMessage(null);
 
+    const utm = getUtmParams();
     const payload: DemoRequestInput = {
       fullName: data.fullName,
       workEmail: data.workEmail,
@@ -173,103 +175,140 @@ export function DemoRequestForm({
       companySize: data.companySize as CompanySize,
       industry: data.industry as DemoIndustry,
       primaryNeed: data.primaryNeed as DemoPrimaryNeed,
-      message: data.message?.trim() ? data.message.trim() : undefined,
-      privacyConsent: true,
-      locale: i18n.resolvedLanguage === 'en' ? 'en' : 'vi',
-      sourcePath: location.pathname,
+      message: data.message || undefined,
+      preferredLanguage: i18n.language === 'vi' ? 'vi' : 'en',
+      ...utm,
     };
 
     try {
-      await demoRequestService.submit(payload);
+      await demoRequestService.submitPublicDemoRequest(payload);
+      setSubmittedData(data);
       setSubmissionStatus('success');
-      reset();
-    } catch (err) {
+      if (onSuccess) onSuccess();
+    } catch (err: unknown) {
       setSubmissionStatus('error');
       if (err instanceof PublicDemoRequestError) {
-        setErrorMessage(t('landing.demo.states.errorDescription'));
+        setErrorMessage(err.message);
       } else {
-        setErrorMessage(t('landing.demo.states.errorDescription'));
+        setErrorMessage(t('landing.demo.states.errorGeneric'));
       }
     }
   };
 
-  if (submissionStatus === 'success') {
+  const handleReset = () => {
+    reset();
+    setSubmittedData(null);
+    setSubmissionStatus('idle');
+    setErrorMessage(null);
+  };
+
+  const FormHeading = headingLevel;
+
+  // Options mapped from keys
+  const companySizeOptions = [
+    { value: 'UNDER_50', label: t('landing.demo.options.companySize.UNDER_50') },
+    { value: 'FROM_50_TO_199', label: t('landing.demo.options.companySize.FROM_50_TO_199') },
+    { value: 'FROM_200_TO_999', label: t('landing.demo.options.companySize.FROM_200_TO_999') },
+    { value: 'FROM_1000', label: t('landing.demo.options.companySize.FROM_1000') },
+  ];
+
+  const industryOptions = [
+    { value: 'FINANCE', label: t('landing.demo.options.industry.FINANCE') },
+    { value: 'REAL_ESTATE', label: t('landing.demo.options.industry.REAL_ESTATE') },
+    { value: 'RETAIL_FNB', label: t('landing.demo.options.industry.RETAIL_FNB') },
+    { value: 'MANUFACTURING_DISTRIBUTION', label: t('landing.demo.options.industry.MANUFACTURING_DISTRIBUTION') },
+    { value: 'TECHNOLOGY_B2B', label: t('landing.demo.options.industry.TECHNOLOGY_B2B') },
+    { value: 'OTHER', label: t('landing.demo.options.industry.OTHER') },
+  ];
+
+  const primaryNeedOptions = [
+    { value: 'CUSTOMER_360', label: t('landing.demo.options.primaryNeed.CUSTOMER_360') },
+    { value: 'SALES_PIPELINE', label: t('landing.demo.options.primaryNeed.SALES_PIPELINE') },
+    { value: 'QUOTES_CONTRACTS', label: t('landing.demo.options.primaryNeed.QUOTES_CONTRACTS') },
+    { value: 'AUTOMATION_FORECAST', label: t('landing.demo.options.primaryNeed.AUTOMATION_FORECAST') },
+    { value: 'SECURITY_INTEGRATION', label: t('landing.demo.options.primaryNeed.SECURITY_INTEGRATION') },
+    { value: 'OTHER', label: t('landing.demo.options.primaryNeed.OTHER') },
+  ];
+
+  if (submissionStatus === 'success' && submittedData) {
     return (
-      <div className="bg-white border border-[var(--landing-line)] rounded-2xl shadow-xs overflow-hidden">
-        <div className="h-1.5 bg-emerald-500 w-full" />
-        <div className="p-8 sm:p-12 text-center space-y-6">
-          <div className="w-16 h-16 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center mx-auto shadow-2xs">
-            <CheckCircle2 className="w-9 h-9" />
-          </div>
+      <div 
+        className="lp-stitch-glass-card rounded-2xl p-8 sm:p-10 shadow-[0_0_50px_rgba(0,0,0,0.8)] border border-cyan-500/40 text-center space-y-6"
+        role="status"
+        aria-live="polite"
+      >
+        <div className="w-16 h-16 bg-emerald-950/80 border border-emerald-500/50 rounded-full flex items-center justify-center mx-auto text-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.3)]">
+          <CheckCircle2 className="w-8 h-8" />
+        </div>
+        <div className="space-y-2">
+          <FormHeading className="text-2xl font-black text-white tracking-tight">
+            {t('landing.demo.states.successTitle')}
+          </FormHeading>
+          <p className="text-sm text-slate-300 max-w-md mx-auto">
+            {t('landing.demo.states.successSubtitle')}
+          </p>
+        </div>
 
-          <div className="space-y-2">
-            <FormHeading className="text-2xl font-extrabold text-[var(--landing-ink)] landing-display">
-              {t('landing.demo.states.successTitle')}
-            </FormHeading>
-            <p className="text-sm sm:text-base text-[var(--landing-muted)] max-w-md mx-auto leading-relaxed">
-              {t('landing.demo.states.successDescription')}
-            </p>
+        <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-5 text-left text-xs space-y-2 max-w-md mx-auto">
+          <div className="flex justify-between border-b border-slate-800 pb-2">
+            <span className="text-slate-400">{t('landing.demo.form.fullName')}:</span>
+            <span className="font-bold text-white">{submittedData.fullName}</span>
           </div>
-
-          <div className="p-4 rounded-xl bg-[var(--landing-canvas)] border border-[var(--landing-line)] text-left max-w-md mx-auto space-y-2 text-xs text-[var(--landing-muted)]">
-            <div className="font-bold text-[var(--landing-ink)] uppercase tracking-wide">
-              {t('landing.demo.successNextTitle')}:
-            </div>
-            <div className="flex items-start gap-2">
-              <span className="w-4 h-4 rounded-full bg-[var(--landing-blue-soft)] text-[var(--landing-blue)] flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">1</span>
-              <span>{t('landing.demo.successNextContact')}</span>
-            </div>
-            <div className="flex items-start gap-2">
-              <span className="w-4 h-4 rounded-full bg-[var(--landing-blue-soft)] text-[var(--landing-blue)] flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">2</span>
-              <span>{t('landing.demo.successNextPrepare')}</span>
-            </div>
+          <div className="flex justify-between border-b border-slate-800 pb-2">
+            <span className="text-slate-400">{t('landing.demo.form.workEmail')}:</span>
+            <span className="font-bold text-cyan-300">{submittedData.workEmail}</span>
           </div>
-
-          <div className="pt-2">
-            <Button
-              type="button"
-              onClick={() => setSubmissionStatus('idle')}
-              variant="outline"
-              className="text-xs font-semibold border-[var(--landing-line)]"
-            >
-              {t('landing.demo.submitAnother')}
-            </Button>
+          <div className="flex justify-between">
+            <span className="text-slate-400">{t('landing.demo.form.companyName')}:</span>
+            <span className="font-bold text-white">{submittedData.companyName}</span>
           </div>
         </div>
+
+        <p className="text-xs text-slate-400">
+          {t('landing.demo.states.successTimeline')}
+        </p>
+
+        <Button
+          type="button"
+          onClick={handleReset}
+          className="lp-btn-stitch text-white font-extrabold uppercase tracking-wider text-xs px-6 py-2.5 rounded-full"
+        >
+          {t('landing.demo.states.sendAnother')}
+        </Button>
       </div>
     );
   }
 
   return (
-    <div className="bg-white border border-[var(--landing-line)] rounded-2xl shadow-xs overflow-hidden">
-      <div className="h-1.5 bg-[var(--landing-blue)] w-full" />
+    <div className="lp-stitch-glass-card rounded-2xl shadow-[0_0_50px_rgba(0,0,0,0.8)] border border-slate-800 overflow-hidden">
+      <div className="h-1 bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-500 w-full" />
       
       <div className="p-6 sm:p-8 space-y-6">
         <div className="space-y-1">
           <div className="flex items-center justify-between">
-            <FormHeading className="text-xl sm:text-2xl font-extrabold text-[var(--landing-ink)] landing-display">
+            <FormHeading className="text-xl sm:text-2xl font-black text-white tracking-tight">
               {t('landing.demo.form.title')}
             </FormHeading>
-            <span className="text-[10px] font-bold bg-[var(--landing-blue-soft)] text-[var(--landing-blue)] px-2.5 py-0.5 rounded-full border border-[var(--landing-blue)]/20 uppercase">
+            <span className="text-[10px] font-mono font-bold bg-cyan-950/80 text-cyan-300 px-3 py-1 rounded-full border border-cyan-500/40 uppercase">
               {t('landing.demo.consultationLabel')}
             </span>
           </div>
-          <p className="text-xs text-[var(--landing-muted)] font-normal">
+          <p className="text-xs text-slate-400 font-normal">
             {t('landing.demo.formIntro')}
           </p>
         </div>
 
         {/* Error Alert */}
         {submissionStatus === 'error' && (
-          <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 flex items-start gap-3" role="status" aria-live="polite">
-            <AlertCircle aria-hidden="true" className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
-            <div className="text-xs text-rose-800">
+          <div className="p-4 rounded-xl bg-rose-950/80 border border-rose-500/50 flex items-start gap-3" role="status" aria-live="polite">
+            <AlertCircle aria-hidden="true" className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
+            <div className="text-xs text-rose-200">
               <h3 className="font-bold">{t('landing.demo.states.errorTitle')}</h3>
               <p className="mt-0.5">{errorMessage || t('landing.demo.states.errorDescription')}</p>
               {(salesEmail || salesPhone) && (
                 <div className="mt-2 flex flex-wrap gap-3 font-semibold">
-                  {salesEmail && <a href={`mailto:${salesEmail}`} className="underline">{salesEmail}</a>}
-                  {salesPhone && <a href={`tel:${salesPhone}`} className="underline">{salesPhone}</a>}
+                  {salesEmail && <a href={`mailto:${salesEmail}`} className="underline text-rose-300">{salesEmail}</a>}
+                  {salesPhone && <a href={`tel:${salesPhone}`} className="underline text-rose-300">{salesPhone}</a>}
                 </div>
               )}
             </div>
@@ -280,43 +319,43 @@ export function DemoRequestForm({
           {/* Row 1: Full Name & Work Email */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label htmlFor="fullName" className="text-xs font-bold tracking-wider text-[var(--landing-ink)] uppercase">
-                {t('landing.demo.form.fullName')} <span className="text-rose-500">*</span>
+              <Label htmlFor="fullName" className="text-xs font-mono font-bold tracking-wider text-slate-300 uppercase">
+                {t('landing.demo.form.fullName')} <span className="text-rose-400">*</span>
               </Label>
               <div className="relative">
                 <Input
                   id="fullName"
                   placeholder={t('landing.demo.placeholders.fullName')}
-                  className={`h-11 pl-9 text-sm bg-white border-[var(--landing-line)] rounded-xl text-[var(--landing-ink)] placeholder:text-slate-400 focus:border-[var(--landing-blue)] ${
+                  className={`h-11 pl-9 text-sm bg-slate-900/90 border-slate-700 text-white rounded-lg placeholder:text-slate-500 focus:border-cyan-400 focus:ring-cyan-400/20 ${
                     errors.fullName ? 'border-rose-400 focus-visible:ring-rose-500' : ''
                   }`}
                   {...register('fullName')}
                 />
-                <User aria-hidden="true" className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <User aria-hidden="true" className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
               </div>
               {errors.fullName && (
-                <p className="text-xs text-rose-600 mt-0.5">{errors.fullName.message}</p>
+                <p className="text-xs text-rose-400 mt-0.5">{errors.fullName.message}</p>
               )}
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="workEmail" className="text-xs font-bold tracking-wider text-[var(--landing-ink)] uppercase">
-                {t('landing.demo.form.workEmail')} <span className="text-rose-500">*</span>
+              <Label htmlFor="workEmail" className="text-xs font-mono font-bold tracking-wider text-slate-300 uppercase">
+                {t('landing.demo.form.workEmail')} <span className="text-rose-400">*</span>
               </Label>
               <div className="relative">
                 <Input
                   id="workEmail"
                   type="email"
                   placeholder={t('landing.demo.placeholders.workEmail')}
-                  className={`h-11 pl-9 text-sm bg-white border-[var(--landing-line)] rounded-xl text-[var(--landing-ink)] placeholder:text-slate-400 focus:border-[var(--landing-blue)] ${
+                  className={`h-11 pl-9 text-sm bg-slate-900/90 border-slate-700 text-white rounded-lg placeholder:text-slate-500 focus:border-cyan-400 focus:ring-cyan-400/20 ${
                     errors.workEmail ? 'border-rose-400 focus-visible:ring-rose-500' : ''
                   }`}
                   {...register('workEmail')}
                 />
-                <Mail aria-hidden="true" className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <Mail aria-hidden="true" className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
               </div>
               {errors.workEmail && (
-                <p className="text-xs text-rose-600 mt-0.5">{errors.workEmail.message}</p>
+                <p className="text-xs text-rose-400 mt-0.5">{errors.workEmail.message}</p>
               )}
             </div>
           </div>
@@ -324,43 +363,43 @@ export function DemoRequestForm({
           {/* Row 2: Phone & Company Name */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label htmlFor="phone" className="text-xs font-bold tracking-wider text-[var(--landing-ink)] uppercase">
-                {t('landing.demo.form.phone')} <span className="text-rose-500">*</span>
+              <Label htmlFor="phone" className="text-xs font-mono font-bold tracking-wider text-slate-300 uppercase">
+                {t('landing.demo.form.phone')} <span className="text-rose-400">*</span>
               </Label>
               <div className="relative">
                 <Input
                   id="phone"
                   type="tel"
                   placeholder={t('landing.demo.placeholders.phone')}
-                  className={`h-11 pl-9 text-sm bg-white border-[var(--landing-line)] rounded-xl text-[var(--landing-ink)] placeholder:text-slate-400 focus:border-[var(--landing-blue)] ${
+                  className={`h-11 pl-9 text-sm bg-slate-900/90 border-slate-700 text-white rounded-lg placeholder:text-slate-500 focus:border-cyan-400 focus:ring-cyan-400/20 ${
                     errors.phone ? 'border-rose-400 focus-visible:ring-rose-500' : ''
                   }`}
                   {...register('phone')}
                 />
-                <Phone aria-hidden="true" className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <Phone aria-hidden="true" className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
               </div>
               {errors.phone && (
-                <p className="text-xs text-rose-600 mt-0.5">{errors.phone.message}</p>
+                <p className="text-xs text-rose-400 mt-0.5">{errors.phone.message}</p>
               )}
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="companyName" className="text-xs font-bold tracking-wider text-[var(--landing-ink)] uppercase">
-                {t('landing.demo.form.companyName')} <span className="text-rose-500">*</span>
+              <Label htmlFor="companyName" className="text-xs font-mono font-bold tracking-wider text-slate-300 uppercase">
+                {t('landing.demo.form.companyName')} <span className="text-rose-400">*</span>
               </Label>
               <div className="relative">
                 <Input
                   id="companyName"
                   placeholder={t('landing.demo.placeholders.companyName')}
-                  className={`h-11 pl-9 text-sm bg-white border-[var(--landing-line)] rounded-xl text-[var(--landing-ink)] placeholder:text-slate-400 focus:border-[var(--landing-blue)] ${
+                  className={`h-11 pl-9 text-sm bg-slate-900/90 border-slate-700 text-white rounded-lg placeholder:text-slate-500 focus:border-cyan-400 focus:ring-cyan-400/20 ${
                     errors.companyName ? 'border-rose-400 focus-visible:ring-rose-500' : ''
                   }`}
                   {...register('companyName')}
                 />
-                <Building2 aria-hidden="true" className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <Building2 aria-hidden="true" className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
               </div>
               {errors.companyName && (
-                <p className="text-xs text-rose-600 mt-0.5">{errors.companyName.message}</p>
+                <p className="text-xs text-rose-400 mt-0.5">{errors.companyName.message}</p>
               )}
             </div>
           </div>
@@ -368,161 +407,156 @@ export function DemoRequestForm({
           {/* Row 3: Company Size & Industry */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label htmlFor="companySize" className="text-xs font-bold tracking-wider text-[var(--landing-ink)] uppercase">
-                {t('landing.demo.form.companySize')} <span className="text-rose-500">*</span>
+              <Label htmlFor="companySize" className="text-xs font-mono font-bold tracking-wider text-slate-300 uppercase">
+                {t('landing.demo.form.companySize')} <span className="text-rose-400">*</span>
               </Label>
               <Controller
                 name="companySize"
                 control={control}
                 render={({ field }) => (
                   <Select onValueChange={field.onChange} value={field.value}>
-                    <SelectTrigger id="companySize" className="h-11 rounded-xl bg-white border-[var(--landing-line)] text-sm text-[var(--landing-ink)]">
+                    <SelectTrigger id="companySize" className="h-11 rounded-lg bg-slate-900/90 border-slate-700 text-sm text-white">
                       <SelectValue placeholder={t('landing.demo.form.selectPlaceholder')} />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="UNDER_50">{t('landing.demo.companySizes.UNDER_50')}</SelectItem>
-                      <SelectItem value="FROM_50_TO_199">{t('landing.demo.companySizes.FROM_50_TO_199')}</SelectItem>
-                      <SelectItem value="FROM_200_TO_999">{t('landing.demo.companySizes.FROM_200_TO_999')}</SelectItem>
-                      <SelectItem value="FROM_1000">{t('landing.demo.companySizes.FROM_1000')}</SelectItem>
+                    <SelectContent className="bg-slate-900 border-slate-800 text-white">
+                      {companySizeOptions.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value} className="focus:bg-slate-800 focus:text-white">
+                          {opt.label}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 )}
               />
               {errors.companySize && (
-                <p className="text-xs text-rose-600 mt-0.5">{errors.companySize.message}</p>
+                <p className="text-xs text-rose-400 mt-0.5">{errors.companySize.message}</p>
               )}
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="industry" className="text-xs font-bold tracking-wider text-[var(--landing-ink)] uppercase">
-                {t('landing.demo.form.industry')} <span className="text-rose-500">*</span>
+              <Label htmlFor="industry" className="text-xs font-mono font-bold tracking-wider text-slate-300 uppercase">
+                {t('landing.demo.form.industry')} <span className="text-rose-400">*</span>
               </Label>
               <Controller
                 name="industry"
                 control={control}
                 render={({ field }) => (
                   <Select onValueChange={field.onChange} value={field.value}>
-                    <SelectTrigger id="industry" className="h-11 rounded-xl bg-white border-[var(--landing-line)] text-sm text-[var(--landing-ink)]">
+                    <SelectTrigger id="industry" className="h-11 rounded-lg bg-slate-900/90 border-slate-700 text-sm text-white">
                       <SelectValue placeholder={t('landing.demo.form.selectPlaceholder')} />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="FINANCE">{t('landing.demo.industries.FINANCE')}</SelectItem>
-                      <SelectItem value="REAL_ESTATE">{t('landing.demo.industries.REAL_ESTATE')}</SelectItem>
-                      <SelectItem value="RETAIL_FNB">{t('landing.demo.industries.RETAIL_FNB')}</SelectItem>
-                      <SelectItem value="MANUFACTURING_DISTRIBUTION">{t('landing.demo.industries.MANUFACTURING_DISTRIBUTION')}</SelectItem>
-                      <SelectItem value="TECHNOLOGY_B2B">{t('landing.demo.industries.TECHNOLOGY_B2B')}</SelectItem>
-                      <SelectItem value="OTHER">{t('landing.demo.industries.OTHER')}</SelectItem>
+                    <SelectContent className="bg-slate-900 border-slate-800 text-white">
+                      {industryOptions.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value} className="focus:bg-slate-800 focus:text-white">
+                          {opt.label}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 )}
               />
               {errors.industry && (
-                <p className="text-xs text-rose-600 mt-0.5">{errors.industry.message}</p>
+                <p className="text-xs text-rose-400 mt-0.5">{errors.industry.message}</p>
               )}
             </div>
           </div>
 
-          {/* Row 4: Interactive Chip Selectors for Primary Need */}
-          <div className="space-y-2 pt-1">
-            <Label className="text-xs font-bold tracking-wider text-[var(--landing-ink)] uppercase block">
-              {t('landing.demo.form.primaryNeed')} <span className="text-rose-500">*</span>
+          {/* Row 4: Primary Need */}
+          <div className="space-y-1.5">
+            <Label htmlFor="primaryNeed" className="text-xs font-mono font-bold tracking-wider text-slate-300 uppercase">
+              {t('landing.demo.form.primaryNeed')} <span className="text-rose-400">*</span>
             </Label>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {primaryNeedOptions.map((opt) => {
-                const isSelected = selectedNeed === opt.value;
-                return (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    onClick={() => setValue('primaryNeed', opt.value, { shouldValidate: true })}
-                    className={`p-2.5 rounded-xl border text-left text-xs font-semibold transition-colors flex items-center justify-between gap-1.5 min-h-[44px] ${
-                      isSelected
-                        ? 'bg-[var(--landing-blue-soft)] border-[var(--landing-blue)] text-[var(--landing-blue)]'
-                        : 'bg-white border-[var(--landing-line)] text-[var(--landing-ink)] hover:bg-[var(--landing-canvas)]'
-                    }`}
-                  >
-                    <span className="truncate">{t(opt.labelKey)}</span>
-                    {isSelected && <Check aria-hidden="true" className="w-3.5 h-3.5 shrink-0 text-[var(--landing-blue)]" />}
-                  </button>
-                );
-              })}
-            </div>
+            <Controller
+              name="primaryNeed"
+              control={control}
+              render={({ field }) => (
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <SelectTrigger id="primaryNeed" className="h-11 rounded-lg bg-slate-900/90 border-slate-700 text-sm text-white">
+                    <SelectValue placeholder={t('landing.demo.form.selectPlaceholder')} />
+                  </SelectTrigger>
+                  <SelectContent className="bg-slate-900 border-slate-800 text-white">
+                    {primaryNeedOptions.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value} className="focus:bg-slate-800 focus:text-white">
+                        {opt.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
             {errors.primaryNeed && (
-              <p className="text-xs text-rose-600 mt-0.5">{errors.primaryNeed.message}</p>
+              <p className="text-xs text-rose-400 mt-0.5">{errors.primaryNeed.message}</p>
             )}
           </div>
 
-          {/* Row 5: Message Notes */}
-          <div className="space-y-1.5 pt-1">
-            <Label htmlFor="message" className="text-xs font-bold tracking-wider text-[var(--landing-ink)] uppercase">
-              {t('landing.demo.form.message')} <span className="text-[var(--landing-muted)] font-normal lowercase">({t('landing.demo.optionalLabel')})</span>
-            </Label>
+          {/* Row 5: Optional Message */}
+          <div className="space-y-1.5">
+            <div className="flex justify-between items-center">
+              <Label htmlFor="message" className="text-xs font-mono font-bold tracking-wider text-slate-300 uppercase">
+                {t('landing.demo.form.message')}
+              </Label>
+              <span className="text-[10px] text-slate-500 font-mono">
+                {t('landing.demo.form.optional')}
+              </span>
+            </div>
             <Textarea
               id="message"
+              rows={3}
               placeholder={t('landing.demo.placeholders.message')}
-              rows={2}
-              className="resize-none text-sm bg-white border-[var(--landing-line)] rounded-xl text-[var(--landing-ink)] placeholder:text-slate-400 focus:border-[var(--landing-blue)]"
+              className={`text-sm bg-slate-900/90 border-slate-700 text-white rounded-lg placeholder:text-slate-500 focus:border-cyan-400 focus:ring-cyan-400/20 ${
+                errors.message ? 'border-rose-400 focus-visible:ring-rose-500' : ''
+              }`}
               {...register('message')}
             />
             {errors.message && (
-              <p className="text-xs text-rose-600 mt-0.5">{errors.message.message}</p>
+              <p className="text-xs text-rose-400 mt-0.5">{errors.message.message}</p>
             )}
           </div>
 
-          {/* Privacy Consent Checkbox */}
-          <div className="pt-2">
-            <div className="flex items-start space-x-2.5">
+          {/* Row 6: Consent Checkbox */}
+          <div className="space-y-1.5 pt-1">
+            <div className="flex items-start gap-3">
               <Controller
-                name="privacyConsent"
+                name="consent"
                 control={control}
                 render={({ field }) => (
                   <Checkbox
-                    id="privacyConsent"
+                    id="consent"
                     checked={field.value}
                     onCheckedChange={field.onChange}
-                    className="h-4 w-4 rounded-md border-[var(--landing-line)] data-[state=checked]:bg-[var(--landing-blue)] data-[state=checked]:border-[var(--landing-blue)] mt-0.5"
+                    className="mt-0.5 rounded border-slate-700 data-[state=checked]:bg-cyan-500 data-[state=checked]:border-cyan-500"
                   />
                 )}
               />
               <Label
-                htmlFor="privacyConsent"
-                className="text-xs text-[var(--landing-muted)] leading-relaxed cursor-pointer select-none font-normal"
+                htmlFor="consent"
+                className="text-xs text-slate-400 leading-relaxed font-normal cursor-pointer"
               >
-                {t('landing.demo.form.privacyConsent')}{' '}
-                {privacyPolicyUrl && (
-                  <a
-                    href={privacyPolicyUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-[var(--landing-blue)] font-semibold underline hover:text-[var(--landing-blue-hover)]"
-                  >
-                    {t('landing.footer.privacy')}
-                  </a>
-                )}
+                {t('landing.demo.form.consentText')} <span className="text-rose-400">*</span>
               </Label>
             </div>
-            {errors.privacyConsent && (
-              <p className="text-xs text-rose-600 mt-1">{errors.privacyConsent.message}</p>
+            {errors.consent && (
+              <p className="text-xs text-rose-400 mt-0.5">{errors.consent.message}</p>
             )}
           </div>
 
-          {/* Submit Button */}
+          {/* Submit CTA */}
           <div className="pt-3">
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="w-full h-12 bg-[var(--landing-blue)] hover:bg-[var(--landing-blue-hover)] text-white font-semibold text-sm sm:text-base rounded-xl transition-colors"
+              className="w-full h-12 lp-btn-stitch text-white font-extrabold uppercase tracking-wider text-xs rounded-full shadow-[0_0_25px_rgba(14,165,233,0.4)]"
             >
               {isSubmitting ? (
-                <span className="flex items-center justify-center gap-2">
-                  <Loader2 aria-hidden="true" className="w-4 h-4 animate-spin" />
-                  {t('landing.demo.form.submitting')}
-                </span>
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  <span>{t('landing.demo.form.submitting')}</span>
+                </>
               ) : (
-                <span className="flex items-center justify-center gap-2">
+                <>
                   <span>{t('landing.demo.form.submit')}</span>
-                  <ArrowRight aria-hidden="true" className="w-4 h-4" />
-                </span>
+                  <ArrowRight className="w-4 h-4 ml-2 text-cyan-200" />
+                </>
               )}
             </Button>
           </div>

@@ -18,6 +18,7 @@ public final class AuthenticationAuditRecorder {
 	private static final String SESSION_PROVIDER = "SESSION";
 	private static final String INVALID_CREDENTIALS = "INVALID_CREDENTIALS";
 	private static final String REFRESH_TOKEN_REUSED = "REFRESH_TOKEN_REUSED";
+	private static final String ACCOUNT_LOCKED = "ACCOUNT_LOCKED";
 
 	private final IdentityRepository identityRepository;
 	private final IdentifierGenerator identifierGenerator;
@@ -45,6 +46,38 @@ public final class AuthenticationAuditRecorder {
 			AuthenticationRequestMetadata metadata, Instant occurredAt) {
 		record(userId, null, "LOGIN_FAILURE", LOCAL_PROVIDER, false, email,
 				INVALID_CREDENTIALS, metadata, occurredAt);
+	}
+
+	/**
+	 * The password was correct but the account is locked. Distinct from
+	 * recordLoginFailure so the two cases stay separable in the audit trail.
+	 */
+	public void recordLoginBlockedByLock(UUID userId, String email,
+			AuthenticationRequestMetadata metadata, Instant occurredAt) {
+		record(userId, null, "LOGIN_BLOCKED_LOCKED", LOCAL_PROVIDER, false,
+				email, ACCOUNT_LOCKED, metadata, occurredAt);
+	}
+
+	// The schema enforces CHECK ((success AND failure_code IS NULL) OR
+	// (NOT success AND failure_code IS NOT NULL)), so these three successful
+	// events must pass null as the failure code.
+
+	public void recordPasswordResetRequested(UUID userId, String email,
+			AuthenticationRequestMetadata metadata, Instant occurredAt) {
+		record(userId, null, "PASSWORD_RESET_REQUESTED", LOCAL_PROVIDER, true,
+				email, null, metadata, occurredAt);
+	}
+
+	public void recordPasswordResetCompleted(UUID userId, String email,
+			AuthenticationRequestMetadata metadata, Instant occurredAt) {
+		record(userId, null, "PASSWORD_RESET_COMPLETED", LOCAL_PROVIDER, true,
+				email, null, metadata, occurredAt);
+	}
+
+	public void recordPasswordChanged(UUID userId, String email,
+			AuthenticationRequestMetadata metadata, Instant occurredAt) {
+		record(userId, null, "PASSWORD_CHANGED", LOCAL_PROVIDER, true,
+				email, null, metadata, occurredAt);
 	}
 
 	public void recordRefreshTokenReuse(RefreshSession session, String email,

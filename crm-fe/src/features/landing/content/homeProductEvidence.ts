@@ -1,24 +1,29 @@
+import type { MockScreenId } from '../components/product-ui';
+
 export type EvidenceKind = 'real-screen' | 'illustrative-data';
 
-export interface LandingProductAsset {
+export interface LandingProductScreen {
   id: string;
-  src: string;
-  mobileSrc?: string;
-  width: number;
-  height: number;
+  screen: MockScreenId;
   altKey: string;
   captionKey: string;
+  /** The application route this mockup imitates. Documentation only. */
   sourceRoute: string;
   evidenceKind: EvidenceKind;
 }
 
+/**
+ * The single registry mapping a workflow stage to its illustration.
+ *
+ * These used to be static image paths served from the public directory.
+ * Because such a path is only a string, Vite never validated it, and all
+ * eight files were missing while the project still built cleanly. Rendering
+ * the visuals in React removes that failure mode entirely.
+ */
 export const homeProductAssets = {
   hero: {
     id: 'hero',
-    src: '/landing/product/hero-opportunity-pipeline.webp',
-    mobileSrc: '/landing/product/hero-opportunity-pipeline-mobile.webp',
-    width: 1440,
-    height: 960,
+    screen: 'pipeline',
     altKey: 'landing.home.workflow.opportunityTitle',
     captionKey: 'landing.home.hero.visualCaption',
     sourceRoute: '/app/crm/opportunities',
@@ -26,9 +31,7 @@ export const homeProductAssets = {
   },
   lead: {
     id: 'lead',
-    src: '/landing/product/lead-list.webp',
-    width: 1440,
-    height: 900,
+    screen: 'leads',
     altKey: 'landing.home.workflow.leadTitle',
     captionKey: 'landing.home.workflow.illustrativeLabel',
     sourceRoute: '/app/crm/leads',
@@ -36,9 +39,7 @@ export const homeProductAssets = {
   },
   account: {
     id: 'account',
-    src: '/landing/product/account-detail.webp',
-    width: 1440,
-    height: 900,
+    screen: 'account',
     altKey: 'landing.home.workflow.accountTitle',
     captionKey: 'landing.home.workflow.illustrativeLabel',
     sourceRoute: '/app/crm/accounts/:id',
@@ -46,9 +47,7 @@ export const homeProductAssets = {
   },
   opportunity: {
     id: 'opportunity',
-    src: '/landing/product/opportunity-pipeline.webp',
-    width: 1440,
-    height: 900,
+    screen: 'pipeline',
     altKey: 'landing.home.workflow.opportunityTitle',
     captionKey: 'landing.home.workflow.illustrativeLabel',
     sourceRoute: '/app/crm/opportunities',
@@ -56,9 +55,7 @@ export const homeProductAssets = {
   },
   quote: {
     id: 'quote',
-    src: '/landing/product/quote-workspace.webp',
-    width: 1440,
-    height: 900,
+    screen: 'quote',
     altKey: 'landing.home.workflow.quoteTitle',
     captionKey: 'landing.home.workflow.illustrativeLabel',
     sourceRoute: '/app/sales/quotes',
@@ -66,9 +63,7 @@ export const homeProductAssets = {
   },
   approval: {
     id: 'approval',
-    src: '/landing/product/quote-approval.webp',
-    width: 1440,
-    height: 900,
+    screen: 'approval',
     altKey: 'landing.home.workflow.approvalTitle',
     captionKey: 'landing.home.workflow.illustrativeLabel',
     sourceRoute: '/app/sales/quotes',
@@ -76,15 +71,13 @@ export const homeProductAssets = {
   },
   contract: {
     id: 'contract',
-    src: '/landing/product/contract-list.webp',
-    width: 1440,
-    height: 900,
+    screen: 'contract',
     altKey: 'landing.home.workflow.contractTitle',
     captionKey: 'landing.home.workflow.illustrativeLabel',
     sourceRoute: '/app/sales/contracts',
     evidenceKind: 'illustrative-data',
   },
-} as const satisfies Record<string, LandingProductAsset>;
+} as const satisfies Record<string, LandingProductScreen>;
 
 export type LandingProductAssetId = keyof typeof homeProductAssets;
 

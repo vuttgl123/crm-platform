@@ -6,6 +6,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import com.crm.foundation.identifier.IdentifierGenerator;
+import com.crm.foundation.security.AccountLockedException;
 import com.crm.foundation.security.CodedAccessDeniedException;
 import com.crm.foundation.security.CodedAuthenticationException;
 import com.crm.foundation.time.TimeProvider;
@@ -20,7 +21,9 @@ import com.crm.identity.application.port.IdentityRepository;
 import com.crm.identity.application.port.PasswordHasher;
 import com.crm.identity.application.usecase.AuthenticationFacade;
 import com.crm.identity.domain.AuthenticationErrorCode;
+import com.crm.identity.domain.PasswordPolicy;
 import com.crm.identity.domain.UserAccount;
+import com.crm.sharedkernel.domain.exception.BusinessRuleViolation;
 import com.crm.sharedkernel.domain.exception.ResourceConflict;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -66,6 +69,10 @@ public class AuthenticationApplicationService
 			AuthenticationRequestMetadata metadata) {
 		ensureSelfRegistrationEnabled();
 		String normalizedEmail = normalizeEmail(command.email());
+		// @Size(min = 12) on the request only checks length; the policy is the
+		// authority, and it applies here exactly as it does to reset and change.
+		enforcePasswordPolicy(command.password(), normalizedEmail,
+				command.displayName());
 		if (identityRepository.findByEmail(normalizedEmail).isPresent()) {
 			throw emailAlreadyRegistered();
 		}
@@ -112,16 +119,33 @@ public class AuthenticationApplicationService
 					user.id(), normalizedEmail, metadata, now);
 			throw invalidCredentials();
 		}
-		if (!user.permitsPasswordAuthenticationAt(now)) {
-			passwordHasher.matches(command.password(), user.passwordHash());
-			auditRecorder.recordLoginFailure(
-					user.id(), normalizedEmail, metadata, now);
+		// The password is verified first so that ACCOUNT_LOCKED can be
+		// returned only to a caller who has proved they know it. Verifying
+		// always, for any existing account, also makes response timing more
+		// uniform than the previous ordering.
+		boolean passwordMatches = passwordHasher.matches(
+				command.password(), user.passwordHash());
+		boolean locked = !user.permitsPasswordAuthenticationAt(now);
+
+		if (!passwordMatches) {
+			if (locked) {
+				// Do not extend an existing lock: the counter stays put,
+				// matching the behaviour before this change.
+				auditRecorder.recordLoginFailure(
+						user.id(), normalizedEmail, metadata, now);
+			}
+			else {
+				recordFailedLogin(user, normalizedEmail, metadata, now);
+			}
 			throw invalidCredentials();
 		}
-		if (!passwordHasher.matches(
-				command.password(), user.passwordHash())) {
-			recordFailedLogin(user, normalizedEmail, metadata, now);
-			throw invalidCredentials();
+
+		if (locked) {
+			auditRecorder.recordLoginBlockedByLock(
+					user.id(), normalizedEmail, metadata, now);
+			throw new AccountLockedException(
+					AuthenticationErrorCode.ACCOUNT_LOCKED,
+					user.lockedUntil());
 		}
 
 		identityRepository.recordSuccessfulLogin(user.id(), now);
@@ -223,6 +247,14 @@ public class AuthenticationApplicationService
 		if (!policy.selfRegistrationEnabled()) {
 			throw new CodedAccessDeniedException(
 					AuthenticationErrorCode.SELF_REGISTRATION_DISABLED);
+		}
+	}
+
+	private static void enforcePasswordPolicy(String password, String email,
+			String displayName) {
+		if (PasswordPolicy.validate(password, email, displayName).isPresent()) {
+			throw new BusinessRuleViolation(
+					AuthenticationErrorCode.WEAK_PASSWORD);
 		}
 	}
 

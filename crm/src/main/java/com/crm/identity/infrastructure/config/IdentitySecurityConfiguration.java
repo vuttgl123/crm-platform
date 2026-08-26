@@ -4,7 +4,14 @@ import java.util.List;
 
 import com.crm.foundation.logging.RequestTracingFilter;
 import com.crm.identity.application.AuthenticationPolicy;
+import com.crm.foundation.identifier.IdentifierGenerator;
+import com.crm.foundation.time.TimeProvider;
 import com.crm.identity.application.port.IdentityRepository;
+import com.crm.identity.application.port.PasswordHasher;
+import com.crm.identity.application.port.PasswordResetMailer;
+import com.crm.identity.application.port.PasswordResetTokenRepository;
+import com.crm.identity.application.service.AuthenticationAuditRecorder;
+import com.crm.identity.application.service.PasswordResetApplicationService;
 import com.crm.identity.infrastructure.security.AuthCookieOriginFilter;
 import com.crm.identity.infrastructure.security.CurrentIdentityContextFilter;
 import com.crm.identity.presentation.web.OAuth2LoginFailureHandler;
@@ -15,6 +22,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
+import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -36,6 +44,7 @@ import org.springframework.web.servlet.HandlerExceptionResolver;
 
 @Configuration
 @EnableMethodSecurity
+@EnableAsync
 public class IdentitySecurityConfiguration {
 
 	@Bean
@@ -65,9 +74,14 @@ public class IdentitySecurityConfiguration {
 				.authorizeHttpRequests(authorize -> authorize
 						.requestMatchers(CorsUtils::isPreFlightRequest)
 						.permitAll()
+						// Listed one by one on purpose. A wildcard such as
+						// /api/auth/password/** would also expose
+						// /password/change, which must stay authenticated.
 						.requestMatchers(HttpMethod.POST,
 								"/api/auth/register", "/api/auth/login",
-								"/api/auth/refresh", "/api/auth/logout")
+								"/api/auth/refresh", "/api/auth/logout",
+								"/api/auth/password/forgot",
+								"/api/auth/password/reset")
 						.permitAll()
 						.requestMatchers("/oauth2/**", "/login/oauth2/**",
 								"/actuator/health")
@@ -112,6 +126,36 @@ public class IdentitySecurityConfiguration {
 				properties.selfRegistrationEnabled(),
 				properties.maxFailedAttempts(),
 				properties.lockDuration());
+	}
+
+	/**
+	 * Built by hand because the last four constructor arguments are plain
+	 * values from configuration rather than beans.
+	 */
+	@Bean
+	PasswordResetApplicationService passwordResetApplicationService(
+			IdentityRepository identityRepository,
+			PasswordResetTokenRepository tokenRepository,
+			PasswordResetMailer mailer,
+			PasswordHasher passwordHasher,
+			AuthenticationAuditRecorder auditRecorder,
+			IdentifierGenerator identifierGenerator,
+			TimeProvider timeProvider,
+			CrmSecurityProperties properties) {
+		CrmSecurityProperties.PasswordResetLimits limits =
+				properties.passwordResetLimits();
+		return new PasswordResetApplicationService(
+				identityRepository,
+				tokenRepository,
+				mailer,
+				passwordHasher,
+				auditRecorder,
+				identifierGenerator,
+				timeProvider,
+				properties.passwordResetTtl(),
+				limits.minimumInterval(),
+				limits.maxPerHour(),
+				limits.resetUrlTemplate());
 	}
 
 	@Bean

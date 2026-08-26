@@ -3,11 +3,14 @@ import { useTranslation } from 'react-i18next';
 export interface AuthPageHeaderProps {
   titleKey: string;
   descriptionKey: string;
+  /** Interpolation values for the description, e.g. { email }. */
+  descriptionValues?: Record<string, string | number>;
 }
 
 export function AuthPageHeader({
   titleKey,
   descriptionKey,
+  descriptionValues,
 }: AuthPageHeaderProps): JSX.Element {
   const { t } = useTranslation();
 
@@ -17,7 +20,7 @@ export function AuthPageHeader({
         {t(titleKey)}
       </h1>
       <p className="text-sm text-[var(--auth-muted)] leading-relaxed font-normal">
-        {t(descriptionKey)}
+        {t(descriptionKey, descriptionValues)}
       </p>
     </div>
   );

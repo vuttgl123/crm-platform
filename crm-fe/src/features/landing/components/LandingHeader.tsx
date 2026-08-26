@@ -1,10 +1,11 @@
-/* global IntersectionObserver, HTMLAnchorElement */
+/* global IntersectionObserver, HTMLAnchorElement, ScrollBehavior */
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Menu, X, ArrowRight } from 'lucide-react';
 import { useAuth } from '@/core/session/useAuth';
 import { Button } from '@/components/ui/button';
+import { useScrolled } from '../hooks/useScrolled';
 
 export const LandingHeader: React.FC = () => {
   const { t } = useTranslation();
@@ -13,6 +14,7 @@ export const LandingHeader: React.FC = () => {
   const { isAuthenticated } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState<string>('hero');
+  const scrolled = useScrolled(8);
 
   const navItems = [
     { key: 'features', label: t('landing.nav.features'), anchor: '#features', to: '/features' },
@@ -99,164 +101,116 @@ export const LandingHeader: React.FC = () => {
         setMobileMenuOpen(false);
       }
     };
-    if (mobileMenuOpen) {
-      window.addEventListener('keydown', handleKeyDown);
-    }
+    window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [mobileMenuOpen]);
+  }, []);
 
   return (
-    <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-[var(--landing-line)] transition-colors">
-      <div className="landing-container">
-        <div className="flex items-center justify-between h-16 py-3">
-          {/* Logo / Wordmark */}
-          <Link
-            to="/"
-            onClick={() => {
-              if (location.pathname === '/') {
-                window.scrollTo({ top: 0, behavior: getScrollBehavior() });
-              }
-            }}
-            className="flex items-center gap-2.5 group"
-            aria-label="VUM CRM Home"
-          >
-            <div className="w-8 h-8 rounded-lg bg-[var(--landing-ink)] flex items-center justify-center text-white shadow-xs group-hover:bg-[var(--landing-blue)] transition-colors">
-              <span className="font-bold text-base tracking-tight" translate="no">
-                V
-              </span>
-            </div>
-            <div className="flex flex-col">
-              <span className="font-extrabold text-base tracking-tight text-[var(--landing-ink)] leading-none" translate="no">
-                VUM CRM
-              </span>
-              <span className="text-[10px] font-bold text-[var(--landing-muted)] tracking-wider uppercase mt-0.5">
-                Enterprise
-              </span>
-            </div>
-          </Link>
+    <header className="fixed top-0 left-0 right-0 z-50 transition-all duration-300 pt-4 px-4 sm:px-6">
+      {/* Google Stitch Floating Glassmorphic Pill */}
+      <div className="landing-container max-w-6xl mx-auto flex items-center justify-between px-6 py-2.5 rounded-full lp-stitch-nav-pill">
+        {/* Logo Branding */}
+        <Link
+          to="/"
+          onClick={(e) => {
+            if (location.pathname === '/') {
+              e.preventDefault();
+              window.scrollTo({ top: 0, behavior: getScrollBehavior() });
+              setActiveSection('hero');
+            }
+          }}
+          className="flex items-center gap-3 group"
+          aria-label="VUM CRM Home"
+        >
+          <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center text-white shadow-[0_0_15px_rgba(34,211,238,0.5)] transition-transform group-hover:scale-105">
+            <span className="font-black text-sm tracking-tight font-mono" translate="no">
+              V
+            </span>
+          </div>
+          <span className="font-extrabold text-base tracking-tight text-white font-mono" translate="no">
+            VUM CRM
+          </span>
+        </Link>
 
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-6" aria-label="Main Navigation">
-            {navItems.map((item) => {
-              const isSectionActive =
-                location.pathname === '/'
-                  ? activeSection === item.key
-                  : location.pathname === item.to;
+        {/* Desktop Navigation Links */}
+        <nav className="hidden md:flex items-center gap-7" aria-label="Main Navigation">
+          {navItems.map((item) => {
+            const isSectionActive =
+              location.pathname === '/'
+                ? activeSection === item.key
+                : location.pathname === item.to;
 
-              return (
-                <a
-                  key={item.key}
-                  href={item.anchor}
-                  onClick={(e) => handleNavClick(e, item.anchor, item.to)}
-                  aria-current={isSectionActive ? 'page' : undefined}
-                  className={`text-sm font-semibold py-1.5 px-2.5 rounded-lg min-h-[44px] inline-flex items-center transition-colors ${
-                    isSectionActive
-                      ? 'text-[var(--landing-blue)] font-bold bg-[var(--landing-blue-soft)]'
-                      : 'text-[var(--landing-muted)] hover:text-[var(--landing-ink)] hover:bg-[var(--landing-canvas)]'
-                  }`}
-                >
-                  {item.label}
-                </a>
-              );
-            })}
-          </nav>
+            return (
+              <a
+                key={item.key}
+                href={item.anchor}
+                onClick={(e) => handleNavClick(e, item.anchor, item.to)}
+                aria-current={isSectionActive ? 'page' : undefined}
+                className={`text-xs font-semibold tracking-wide transition-all ${
+                  isSectionActive
+                    ? 'text-cyan-300 drop-shadow-[0_0_8px_rgba(34,211,238,0.8)]'
+                    : 'text-slate-400 hover:text-white hover:drop-shadow-[0_0_6px_rgba(255,255,255,0.4)]'
+                }`}
+              >
+                {item.label}
+              </a>
+            );
+          })}
+        </nav>
 
-          {/* Desktop Action Buttons */}
-          <div className="hidden md:flex items-center gap-3">
-            {isAuthenticated ? (
-              <Button asChild className="h-10 px-5 bg-[var(--landing-blue)] hover:bg-[var(--landing-blue-hover)] text-white font-semibold text-sm shadow-xs transition-colors">
-                <Link to="/app/overview">
-                  <span>{t('landing.nav.workspace')}</span>
-                  <ArrowRight className="w-4 h-4 ml-1.5" />
-                </Link>
+        {/* Desktop Action Buttons */}
+        <div className="hidden md:flex items-center gap-3">
+          {isAuthenticated ? (
+            <Button asChild className="h-9 px-5 lp-btn-stitch text-white font-extrabold uppercase tracking-wider text-xs rounded-full">
+              <Link to="/app/overview">
+                <span>{t('landing.nav.workspace')}</span>
+                <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
+              </Link>
+            </Button>
+          ) : (
+            <>
+              <Button variant="ghost" asChild className="h-9 px-4 text-slate-300 hover:text-white hover:bg-white/5 font-bold text-xs rounded-full">
+                <Link to="/login">{t('landing.nav.login')}</Link>
               </Button>
-            ) : (
-              <>
-                <Button variant="ghost" asChild className="h-10 px-4 text-[var(--landing-ink)] hover:text-[var(--landing-blue)] hover:bg-[var(--landing-blue-soft)] font-semibold text-sm">
-                  <Link to="/login">{t('landing.nav.login')}</Link>
-                </Button>
-                <Button asChild className="h-10 px-5 bg-[var(--landing-blue)] hover:bg-[var(--landing-blue-hover)] text-white font-semibold text-sm shadow-xs transition-colors">
-                  <a href="#demo" onClick={(e) => handleNavClick(e, '#demo', '/demo')}>
-                    <span>{t('landing.nav.demo')}</span>
-                    <ArrowRight className="w-4 h-4 ml-1.5" />
-                  </a>
-                </Button>
-              </>
-            )}
-          </div>
+              <Button asChild className="h-9 px-6 lp-btn-stitch font-extrabold uppercase tracking-wider text-xs rounded-full">
+                <a href="#demo" onClick={(e) => handleNavClick(e, '#demo', '/demo')}>
+                  <span>{t('landing.nav.demo')}</span>
+                  <ArrowRight className="w-3.5 h-3.5 ml-1.5 text-cyan-200" />
+                </a>
+              </Button>
+            </>
+          )}
+        </div>
 
-          {/* Mobile Menu Button */}
-          <div className="flex md:hidden items-center">
-            <button
-              type="button"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2.5 rounded-lg text-[var(--landing-ink)] hover:bg-[var(--landing-canvas)] min-h-[44px] min-w-[44px] flex items-center justify-center"
-              aria-expanded={mobileMenuOpen}
-              aria-controls="landing-mobile-nav"
-              aria-label={
-                mobileMenuOpen
-                  ? t('landing.nav.closeMenu')
-                  : t('landing.nav.openMenu')
-              }
-            >
-              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-            </button>
-          </div>
+        {/* Mobile Menu Button */}
+        <div className="flex md:hidden items-center">
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="p-2 text-slate-300 hover:text-white"
+            aria-expanded={mobileMenuOpen}
+            aria-label={mobileMenuOpen ? t('landing.nav.closeMenu') : t('landing.nav.openMenu')}
+          >
+            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          </button>
         </div>
       </div>
 
       {/* Mobile Drawer Menu */}
       {mobileMenuOpen && (
-        <div
-          id="landing-mobile-nav"
-          className="md:hidden border-t border-[var(--landing-line)] bg-white px-4 pt-4 pb-6 space-y-4 shadow-lg"
-        >
-          <nav className="space-y-1">
-            {navItems.map((item) => {
-              const isSectionActive =
-                location.pathname === '/'
-                  ? activeSection === item.key
-                  : location.pathname === item.to;
-
-              return (
-                <a
-                  key={item.key}
-                  href={item.anchor}
-                  onClick={(e) => handleNavClick(e, item.anchor, item.to)}
-                  className={`block px-3 py-3 rounded-lg text-base font-semibold min-h-[44px] flex items-center ${
-                    isSectionActive
-                      ? 'bg-[var(--landing-blue-soft)] text-[var(--landing-blue)] font-bold'
-                      : 'text-[var(--landing-ink)] hover:bg-[var(--landing-canvas)]'
-                  }`}
-                >
-                  {item.label}
-                </a>
-              );
-            })}
+        <div className="md:hidden mt-3 rounded-2xl border border-slate-800 bg-slate-950/95 p-5 shadow-2xl backdrop-blur-2xl">
+          <nav className="space-y-2">
+            {navItems.map((item) => (
+              <a
+                key={item.key}
+                href={item.anchor}
+                onClick={(e) => handleNavClick(e, item.anchor, item.to)}
+                className="block px-4 py-2.5 rounded-lg text-sm font-semibold text-slate-300 hover:bg-slate-900 hover:text-white"
+              >
+                {item.label}
+              </a>
+            ))}
           </nav>
-
-          <div className="pt-4 border-t border-[var(--landing-line)] flex flex-col gap-2.5">
-            {isAuthenticated ? (
-              <Button asChild className="w-full h-11 bg-[var(--landing-blue)] hover:bg-[var(--landing-blue-hover)] text-white font-semibold justify-center text-base">
-                <Link to="/app/overview">
-                  <span>{t('landing.nav.workspace')}</span>
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </Link>
-              </Button>
-            ) : (
-              <>
-                <Button asChild className="w-full h-11 bg-[var(--landing-blue)] hover:bg-[var(--landing-blue-hover)] text-white font-semibold justify-center text-base">
-                  <a href="#demo" onClick={(e) => handleNavClick(e, '#demo', '/demo')}>
-                    <span>{t('landing.nav.demo')}</span>
-                    <ArrowRight className="w-4 h-4 ml-2" />
-                  </a>
-                </Button>
-                <Button variant="outline" asChild className="w-full h-11 border-[var(--landing-line)] text-[var(--landing-ink)] font-semibold justify-center text-base">
-                  <Link to="/login">{t('landing.nav.login')}</Link>
-                </Button>
-              </>
-            )}
-          </div>
         </div>
       )}
     </header>

@@ -12,13 +12,24 @@ export type CommercialScopeId =
   | 'integration'
   | 'governance';
 
+export type CapabilityProofIconId =
+  | 'data'
+  | 'pipeline'
+  | 'quote'
+  | 'contract'
+  | 'access';
+
 export const capabilityProofItems = [
-  { id: 'customer-data', labelKey: 'landing.home.proof.customerData' },
-  { id: 'pipeline', labelKey: 'landing.home.proof.pipeline' },
-  { id: 'quotes', labelKey: 'landing.home.proof.quotes' },
-  { id: 'contracts', labelKey: 'landing.home.proof.contracts' },
-  { id: 'access', labelKey: 'landing.home.proof.access' },
-] as const;
+  { id: 'customer-data', iconId: 'data', labelKey: 'landing.home.proof.customerData' },
+  { id: 'pipeline', iconId: 'pipeline', labelKey: 'landing.home.proof.pipeline' },
+  { id: 'quotes', iconId: 'quote', labelKey: 'landing.home.proof.quotes' },
+  { id: 'contracts', iconId: 'contract', labelKey: 'landing.home.proof.contracts' },
+  { id: 'access', iconId: 'access', labelKey: 'landing.home.proof.access' },
+] as const satisfies ReadonlyArray<{
+  id: string;
+  iconId: CapabilityProofIconId;
+  labelKey: string;
+}>;
 
 export const homeRoleItems = [
   {

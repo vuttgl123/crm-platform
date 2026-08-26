@@ -1,20 +1,46 @@
+/* The editorial design tokens live on :root in the landing stylesheet. This
+   import makes the dependency explicit rather than relying on the landing
+   bundle happening to be loaded first; the bundler de-duplicates it, so the
+   stylesheet is not emitted twice. */
+@import '../landing/landing.css';
+
+/* ==========================================================================
+   VUM CRM — Authentication gateway
+   Consumes the editorial design system declared on :root in
+   features/landing/landing.css. The --auth-* names are kept as aliases onto
+   --ed-* so no page has to change: every existing var(--auth-*) reference
+   resolves through this block to the shared value.
+   ========================================================================== */
+
 .auth-theme {
-  --auth-canvas: #F6F9FC;
-  --auth-surface: #FFFFFF;
-  --auth-ink: #07182B;
-  --auth-muted: #52647A;
-  --auth-line: #DCE5F0;
-  --auth-blue: #085AC0;
-  --auth-blue-hover: #06499D;
-  --auth-blue-soft: #EAF2FC;
-  --auth-danger: #BE123C;
-  --auth-danger-soft: #FFF1F2;
+  --auth-canvas: var(--ed-surface);
+  --auth-surface: var(--ed-canvas);
+  --auth-surface-2: var(--ed-surface-2);
+  --auth-ink: var(--ed-primary);
+  --auth-muted: var(--ed-secondary);
+  --auth-subtle: var(--ed-muted);
+  --auth-line: var(--ed-hairline);
+  --auth-line-strong: var(--ed-hairline-strong);
+  --auth-blue: var(--ed-accent);
+  --auth-blue-hover: var(--ed-accent-hover);
+  --auth-blue-soft: var(--ed-accent-soft);
+  --auth-blue-border: var(--ed-accent-border);
+  --auth-danger: var(--ed-negative);
+  --auth-danger-soft: #FEF2F2;
+  --auth-positive: var(--ed-positive);
+
   min-height: 100dvh;
   background: var(--auth-canvas);
   color: var(--auth-ink);
-  font-family: 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: var(--ed-font-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   overflow-x: clip;
 }
+
+/* ==========================================================================
+   Frame
+   ========================================================================== */
 
 .auth-theme .auth-frame {
   width: min(calc(100% - 2rem), 74rem);
@@ -24,33 +50,54 @@
   grid-template-columns: minmax(0, 44fr) minmax(0, 56fr);
   overflow: hidden;
   border: 1px solid var(--auth-line);
-  border-radius: 1.25rem;
+  border-radius: var(--ed-radius-mockup);
   background: var(--auth-surface);
-  box-shadow: 0 24px 60px -24px rgba(7, 24, 43, 0.12);
+  box-shadow: var(--ed-shadow-product);
 }
 
 .auth-theme .auth-frame--compact {
-  width: min(calc(100% - 2rem), 38rem);
+  width: min(calc(100% - 2rem), 34rem);
   min-height: auto;
   display: block;
 }
 
 .auth-theme .auth-display {
-  font-family: 'Plus Jakarta Sans', 'Be Vietnam Pro', sans-serif;
-  letter-spacing: -0.035em;
+  font-family: var(--ed-font-heading);
+  letter-spacing: -0.022em;
   text-wrap: balance;
 }
 
+/* The brand panel is the one dark region in the gateway, mirroring how the
+   landing page reserves .editorial-dark-region for a few designated blocks. */
 .auth-theme .auth-brand-panel {
   display: flex;
   min-width: 0;
   flex-direction: column;
   justify-content: space-between;
-  padding: clamp(2.5rem, 5vw, 4.5rem);
-  background: linear-gradient(180deg, #EBF3FC 0%, #E2EEFB 100%);
+  padding: clamp(2.5rem, 5vw, 4rem);
+  background: var(--ed-ink);
+  color: var(--ed-inverse);
   border-right: 1px solid var(--auth-line);
   position: relative;
   overflow: hidden;
+}
+
+/* Faint grid, the same restrained texture the landing dark regions use. */
+.auth-theme .auth-brand-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(to right, rgba(250, 250, 249, .06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(250, 250, 249, .06) 1px, transparent 1px);
+  background-size: 44px 44px;
+  -webkit-mask-image: radial-gradient(120% 90% at 20% 0%, #000, transparent 72%);
+  mask-image: radial-gradient(120% 90% at 20% 0%, #000, transparent 72%);
+}
+
+.auth-theme .auth-brand-panel > * {
+  position: relative;
 }
 
 .auth-theme .auth-form-region {
@@ -61,19 +108,28 @@
 }
 
 .auth-theme .auth-form-column {
-  width: min(100%, 28rem);
+  width: min(100%, 27rem);
   margin: auto;
-  padding: clamp(2rem, 4vw, 3.5rem) 2rem;
+  padding: clamp(2rem, 4vw, 3.25rem) 2rem;
 }
 
-.auth-theme :where(a, button, input):focus-visible {
+/* ==========================================================================
+   Controls
+   ========================================================================== */
+
+.auth-theme :where(a, button, input, select, textarea):focus-visible {
   outline: 2px solid var(--auth-blue);
   outline-offset: 2px;
 }
 
+/* Inside the dark brand panel the accent is too dark to see. */
+.auth-theme .auth-brand-panel :where(a, button):focus-visible {
+  outline-color: var(--auth-blue-border);
+}
+
 .auth-theme .auth-control {
-  min-height: 2.75rem;
-  border-radius: 0.625rem;
+  min-height: 2.875rem;
+  border-radius: var(--ed-radius-input);
 }
 
 .auth-theme .auth-icon-button {
@@ -82,11 +138,12 @@
   height: 2.5rem;
   align-items: center;
   justify-content: center;
-  border-radius: 0.5rem;
+  border-radius: var(--ed-radius-button);
 }
 
 .auth-theme .auth-interactive {
-  transition-property: color, background-color, border-color, opacity, transform, box-shadow;
+  transition-property: color, background-color, border-color, opacity, transform,
+    box-shadow;
   transition-duration: 150ms;
   transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -94,6 +151,10 @@
 .auth-theme .auth-interactive:active {
   transform: translateY(1px);
 }
+
+/* ==========================================================================
+   Responsive
+   ========================================================================== */
 
 @media (max-width: 1023px) {
   .auth-theme .auth-frame {

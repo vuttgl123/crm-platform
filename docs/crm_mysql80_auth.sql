@@ -77,7 +77,9 @@ CREATE TABLE platform_auth_events (
         CHECK (event_type IN (
             'REGISTER', 'LOGIN_SUCCESS', 'LOGIN_FAILURE',
             'REFRESH', 'LOGOUT', 'SESSION_REVOKED',
-            'EXTERNAL_IDENTITY_CREATED'
+            'EXTERNAL_IDENTITY_CREATED',
+            'PASSWORD_RESET_REQUESTED', 'PASSWORD_RESET_COMPLETED',
+            'PASSWORD_CHANGED', 'LOGIN_BLOCKED_LOCKED'
         )),
     provider VARCHAR(32) NOT NULL,
     success BOOLEAN NOT NULL,
@@ -93,6 +95,27 @@ CREATE TABLE platform_auth_events (
     CHECK ((success AND failure_code IS NULL)
         OR (NOT success AND failure_code IS NOT NULL))
 ) ENGINE=InnoDB;
+
+CREATE TABLE platform_password_reset_tokens (
+    id CHAR(36) PRIMARY KEY,
+    user_id CHAR(36) NOT NULL,
+    token_hash CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+    issued_at DATETIME(6) NOT NULL,
+    expires_at DATETIME(6) NOT NULL,
+    consumed_at DATETIME(6),
+    invalidated_at DATETIME(6),
+    invalidate_reason VARCHAR(64),
+    requested_ip VARCHAR(45),
+    requested_user_agent VARCHAR(512),
+    FOREIGN KEY (user_id) REFERENCES platform_users(id) ON DELETE CASCADE,
+    CONSTRAINT uq_password_reset_token_hash UNIQUE (token_hash),
+    CHECK (expires_at > issued_at),
+    CHECK (invalidated_at IS NULL OR invalidate_reason IS NOT NULL),
+    CHECK (consumed_at IS NULL OR invalidated_at IS NULL)
+) ENGINE=InnoDB;
+
+CREATE INDEX idx_password_reset_user_active
+    ON platform_password_reset_tokens (user_id, consumed_at, expires_at);
 
 CREATE INDEX idx_user_identities_user
     ON platform_user_identities (user_id);

@@ -1,2 +1,7 @@
 keys/*.pem
 logs/
+**/node_modules/
+**/.vite/
+**/target/
+**/dist/
+**/build/

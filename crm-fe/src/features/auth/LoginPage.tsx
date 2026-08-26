@@ -17,6 +17,7 @@ import { DemoAccountPanel } from './components/DemoAccountPanel';
 import { resolveReturnUrl } from './utils/resolveReturnUrl';
 import {
   AuthErrorCode,
+  extractLockedUntil,
   normalizeAuthError,
   normalizeOAuthErrorCode,
 } from './utils/authErrorMessages';
@@ -79,6 +80,7 @@ export const LoginPage: React.FC = () => {
   const oauthErrorCode = normalizeOAuthErrorCode(searchParams.get('errorCode'));
 
   const [localErrorCode, setLocalErrorCode] = useState<AuthErrorCode>();
+  const [lockedUntil, setLockedUntil] = useState<string>();
   const [pendingAction, setPendingAction] = useState<PendingLoginAction>(null);
 
   useEffect(() => {
@@ -108,6 +110,7 @@ export const LoginPage: React.FC = () => {
       navigate(returnUrl, { replace: true });
     } catch (error: unknown) {
       setLocalErrorCode(normalizeAuthError(error));
+      setLockedUntil(extractLockedUntil(error));
     } finally {
       setPendingAction(null);
     }
@@ -124,6 +127,7 @@ export const LoginPage: React.FC = () => {
       }
     } catch (error: unknown) {
       setLocalErrorCode(normalizeAuthError(error));
+      setLockedUntil(extractLockedUntil(error));
       setPendingAction(null);
     }
   };
@@ -152,7 +156,36 @@ export const LoginPage: React.FC = () => {
       <AuthFormError
         errorCode={effectiveErrorCode}
         fallbackMessageKey="auth.gateway.errors.unknown"
+        messageKeyOverride={
+          effectiveErrorCode === 'ACCOUNT_LOCKED' && lockedUntil
+            ? 'auth.gateway.errors.accountLockedUntil'
+            : undefined
+        }
+        messageValues={
+          effectiveErrorCode === 'ACCOUNT_LOCKED' && lockedUntil
+            ? {
+                // Formatted here, in the browser: only it knows the viewer's
+                // timezone and locale. The server sends an ISO instant.
+                time: new Date(lockedUntil).toLocaleTimeString(undefined, {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                }),
+              }
+            : undefined
+        }
       />
+
+      {effectiveErrorCode === 'ACCOUNT_LOCKED' && (
+        <div className="mb-4 text-left">
+          <Link
+            to="/forgot-password"
+            className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--auth-blue)] hover:underline"
+          >
+            <span>{t('auth.gateway.login.unlockViaReset')}</span>
+            <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
+          </Link>
+        </div>
+      )}
 
       {effectiveErrorCode === 'SELF_REGISTRATION_DISABLED' && (
         <div className="mb-4 text-left">
@@ -208,6 +241,16 @@ export const LoginPage: React.FC = () => {
           error={errors.password?.message}
           registration={register('password')}
         />
+
+        {/* Without this link the recovery flow exists but nobody can find it. */}
+        <div className="-mt-1 flex justify-end">
+          <Link
+            to="/forgot-password"
+            className="inline-flex min-h-[44px] items-center text-xs font-semibold text-[var(--auth-blue)] hover:underline underline-offset-4"
+          >
+            {t('auth.gateway.login.forgotPassword')}
+          </Link>
+        </div>
 
         {/* Submit Button */}
         <div className="pt-2">

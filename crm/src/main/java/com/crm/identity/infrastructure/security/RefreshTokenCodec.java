@@ -1,10 +1,5 @@
 package com.crm.identity.infrastructure.security;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
-import java.util.Base64;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -14,19 +9,11 @@ import org.springframework.stereotype.Component;
 @Component
 public final class RefreshTokenCodec implements RefreshTokenManager {
 
-	private static final int SECRET_BYTES = 32;
-
-	private final SecureRandom secureRandom = new SecureRandom();
-
 	@Override
 	public GeneratedRefreshToken generate(UUID sessionId) {
-		byte[] secretBytes = new byte[SECRET_BYTES];
-		secureRandom.nextBytes(secretBytes);
-		String secret = Base64.getUrlEncoder()
-				.withoutPadding()
-				.encodeToString(secretBytes);
-		String rawToken = sessionId + "." + secret;
-		return new GeneratedRefreshToken(rawToken, hash(rawToken));
+		String rawToken = sessionId + "." + TokenHashing.generateSecret();
+		return new GeneratedRefreshToken(rawToken,
+				TokenHashing.sha256Hex(rawToken));
 	}
 
 	@Override
@@ -44,7 +31,8 @@ public final class RefreshTokenCodec implements RefreshTokenManager {
 			if (secret.length() < 32) {
 				return Optional.empty();
 			}
-			return Optional.of(new ParsedRefreshToken(sessionId, hash(rawToken)));
+			return Optional.of(new ParsedRefreshToken(sessionId,
+					TokenHashing.sha256Hex(rawToken)));
 		}
 		catch (IllegalArgumentException exception) {
 			return Optional.empty();
@@ -53,23 +41,7 @@ public final class RefreshTokenCodec implements RefreshTokenManager {
 
 	@Override
 	public boolean matches(String expectedHash, String actualHash) {
-		if (expectedHash == null || actualHash == null) {
-			return false;
-		}
-		return MessageDigest.isEqual(
-				expectedHash.getBytes(StandardCharsets.US_ASCII),
-				actualHash.getBytes(StandardCharsets.US_ASCII));
-	}
-
-	private static String hash(String rawToken) {
-		try {
-			byte[] digest = MessageDigest.getInstance("SHA-256")
-					.digest(rawToken.getBytes(StandardCharsets.UTF_8));
-			return java.util.HexFormat.of().formatHex(digest);
-		}
-		catch (NoSuchAlgorithmException exception) {
-			throw new IllegalStateException("SHA-256 is not available", exception);
-		}
+		return TokenHashing.matches(expectedHash, actualHash);
 	}
 
 }

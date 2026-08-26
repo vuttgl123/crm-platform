@@ -13,6 +13,7 @@ import { AuthShell } from './components/AuthShell';
 import { AuthPageHeader } from './components/AuthPageHeader';
 import { AuthFormError } from './components/AuthFormError';
 import { PasswordField } from './components/PasswordField';
+import { PasswordStrengthMeter } from './components/PasswordStrengthMeter';
 import {
   AuthErrorCode,
   normalizeAuthError,
@@ -64,6 +65,7 @@ export const RegisterPage: React.FC = () => {
     register,
     handleSubmit,
     control,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<RegisterFormValues>({
     resolver: zodResolver(schema),
@@ -257,15 +259,22 @@ export const RegisterPage: React.FC = () => {
         </div>
 
         {/* Password Field */}
-        <PasswordField
-          id="register-password"
-          label={t('auth.gateway.register.passwordLabel')}
-          placeholder={t('auth.gateway.register.passwordPlaceholder')}
-          autoComplete="new-password"
-          error={errors.password?.message}
-          helperText={t('auth.gateway.register.passwordHelper')}
-          registration={register('password')}
-        />
+        <div>
+          <PasswordField
+            id="register-password"
+            label={t('auth.gateway.register.passwordLabel')}
+            placeholder={t('auth.gateway.register.passwordPlaceholder')}
+            autoComplete="new-password"
+            error={errors.password?.message}
+            helperText={t('auth.gateway.register.passwordHelper')}
+            registration={register('password')}
+          />
+          <PasswordStrengthMeter
+            password={watch('password') ?? ''}
+            email={watch('email')}
+            displayName={watch('displayName')}
+          />
+        </div>
 
         {/* Legal Consent Checkbox */}
         <div className="pt-2">

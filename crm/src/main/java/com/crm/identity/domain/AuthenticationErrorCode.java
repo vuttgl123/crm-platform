@@ -11,7 +11,13 @@ public enum AuthenticationErrorCode implements ErrorCode {
 	SELF_REGISTRATION_DISABLED("SELF_REGISTRATION_DISABLED", "auth.self_registration_disabled"),
 	EXTERNAL_EMAIL_NOT_VERIFIED("EXTERNAL_EMAIL_NOT_VERIFIED", "auth.external_email_not_verified"),
 	EXTERNAL_IDENTITY_LINK_REQUIRED("EXTERNAL_IDENTITY_LINK_REQUIRED", "auth.external_identity_link_required"),
-	OAUTH2_LOGIN_FAILED("OAUTH2_LOGIN_FAILED", "auth.oauth2_login_failed");
+	OAUTH2_LOGIN_FAILED("OAUTH2_LOGIN_FAILED", "auth.oauth2_login_failed"),
+	ACCOUNT_LOCKED("ACCOUNT_LOCKED", "auth.account_locked"),
+	PASSWORD_RESET_TOKEN_INVALID("PASSWORD_RESET_TOKEN_INVALID",
+			"auth.password_reset_token_invalid"),
+	PASSWORD_RESET_TOKEN_EXPIRED("PASSWORD_RESET_TOKEN_EXPIRED",
+			"auth.password_reset_token_expired"),
+	WEAK_PASSWORD("WEAK_PASSWORD", "auth.weak_password");
 
 	private final String value;
 	private final String messageKey;

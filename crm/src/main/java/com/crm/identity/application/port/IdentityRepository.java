@@ -40,6 +40,16 @@ public interface IdentityRepository {
 
 	boolean hasActiveTenantMembership(UUID userId, UUID tenantId);
 
+	/**
+	 * Sets a new password hash and clears the lock state in one statement.
+	 * Clearing the lock is what makes password reset the self-service unlock
+	 * path: it reuses exactly the two columns recordSuccessfulLogin clears.
+	 */
+	void updatePasswordAndClearLock(UUID userId, String passwordHash,
+			Instant now);
+
+	void revokeAllSessions(UUID userId, Instant now, String reason);
+
 	void appendAuthEvent(AuthEvent event);
 
 }

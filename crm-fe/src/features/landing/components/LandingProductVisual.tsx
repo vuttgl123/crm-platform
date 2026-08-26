@@ -1,42 +1,36 @@
 import type { ReactElement } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { LandingProductAsset } from '../content/homeProductEvidence';
+import { MockWindow, mockScreens } from './product-ui';
+import type { LandingProductScreen } from '../content/homeProductEvidence';
 
 export interface LandingProductVisualProps {
-  asset: LandingProductAsset;
+  asset: LandingProductScreen;
+  /**
+   * Retained for call-site compatibility. No longer meaningful now that the
+   * visual is rendered rather than fetched.
+   */
   priority?: boolean;
   className?: string;
 }
 
 export function LandingProductVisual({
   asset,
-  priority = false,
   className,
 }: LandingProductVisualProps): ReactElement {
   const { t } = useTranslation();
+  const Screen = mockScreens[asset.screen];
 
   return (
     <figure className={className}>
-      <div className="overflow-hidden rounded-[20px] border border-[var(--landing-line)] bg-[var(--landing-surface)] shadow-[0_24px_70px_rgba(7,24,43,0.12)]">
-        <picture>
-          {asset.mobileSrc ? (
-            <source media="(max-width: 767px)" srcSet={asset.mobileSrc} />
-          ) : null}
-          <img
-            src={asset.src}
-            width={asset.width}
-            height={asset.height}
-            alt={t(asset.altKey)}
-            loading={priority ? 'eager' : 'lazy'}
-            fetchPriority={priority ? 'high' : 'auto'}
-            decoding="async"
-            className="block h-auto w-full"
-          />
-        </picture>
-      </div>
-      <figcaption className="mt-3 text-xs text-[var(--landing-muted)]">
-        {t(asset.captionKey)}
-      </figcaption>
+      <MockWindow>
+        <Screen />
+      </MockWindow>
+
+      {/* The mockup itself is aria-hidden, so this carries the accessible
+          description the old <img alt> used to provide. */}
+      <span className="sr-only">{t(asset.altKey)}</span>
+
+      <figcaption className="lp-caption mt-3">{t(asset.captionKey)}</figcaption>
     </figure>
   );
 }

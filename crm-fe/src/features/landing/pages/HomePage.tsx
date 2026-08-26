@@ -1,34 +1,36 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLandingMetadata } from '../hooks/useLandingMetadata';
-import { HeroSection } from '../sections/home/HeroSection';
-import { CapabilityProofSection } from '../sections/home/CapabilityProofSection';
-import { ProblemOutcomeSection } from '../sections/home/ProblemOutcomeSection';
-import { ProductWorkflowSection } from '../sections/home/ProductWorkflowSection';
-import { RoleOutcomesSection } from '../sections/home/RoleOutcomesSection';
-import { EnterpriseTrustSection } from '../sections/home/EnterpriseTrustSection';
-import { CommercialModelSection } from '../sections/home/CommercialModelSection';
-import { DemoSection } from '../sections/home/DemoSection';
+import { HeroSection } from '../sections/HeroSection';
+import { ProofStrip } from '../sections/ProofStrip';
+import { ProblemSection } from '../sections/ProblemSection';
+import { CoreSolutionsSection } from '../sections/CoreSolutionsSection';
+import { RoiCalculatorSection } from '../sections/RoiCalculatorSection';
+import { RoleOutcomesSection } from '../sections/RoleOutcomesSection';
+import { SecuritySection } from '../sections/SecuritySection';
+import { PricingSection } from '../sections/PricingSection';
+import { FaqSection } from '../sections/FaqSection';
 
 export const HomePage: React.FC = () => {
   const { t } = useTranslation();
 
   useLandingMetadata({
-    title: t('landing.metadata.homeTitle'),
-    description: t('landing.metadata.homeDescription'),
+    title: 'VUM CRM | Quản trị bán hàng B2B và phê duyệt báo giá',
+    description: 'Nền tảng CRM, CPQ và phê duyệt báo giá cho doanh nghiệp B2B Việt Nam.',
     path: '/',
   });
 
   return (
     <>
       <HeroSection />
-      <CapabilityProofSection />
-      <ProblemOutcomeSection />
-      <ProductWorkflowSection />
+      <ProofStrip />
+      <ProblemSection />
+      <CoreSolutionsSection />
+      <RoiCalculatorSection />
       <RoleOutcomesSection />
-      <EnterpriseTrustSection />
-      <CommercialModelSection />
-      <DemoSection />
+      <SecuritySection />
+      <PricingSection />
+      <FaqSection />
     </>
   );
 };

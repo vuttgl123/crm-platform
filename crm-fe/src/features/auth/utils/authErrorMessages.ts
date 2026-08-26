@@ -11,6 +11,10 @@ export const AUTH_ERROR_CODES = [
   'OAUTH2_LOGIN_FAILED',
   'EXTERNAL_EMAIL_NOT_VERIFIED',
   'EXTERNAL_IDENTITY_LINK_REQUIRED',
+  'ACCOUNT_LOCKED',
+  'PASSWORD_RESET_TOKEN_INVALID',
+  'PASSWORD_RESET_TOKEN_EXPIRED',
+  'WEAK_PASSWORD',
   'UNKNOWN_ERROR',
 ] as const;
 
@@ -29,8 +33,25 @@ const AUTH_ERROR_MESSAGE_KEYS: Record<AuthErrorCode, string> = {
   OAUTH2_LOGIN_FAILED: 'auth.gateway.errors.oauthFailed',
   EXTERNAL_EMAIL_NOT_VERIFIED: 'auth.gateway.errors.externalEmailNotVerified',
   EXTERNAL_IDENTITY_LINK_REQUIRED: 'auth.gateway.errors.identityLinkRequired',
+  ACCOUNT_LOCKED: 'auth.gateway.errors.accountLocked',
+  PASSWORD_RESET_TOKEN_INVALID: 'auth.gateway.errors.resetTokenInvalid',
+  PASSWORD_RESET_TOKEN_EXPIRED: 'auth.gateway.errors.resetTokenExpired',
+  WEAK_PASSWORD: 'auth.gateway.errors.weakPassword',
   UNKNOWN_ERROR: 'auth.gateway.errors.unknown',
 };
+
+/**
+ * The unlock instant that accompanies ACCOUNT_LOCKED, as an ISO-8601 string.
+ *
+ * This lives in its own function rather than widening normalizeAuthError's
+ * return type: only one of the fifteen codes carries data, and the mapping
+ * from code to translation key stays a plain lookup for the other fourteen.
+ */
+export function extractLockedUntil(error: unknown): string | undefined {
+  return error instanceof ApiError
+    ? error.problemDetail?.lockedUntil
+    : undefined;
+}
 
 export function normalizeAuthError(error: unknown): AuthErrorCode {
   if (error instanceof ApiError && AUTH_ERROR_CODE_SET.has(error.errorCode)) {

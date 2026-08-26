@@ -196,6 +196,9 @@ HttpOnly cookie and never appears in this JSON object.
 | `POST` | `/api/auth/login` | Public | `200 OK` |
 | `POST` | `/api/auth/refresh` | Refresh cookie | `200 OK` |
 | `POST` | `/api/auth/logout` | Refresh cookie optional | `204 No Content` |
+| `POST` | `/api/auth/password/forgot` | Public | `202 Accepted` |
+| `POST` | `/api/auth/password/reset` | Public | `204 No Content` |
+| `POST` | `/api/auth/password/change` | Bearer access token | `204 No Content` |
 | `GET` | `/api/auth/me` | Bearer access token | `200 OK` |
 | `POST` | `/api/tenants` | Bearer access token; no tenant header | `201 Created` |
 | `GET` | `/api/access/me` | Bearer token and active tenant | `200 OK` |
@@ -322,10 +325,186 @@ curl --request POST \
 | Status | `errorCode` | When |
 |---|---|---|
 | `400` | `REQUEST_VALIDATION_FAILED` | One or more request fields are invalid |
-| `401` | `INVALID_CREDENTIALS` | The user is unknown, the password is invalid, the user is inactive, or the account is temporarily locked |
+| `401` | `INVALID_CREDENTIALS` | The user is unknown, the password is invalid, or the user is inactive. Also returned when the password is wrong and the account is locked. |
+| `401` | `ACCOUNT_LOCKED` | The password is **correct** but the account is temporarily locked. Carries a `lockedUntil` property. |
 
-The endpoint deliberately uses the same credentials error for these cases so
-that callers cannot use the response to discover registered accounts.
+The endpoint deliberately uses the same credentials error for the unknown-user,
+wrong-password, and inactive cases so that callers cannot use the response to
+discover registered accounts.
+
+`ACCOUNT_LOCKED` is returned only after the supplied password has been verified
+as correct, so it tells an attacker nothing they did not already know. A wrong
+password always yields `INVALID_CREDENTIALS`, whether or not the account is
+locked, and does not extend an existing lock.
+
+When `ACCOUNT_LOCKED` is returned the `ProblemDetail` carries an extra
+`lockedUntil` property holding an ISO-8601 instant:
+
+```json
+{
+  "status": 401,
+  "title": "Authentication required",
+  "detail": "Your account is temporarily locked after too many failed sign-in attempts",
+  "errorCode": "ACCOUNT_LOCKED",
+  "lockedUntil": "2026-08-25T09:47:12.418Z",
+  "path": "/api/auth/login",
+  "traceId": "..."
+}
+```
+
+The instant is sent as structured data rather than inside `detail` so the
+client can render it in the viewer's own timezone and language.
+
+### Request a password reset link
+
+```http
+POST /api/auth/password/forgot
+```
+
+This is a public endpoint.
+
+#### Request body
+
+| Field | Type | Required | Validation |
+|---|---|---|---|
+| `email` | string | Yes | Valid email; maximum 320 characters |
+
+```json
+{
+  "email": "alex@example.test"
+}
+```
+
+#### Example call
+
+```bash
+curl --request POST \
+  --header "Content-Type: application/json" \
+  --data '{"email":"alex@example.test"}' \
+  http://localhost:8080/api/auth/password/forgot
+```
+
+#### Success
+
+- Status: `202 Accepted`
+- Body: empty
+
+**The response is always `202`, whether or not the address belongs to an
+account. This is deliberate and is not a bug.** Token creation and mail
+delivery run asynchronously, so the response time is also independent of
+whether the account exists — matching only the status code would still leak the
+answer through timing.
+
+A reset link is valid for 30 minutes. Requesting a new link invalidates any
+outstanding one. A user may request at most one link per 60 seconds and five per
+hour; requests beyond that are silently ignored and still answer `202`.
+
+#### Errors
+
+| Status | `errorCode` | When |
+|---|---|---|
+| `400` | `REQUEST_VALIDATION_FAILED` | The email field is missing or malformed |
+
+### Complete a password reset
+
+```http
+POST /api/auth/password/reset
+```
+
+This is a public endpoint. The token is the proof of identity.
+
+#### Request body
+
+| Field | Type | Required | Validation |
+|---|---|---|---|
+| `token` | string | Yes | Non-blank; maximum 200 characters. The value from the reset link. |
+| `newPassword` | string | Yes | 12 to 128 characters; must satisfy the password policy |
+
+```json
+{
+  "token": "9f1c8a2e-....<secret>",
+  "newPassword": "ExampleOnly-New-Password-123"
+}
+```
+
+#### Success
+
+- Status: `204 No Content`
+- Side effects: sets the new password, clears `failed_login_attempts` and
+  `locked_until`, consumes the token, and **revokes every open session for the
+  account**
+
+Because the lock state is cleared, completing a password reset is also the
+self-service route out of a locked account.
+
+The caller is **not** signed in automatically; the client should redirect to the
+sign-in screen.
+
+#### Errors
+
+| Status | `errorCode` | When |
+|---|---|---|
+| `400` | `REQUEST_VALIDATION_FAILED` | One or more request fields are invalid |
+| `401` | `PASSWORD_RESET_TOKEN_INVALID` | The token is unknown, malformed, already used, or superseded by a newer link |
+| `401` | `PASSWORD_RESET_TOKEN_EXPIRED` | The token is well formed and unused but past its 30-minute lifetime |
+| `422` | `WEAK_PASSWORD` | The new password fails the password policy |
+
+`EXPIRED` is reported separately from `INVALID` so a client can offer to send a
+fresh link in the first case and not in the second.
+
+### Change the current user's password
+
+```http
+POST /api/auth/password/change
+```
+
+Requires bearer authentication.
+
+#### Request body
+
+| Field | Type | Required | Validation |
+|---|---|---|---|
+| `currentPassword` | string | Yes | Non-blank; maximum 128 characters |
+| `newPassword` | string | Yes | 12 to 128 characters; must satisfy the password policy |
+
+```json
+{
+  "currentPassword": "ExampleOnly-Password-123",
+  "newPassword": "ExampleOnly-New-Password-456"
+}
+```
+
+#### Success
+
+- Status: `204 No Content`
+- Side effects: sets the new password, clears the lock state, and revokes every
+  open session for the account
+
+The caller's own session is revoked along with the others, so the client should
+expect to re-authenticate. Clients should tell the user that other devices have
+been signed out.
+
+#### Errors
+
+| Status | `errorCode` | When |
+|---|---|---|
+| `400` | `REQUEST_VALIDATION_FAILED` | One or more request fields are invalid |
+| `401` | `INVALID_CREDENTIALS` | `currentPassword` does not match |
+| `422` | `WEAK_PASSWORD` | The new password fails the password policy |
+
+### Password policy
+
+Applied identically by registration, password reset, and password change.
+
+- At least 12 and at most 128 characters.
+- Must not appear in a deny-list of common passwords.
+- Must not contain the local part of the account's email address, or a word of
+  four or more characters from the display name.
+
+There is deliberately **no** requirement for a mix of uppercase, digits, and
+symbols. Composition rules of that kind push users toward predictable shapes
+such as `Password1!` without adding real entropy; NIST SP 800-63B recommends
+against them.
 
 ### Refresh an access token
 

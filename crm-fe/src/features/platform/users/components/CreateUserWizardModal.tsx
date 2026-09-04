@@ -21,10 +21,12 @@ import {
   ChevronLeft,
   Shield,
   CheckCircle2,
+  Loader2,
 } from 'lucide-react';
 import { DynamicForm } from '@/components/common/DynamicForm';
 import { EmptyState } from '@/components/common/EmptyState';
 import { RoleSummaryResponse } from '@/services/api/roleApi';
+import { userApi, PlatformUserDetails } from '@/services/api/userApi';
 import {
   userStep1Schema,
   userStep2Schema,
@@ -36,13 +38,7 @@ interface CreateUserWizardModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   roles?: RoleSummaryResponse[];
-  onUserCreated: (newUser: {
-    displayName: string;
-    email: string;
-    roleName: string;
-    department: string;
-    employeeCode: string;
-  }) => void;
+  onUserCreated: (newUser: PlatformUserDetails) => void;
 }
 
 export const CreateUserWizardModal: React.FC<CreateUserWizardModalProps> = ({
@@ -52,6 +48,7 @@ export const CreateUserWizardModal: React.FC<CreateUserWizardModalProps> = ({
   onUserCreated,
 }) => {
   const [currentStep, setCurrentStep] = useState(1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Step 1 Values
   const [step1Values, setStep1Values] = useState<UserStep1Values>({
@@ -71,6 +68,7 @@ export const CreateUserWizardModal: React.FC<CreateUserWizardModalProps> = ({
 
   // Step 3 Values
   const [selectedRole, setSelectedRole] = useState('');
+  const [isTenantAdmin, setIsTenantAdmin] = useState(false);
 
   useEffect(() => {
     if (roles.length > 0 && !selectedRole) {
@@ -106,29 +104,31 @@ export const CreateUserWizardModal: React.FC<CreateUserWizardModalProps> = ({
     setCurrentStep((prev) => Math.max(prev - 1, 1));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
 
-    const deptMap: Record<string, string> = {
-      'team-mb-001': 'Northern Regional Enterprise Sales',
-      'team-hn-001': 'Commercial Account Executive Team',
-      'team-cs-001': 'Customer Success & Support',
-      'team-bod-001': 'Executive Board & Management',
-    };
+    try {
+      const created = await userApi.createUser({
+        email: step1Values.email.trim(),
+        displayName: step1Values.displayName.trim(),
+        phone: step1Values.phone.trim() || undefined,
+        jobTitle: step2Values.jobTitle.trim(),
+        employeeReference: step2Values.employeeCode.trim() || undefined,
+        roleIds: selectedRole ? [selectedRole] : [],
+        isTenantAdmin,
+        sendInviteEmail: true,
+      });
 
-    const chosenRole = roles.find((r) => r.id === selectedRole || r.roleCode === selectedRole);
-
-    onUserCreated({
-      displayName: step1Values.displayName.trim(),
-      email: step1Values.email.trim(),
-      roleName: chosenRole ? chosenRole.name : selectedRole || 'Tenant Member',
-      department: deptMap[step2Values.department] || 'Enterprise Sales',
-      employeeCode: step2Values.employeeCode.trim() || `EMP-${Date.now().toString().slice(-4)}`,
-    });
-
-    toast.success(`Successfully registered new team member "${step1Values.displayName}"!`);
-    resetForm();
-    onOpenChange(false);
+      toast.success(`Successfully registered new team member "${step1Values.displayName}"!`);
+      onUserCreated(created);
+      resetForm();
+      onOpenChange(false);
+    } catch {
+      toast.error('Failed to create team member. Please verify email and role.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const resetForm = () => {
@@ -146,6 +146,7 @@ export const CreateUserWizardModal: React.FC<CreateUserWizardModalProps> = ({
       employeeCode: '',
     });
     setSelectedRole(roles.length > 0 ? roles[0].id : '');
+    setIsTenantAdmin(false);
   };
 
   return (
@@ -154,248 +155,260 @@ export const CreateUserWizardModal: React.FC<CreateUserWizardModalProps> = ({
         {/* Header Bar */}
         <DialogHeader className="p-5 pb-4 border-b border-slate-200 bg-slate-50/90 shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-[4px] bg-blue-600 text-white flex items-center justify-center font-bold shadow-xs shrink-0">
+            <div className="w-10 h-10 rounded-[4px] bg-[#0C66E4] text-white flex items-center justify-center font-bold shadow-xs shrink-0">
               <UserPlus className="w-5 h-5" />
             </div>
             <div>
               <DialogTitle className="text-base font-bold text-slate-900">
-                Register New System Member
+                Provision New Team Member
               </DialogTitle>
               <DialogDescription className="text-xs text-slate-500 mt-0.5">
-                Provision workforce profile, department mapping and RBAC security role assignments
+                Onboard a new employee to the corporate tenant with role security governance.
               </DialogDescription>
             </div>
           </div>
-        </DialogHeader>
 
-        {/* Step Indicator Header Bar */}
-        <div className="bg-white border-b border-slate-200 px-6 py-3.5 shrink-0">
-          <div className="flex items-center justify-between relative">
-            <div className="absolute left-6 right-6 top-1/2 -translate-y-1/2 h-0.5 bg-slate-200 -z-0" />
-
-            {/* Step 1 */}
-            <div className="flex items-center gap-2 relative z-10 bg-white pr-2">
+          {/* Stepper Progress Bar */}
+          <div className="grid grid-cols-3 gap-2 mt-4 pt-3 border-t border-slate-200/80">
+            <div className="flex items-center gap-2">
               <div
-                className={`w-7 h-7 rounded-full text-xs font-bold flex items-center justify-center transition-colors ${
-                  currentStep === 1
-                    ? 'bg-blue-600 text-white ring-4 ring-blue-100'
-                    : currentStep > 1
-                    ? 'bg-emerald-600 text-white'
-                    : 'bg-slate-200 text-slate-600'
+                className={`w-6 h-6 rounded-full text-xs flex items-center justify-center font-bold transition-colors ${
+                  currentStep >= 1
+                    ? 'bg-[#0C66E4] text-white'
+                    : 'bg-slate-200 text-slate-500'
                 }`}
               >
-                {currentStep > 1 ? <Check className="w-4 h-4" /> : '1'}
+                {currentStep > 1 ? <Check className="w-3.5 h-3.5" /> : '1'}
               </div>
               <span
                 className={`text-xs font-semibold ${
-                  currentStep === 1 ? 'text-blue-600 font-bold' : 'text-slate-600'
+                  currentStep >= 1 ? 'text-slate-900' : 'text-slate-400'
                 }`}
               >
-                1. Personal Details
+                Identity & Contact
               </span>
             </div>
 
-            {/* Step 2 */}
-            <div className="flex items-center gap-2 relative z-10 bg-white px-2">
+            <div className="flex items-center gap-2">
               <div
-                className={`w-7 h-7 rounded-full text-xs font-bold flex items-center justify-center transition-colors ${
-                  currentStep === 2
-                    ? 'bg-blue-600 text-white ring-4 ring-blue-100'
-                    : currentStep > 2
-                    ? 'bg-emerald-600 text-white'
-                    : 'bg-slate-200 text-slate-600'
+                className={`w-6 h-6 rounded-full text-xs flex items-center justify-center font-bold transition-colors ${
+                  currentStep >= 2
+                    ? 'bg-[#0C66E4] text-white'
+                    : 'bg-slate-200 text-slate-500'
                 }`}
               >
-                {currentStep > 2 ? <Check className="w-4 h-4" /> : '2'}
+                {currentStep > 2 ? <Check className="w-3.5 h-3.5" /> : '2'}
               </div>
               <span
                 className={`text-xs font-semibold ${
-                  currentStep === 2 ? 'text-blue-600 font-bold' : 'text-slate-600'
+                  currentStep >= 2 ? 'text-slate-900' : 'text-slate-400'
                 }`}
               >
-                2. Department &amp; Role
+                Job Title & Team
               </span>
             </div>
 
-            {/* Step 3 */}
-            <div className="flex items-center gap-2 relative z-10 bg-white pl-2">
+            <div className="flex items-center gap-2">
               <div
-                className={`w-7 h-7 rounded-full text-xs font-bold flex items-center justify-center transition-colors ${
-                  currentStep === 3
-                    ? 'bg-blue-600 text-white ring-4 ring-blue-100'
-                    : 'bg-slate-200 text-slate-600'
+                className={`w-6 h-6 rounded-full text-xs flex items-center justify-center font-bold transition-colors ${
+                  currentStep >= 3
+                    ? 'bg-[#0C66E4] text-white'
+                    : 'bg-slate-200 text-slate-500'
                 }`}
               >
                 3
               </div>
               <span
                 className={`text-xs font-semibold ${
-                  currentStep === 3 ? 'text-blue-600 font-bold' : 'text-slate-600'
+                  currentStep >= 3 ? 'text-slate-900' : 'text-slate-400'
                 }`}
               >
-                3. Security Role &amp; Access
+                Security & Role
               </span>
             </div>
           </div>
+        </DialogHeader>
+
+        {/* Modal Body Container */}
+        <div className="p-6 overflow-y-auto max-h-[60vh] bg-white text-xs">
+          {/* STEP 1: Personal & Contact */}
+          {currentStep === 1 && (
+            <div className="space-y-4 animate-in fade-in duration-200">
+              <div className="p-3 bg-blue-50/70 border border-blue-100 rounded-[4px] flex items-center gap-2.5 text-blue-900 text-xs">
+                <User className="w-4 h-4 text-[#0C66E4] shrink-0" />
+                <span>
+                  Enter employee email address. An automated welcome email with activation instructions will be dispatched.
+                </span>
+              </div>
+
+              <DynamicForm
+                schema={userStep1Schema}
+                values={step1Values}
+                onChange={handleStep1Change}
+              />
+            </div>
+          )}
+
+          {/* STEP 2: Affiliation & Employment */}
+          {currentStep === 2 && (
+            <div className="space-y-4 animate-in fade-in duration-200">
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-[4px] flex items-center gap-2.5 text-slate-700 text-xs">
+                <Building2 className="w-4 h-4 text-slate-500 shrink-0" />
+                <span>
+                  Configure corporate organizational placement, job title, and internal employee reference code.
+                </span>
+              </div>
+
+              <DynamicForm
+                schema={userStep2Schema}
+                values={step2Values}
+                onChange={handleStep2Change}
+              />
+            </div>
+          )}
+
+          {/* STEP 3: Security & Role Assignment */}
+          {currentStep === 3 && (
+            <div className="space-y-4 animate-in fade-in duration-200">
+              <div className="p-3 bg-purple-50/70 border border-purple-100 rounded-[4px] flex items-center gap-2.5 text-purple-900 text-xs">
+                <ShieldCheck className="w-4 h-4 text-purple-600 shrink-0" />
+                <span>
+                  Assign a security role from the system catalog to determine this user's platform access rights.
+                </span>
+              </div>
+
+              <div className="space-y-3">
+                <Label className="text-xs font-semibold text-slate-700">
+                  Select RBAC Security Role <span className="text-rose-500">*</span>
+                </Label>
+
+                {roles.length === 0 ? (
+                  <EmptyState
+                    title="No Security Roles Configured"
+                    description="Please configure security roles in the platform roles module first."
+                  />
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    {roles.map((r) => {
+                      const isSelected = selectedRole === r.id;
+                      return (
+                        <div
+                          key={r.id}
+                          onClick={() => setSelectedRole(r.id)}
+                          className={`p-3 rounded-[4px] border cursor-pointer transition-all flex flex-col justify-between gap-1.5 ${
+                            isSelected
+                              ? 'border-[#0C66E4] bg-blue-50/40 ring-1 ring-[#0C66E4]'
+                              : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/50'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-1.5 font-bold text-slate-900 text-xs">
+                              <Shield className={`w-3.5 h-3.5 ${isSelected ? 'text-[#0C66E4]' : 'text-slate-400'}`} />
+                              <span>{r.name}</span>
+                            </div>
+                            {isSelected && (
+                              <CheckCircle2 className="w-4 h-4 text-[#0C66E4]" />
+                            )}
+                          </div>
+                          <div className="text-[11px] text-slate-500 line-clamp-2">
+                            {r.description || 'Standard permissions assigned for this operational role.'}
+                          </div>
+                          <div className="mt-1">
+                            <Badge variant="outline" className="text-[10px] font-mono rounded-[2px]">
+                              {r.roleCode}
+                            </Badge>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Tenant Admin Toggle */}
+                <div className="p-3.5 rounded-[4px] border border-amber-200 bg-amber-50/40 flex items-center justify-between gap-4 mt-3">
+                  <div>
+                    <div className="font-bold text-slate-900 text-xs">Grant Tenant Super Admin Privileges</div>
+                    <div className="text-[11px] text-slate-500 mt-0.5">
+                      Allows full administrative access across all tenant configurations and security policies.
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsTenantAdmin(!isTenantAdmin)}
+                    className={`relative inline-flex h-5 w-10 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
+                      isTenantAdmin ? 'bg-[#0C66E4]' : 'bg-slate-200'
+                    }`}
+                  >
+                    <span
+                      className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-xs ring-0 transition duration-200 ease-in-out ${
+                        isTenantAdmin ? 'translate-x-5' : 'translate-x-0'
+                      }`}
+                    />
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Wizard Form Content Area */}
-        <form onSubmit={handleSubmit} className="flex-1 flex-col min-h-0">
-          <div className="flex-1 overflow-y-auto p-6 space-y-4 text-xs">
-            {/* STEP 1: Personal Information via DynamicForm */}
-            {currentStep === 1 && (
-              <div className="space-y-4">
-                <div className="p-3.5 rounded-[4px] bg-blue-50/70 border border-blue-100 flex items-center gap-2 text-xs text-blue-800">
-                  <User className="w-4 h-4 text-blue-600 shrink-0" />
-                  <span>Step 1: Enter corporate work email and legal display name to provision profile.</span>
-                </div>
-
-                <DynamicForm
-                  schema={userStep1Schema}
-                  values={step1Values}
-                  onChange={handleStep1Change}
-                />
-              </div>
-            )}
-
-            {/* STEP 2: Department & Job Information via DynamicForm */}
-            {currentStep === 2 && (
-              <div className="space-y-4">
-                <div className="p-3.5 rounded-[4px] bg-purple-50/70 border border-purple-100 flex items-center gap-2 text-xs text-purple-800">
-                  <Building2 className="w-4 h-4 text-purple-600 shrink-0" />
-                  <span>Step 2: Assign member to department, title and internal employee identifier code.</span>
-                </div>
-
-                <DynamicForm
-                  schema={userStep2Schema}
-                  values={step2Values}
-                  onChange={handleStep2Change}
-                />
-              </div>
-            )}
-
-            {/* STEP 3: Role & Permissions Selection */}
-            {currentStep === 3 && (
-              <div className="space-y-4">
-                <div className="p-3.5 rounded-[4px] bg-emerald-50/70 border border-emerald-100 flex items-center gap-2 text-xs text-emerald-800">
-                  <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>Step 3: Assign security role &amp; permission level for CRM platform access.</span>
-                </div>
-
-                <div className="space-y-2.5">
-                  <Label className="text-xs font-semibold flex items-center gap-1 text-slate-900">
-                    <Shield className="w-3.5 h-3.5 text-blue-600" />
-                    <span>Select Security Role (RBAC) *</span>
-                  </Label>
-
-                  <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
-                    {roles.length > 0 ? (
-                      roles.map((r) => {
-                        const isSelected = selectedRole === r.id || selectedRole === r.roleCode;
-                        return (
-                          <div
-                            key={r.id}
-                            onClick={() => setSelectedRole(r.id)}
-                            className={`p-3.5 rounded-[4px] border cursor-pointer transition-all flex items-start gap-3 ${
-                              isSelected
-                                ? 'border-blue-600 bg-blue-50/60 ring-2 ring-blue-100'
-                                : 'border-slate-200 bg-white hover:bg-slate-50'
-                            }`}
-                          >
-                            <div className="mt-0.5">
-                              {isSelected ? (
-                                <CheckCircle2 className="w-4 h-4 text-blue-600" />
-                              ) : (
-                                <div className="w-4 h-4 rounded-full border border-slate-300" />
-                              )}
-                            </div>
-                            <div className="flex-1">
-                              <div className="font-bold text-slate-900 flex items-center gap-2 flex-wrap">
-                                <span>{r.name}</span>
-                                <Badge variant="outline" className="font-mono text-[10px] text-slate-600 border-slate-200 rounded-[2px]">
-                                  {r.roleCode}
-                                </Badge>
-                                {r.isSystem || r.system ? (
-                                  <Badge variant="outline" className="bg-slate-100 text-slate-700 border-slate-200 text-[10px] rounded-[2px]">
-                                    SYSTEM
-                                  </Badge>
-                                ) : (
-                                  <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px] rounded-[2px]">
-                                    CUSTOM
-                                  </Badge>
-                                )}
-                              </div>
-                              <p className="text-[11px] text-slate-500 mt-0.5">
-                                {r.description || `Security role ${r.name} with ${r.permissionCount || 0} permissions.`}
-                              </p>
-                            </div>
-                          </div>
-                        );
-                      })
-                    ) : (
-                      <EmptyState
-                        icon={Shield}
-                        title="No roles configured in tenant"
-                        description="Please create roles in Role Management before provisioning team access."
-                      />
-                    )}
-                  </div>
-                </div>
-              </div>
+        {/* Modal Footer Controls */}
+        <DialogFooter className="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between shrink-0">
+          <div>
+            {currentStep > 1 && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handlePrev}
+                disabled={isSubmitting}
+                className="text-xs h-8 rounded-[3px] border-slate-200 gap-1"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+                Previous
+              </Button>
             )}
           </div>
 
-          {/* Stepper Footer Action Bar */}
-          <DialogFooter className="p-4 border-t border-slate-200 bg-slate-50/80 flex items-center justify-between shrink-0">
-            <div>
-              {currentStep > 1 && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handlePrev}
-                  className="h-8 px-3 text-xs font-semibold gap-1 rounded-[3px] border-slate-200"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                  <span>Back</span>
-                </Button>
-              )}
-            </div>
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => onOpenChange(false)}
+              disabled={isSubmitting}
+              className="text-xs h-8 rounded-[3px] text-slate-500 hover:text-slate-700"
+            >
+              Cancel
+            </Button>
 
-            <div className="flex items-center gap-2">
+            {currentStep < 3 ? (
               <Button
                 type="button"
-                variant="ghost"
                 size="sm"
-                onClick={() => onOpenChange(false)}
-                className="h-8 px-3 text-xs rounded-[3px]"
+                onClick={handleNext}
+                className="text-xs h-8 rounded-[3px] bg-[#0C66E4] hover:bg-[#0052CC] text-white gap-1"
               >
-                Cancel
+                Next Step
+                <ChevronRight className="w-3.5 h-3.5" />
               </Button>
-
-              {currentStep < 3 ? (
-                <Button
-                  type="button"
-                  size="sm"
-                  onClick={handleNext}
-                  className="h-8 px-3 text-xs font-semibold bg-[#0C66E4] hover:bg-[#0052CC] text-white gap-1 rounded-[3px]"
-                >
-                  <span>Continue (Step {currentStep + 1})</span>
-                  <ChevronRight className="w-4 h-4" />
-                </Button>
-              ) : (
-                <Button
-                  type="submit"
-                  size="sm"
-                  className="h-8 px-4 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5 min-w-32 rounded-[3px]"
-                >
-                  <CheckCircle2 className="w-4 h-4" />
-                  <span>Complete &amp; Register</span>
-                </Button>
-              )}
-            </div>
-          </DialogFooter>
-        </form>
+            ) : (
+              <Button
+                type="button"
+                size="sm"
+                onClick={handleSubmit}
+                disabled={isSubmitting}
+                className="text-xs h-8 rounded-[3px] bg-[#0C66E4] hover:bg-[#0052CC] text-white gap-1.5 shadow-2xs font-semibold"
+              >
+                {isSubmitting ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Check className="w-3.5 h-3.5" />
+                )}
+                Confirm & Provision Member
+              </Button>
+            )}
+          </div>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

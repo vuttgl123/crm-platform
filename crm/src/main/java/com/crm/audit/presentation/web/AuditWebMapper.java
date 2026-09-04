@@ -25,6 +25,12 @@ public interface AuditWebMapper {
 
 	DataAccessEventSummaryResponse toSummaryResponse(DataAccessEventSummary summary);
 
+	com.crm.audit.application.command.RecordAuditEventCommand toCommand(RecordAuditEventRequest request);
+
+	com.crm.audit.application.command.RecordDataAccessEventCommand toCommand(RecordDataAccessEventRequest request);
+
+	com.crm.audit.application.command.PurgeAuditLogsCommand toCommand(PurgeAuditLogsRequest request);
+
 	default UUID map(ActorId value) {
 		return value == null ? null : value.value();
 	}

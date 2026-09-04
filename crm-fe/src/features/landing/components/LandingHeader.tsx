@@ -5,8 +5,6 @@ import { useTranslation } from 'react-i18next';
 import { Menu, X, ArrowRight } from 'lucide-react';
 import { useAuth } from '@/core/session/useAuth';
 import { Button } from '@/components/ui/button';
-import { useScrolled } from '../hooks/useScrolled';
-
 export const LandingHeader: React.FC = () => {
   const { t } = useTranslation();
   const location = useLocation();
@@ -14,7 +12,6 @@ export const LandingHeader: React.FC = () => {
   const { isAuthenticated } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState<string>('hero');
-  const scrolled = useScrolled(8);
 
   const navItems = [
     { key: 'features', label: t('landing.nav.features'), anchor: '#features', to: '/features' },

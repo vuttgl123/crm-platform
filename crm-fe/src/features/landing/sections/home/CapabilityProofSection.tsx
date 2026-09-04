@@ -1,6 +1,5 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Sparkles, Layers } from 'lucide-react';
 import { LandingSection } from '../../components/LandingSection';
 import { FlowStreamer } from '../../components/FlowStreamer';
 import { InteractiveBentoGrid } from '../../components/InteractiveBentoGrid';

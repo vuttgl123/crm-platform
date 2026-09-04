@@ -71,4 +71,47 @@ public final class ContactController {
 		return ResponseEntity.noContent().build();
 	}
 
+	@GetMapping("/stats")
+	public com.crm.customer.contact.application.dto.ContactStatsDto getStats() {
+		return contacts.getStats();
+	}
+
+	@PostMapping("/{id}/set-primary")
+	public ContactResponse setPrimary(
+			@PathVariable UUID id,
+			@Valid @RequestBody SetPrimaryContactRequest request) {
+		ContactDetails updated = contacts.setPrimary(
+				new com.crm.customer.contact.application.command.SetPrimaryContactCommand(
+						new ContactId(id),
+						request.isPrimary(),
+						request.version()
+				));
+		return mapper.toResponse(updated);
+	}
+
+	@PostMapping("/{id}/transfer-account")
+	public ContactResponse transferAccount(
+			@PathVariable UUID id,
+			@Valid @RequestBody TransferContactAccountRequest request) {
+		ContactDetails updated = contacts.transferAccount(
+				new com.crm.customer.contact.application.command.TransferContactAccountCommand(
+						new ContactId(id),
+						request.newAccountId(),
+						request.jobTitle(),
+						request.version()
+				));
+		return mapper.toResponse(updated);
+	}
+
+	@PostMapping("/bulk/lifecycle")
+	public ResponseEntity<java.util.Map<String, Object>> bulkUpdateLifecycle(
+			@Valid @RequestBody BulkUpdateContactLifecycleRequest request) {
+		int updatedCount = contacts.bulkUpdateLifecycle(
+				new com.crm.customer.contact.application.command.BulkUpdateContactLifecycleCommand(
+						request.contactIds(),
+						request.lifecycleStage()
+				));
+		return ResponseEntity.ok(java.util.Map.of("updatedCount", updatedCount));
+	}
+
 }

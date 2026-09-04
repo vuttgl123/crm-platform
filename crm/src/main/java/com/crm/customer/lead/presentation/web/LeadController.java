@@ -78,4 +78,40 @@ public final class LeadController {
 		return ResponseEntity.noContent().build();
 	}
 
+	@GetMapping("/stats")
+	public com.crm.customer.lead.application.dto.LeadStatsDto getStats() {
+		return leads.getStats();
+	}
+
+	@PostMapping("/bulk/status")
+	public ResponseEntity<java.util.Map<String, Object>> bulkUpdateStatus(
+			@Valid @RequestBody BulkChangeLeadStatusRequest request) {
+		int updatedCount = leads.bulkUpdateStatus(new com.crm.customer.lead.application.command.BulkChangeLeadStatusCommand(
+				request.leadIds(),
+				request.statusId()
+		));
+		return ResponseEntity.ok(java.util.Map.of("updatedCount", updatedCount));
+	}
+
+	@PostMapping("/bulk/assign")
+	public ResponseEntity<java.util.Map<String, Object>> bulkAssign(
+			@Valid @RequestBody BulkAssignLeadsRequest request) {
+		int updatedCount = leads.bulkAssign(new com.crm.customer.lead.application.command.BulkAssignLeadsCommand(
+				request.leadIds(),
+				request.ownerType(),
+				request.ownerId()
+		));
+		return ResponseEntity.ok(java.util.Map.of("assignedCount", updatedCount));
+	}
+
+	@PostMapping("/deduplicate")
+	public java.util.List<com.crm.customer.lead.application.dto.LeadDuplicateMatchDto> checkDuplicates(
+			@RequestBody CheckLeadDuplicatesRequest request) {
+		return leads.checkDuplicates(new com.crm.customer.lead.application.command.CheckLeadDuplicatesCommand(
+				request.email(),
+				request.phone(),
+				request.companyName()
+		));
+	}
+
 }

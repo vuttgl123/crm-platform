@@ -37,4 +37,33 @@ public interface TicketRepository {
 
 	void updateComment(TicketComment comment);
 
+	com.crm.service.ticket.application.dto.TicketStatsDto getStats(
+			TenantId tenantId,
+			com.crm.sharedkernel.domain.ActorId actorId,
+			com.crm.foundation.security.AuthorizedDataAccess access);
+
+	void escalate(
+			TenantId tenantId,
+			TicketId id,
+			com.crm.service.ticket.domain.TicketPriority priority,
+			String reason,
+			long expectedVersion,
+			com.crm.sharedkernel.domain.ActorId actorId,
+			java.time.Instant now);
+
+	int bulkAssign(
+			TenantId tenantId,
+			List<TicketId> ids,
+			java.util.UUID assignedUserId,
+			java.util.UUID assignedTeamId,
+			com.crm.sharedkernel.domain.ActorId actorId,
+			java.time.Instant now);
+
+	int bulkChangeStatus(
+			TenantId tenantId,
+			List<TicketId> ids,
+			String status,
+			com.crm.sharedkernel.domain.ActorId actorId,
+			java.time.Instant now);
+
 }

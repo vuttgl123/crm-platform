@@ -2,14 +2,18 @@ package com.crm.sales.order.presentation.web;
 
 import java.net.URI;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import com.crm.foundation.web.http.IfMatchVersion;
+import com.crm.sales.order.application.command.BulkChangeOrderStatusCommand;
+import com.crm.sales.order.application.command.CompleteOrderCommand;
 import com.crm.sales.order.application.command.DeleteOrderCommand;
 import com.crm.sales.order.application.dto.OrderDetails;
 import com.crm.sales.order.application.dto.OrderDocumentDto;
 import com.crm.sales.order.application.dto.OrderFulfillmentDto;
 import com.crm.sales.order.application.dto.OrderPulseDto;
+import com.crm.sales.order.application.dto.OrderStatsDto;
 import com.crm.sales.order.application.dto.OrderSummary;
 import com.crm.sales.order.application.usecase.OrderFacade;
 import com.crm.sales.order.domain.OrderId;
@@ -28,6 +32,24 @@ public class OrderController {
 
 	public OrderController(OrderFacade orders) {
 		this.orders = orders;
+	}
+
+	@GetMapping("/stats")
+	public ResponseEntity<OrderStatsDto> getStats() {
+		OrderStatsDto stats = orders.getStats();
+		return ResponseEntity.ok(stats);
+	}
+
+	@PostMapping("/bulk/status")
+	public ResponseEntity<Map<String, Object>> bulkChangeStatus(
+			@Valid @RequestBody BulkChangeOrderStatusRequest request) {
+		int updatedCount = orders.bulkChangeStatus(
+				new BulkChangeOrderStatusCommand(
+						request.orderIds(),
+						request.status(),
+						request.reason()
+				));
+		return ResponseEntity.ok(Map.of("updatedCount", updatedCount));
 	}
 
 	@PostMapping
@@ -105,6 +127,17 @@ public class OrderController {
 			@RequestHeader(name = HttpHeaders.IF_MATCH, required = false) String ifMatch) {
 		long version = IfMatchVersion.parse(ifMatch);
 		OrderDetails details = orders.confirm(OrderWebMapper.toConfirmCommand(new OrderId(id), version));
+		return ResponseEntity.ok()
+				.eTag(String.valueOf(details.version()))
+				.body(OrderWebMapper.toResponse(details));
+	}
+
+	@PostMapping("/{id}/complete")
+	public ResponseEntity<OrderResponse> complete(
+			@PathVariable UUID id,
+			@RequestHeader(name = HttpHeaders.IF_MATCH, required = false) String ifMatch) {
+		long version = IfMatchVersion.parse(ifMatch);
+		OrderDetails details = orders.complete(new CompleteOrderCommand(new OrderId(id), version));
 		return ResponseEntity.ok()
 				.eTag(String.valueOf(details.version()))
 				.body(OrderWebMapper.toResponse(details));

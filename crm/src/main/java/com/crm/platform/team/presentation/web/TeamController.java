@@ -6,14 +6,18 @@ import java.util.UUID;
 import jakarta.validation.Valid;
 import com.crm.foundation.web.http.IfMatchVersion;
 import com.crm.foundation.web.validation.ValidIfMatchVersion;
+import com.crm.platform.team.application.command.BatchTeamMembersCommand;
 import com.crm.platform.team.application.dto.TeamDetails;
 import com.crm.platform.team.application.dto.TeamMemberDetails;
+import com.crm.platform.team.application.dto.TeamStatsDto;
+import com.crm.platform.team.application.dto.TeamTreeNodeDto;
 import com.crm.platform.team.application.usecase.TeamFacade;
 import com.crm.platform.team.domain.TeamId;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -23,7 +27,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/platform/teams")
+@RequestMapping({"/api/teams", "/api/platform/teams"})
 public final class TeamController {
 
 	private final TeamFacade teams;
@@ -32,6 +36,16 @@ public final class TeamController {
 	public TeamController(TeamFacade teams, TeamWebMapper mapper) {
 		this.teams = teams;
 		this.mapper = mapper;
+	}
+
+	@GetMapping("/stats")
+	public TeamStatsDto getStats() {
+		return teams.getStats();
+	}
+
+	@GetMapping("/hierarchy")
+	public List<TeamTreeNodeDto> getHierarchy() {
+		return teams.getHierarchy();
 	}
 
 	@PostMapping
@@ -57,6 +71,22 @@ public final class TeamController {
 		return mapper.toResponse(teams.update(mapper.toUpdateCommand(new TeamId(id), request)));
 	}
 
+	@PatchMapping("/{id}/status")
+	public ResponseEntity<Void> changeStatus(
+			@PathVariable UUID id,
+			@Valid @RequestBody ChangeTeamStatusRequest request) {
+		teams.changeStatus(new TeamId(id), request.status());
+		return ResponseEntity.noContent().build();
+	}
+
+	@PostMapping("/{id}/transfer-manager")
+	public TeamResponse transferManager(
+			@PathVariable UUID id,
+			@Valid @RequestBody TransferTeamManagerRequest request) {
+		TeamDetails updated = teams.transferManager(new TeamId(id), request.newManagerUserId());
+		return mapper.toResponse(updated);
+	}
+
 	@DeleteMapping("/{id}")
 	public ResponseEntity<Void> delete(
 			@PathVariable UUID id,
@@ -72,6 +102,19 @@ public final class TeamController {
 			@Valid @RequestBody AddTeamMemberRequest request) {
 		TeamMemberDetails member = teams.addMember(mapper.toAddMemberCommand(new TeamId(id), request));
 		return ResponseEntity.status(HttpStatus.CREATED).body(mapper.toMemberResponse(member));
+	}
+
+	@PostMapping("/{id}/members/batch")
+	public ResponseEntity<Void> batchUpdateMembers(
+			@PathVariable UUID id,
+			@Valid @RequestBody BatchTeamMembersRequest request) {
+		teams.batchUpdateMembers(new BatchTeamMembersCommand(
+				new TeamId(id),
+				request.addMemberUserIds(),
+				request.removeMemberUserIds(),
+				request.defaultMemberRole()
+		));
+		return ResponseEntity.noContent().build();
 	}
 
 	@DeleteMapping("/{id}/members/{userId}")

@@ -292,4 +292,54 @@ public class JdbcPipelineRepository implements PipelineRepository {
 				.update();
 	}
 
+	@Override
+	public Optional<Pipeline> findDefault(TenantId tenantId) {
+		String sql = PIPELINE_SELECT + """
+				WHERE p.tenant_id = :tenantId
+				  AND p.is_default = true
+				""";
+		return jdbcClient.sql(sql)
+				.param("tenantId", tenantId.value())
+				.query(PipelineJdbcMapper::mapPipeline)
+				.optional();
+	}
+
+	@Override
+	public void deletePipeline(TenantId tenantId, PipelineId id, java.time.Instant now) {
+		jdbcClient.sql("""
+				DELETE FROM crm.pipeline_stages
+				WHERE tenant_id = :tenantId AND pipeline_id = :id
+				""")
+				.param("tenantId", tenantId.value())
+				.param("id", id.value())
+				.update();
+
+		jdbcClient.sql("""
+				DELETE FROM crm.pipelines
+				WHERE tenant_id = :tenantId AND id = :id
+				""")
+				.param("tenantId", tenantId.value())
+				.param("id", id.value())
+				.update();
+	}
+
+	@Override
+	public void updateStageDisplayOrder(TenantId tenantId, PipelineId pipelineId, PipelineStageId stageId, int displayOrder, java.time.Instant now) {
+		jdbcClient.sql("""
+				UPDATE crm.pipeline_stages
+				SET display_order = :displayOrder,
+				    updated_at = :now,
+				    version = version + 1
+				WHERE tenant_id = :tenantId
+				  AND pipeline_id = :pipelineId
+				  AND id = :id
+				""")
+				.param("displayOrder", displayOrder)
+				.param("now", Timestamp.from(now))
+				.param("tenantId", tenantId.value())
+				.param("pipelineId", pipelineId.value())
+				.param("id", stageId.value())
+				.update();
+	}
+
 }

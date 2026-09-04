@@ -151,51 +151,74 @@ export interface MarketingAnalyticsResponse {
   funnelStages: MarketingFunnelStage[];
 }
 
+export interface CampaignStatsDto {
+  totalCampaigns: number;
+  activeCampaigns: number;
+  planningCampaigns: number;
+  completedCampaigns: number;
+  pausedCampaigns: number;
+  totalBudgetedCost: number;
+  totalActualCost: number;
+  totalMembersCount: number;
+}
+
+export interface BulkAddCampaignMembersRequest {
+  members: Array<{
+    leadId?: string;
+    contactId?: string;
+    memberStatus?: 'SENT' | 'OPENED' | 'RESPONDED' | 'ATTENDED' | 'CONVERTED' | 'UNSUBSCRIBED';
+  }>;
+}
+
+export interface BulkChangeCampaignStatusRequest {
+  campaignIds: string[];
+  status: CampaignStatus;
+}
+
 export const campaignApi = {
+  getStats: async (): Promise<CampaignStatsDto> => {
+    return apiFetch<CampaignStatsDto>('/campaigns/stats', {
+      method: 'GET',
+    });
+  },
+
   list: async (params?: {
     search?: string;
-    status?: string;
     type?: string;
+    status?: string;
     page?: number;
     size?: number;
-  }): Promise<{ content: CampaignItem[]; totalElements: number; totalPages: number; page: number; size: number }> => {
+  }): Promise<{ content: CampaignItem[]; items: CampaignItem[]; totalElements: number; totalPages: number; page: number; size: number }> => {
     const query = new URLSearchParams();
-    if (params?.search) query.set('search', params.search);
-    if (params?.status && params.status !== 'ALL') query.set('status', params.status);
     if (params?.type && params.type !== 'ALL') query.set('type', params.type);
+    if (params?.status && params.status !== 'ALL') query.set('status', params.status);
     if (params?.page !== undefined) query.set('page', String(params.page));
     if (params?.size !== undefined) query.set('size', String(params.size));
+    if (params?.search) query.set('search', params.search);
 
     const qs = query.toString() ? `?${query.toString()}` : '';
-    const res = await apiFetch<CampaignPageResult | CampaignItem[]>(`/marketing/campaigns${qs}`);
+    const res = await apiFetch<any>(`/marketing/campaigns${qs}`);
 
-    const normalize = (c: CampaignItem): CampaignItem => ({
+    const rawItems: any[] = Array.isArray(res) ? res : res.items || res.content || [];
+    const content = rawItems.map((c) => ({
       ...c,
       budget: c.budgetAmount !== undefined ? c.budgetAmount : (c.budget || 0),
       actualCost: c.actualCost || 0,
       expectedRevenue: c.expectedRevenue || 0,
-      leadsGenerated: c.leadsGenerated || 0,
-      conversionsCount: c.conversionsCount || 0,
-      assignedTo: c.assignedTo || 'Chưa phân công',
-    });
+    }));
 
-    if (Array.isArray(res)) {
-      const content = res.map(normalize);
-      return { content, totalElements: content.length, totalPages: 1, page: 0, size: content.length };
-    }
-
-    const content = (res.items || []).map(normalize);
     return {
       content,
-      totalElements: res.totalElements || 0,
-      totalPages: res.totalPages || 1,
-      page: (res.pageNumber || 1) - 1,
-      size: res.pageSize || 10,
+      items: content,
+      totalElements: res.totalElements ?? content.length,
+      totalPages: res.totalPages ?? 1,
+      page: res.pageNumber ?? 0,
+      size: res.pageSize ?? 10,
     };
   },
 
   get: async (id: string): Promise<CampaignItem> => {
-    const c = await apiFetch<CampaignItem>(`/marketing/campaigns/${id}`);
+    const c = await apiFetch<any>(`/marketing/campaigns/${id}`);
     return {
       ...c,
       budget: c.budgetAmount !== undefined ? c.budgetAmount : (c.budget || 0),
@@ -252,9 +275,30 @@ export const campaignApi = {
   },
 
   updateStatus: async (id: string, version: number, status: CampaignStatus): Promise<CampaignItem> => {
-    return apiFetch<CampaignItem>(`/marketing/campaigns/${id}/status`, {
-      method: 'PUT',
-      body: JSON.stringify({ version, status }),
+    return apiFetch<CampaignItem>(`/campaigns/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    });
+  },
+
+  changeStatus: async (id: string, status: CampaignStatus): Promise<CampaignItem> => {
+    return apiFetch<CampaignItem>(`/campaigns/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    });
+  },
+
+  bulkAddMembers: async (id: string, data: BulkAddCampaignMembersRequest): Promise<{ addedCount: number }> => {
+    return apiFetch<{ addedCount: number }>(`/campaigns/${id}/members/bulk`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  bulkChangeStatus: async (data: BulkChangeCampaignStatusRequest): Promise<{ updatedCount: number }> => {
+    return apiFetch<{ updatedCount: number }>('/campaigns/bulk/status', {
+      method: 'POST',
+      body: JSON.stringify(data),
     });
   },
 

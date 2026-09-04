@@ -35,4 +35,12 @@ public interface CampaignFacade {
 
 	void removeMember(CampaignId campaignId, CampaignMemberId memberId);
 
+	com.crm.marketing.campaign.application.dto.CampaignStatsDto getStats();
+
+	CampaignDetails updateStatus(com.crm.marketing.campaign.application.command.ChangeCampaignStatusCommand command);
+
+	int bulkAddMembers(com.crm.marketing.campaign.application.command.BulkAddCampaignMembersCommand command);
+
+	int bulkChangeStatus(com.crm.marketing.campaign.application.command.BulkChangeCampaignStatusCommand command);
+
 }

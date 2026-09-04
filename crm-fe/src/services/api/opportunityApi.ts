@@ -245,6 +245,42 @@ export interface OpportunitySearchParams {
   size?: number;
 }
 
+export interface OpportunityStatsDto {
+  totalOpportunities: number;
+  openOpportunities: number;
+  wonOpportunities: number;
+  lostOpportunities: number;
+  totalPipelineValue: number;
+  weightedPipelineValue: number;
+  wonRevenueTotal: number;
+  winRatePercentage: number;
+  averageDealSize: number;
+}
+
+export interface TransitionOpportunityStageRequest {
+  stageId: string;
+  probabilityPercentage?: number;
+  version: number;
+}
+
+export interface CloseWonOpportunityRequest {
+  actualRevenueAmount?: number;
+  closedDate?: string;
+  version: number;
+}
+
+export interface CloseLostOpportunityRequest {
+  lostReasonId?: string;
+  competitorNotes?: string;
+  version: number;
+}
+
+export interface ReassignOpportunityRequest {
+  ownerType: 'USER' | 'TEAM';
+  ownerId: string;
+  version: number;
+}
+
 export const opportunityApi = {
   async search(params: OpportunitySearchParams = {}, signal?: AbortSignal): Promise<PageResult<OpportunitySummaryResponse>> {
     const query = new URLSearchParams();
@@ -375,6 +411,40 @@ export const opportunityApi = {
       headers: {
         'If-Match': `"${version}"`,
       },
+    });
+  },
+
+  async getStats(): Promise<OpportunityStatsDto> {
+    return apiFetch<OpportunityStatsDto>('/opportunities/stats', {
+      method: 'GET',
+    });
+  },
+
+  async transitionStage(id: string, data: TransitionOpportunityStageRequest): Promise<OpportunityResponse> {
+    return apiFetch<OpportunityResponse>(`/opportunities/${id}/transition-stage`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async closeWon(id: string, data: CloseWonOpportunityRequest): Promise<OpportunityResponse> {
+    return apiFetch<OpportunityResponse>(`/opportunities/${id}/close-won`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async closeLost(id: string, data: CloseLostOpportunityRequest): Promise<OpportunityResponse> {
+    return apiFetch<OpportunityResponse>(`/opportunities/${id}/close-lost`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async reassign(id: string, data: ReassignOpportunityRequest): Promise<OpportunityResponse> {
+    return apiFetch<OpportunityResponse>(`/opportunities/${id}/reassign`, {
+      method: 'POST',
+      body: JSON.stringify(data),
     });
   },
 

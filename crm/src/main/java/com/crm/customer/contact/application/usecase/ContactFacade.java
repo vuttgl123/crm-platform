@@ -21,4 +21,12 @@ public interface ContactFacade {
 
 	void delete(DeleteContactCommand command);
 
+	com.crm.customer.contact.application.dto.ContactStatsDto getStats();
+
+	ContactDetails setPrimary(com.crm.customer.contact.application.command.SetPrimaryContactCommand command);
+
+	ContactDetails transferAccount(com.crm.customer.contact.application.command.TransferContactAccountCommand command);
+
+	int bulkUpdateLifecycle(com.crm.customer.contact.application.command.BulkUpdateContactLifecycleCommand command);
+
 }

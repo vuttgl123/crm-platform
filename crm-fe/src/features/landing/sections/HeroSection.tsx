@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Check, Search, Filter, LayoutGrid, Users, Briefcase, FileText, Settings, ShieldCheck, ChevronRight, Zap } from 'lucide-react';
+import { ArrowRight, LayoutGrid, Users, Briefcase, FileText, Settings, ChevronRight } from 'lucide-react';
 import { EditorialContainer } from '../components/EditorialContainer';
 import { FadeIn } from '../components/FadeIn';
 

@@ -23,4 +23,15 @@ public interface ProductRepository {
 
 	void update(Product product);
 
+	com.crm.catalog.product.application.dto.ProductStatsDto getStats(TenantId tenantId);
+
+	void updateStatus(TenantId tenantId, ProductId id, boolean active,
+			com.crm.sharedkernel.domain.ActorId actorId, java.time.Instant now);
+
+	int bulkUpdateStatus(TenantId tenantId, java.util.List<ProductId> ids, boolean active,
+			com.crm.sharedkernel.domain.ActorId actorId, java.time.Instant now);
+
+	int bulkAssignCategory(TenantId tenantId, java.util.List<ProductId> ids, java.util.UUID categoryId,
+			com.crm.sharedkernel.domain.ActorId actorId, java.time.Instant now);
+
 }

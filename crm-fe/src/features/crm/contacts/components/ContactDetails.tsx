@@ -13,7 +13,6 @@ import {
   Ban,
   Globe,
   Clock,
-  ShieldCheck,
   Mail,
   Phone,
   Smartphone,
@@ -21,7 +20,6 @@ import {
   CheckCircle2,
   FileText,
   Calendar,
-  Layers,
 } from 'lucide-react';
 
 interface ContactDetailsProps {

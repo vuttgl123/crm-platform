@@ -362,4 +362,141 @@ public class JdbcLeadRepository implements LeadRepository {
 		}
 	}
 
+	@Override
+	public com.crm.customer.lead.application.dto.LeadStatsDto getStats(TenantId tenantId,
+			ActorId actorId, AuthorizedDataAccess access) {
+		OwnershipScopeSql scope = OwnershipScopeSql.resolve(actorId, access);
+		Map<String, Object> parameters = new HashMap<>(scope.parameters());
+		parameters.put("tenantId", tenantId.toString());
+
+		String baseSql = scope.cte() + """
+				SELECT
+				    COUNT(*) AS total,
+				    COUNT(CASE WHEN l.converted_at IS NOT NULL THEN 1 END) AS converted,
+				    COUNT(CASE WHEN l.converted_at IS NULL AND (s.code = 'NEW' OR s.code IS NULL) THEN 1 END) AS uncontacted,
+				    COUNT(CASE WHEN l.converted_at IS NULL AND s.code = 'CONTACTED' THEN 1 END) AS working,
+				    COUNT(CASE WHEN l.converted_at IS NULL AND s.code = 'QUALIFIED' THEN 1 END) AS qualified
+				FROM crm_leads l
+				LEFT JOIN crm_lead_statuses s ON s.id = l.status_id
+				WHERE l.tenant_id = :tenantId
+				  AND l.deleted_at IS NULL
+				  AND (%s)
+				""".formatted(scope.predicate("l"));
+
+		return jdbcClient.sql(baseSql)
+				.params(parameters)
+				.query((rs, rowNum) -> {
+					long total = rs.getLong("total");
+					long converted = rs.getLong("converted");
+					long uncontacted = rs.getLong("uncontacted");
+					long working = rs.getLong("working");
+					long qualified = rs.getLong("qualified");
+					double rate = total > 0 ? (converted * 100.0) / total : 0.0;
+					return new com.crm.customer.lead.application.dto.LeadStatsDto(
+							total, uncontacted, working, qualified, converted, Math.round(rate * 10.0) / 10.0
+					);
+				}).single();
+	}
+
+	@Override
+	public int bulkUpdateStatus(TenantId tenantId, List<LeadId> leadIds, UUID statusId,
+			ActorId actorId, java.time.Instant now) {
+		if (leadIds == null || leadIds.isEmpty()) return 0;
+		List<String> idStrings = leadIds.stream().map(LeadId::toString).toList();
+		return jdbcClient.sql("""
+				UPDATE crm_leads
+				SET status_id = :statusId,
+				    updated_at = :now,
+				    updated_by = :actorId,
+				    version = version + 1
+				WHERE tenant_id = :tenantId
+				  AND id IN (:ids)
+				  AND deleted_at IS NULL
+				""")
+				.param("statusId", statusId.toString())
+				.param("now", Timestamp.from(now))
+				.param("actorId", actorId.toString())
+				.param("tenantId", tenantId.toString())
+				.param("ids", idStrings)
+				.update();
+	}
+
+	@Override
+	public int bulkAssign(TenantId tenantId, List<LeadId> leadIds, String ownerType, UUID ownerId,
+			ActorId actorId, java.time.Instant now) {
+		if (leadIds == null || leadIds.isEmpty()) return 0;
+		List<String> idStrings = leadIds.stream().map(LeadId::toString).toList();
+		boolean isUser = "USER".equalsIgnoreCase(ownerType);
+
+		return jdbcClient.sql("""
+				UPDATE crm_leads
+				SET owner_user_id = :userId,
+				    owner_team_id = :teamId,
+				    updated_at = :now,
+				    updated_by = :actorId,
+				    version = version + 1
+				WHERE tenant_id = :tenantId
+				  AND id IN (:ids)
+				  AND deleted_at IS NULL
+				""")
+				.param("userId", isUser ? ownerId.toString() : null)
+				.param("teamId", !isUser ? ownerId.toString() : null)
+				.param("now", Timestamp.from(now))
+				.param("actorId", actorId.toString())
+				.param("tenantId", tenantId.toString())
+				.param("ids", idStrings)
+				.update();
+	}
+
+	@Override
+	public List<com.crm.customer.lead.application.dto.LeadDuplicateMatchDto> findPotentialDuplicates(
+			TenantId tenantId, String email, String phone, String companyName) {
+		StringBuilder sql = new StringBuilder("""
+				SELECT id, lead_number, display_name, email, phone_e164, company_name, job_title
+				FROM crm_leads
+				WHERE tenant_id = :tenantId
+				  AND deleted_at IS NULL
+				  AND (1=0
+				""");
+		Map<String, Object> params = new HashMap<>();
+		params.put("tenantId", tenantId.toString());
+
+		if (email != null && !email.trim().isEmpty()) {
+			sql.append(" OR LOWER(email) = :email");
+			params.put("email", email.trim().toLowerCase());
+		}
+		if (phone != null && !phone.trim().isEmpty()) {
+			sql.append(" OR phone_e164 = :phone");
+			params.put("phone", phone.trim());
+		}
+		if (companyName != null && !companyName.trim().isEmpty()) {
+			sql.append(" OR LOWER(company_name) = :companyName");
+			params.put("companyName", companyName.trim().toLowerCase());
+		}
+		sql.append(") LIMIT 10");
+
+		return jdbcClient.sql(sql.toString())
+				.params(params)
+				.query((rs, rowNum) -> {
+					String matchReason = "Exact match";
+					if (email != null && email.equalsIgnoreCase(rs.getString("email"))) {
+						matchReason = "Matched by Email (" + email + ")";
+					} else if (phone != null && phone.equals(rs.getString("phone_e164"))) {
+						matchReason = "Matched by Phone (" + phone + ")";
+					} else if (companyName != null && companyName.equalsIgnoreCase(rs.getString("company_name"))) {
+						matchReason = "Matched by Company Name";
+					}
+					return new com.crm.customer.lead.application.dto.LeadDuplicateMatchDto(
+							UUID.fromString(rs.getString("id")),
+							rs.getString("lead_number"),
+							rs.getString("job_title"),
+							rs.getString("display_name"),
+							rs.getString("email"),
+							rs.getString("phone_e164"),
+							rs.getString("company_name"),
+							matchReason
+					);
+				}).list();
+	}
+
 }

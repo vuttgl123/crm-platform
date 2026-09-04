@@ -14,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -40,6 +41,11 @@ public final class ProductController {
 		return ResponseEntity.status(HttpStatus.CREATED).body(mapper.toResponse(created));
 	}
 
+	@GetMapping("/stats")
+	public com.crm.catalog.product.application.dto.ProductStatsDto getStats() {
+		return products.getStats();
+	}
+
 	@GetMapping("/{id}")
 	public ProductResponse get(@PathVariable UUID id) {
 		return mapper.toResponse(products.get(new ProductId(id)));
@@ -55,6 +61,40 @@ public final class ProductController {
 			@PathVariable UUID id,
 			@Valid @RequestBody UpdateProductRequest request) {
 		return mapper.toResponse(products.update(mapper.toUpdateCommand(new ProductId(id), request)));
+	}
+
+	@PatchMapping("/{id}/status")
+	public ProductResponse updateStatus(
+			@PathVariable UUID id,
+			@Valid @RequestBody ChangeProductStatusRequest request) {
+		ProductDetails updated = products.updateStatus(
+				new com.crm.catalog.product.application.command.ChangeProductStatusCommand(
+						new ProductId(id),
+						request.active()
+				));
+		return mapper.toResponse(updated);
+	}
+
+	@PostMapping("/bulk/status")
+	public ResponseEntity<java.util.Map<String, Object>> bulkUpdateStatus(
+			@Valid @RequestBody BulkChangeProductStatusRequest request) {
+		int updatedCount = products.bulkUpdateStatus(
+				new com.crm.catalog.product.application.command.BulkChangeProductStatusCommand(
+						request.productIds(),
+						request.active()
+				));
+		return ResponseEntity.ok(java.util.Map.of("updatedCount", updatedCount));
+	}
+
+	@PostMapping("/bulk/category")
+	public ResponseEntity<java.util.Map<String, Object>> bulkAssignCategory(
+			@Valid @RequestBody BulkAssignProductCategoryRequest request) {
+		int updatedCount = products.bulkAssignCategory(
+				new com.crm.catalog.product.application.command.BulkAssignProductCategoryCommand(
+						request.productIds(),
+						request.categoryId()
+				));
+		return ResponseEntity.ok(java.util.Map.of("assignedCount", updatedCount));
 	}
 
 	@DeleteMapping("/{id}")

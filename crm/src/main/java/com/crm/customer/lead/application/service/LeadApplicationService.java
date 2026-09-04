@@ -389,4 +389,49 @@ public class LeadApplicationService implements LeadFacade {
 				lead.version());
 	}
 
+	@Override
+	@Transactional(readOnly = true)
+	public com.crm.customer.lead.application.dto.LeadStatsDto getStats() {
+		TenantId tenantId = currentTenant.requireTenantId();
+		ActorId actorId = currentActor.requireActorId();
+		AuthorizedDataAccess access = authorizer.requireAccess(
+				SystemPermission.CRM_LEAD_READ, ENTITY_TYPE);
+		return leadRepository.getStats(tenantId, actorId, access);
+	}
+
+	@Override
+	@Transactional
+	public int bulkUpdateStatus(com.crm.customer.lead.application.command.BulkChangeLeadStatusCommand command) {
+		Objects.requireNonNull(command, "command must not be null");
+		TenantId tenantId = currentTenant.requireTenantId();
+		ActorId actorId = currentActor.requireActorId();
+		authorizer.requireAccess(SystemPermission.CRM_LEAD_WRITE, ENTITY_TYPE);
+
+		List<LeadId> leadIds = command.leadIds().stream().map(LeadId::new).toList();
+		return leadRepository.bulkUpdateStatus(tenantId, leadIds, command.statusId(), actorId, timeProvider.now());
+	}
+
+	@Override
+	@Transactional
+	public int bulkAssign(com.crm.customer.lead.application.command.BulkAssignLeadsCommand command) {
+		Objects.requireNonNull(command, "command must not be null");
+		TenantId tenantId = currentTenant.requireTenantId();
+		ActorId actorId = currentActor.requireActorId();
+		authorizer.requireAccess(SystemPermission.CRM_LEAD_WRITE, ENTITY_TYPE);
+
+		List<LeadId> leadIds = command.leadIds().stream().map(LeadId::new).toList();
+		return leadRepository.bulkAssign(tenantId, leadIds, command.ownerType(), command.ownerId(), actorId, timeProvider.now());
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public java.util.List<com.crm.customer.lead.application.dto.LeadDuplicateMatchDto> checkDuplicates(
+			com.crm.customer.lead.application.command.CheckLeadDuplicatesCommand command) {
+		Objects.requireNonNull(command, "command must not be null");
+		TenantId tenantId = currentTenant.requireTenantId();
+		authorizer.requireAccess(SystemPermission.CRM_LEAD_READ, ENTITY_TYPE);
+
+		return leadRepository.findPotentialDuplicates(tenantId, command.email(), command.phone(), command.companyName());
+	}
+
 }

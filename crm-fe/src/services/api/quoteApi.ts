@@ -288,7 +288,27 @@ function buildSearchParams(params?: Record<string, unknown>): URLSearchParams {
   return searchParams;
 }
 
+export interface QuoteStatsDto {
+  totalQuotes: number;
+  draftQuotes: number;
+  pendingApprovalQuotes: number;
+  approvedQuotes: number;
+  sentQuotes: number;
+  acceptedQuotes: number;
+  rejectedQuotes: number;
+  totalPipelineValue: number;
+}
+
+export interface BulkChangeQuoteStatusRequest {
+  quoteIds: string[];
+  status: QuoteStatus;
+}
+
 export const quoteApi = {
+  getStats: async (signal?: AbortSignal): Promise<QuoteStatsDto> => {
+    return apiFetch<QuoteStatsDto>('/api/quotes/stats', { signal });
+  },
+
   searchQuotes: async (params?: QuoteSearchParams, signal?: AbortSignal): Promise<PageResult<QuoteSummaryItem>> => {
     const sp = buildSearchParams(params as Record<string, unknown>);
     const queryString = sp.toString() ? `?${sp.toString()}` : '';
@@ -303,6 +323,29 @@ export const quoteApi = {
 
   getQuote: async (id: string, signal?: AbortSignal): Promise<QuoteDetailResponse> => {
     return apiFetch<QuoteDetailResponse>(`/api/quotes/${id}`, { signal });
+  },
+
+  duplicateQuote: async (id: string, signal?: AbortSignal): Promise<QuoteDetailResponse> => {
+    return apiFetch<QuoteDetailResponse>(`/api/quotes/${id}/duplicate`, {
+      method: 'POST',
+      signal,
+    });
+  },
+
+  applyDiscount: async (id: string, discountPercentage: number, version: number, signal?: AbortSignal): Promise<QuoteDetailResponse> => {
+    return apiFetch<QuoteDetailResponse>(`/api/quotes/${id}/apply-discount`, {
+      method: 'POST',
+      body: JSON.stringify({ discountPercentage, version }),
+      signal,
+    });
+  },
+
+  bulkChangeStatus: async (data: BulkChangeQuoteStatusRequest, signal?: AbortSignal): Promise<{ updatedCount: number }> => {
+    return apiFetch<{ updatedCount: number }>('/api/quotes/bulk/status', {
+      method: 'POST',
+      body: JSON.stringify(data),
+      signal,
+    });
   },
 
   getQuoteDocument: async (id: string, signal?: AbortSignal): Promise<QuoteDocumentResponse> => {

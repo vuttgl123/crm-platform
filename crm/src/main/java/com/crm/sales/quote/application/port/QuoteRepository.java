@@ -70,4 +70,24 @@ public interface QuoteRepository {
 
 	UUID convertToOrder(TenantId tenantId, Quote quote, ActorId actorId, Instant now);
 
+	com.crm.sales.quote.application.dto.QuoteStatsDto getStats(
+			TenantId tenantId,
+			ActorId actorId,
+			AuthorizedDataAccess access);
+
+	void applyDiscount(
+			TenantId tenantId,
+			QuoteId id,
+			java.math.BigDecimal discountPercentage,
+			long expectedVersion,
+			ActorId actorId,
+			Instant now);
+
+	int bulkChangeStatus(
+			TenantId tenantId,
+			List<QuoteId> ids,
+			com.crm.sales.quote.domain.QuoteStatus status,
+			ActorId actorId,
+			Instant now);
+
 }

@@ -278,4 +278,86 @@ public class JdbcTeamRepository implements TeamRepository {
 				.list();
 	}
 
+	@Override
+	public com.crm.platform.team.application.dto.TeamStatsDto getStats(TenantId tenantId) {
+		Long total = jdbcClient.sql("""
+				SELECT COUNT(*) FROM platform_teams
+				WHERE tenant_id = :tenantId AND deleted_at IS NULL
+				""")
+				.param("tenantId", tenantId.value())
+				.query(Long.class).single();
+
+		Long active = jdbcClient.sql("""
+				SELECT COUNT(*) FROM platform_teams
+				WHERE tenant_id = :tenantId AND status = 'ACTIVE' AND deleted_at IS NULL
+				""")
+				.param("tenantId", tenantId.value())
+				.query(Long.class).single();
+
+		Long totalAssigned = jdbcClient.sql("""
+				SELECT COUNT(DISTINCT user_id) FROM platform_team_members
+				WHERE tenant_id = :tenantId AND left_at IS NULL
+				""")
+				.param("tenantId", tenantId.value())
+				.query(Long.class).single();
+
+		Long unassigned = jdbcClient.sql("""
+				SELECT COUNT(*) FROM platform_users u
+				WHERE u.deleted_at IS NULL
+				  AND NOT EXISTS (
+				      SELECT 1 FROM platform_team_members tm
+				      WHERE tm.tenant_id = :tenantId AND tm.user_id = u.id AND tm.left_at IS NULL
+				  )
+				""")
+				.param("tenantId", tenantId.value())
+				.query(Long.class).single();
+
+		Long withManagers = jdbcClient.sql("""
+				SELECT COUNT(*) FROM platform_teams
+				WHERE tenant_id = :tenantId AND manager_user_id IS NOT NULL AND deleted_at IS NULL
+				""")
+				.param("tenantId", tenantId.value())
+				.query(Long.class).single();
+
+		return new com.crm.platform.team.application.dto.TeamStatsDto(
+				total != null ? total : 0L,
+				active != null ? active : 0L,
+				totalAssigned != null ? totalAssigned : 0L,
+				unassigned != null ? unassigned : 0L,
+				withManagers != null ? withManagers : 0L
+		);
+	}
+
+	@Override
+	public void updateStatus(TenantId tenantId, TeamId teamId, String status, java.time.Instant now) {
+		jdbcClient.sql("""
+				UPDATE platform_teams
+				SET status = :status,
+				    updated_at = :now,
+				    version = version + 1
+				WHERE tenant_id = :tenantId AND id = :teamId AND deleted_at IS NULL
+				""")
+				.param("status", status)
+				.param("now", Timestamp.from(now))
+				.param("tenantId", tenantId.value())
+				.param("teamId", teamId.value())
+				.update();
+	}
+
+	@Override
+	public void updateManager(TenantId tenantId, TeamId teamId, UUID newManagerUserId, java.time.Instant now) {
+		jdbcClient.sql("""
+				UPDATE platform_teams
+				SET manager_user_id = :managerUserId,
+				    updated_at = :now,
+				    version = version + 1
+				WHERE tenant_id = :tenantId AND id = :teamId AND deleted_at IS NULL
+				""")
+				.param("managerUserId", newManagerUserId)
+				.param("now", Timestamp.from(now))
+				.param("tenantId", tenantId.value())
+				.param("teamId", teamId.value())
+				.update();
+	}
+
 }

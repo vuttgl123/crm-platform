@@ -39,4 +39,12 @@ public interface TicketFacade {
 
 	void deleteComment(TicketId ticketId, TicketCommentId commentId);
 
+	com.crm.service.ticket.application.dto.TicketStatsDto getStats();
+
+	TicketDetails escalate(com.crm.service.ticket.application.command.EscalateTicketCommand command);
+
+	int bulkAssign(com.crm.service.ticket.application.command.BulkAssignTicketsCommand command);
+
+	int bulkChangeStatus(com.crm.service.ticket.application.command.BulkChangeTicketStatusCommand command);
+
 }

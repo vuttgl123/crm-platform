@@ -157,6 +157,15 @@ public final class Contract {
 		this.version++;
 	}
 
+	public void activate(ActorId actorId, Instant now) {
+		if (this.status != ContractStatus.APPROVED && this.status != ContractStatus.SENT_FOR_SIGNATURE && this.status != ContractStatus.DRAFT) {
+			throw new IllegalStateException("Contract cannot be activated from current status: " + this.status);
+		}
+		this.status = ContractStatus.ACTIVE;
+		this.auditInfo.update(actorId, now);
+		this.version++;
+	}
+
 	public void terminate(String reason, ActorId actorId, Instant now) {
 		if (this.status != ContractStatus.ACTIVE) {
 			throw new IllegalStateException("Only ACTIVE contracts can be terminated");

@@ -111,7 +111,39 @@ export interface UpdateContactRequest {
   description?: string | null;
 }
 
+export interface ContactStatsDto {
+  totalContacts: number;
+  primaryContactsCount: number;
+  prospectContactsCount: number;
+  qualifiedContactsCount: number;
+  customerContactsCount: number;
+  inactiveContactsCount: number;
+  churnedContactsCount: number;
+}
+
+export interface SetPrimaryContactRequest {
+  isPrimary: boolean;
+  version: number;
+}
+
+export interface TransferContactAccountRequest {
+  newAccountId: string;
+  jobTitle?: string;
+  version: number;
+}
+
+export interface BulkUpdateContactLifecycleRequest {
+  contactIds: string[];
+  lifecycleStage: ContactLifecycleStage;
+}
+
 export const contactApi = {
+  async getStats(): Promise<ContactStatsDto> {
+    return apiFetch<ContactStatsDto>('/contacts/stats', {
+      method: 'GET',
+    });
+  },
+
   async search(
     params: ContactSearchRequest = {},
     options?: { signal?: AbortSignal }
@@ -150,6 +182,27 @@ export const contactApi = {
   async update(id: string, data: UpdateContactRequest): Promise<ContactResponse> {
     return apiFetch<ContactResponse>(`/contacts/${id}`, {
       method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async setPrimary(id: string, data: SetPrimaryContactRequest): Promise<ContactResponse> {
+    return apiFetch<ContactResponse>(`/contacts/${id}/set-primary`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async transferAccount(id: string, data: TransferContactAccountRequest): Promise<ContactResponse> {
+    return apiFetch<ContactResponse>(`/contacts/${id}/transfer-account`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async bulkUpdateLifecycle(data: BulkUpdateContactLifecycleRequest): Promise<{ updatedCount: number }> {
+    return apiFetch<{ updatedCount: number }>('/contacts/bulk/lifecycle', {
+      method: 'POST',
       body: JSON.stringify(data),
     });
   },

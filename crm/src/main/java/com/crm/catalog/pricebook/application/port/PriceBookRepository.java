@@ -35,4 +35,11 @@ public interface PriceBookRepository {
 
 	void deleteItem(TenantId tenantId, PriceBookItemId itemId);
 
+	com.crm.catalog.pricebook.application.dto.PriceBookStatsDto getStats(TenantId tenantId);
+
+	void updateStatus(TenantId tenantId, PriceBookId id, boolean active,
+			com.crm.sharedkernel.domain.ActorId actorId, java.time.Instant now);
+
+	void insertItemsBatch(TenantId tenantId, List<PriceBookItem> items);
+
 }

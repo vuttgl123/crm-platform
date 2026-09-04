@@ -284,4 +284,149 @@ public class TeamApplicationService implements TeamFacade {
 		return new TeamMemberDetails(teamId.value(), userId, null, null, member.memberRole(), true, member.joinedAt(), member.leftAt());
 	}
 
+	@Override
+	@Transactional(readOnly = true)
+	public com.crm.platform.team.application.dto.TeamStatsDto getStats() {
+		TenantId tenantId = currentTenant.requireTenantId();
+		authorizer.requireAny(
+				SystemPermission.PLATFORM_TEAM_READ,
+				SystemPermission.PLATFORM_USER_READ,
+				SystemPermission.PLATFORM_ROLE_READ
+		);
+		return teamRepository.getStats(tenantId);
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public List<com.crm.platform.team.application.dto.TeamTreeNodeDto> getHierarchy() {
+		TenantId tenantId = currentTenant.requireTenantId();
+		authorizer.requireAny(
+				SystemPermission.PLATFORM_TEAM_READ,
+				SystemPermission.PLATFORM_USER_READ,
+				SystemPermission.PLATFORM_ROLE_READ
+		);
+
+		List<TeamSummary> all = teamRepository.findAll(tenantId);
+		java.util.Map<UUID, List<TeamSummary>> childrenMap = new java.util.HashMap<>();
+		List<TeamSummary> roots = new java.util.ArrayList<>();
+
+		for (TeamSummary t : all) {
+			if (t.parentTeamId() == null) {
+				roots.add(t);
+			} else {
+				childrenMap.computeIfAbsent(t.parentTeamId(), k -> new java.util.ArrayList<>()).add(t);
+			}
+		}
+
+		// Also if any team has a parentId that does not exist in the list, treat as root
+		java.util.Set<UUID> allIds = all.stream().map(TeamSummary::id).collect(java.util.stream.Collectors.toSet());
+		for (TeamSummary t : all) {
+			if (t.parentTeamId() != null && !allIds.contains(t.parentTeamId()) && !roots.contains(t)) {
+				roots.add(t);
+			}
+		}
+
+		return roots.stream()
+				.map(root -> buildTreeNode(root, childrenMap))
+				.toList();
+	}
+
+	private com.crm.platform.team.application.dto.TeamTreeNodeDto buildTreeNode(
+			TeamSummary node,
+			java.util.Map<UUID, List<TeamSummary>> childrenMap) {
+		List<TeamSummary> childSummaries = childrenMap.getOrDefault(node.id(), List.of());
+		List<com.crm.platform.team.application.dto.TeamTreeNodeDto> children = childSummaries.stream()
+				.map(c -> buildTreeNode(c, childrenMap))
+				.toList();
+
+		return new com.crm.platform.team.application.dto.TeamTreeNodeDto(
+				node.id(),
+				node.name(),
+				node.description(),
+				node.parentTeamId(),
+				node.managerUserId(),
+				null,
+				node.status(),
+				node.activeMembersCount(),
+				children
+		);
+	}
+
+	@Override
+	@Transactional
+	public TeamDetails transferManager(TeamId teamId, UUID newManagerUserId) {
+		Objects.requireNonNull(teamId, "teamId must not be null");
+		TenantId tenantId = currentTenant.requireTenantId();
+		authorizer.requireAny(
+				SystemPermission.PLATFORM_TEAM_MANAGE,
+				SystemPermission.PLATFORM_USER_MANAGE,
+				SystemPermission.PLATFORM_ROLE_MANAGE
+		);
+
+		teamRepository.findById(tenantId, teamId)
+				.orElseThrow(() -> new DomainResourceNotFound(TeamErrorCode.TEAM_NOT_FOUND.code()));
+
+		teamRepository.updateManager(tenantId, teamId, newManagerUserId, timeProvider.now());
+		return get(teamId);
+	}
+
+	@Override
+	@Transactional
+	public void changeStatus(TeamId teamId, String status) {
+		Objects.requireNonNull(teamId, "teamId must not be null");
+		TenantId tenantId = currentTenant.requireTenantId();
+		authorizer.requireAny(
+				SystemPermission.PLATFORM_TEAM_MANAGE,
+				SystemPermission.PLATFORM_USER_MANAGE,
+				SystemPermission.PLATFORM_ROLE_MANAGE
+		);
+
+		teamRepository.findById(tenantId, teamId)
+				.orElseThrow(() -> new DomainResourceNotFound(TeamErrorCode.TEAM_NOT_FOUND.code()));
+
+		teamRepository.updateStatus(tenantId, teamId, status, timeProvider.now());
+	}
+
+	@Override
+	@Transactional
+	public void batchUpdateMembers(com.crm.platform.team.application.command.BatchTeamMembersCommand command) {
+		Objects.requireNonNull(command, "command must not be null");
+		TenantId tenantId = currentTenant.requireTenantId();
+		ActorId actorId = currentActor.requireActorId();
+		authorizer.requireAny(
+				SystemPermission.PLATFORM_TEAM_MANAGE,
+				SystemPermission.PLATFORM_USER_MANAGE,
+				SystemPermission.PLATFORM_ROLE_MANAGE
+		);
+
+		Team team = teamRepository.findById(tenantId, command.teamId())
+				.orElseThrow(() -> new DomainResourceNotFound(TeamErrorCode.TEAM_NOT_FOUND.code()));
+
+		Instant now = timeProvider.now();
+
+		if (command.removeMemberUserIds() != null) {
+			for (UUID removeId : command.removeMemberUserIds()) {
+				teamRepository.removeMember(tenantId, command.teamId(), removeId);
+			}
+		}
+
+		if (command.addMemberUserIds() != null) {
+			String role = command.defaultMemberRole() != null ? command.defaultMemberRole() : "MEMBER";
+			for (UUID addId : command.addMemberUserIds()) {
+				if (teamRepository.findMember(tenantId, command.teamId(), addId).isEmpty()) {
+					TeamMember member = TeamMember.create(
+							tenantId,
+							command.teamId(),
+							addId,
+							role,
+							false,
+							actorId,
+							now
+					);
+					teamRepository.insertMember(member);
+				}
+			}
+		}
+	}
+
 }

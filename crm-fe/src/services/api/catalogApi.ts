@@ -70,6 +70,35 @@ export interface PriceBookItem {
   version?: number;
 }
 
+export interface ProductStatsDto {
+  totalProducts: number;
+  activeProducts: number;
+  inactiveProducts: number;
+  totalCategoriesCount: number;
+}
+
+export interface PriceBookStatsDto {
+  totalPriceBooks: number;
+  activePriceBooks: number;
+  standardPriceBooks: number;
+  customPriceBooks: number;
+  totalPricedItemsCount: number;
+}
+
+export interface ClonePriceBookRequest {
+  newName: string;
+  newCode: string;
+  adjustmentPercentage?: number;
+}
+
+export interface BulkAddPriceBookItemsRequest {
+  items: Array<{
+    productId: string;
+    unitPrice: number;
+    minimumQuantity?: number;
+  }>;
+}
+
 export const catalogApi = {
   // Categories
   listCategories: async (params?: { search?: string }): Promise<CategoryItem[]> => {
@@ -293,6 +322,62 @@ export const catalogApi = {
       headers: {
         'If-Match': `"${version}"`,
       },
+    });
+  },
+
+  // Extended Product Catalog APIs
+  getProductStats: async (): Promise<ProductStatsDto> => {
+    return apiFetch<ProductStatsDto>('/products/stats', {
+      method: 'GET',
+    });
+  },
+
+  updateProductStatus: async (id: string, active: boolean): Promise<ProductItem> => {
+    return apiFetch<ProductItem>(`/products/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ active }),
+    });
+  },
+
+  bulkUpdateProductStatus: async (productIds: string[], active: boolean): Promise<{ updatedCount: number }> => {
+    return apiFetch<{ updatedCount: number }>('/products/bulk/status', {
+      method: 'POST',
+      body: JSON.stringify({ productIds, active }),
+    });
+  },
+
+  bulkAssignProductCategory: async (productIds: string[], categoryId: string): Promise<{ assignedCount: number }> => {
+    return apiFetch<{ assignedCount: number }>('/products/bulk/category', {
+      method: 'POST',
+      body: JSON.stringify({ productIds, categoryId }),
+    });
+  },
+
+  // Extended Price Book APIs
+  getPriceBookStats: async (): Promise<PriceBookStatsDto> => {
+    return apiFetch<PriceBookStatsDto>('/price-books/stats', {
+      method: 'GET',
+    });
+  },
+
+  clonePriceBook: async (id: string, data: ClonePriceBookRequest): Promise<PriceBookItem> => {
+    return apiFetch<PriceBookItem>(`/price-books/${id}/clone`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  updatePriceBookStatus: async (id: string, active: boolean): Promise<PriceBookItem> => {
+    return apiFetch<PriceBookItem>(`/price-books/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ active }),
+    });
+  },
+
+  bulkAddPriceBookItems: async (id: string, data: BulkAddPriceBookItemsRequest): Promise<{ addedCount: number }> => {
+    return apiFetch<{ addedCount: number }>(`/price-books/${id}/items/bulk`, {
+      method: 'POST',
+      body: JSON.stringify(data),
     });
   },
 };

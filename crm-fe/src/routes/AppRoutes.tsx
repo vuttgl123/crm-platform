@@ -91,7 +91,7 @@ export const AppRoutes: React.FC = () => {
         <Route path="/solutions" element={<SolutionsPage />} />
         <Route path="/features" element={<FeaturesPage />} />
         <Route path="/pricing" element={<PricingPage />} />
-        <Route path="/demo" element={<Navigate to="/" replace />} />
+        <Route path="/demo" element={<DemoPage />} />
       </Route>
 
       {/* Public / Auth routes */}

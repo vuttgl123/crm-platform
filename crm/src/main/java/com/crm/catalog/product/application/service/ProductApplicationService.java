@@ -191,4 +191,48 @@ public class ProductApplicationService implements ProductFacade {
 		productRepository.update(product);
 	}
 
+	@Override
+	@Transactional(readOnly = true)
+	public com.crm.catalog.product.application.dto.ProductStatsDto getStats() {
+		TenantId tenantId = currentTenant.requireTenantId();
+		authorizer.requirePermission(SystemPermission.SALES_CATALOG_READ);
+		return productRepository.getStats(tenantId);
+	}
+
+	@Override
+	@Transactional
+	public ProductDetails updateStatus(com.crm.catalog.product.application.command.ChangeProductStatusCommand command) {
+		Objects.requireNonNull(command, "command must not be null");
+		TenantId tenantId = currentTenant.requireTenantId();
+		ActorId actorId = currentActor.requireActorId();
+		authorizer.requirePermission(SystemPermission.SALES_CATALOG_WRITE);
+
+		productRepository.updateStatus(tenantId, command.id(), command.active(), actorId, timeProvider.now());
+		return get(command.id());
+	}
+
+	@Override
+	@Transactional
+	public int bulkUpdateStatus(com.crm.catalog.product.application.command.BulkChangeProductStatusCommand command) {
+		Objects.requireNonNull(command, "command must not be null");
+		TenantId tenantId = currentTenant.requireTenantId();
+		ActorId actorId = currentActor.requireActorId();
+		authorizer.requirePermission(SystemPermission.SALES_CATALOG_WRITE);
+
+		java.util.List<ProductId> ids = command.productIds().stream().map(ProductId::new).toList();
+		return productRepository.bulkUpdateStatus(tenantId, ids, command.active(), actorId, timeProvider.now());
+	}
+
+	@Override
+	@Transactional
+	public int bulkAssignCategory(com.crm.catalog.product.application.command.BulkAssignProductCategoryCommand command) {
+		Objects.requireNonNull(command, "command must not be null");
+		TenantId tenantId = currentTenant.requireTenantId();
+		ActorId actorId = currentActor.requireActorId();
+		authorizer.requirePermission(SystemPermission.SALES_CATALOG_WRITE);
+
+		java.util.List<ProductId> ids = command.productIds().stream().map(ProductId::new).toList();
+		return productRepository.bulkAssignCategory(tenantId, ids, command.categoryId(), actorId, timeProvider.now());
+	}
+
 }

@@ -104,4 +104,44 @@ public final class ContractController {
 		return ResponseEntity.noContent().build();
 	}
 
+	@GetMapping("/stats")
+	public com.crm.sales.contract.application.dto.ContractStatsDto getStats() {
+		return contracts.getStats();
+	}
+
+	@PostMapping("/{id}/activate")
+	public ContractResponse activate(
+			@PathVariable UUID id,
+			@RequestHeader("If-Match")
+			@ValidIfMatchVersion String ifMatch) {
+		return mapper.toResponse(contracts.activate(new ContractId(id), IfMatchVersion.parse(ifMatch)));
+	}
+
+	@PostMapping("/{id}/renew")
+	public ResponseEntity<ContractResponse> renew(
+			@PathVariable UUID id,
+			@Valid @RequestBody RenewContractRequest request) {
+		ContractDetails renewed = contracts.renew(
+				new com.crm.sales.contract.application.command.RenewContractCommand(
+						new ContractId(id),
+						request.newContractNumber(),
+						request.effectiveFrom(),
+						request.effectiveTo(),
+						request.contractValue(),
+						request.autoRenew(),
+						request.version()
+				));
+		return ResponseEntity.status(HttpStatus.CREATED).body(mapper.toResponse(renewed));
+	}
+
+	@PostMapping("/bulk/review")
+	public ResponseEntity<java.util.Map<String, Object>> bulkSubmitReview(
+			@Valid @RequestBody BulkSubmitContractReviewRequest request) {
+		int submittedCount = contracts.bulkSubmitReview(
+				new com.crm.sales.contract.application.command.BulkSubmitContractReviewCommand(
+						request.contractIds()
+				));
+		return ResponseEntity.ok(java.util.Map.of("submittedCount", submittedCount));
+	}
+
 }

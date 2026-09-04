@@ -139,13 +139,39 @@ export interface LeadScoringResult {
   recommendedAction?: string;
 }
 
+export interface LeadStatsDto {
+  totalLeads: number;
+  uncontactedLeads: number;
+  workingLeads: number;
+  qualifiedLeads: number;
+  convertedLeads: number;
+  conversionRatePercentage: number;
+}
+
+export interface LeadDuplicateMatchDto {
+  id: string;
+  leadNumber: string;
+  title?: string;
+  fullName: string;
+  email?: string;
+  phone?: string;
+  companyName?: string;
+  matchReason: string;
+}
+
+export interface CheckLeadDuplicatesRequest {
+  email?: string;
+  phone?: string;
+  companyName?: string;
+}
+
 export const leadApi = {
   async search(
     params: LeadSearchParams = {},
     options?: { signal?: AbortSignal }
   ): Promise<PageResult<LeadSummaryResponse>> {
     const query = new URLSearchParams();
-    if (params.q?.trim()) query.append('q', params.q.trim());
+    if (params.q) query.append('q', params.q);
     if (params.statusId) query.append('statusId', params.statusId);
     if (params.sourceId) query.append('sourceId', params.sourceId);
     if (params.rating) query.append('rating', params.rating);
@@ -160,6 +186,12 @@ export const leadApi = {
     return apiFetch<PageResult<LeadSummaryResponse>>(endpoint, {
       method: 'GET',
       signal: options?.signal,
+    });
+  },
+
+  async getStats(): Promise<LeadStatsDto> {
+    return apiFetch<LeadStatsDto>('/leads/stats', {
+      method: 'GET',
     });
   },
 
@@ -209,6 +241,27 @@ export const leadApi = {
   async autoAssign(id: string): Promise<LeadResponse> {
     return apiFetch<LeadResponse>(`/leads/${id}/auto-assign`, {
       method: 'POST',
+    });
+  },
+
+  async bulkUpdateStatus(leadIds: string[], statusId: string): Promise<{ updatedCount: number }> {
+    return apiFetch<{ updatedCount: number }>('/leads/bulk/status', {
+      method: 'POST',
+      body: JSON.stringify({ leadIds, statusId }),
+    });
+  },
+
+  async bulkAssign(leadIds: string[], ownerType: 'USER' | 'TEAM', ownerId: string): Promise<{ assignedCount: number }> {
+    return apiFetch<{ assignedCount: number }>('/leads/bulk/assign', {
+      method: 'POST',
+      body: JSON.stringify({ leadIds, ownerType, ownerId }),
+    });
+  },
+
+  async checkDuplicates(data: CheckLeadDuplicatesRequest): Promise<LeadDuplicateMatchDto[]> {
+    return apiFetch<LeadDuplicateMatchDto[]>('/leads/deduplicate', {
+      method: 'POST',
+      body: JSON.stringify(data),
     });
   },
 };

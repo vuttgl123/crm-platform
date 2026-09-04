@@ -534,4 +534,115 @@ public class JdbcCampaignRepository implements CampaignRepository {
 				.update();
 	}
 
+	@Override
+	public com.crm.marketing.campaign.application.dto.CampaignStatsDto getStats(
+			TenantId tenantId,
+			com.crm.sharedkernel.domain.ActorId actorId,
+			com.crm.foundation.security.AuthorizedDataAccess access) {
+		String cSql = """
+				SELECT
+				    COUNT(*) AS total,
+				    COUNT(CASE WHEN c.status = 'ACTIVE' THEN 1 END) AS active_count,
+				    COUNT(CASE WHEN c.status = 'PLANNING' THEN 1 END) AS planning_count,
+				    COUNT(CASE WHEN c.status = 'COMPLETED' THEN 1 END) AS completed_count,
+				    COUNT(CASE WHEN c.status = 'PAUSED' THEN 1 END) AS paused_count,
+				    COALESCE(SUM(c.budget), 0) AS total_budget,
+				    COALESCE(SUM(c.actual_cost), 0) AS total_actual
+				FROM marketing.campaigns c
+				WHERE c.tenant_id = :tenantId
+				  AND c.deleted_at IS NULL
+				""";
+		var campaignRow = jdbcClient.sql(cSql)
+				.param("tenantId", tenantId.value())
+				.query((rs, rowNum) -> new Object[] {
+						rs.getLong("total"),
+						rs.getLong("active_count"),
+						rs.getLong("planning_count"),
+						rs.getLong("completed_count"),
+						rs.getLong("paused_count"),
+						rs.getBigDecimal("total_budget"),
+						rs.getBigDecimal("total_actual")
+				}).single();
+
+		String mSql = "SELECT COUNT(*) FROM marketing.campaign_members WHERE tenant_id = :tenantId";
+		long membersCount = jdbcClient.sql(mSql)
+				.param("tenantId", tenantId.value())
+				.query((rs, rowNum) -> rs.getLong(1))
+				.single();
+
+		return new com.crm.marketing.campaign.application.dto.CampaignStatsDto(
+				(Long) campaignRow[0],
+				(Long) campaignRow[1],
+				(Long) campaignRow[2],
+				(Long) campaignRow[3],
+				(Long) campaignRow[4],
+				(java.math.BigDecimal) campaignRow[5],
+				(java.math.BigDecimal) campaignRow[6],
+				membersCount
+		);
+	}
+
+	@Override
+	public void updateStatus(
+			TenantId tenantId,
+			CampaignId id,
+			com.crm.marketing.campaign.domain.CampaignStatus status,
+			com.crm.sharedkernel.domain.ActorId actorId,
+			java.time.Instant now) {
+		String sql = """
+				UPDATE marketing.campaigns
+				SET status = :status,
+				    updated_at = :now,
+				    updated_by = :actorId,
+				    version = version + 1
+				WHERE tenant_id = :tenantId
+				  AND id = :id
+				  AND deleted_at IS NULL
+				""";
+		jdbcClient.sql(sql)
+				.param("status", status.name())
+				.param("now", Timestamp.from(now))
+				.param("actorId", actorId.value())
+				.param("tenantId", tenantId.value())
+				.param("id", id.value())
+				.update();
+	}
+
+	@Override
+	public int bulkAddMembers(TenantId tenantId, List<CampaignMember> members) {
+		if (members == null || members.isEmpty()) return 0;
+		for (CampaignMember member : members) {
+			insertMember(member);
+		}
+		return members.size();
+	}
+
+	@Override
+	public int bulkChangeStatus(
+			TenantId tenantId,
+			List<CampaignId> ids,
+			com.crm.marketing.campaign.domain.CampaignStatus status,
+			com.crm.sharedkernel.domain.ActorId actorId,
+			java.time.Instant now) {
+		if (ids == null || ids.isEmpty()) return 0;
+		List<UUID> idList = ids.stream().map(CampaignId::value).toList();
+		String sql = """
+				UPDATE marketing.campaigns
+				SET status = :status,
+				    updated_at = :now,
+				    updated_by = :actorId,
+				    version = version + 1
+				WHERE tenant_id = :tenantId
+				  AND id IN (:ids)
+				  AND deleted_at IS NULL
+				""";
+		return jdbcClient.sql(sql)
+				.param("status", status.name())
+				.param("now", Timestamp.from(now))
+				.param("actorId", actorId.value())
+				.param("tenantId", tenantId.value())
+				.param("ids", idList)
+				.update();
+	}
+
 }

@@ -224,4 +224,62 @@ public class PipelineApplicationService implements PipelineFacade {
 		repository.deleteStage(tenantId, pipelineId, stageId);
 	}
 
+	@Override
+	@Transactional(readOnly = true)
+	public PipelineDetails getDefaultPipeline() {
+		TenantId tenantId = currentTenant.requireTenantId();
+		authorizer.requirePermission(SystemPermission.CRM_OPPORTUNITY_READ);
+
+		Pipeline pipeline = repository.findDefault(tenantId)
+				.or(() -> repository.findAll(tenantId).stream()
+						.findFirst()
+						.flatMap(s -> repository.findById(tenantId, new PipelineId(s.id()))))
+				.orElseThrow(() -> new DomainResourceNotFound(PipelineErrorCode.PIPELINE_NOT_FOUND.code()));
+
+		List<PipelineStageDetails> stages = repository.findStagesByPipeline(tenantId, pipeline.id());
+		return PipelineDetails.from(pipeline, stages);
+	}
+
+	@Override
+	@Transactional
+	public void deletePipeline(PipelineId id) {
+		Objects.requireNonNull(id, "id must not be null");
+		TenantId tenantId = currentTenant.requireTenantId();
+		authorizer.requirePermission(SystemPermission.CRM_OPPORTUNITY_WRITE);
+
+		Pipeline pipeline = repository.findById(tenantId, id)
+				.orElseThrow(() -> new DomainResourceNotFound(PipelineErrorCode.PIPELINE_NOT_FOUND.code()));
+
+		if (pipeline.isDefault()) {
+			throw new ResourceConflict("CANNOT_DELETE_DEFAULT_PIPELINE");
+		}
+
+		repository.deletePipeline(tenantId, id, timeProvider.now());
+	}
+
+	@Override
+	@Transactional
+	public void reorderStages(com.crm.customer.pipeline.application.command.ReorderStagesCommand command) {
+		Objects.requireNonNull(command, "command must not be null");
+		TenantId tenantId = currentTenant.requireTenantId();
+		authorizer.requirePermission(SystemPermission.CRM_OPPORTUNITY_WRITE);
+
+		repository.findById(tenantId, command.pipelineId())
+				.orElseThrow(() -> new DomainResourceNotFound(PipelineErrorCode.PIPELINE_NOT_FOUND.code()));
+
+		Instant now = timeProvider.now();
+		if (command.orderedStageIds() != null) {
+			for (int i = 0; i < command.orderedStageIds().size(); i++) {
+				UUID stageId = command.orderedStageIds().get(i);
+				repository.updateStageDisplayOrder(
+						tenantId,
+						command.pipelineId(),
+						new PipelineStageId(stageId),
+						i + 1,
+						now
+				);
+			}
+		}
+	}
+
 }

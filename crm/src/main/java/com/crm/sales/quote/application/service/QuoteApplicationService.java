@@ -615,4 +615,83 @@ public class QuoteApplicationService implements QuoteFacade {
 			throw new DomainResourceNotFound(QuoteErrorCode.QUOTE_PRICE_BOOK_INVALID, "Price book not found or inactive");
 		}
 	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public com.crm.sales.quote.application.dto.QuoteStatsDto getStats() {
+		TenantId tenantId = currentTenant.requireTenantId();
+		ActorId actorId = currentActor.requireActorId();
+		AuthorizedDataAccess access = authorizer.authorize(SystemPermission.SALES_QUOTE_READ, ENTITY_TYPE);
+		return quoteRepository.getStats(tenantId, actorId, access);
+	}
+
+	@Override
+	@Transactional
+	public QuoteDetails duplicate(com.crm.sales.quote.application.command.DuplicateQuoteCommand command) {
+		Objects.requireNonNull(command, "command must not be null");
+		TenantId tenantId = currentTenant.requireTenantId();
+		ActorId actorId = currentActor.requireActorId();
+		AuthorizedDataAccess access = authorizer.authorize(SystemPermission.SALES_QUOTE_WRITE, ENTITY_TYPE);
+
+		Quote source = quoteRepository.findById(tenantId, command.sourceQuoteId(), actorId, access)
+				.orElseThrow(() -> new DomainResourceNotFound(QuoteErrorCode.QUOTE_NOT_FOUND, "Source quote not found"));
+
+		Instant now = timeProvider.now();
+		QuoteId newQuoteId = new QuoteId(identifierGenerator.nextId());
+		String newQuoteNumber = quoteRepository.generateQuoteNumber(tenantId);
+
+		Quote copy = Quote.createDraft(
+				tenantId,
+				newQuoteId,
+				newQuoteNumber,
+				source.name() != null ? source.name() + " (Copy)" : "Copy of " + source.quoteNumber(),
+				source.accountId(),
+				source.contactId(),
+				source.opportunityId(),
+				source.priceBookId(),
+				source.ownerUserId(),
+				source.ownerTeamId(),
+				source.currencyCode(),
+				source.customerSnapshot(),
+				java.time.LocalDate.now(),
+				java.time.LocalDate.now().plusDays(30),
+				actorId,
+				now
+		);
+
+		quoteRepository.save(copy);
+		return get(newQuoteId);
+	}
+
+	@Override
+	@Transactional
+	public QuoteDetails applyDiscount(com.crm.sales.quote.application.command.ApplyQuoteDiscountCommand command) {
+		Objects.requireNonNull(command, "command must not be null");
+		TenantId tenantId = currentTenant.requireTenantId();
+		ActorId actorId = currentActor.requireActorId();
+		authorizer.requirePermission(SystemPermission.SALES_QUOTE_WRITE);
+
+		quoteRepository.applyDiscount(
+				tenantId,
+				command.id(),
+				command.discountPercentage(),
+				command.expectedVersion(),
+				actorId,
+				timeProvider.now()
+		);
+		return get(command.id());
+	}
+
+	@Override
+	@Transactional
+	public int bulkChangeStatus(com.crm.sales.quote.application.command.BulkChangeQuoteStatusCommand command) {
+		Objects.requireNonNull(command, "command must not be null");
+		TenantId tenantId = currentTenant.requireTenantId();
+		ActorId actorId = currentActor.requireActorId();
+		authorizer.requirePermission(SystemPermission.SALES_QUOTE_WRITE);
+
+		java.util.List<QuoteId> ids = command.quoteIds().stream().map(QuoteId::new).toList();
+		return quoteRepository.bulkChangeStatus(tenantId, ids, command.status(), actorId, timeProvider.now());
+	}
+
 }

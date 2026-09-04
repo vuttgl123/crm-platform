@@ -33,6 +33,7 @@ public enum SystemPermission {
 	INTEGRATION_MANAGE("integration.manage"),
 	INTEGRATION_EXTERNAL_READ("integration_external.read"),
 	INTEGRATION_EXTERNAL_WRITE("integration_external.write"),
+	PLATFORM_USER_READ("platform_user.read"),
 	PLATFORM_USER_MANAGE("platform_user.manage"),
 	PLATFORM_MEMBERSHIP_READ("platform_membership.read"),
 	PLATFORM_MEMBERSHIP_APPROVE("platform_membership.approve"),
@@ -40,7 +41,10 @@ public enum SystemPermission {
 	PLATFORM_ROLE_ASSIGN("platform_role.assign"),
 	PLATFORM_ROLE_MANAGE("platform_role.manage"),
 	PLATFORM_TEAM_READ("platform_team.read"),
-	PLATFORM_TEAM_MANAGE("platform_team.manage");
+	PLATFORM_TEAM_MANAGE("platform_team.manage"),
+	PLATFORM_SETTINGS_READ("platform_settings.read"),
+	PLATFORM_SETTINGS_MANAGE("platform_settings.manage"),
+	PLATFORM_SECURITY_MANAGE("platform_security.manage");
 
 	private final String code;
 

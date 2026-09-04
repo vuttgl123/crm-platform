@@ -28,10 +28,8 @@ import {
   Edit,
   AlertCircle,
   Save,
-  Clock,
   CheckCircle2,
   Target,
-  FileText,
 } from 'lucide-react';
 import { TeamItem } from '@/services/api/teamApi';
 

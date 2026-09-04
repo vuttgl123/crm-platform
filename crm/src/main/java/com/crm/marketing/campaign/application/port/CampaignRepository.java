@@ -47,4 +47,25 @@ public interface CampaignRepository {
 
 	void deleteMember(TenantId tenantId, CampaignMemberId memberId);
 
+	com.crm.marketing.campaign.application.dto.CampaignStatsDto getStats(
+			TenantId tenantId,
+			com.crm.sharedkernel.domain.ActorId actorId,
+			com.crm.foundation.security.AuthorizedDataAccess access);
+
+	void updateStatus(
+			TenantId tenantId,
+			CampaignId id,
+			com.crm.marketing.campaign.domain.CampaignStatus status,
+			com.crm.sharedkernel.domain.ActorId actorId,
+			java.time.Instant now);
+
+	int bulkAddMembers(TenantId tenantId, List<CampaignMember> members);
+
+	int bulkChangeStatus(
+			TenantId tenantId,
+			List<CampaignId> ids,
+			com.crm.marketing.campaign.domain.CampaignStatus status,
+			com.crm.sharedkernel.domain.ActorId actorId,
+			java.time.Instant now);
+
 }

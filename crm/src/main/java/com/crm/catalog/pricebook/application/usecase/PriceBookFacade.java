@@ -28,4 +28,12 @@ public interface PriceBookFacade {
 
 	void removeItem(PriceBookId priceBookId, PriceBookItemId itemId);
 
+	com.crm.catalog.pricebook.application.dto.PriceBookStatsDto getStats();
+
+	PriceBookDetails clonePriceBook(com.crm.catalog.pricebook.application.command.ClonePriceBookCommand command);
+
+	int bulkAddItems(com.crm.catalog.pricebook.application.command.BulkAddPriceBookItemsCommand command);
+
+	PriceBookDetails updateStatus(com.crm.catalog.pricebook.application.command.ChangePriceBookStatusCommand command);
+
 }

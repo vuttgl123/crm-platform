@@ -20,4 +20,12 @@ public interface ProductFacade {
 
 	void delete(ProductId id, long version);
 
+	com.crm.catalog.product.application.dto.ProductStatsDto getStats();
+
+	ProductDetails updateStatus(com.crm.catalog.product.application.command.ChangeProductStatusCommand command);
+
+	int bulkUpdateStatus(com.crm.catalog.product.application.command.BulkChangeProductStatusCommand command);
+
+	int bulkAssignCategory(com.crm.catalog.product.application.command.BulkAssignProductCategoryCommand command);
+
 }

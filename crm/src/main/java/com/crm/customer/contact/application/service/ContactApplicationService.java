@@ -316,4 +316,58 @@ public class ContactApplicationService implements ContactFacade {
 				contact.version());
 	}
 
+	@Override
+	@Transactional(readOnly = true)
+	public com.crm.customer.contact.application.dto.ContactStatsDto getStats() {
+		TenantId tenantId = currentTenant.requireTenantId();
+		ActorId actorId = currentActor.requireActorId();
+		AuthorizedDataAccess access = authorizer.requireAccess(
+				SystemPermission.CRM_CONTACT_READ, ENTITY_TYPE);
+		return contactRepository.getStats(tenantId, actorId, access);
+	}
+
+	@Override
+	@Transactional
+	public ContactDetails setPrimary(com.crm.customer.contact.application.command.SetPrimaryContactCommand command) {
+		Objects.requireNonNull(command, "command must not be null");
+		TenantId tenantId = currentTenant.requireTenantId();
+		ActorId actorId = currentActor.requireActorId();
+		authorizer.requireAccess(SystemPermission.CRM_CONTACT_WRITE, ENTITY_TYPE);
+
+		contactRepository.setPrimary(tenantId, command.id(), command.isPrimary(), command.expectedVersion(), actorId, timeProvider.now());
+		return get(command.id());
+	}
+
+	@Override
+	@Transactional
+	public ContactDetails transferAccount(com.crm.customer.contact.application.command.TransferContactAccountCommand command) {
+		Objects.requireNonNull(command, "command must not be null");
+		TenantId tenantId = currentTenant.requireTenantId();
+		ActorId actorId = currentActor.requireActorId();
+		authorizer.requireAccess(SystemPermission.CRM_CONTACT_WRITE, ENTITY_TYPE);
+
+		contactRepository.transferAccount(
+				tenantId,
+				command.id(),
+				new AccountId(command.newAccountId()),
+				command.jobTitle(),
+				command.expectedVersion(),
+				actorId,
+				timeProvider.now()
+		);
+		return get(command.id());
+	}
+
+	@Override
+	@Transactional
+	public int bulkUpdateLifecycle(com.crm.customer.contact.application.command.BulkUpdateContactLifecycleCommand command) {
+		Objects.requireNonNull(command, "command must not be null");
+		TenantId tenantId = currentTenant.requireTenantId();
+		ActorId actorId = currentActor.requireActorId();
+		authorizer.requireAccess(SystemPermission.CRM_CONTACT_WRITE, ENTITY_TYPE);
+
+		java.util.List<ContactId> ids = command.contactIds().stream().map(ContactId::new).toList();
+		return contactRepository.bulkUpdateLifecycle(tenantId, ids, command.lifecycleStage(), actorId, timeProvider.now());
+	}
+
 }

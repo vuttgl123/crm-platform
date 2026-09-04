@@ -16,6 +16,7 @@ import com.crm.sales.order.application.dto.OrderOwnerReferenceDto;
 import com.crm.sales.order.application.dto.OrderPulseCurrencyGroupDto;
 import com.crm.sales.order.application.dto.OrderPulseDto;
 import com.crm.sales.order.application.dto.OrderReferenceDto;
+import com.crm.sales.order.application.dto.OrderStatsDto;
 import com.crm.sales.order.application.dto.OrderSummary;
 import com.crm.sales.order.application.port.OrderRepository;
 import com.crm.sales.order.application.query.OrderSearchQuery;
@@ -345,6 +346,82 @@ public class JdbcOrderRepository implements OrderRepository, InitializingBean {
 		}
 
 		return new OrderPulseDto(totalOrders, activeProcessing, pendingFulfillment, completed, groups);
+	}
+
+	@Override
+	public OrderStatsDto getStats(TenantId tenantId, ActorId actorId, AuthorizedDataAccess access) {
+		OwnershipScopeSql scope = OwnershipScopeSql.resolve(actorId, access);
+		Map<String, Object> parameters = new HashMap<>(scope.parameters());
+		parameters.put("tenantId", tenantId.toString());
+
+		String sql = scope.cte() + """
+				SELECT COUNT(*) AS total_orders,
+				       COUNT(CASE WHEN o.status = 'DRAFT' THEN 1 END) AS draft_orders,
+				       COUNT(CASE WHEN o.status = 'CONFIRMED' THEN 1 END) AS confirmed_orders,
+				       COUNT(CASE WHEN o.status IN ('PROCESSING', 'PARTIALLY_FULFILLED') THEN 1 END) AS in_fulfillment_orders,
+				       COUNT(CASE WHEN o.status = 'FULFILLED' THEN 1 END) AS completed_orders,
+				       COUNT(CASE WHEN o.status IN ('CANCELLED', 'CLOSED_PARTIAL') THEN 1 END) AS cancelled_orders,
+				       COALESCE(SUM(CASE WHEN o.status = 'FULFILLED' THEN o.grand_total ELSE 0 END), 0) AS fulfilled_amount,
+				       COALESCE(SUM(o.grand_total), 0) AS total_pipeline_amount
+				FROM sales_orders o
+				WHERE o.tenant_id = :tenantId
+				  AND (%s)
+				""".formatted(scope.predicate("o"));
+
+		return jdbcClient.sql(sql)
+				.params(parameters)
+				.query((rs, rowNum) -> new OrderStatsDto(
+						rs.getLong("total_orders"),
+						rs.getLong("draft_orders"),
+						rs.getLong("confirmed_orders"),
+						rs.getLong("in_fulfillment_orders"),
+						rs.getLong("completed_orders"),
+						rs.getLong("cancelled_orders"),
+						rs.getBigDecimal("fulfilled_amount"),
+						rs.getBigDecimal("total_pipeline_amount")
+				))
+				.single();
+	}
+
+	@Override
+	@Transactional
+	public int bulkChangeStatus(TenantId tenantId, List<UUID> orderIds, OrderStatus status, String reason, ActorId actorId, Instant now) {
+		if (orderIds == null || orderIds.isEmpty()) {
+			return 0;
+		}
+		int updated = 0;
+		for (UUID id : orderIds) {
+			OrderId orderId = new OrderId(id);
+			int rows = jdbcClient.sql("""
+					UPDATE sales_orders SET
+					    status = :status,
+					    updated_at = :now,
+					    updated_by = :actorId,
+					    version = version + 1
+					WHERE tenant_id = :tenantId AND id = :id
+					""")
+					.param("status", status.name())
+					.param("now", Timestamp.from(now))
+					.param("actorId", actorId != null ? actorId.toString() : null)
+					.param("tenantId", tenantId.toString())
+					.param("id", id.toString())
+					.update();
+			if (rows > 0) {
+				updated += rows;
+				OrderStatusHistoryEntry history = new OrderStatusHistoryEntry(
+						UUID.randomUUID(),
+						orderId,
+						now,
+						actorId,
+						"BULK_STATUS_CHANGE",
+						null,
+						status,
+						reason != null ? reason : "Bulk status changed to " + status.name()
+				);
+				saveStatusHistory(tenantId, history);
+			}
+		}
+		return updated;
 	}
 
 	@Override

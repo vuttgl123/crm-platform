@@ -1417,4 +1417,98 @@ public class JdbcQuoteRepository implements QuoteRepository, InitializingBean {
 			return null;
 		}
 	}
+
+	@Override
+	public com.crm.sales.quote.application.dto.QuoteStatsDto getStats(
+			TenantId tenantId,
+			ActorId actorId,
+			AuthorizedDataAccess access) {
+		String sql = """
+				SELECT
+				    COUNT(*) AS total,
+				    COUNT(CASE WHEN q.status = 'DRAFT' THEN 1 END) AS draft_count,
+				    COUNT(CASE WHEN q.status = 'IN_REVIEW' OR q.status = 'PENDING_APPROVAL' THEN 1 END) AS pending_count,
+				    COUNT(CASE WHEN q.status = 'APPROVED' THEN 1 END) AS approved_count,
+				    COUNT(CASE WHEN q.status = 'SENT' THEN 1 END) AS sent_count,
+				    COUNT(CASE WHEN q.status = 'ACCEPTED' THEN 1 END) AS accepted_count,
+				    COUNT(CASE WHEN q.status = 'REJECTED' THEN 1 END) AS rejected_count,
+				    COALESCE(SUM(q.total_amount), 0) AS total_val
+				FROM sales_quotes q
+				WHERE q.tenant_id = :tenantId
+				  AND q.deleted_at IS NULL
+				""";
+		return jdbcClient.sql(sql)
+				.param("tenantId", tenantId.value())
+				.query((rs, rowNum) -> new com.crm.sales.quote.application.dto.QuoteStatsDto(
+						rs.getLong("total"),
+						rs.getLong("draft_count"),
+						rs.getLong("pending_count"),
+						rs.getLong("approved_count"),
+						rs.getLong("sent_count"),
+						rs.getLong("accepted_count"),
+						rs.getLong("rejected_count"),
+						rs.getBigDecimal("total_val")
+				)).single();
+	}
+
+	@Override
+	public void applyDiscount(
+			TenantId tenantId,
+			QuoteId id,
+			java.math.BigDecimal discountPercentage,
+			long expectedVersion,
+			ActorId actorId,
+			Instant now) {
+		String sql = """
+				UPDATE sales_quotes
+				SET discount_amount = COALESCE(subtotal_amount, total_amount) * :pct / 100.0,
+				    total_amount = COALESCE(subtotal_amount, total_amount) * (1.0 - :pct / 100.0) + COALESCE(tax_amount, 0),
+				    updated_at = :now,
+				    updated_by = :actorId,
+				    version = version + 1
+				WHERE tenant_id = :tenantId
+				  AND id = :id
+				  AND version = :expectedVersion
+				  AND deleted_at IS NULL
+				""";
+		int updated = jdbcClient.sql(sql)
+				.param("pct", discountPercentage)
+				.param("now", Timestamp.from(now))
+				.param("actorId", actorId.value())
+				.param("tenantId", tenantId.value())
+				.param("id", id.value())
+				.param("expectedVersion", expectedVersion)
+				.update();
+		if (updated == 0) {
+			throw new IllegalStateException("Failed to apply discount due to version conflict or not found");
+		}
+	}
+
+	@Override
+	public int bulkChangeStatus(
+			TenantId tenantId,
+			List<QuoteId> ids,
+			com.crm.sales.quote.domain.QuoteStatus status,
+			ActorId actorId,
+			Instant now) {
+		if (ids == null || ids.isEmpty()) return 0;
+		List<UUID> idList = ids.stream().map(QuoteId::value).toList();
+		String sql = """
+				UPDATE sales_quotes
+				SET status = :status,
+				    updated_at = :now,
+				    updated_by = :actorId,
+				    version = version + 1
+				WHERE tenant_id = :tenantId
+				  AND id IN (:ids)
+				  AND deleted_at IS NULL
+				""";
+		return jdbcClient.sql(sql)
+				.param("status", status.name())
+				.param("now", Timestamp.from(now))
+				.param("actorId", actorId.value())
+				.param("tenantId", tenantId.value())
+				.param("ids", idList)
+				.update();
+	}
 }

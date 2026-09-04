@@ -95,7 +95,40 @@ function normalizeTicket(t: any): TicketItem {
   };
 }
 
+export interface TicketStatsDto {
+  totalTickets: number;
+  openTickets: number;
+  inProgressTickets: number;
+  pendingCustomerTickets: number;
+  resolvedTodayCount: number;
+  closedTickets: number;
+  urgentTicketsCount: number;
+}
+
+export interface EscalateTicketRequest {
+  priority: TicketPriority;
+  escalationReason?: string;
+  version: number;
+}
+
+export interface BulkAssignTicketsRequest {
+  ticketIds: string[];
+  assignedUserId?: string;
+  assignedTeamId?: string;
+}
+
+export interface BulkChangeTicketStatusRequest {
+  ticketIds: string[];
+  status: string;
+}
+
 export const ticketApi = {
+  getStats: async (): Promise<TicketStatsDto> => {
+    return apiFetch<TicketStatsDto>('/service/tickets/stats', {
+      method: 'GET',
+    });
+  },
+
   list: async (params?: {
     search?: string;
     status?: string;
@@ -153,6 +186,28 @@ export const ticketApi = {
       body: JSON.stringify({ version, status }),
     });
     return normalizeTicket(res);
+  },
+
+  escalate: async (id: string, data: EscalateTicketRequest): Promise<TicketItem> => {
+    const res = await apiFetch<any>(`/service/tickets/${id}/escalate`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+    return normalizeTicket(res);
+  },
+
+  bulkAssign: async (data: BulkAssignTicketsRequest): Promise<{ assignedCount: number }> => {
+    return apiFetch<{ assignedCount: number }>('/service/tickets/bulk/assign', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  bulkChangeStatus: async (data: BulkChangeTicketStatusRequest): Promise<{ updatedCount: number }> => {
+    return apiFetch<{ updatedCount: number }>('/service/tickets/bulk/status', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
   },
 
   delete: async (id: string, version: number = 1): Promise<void> => {

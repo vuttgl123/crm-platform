@@ -1,6 +1,7 @@
 package com.crm.audit.infrastructure.persistence;
 
 import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -13,11 +14,12 @@ import com.crm.audit.application.query.AuditEventSearchQuery;
 import com.crm.audit.domain.AuditEvent;
 import com.crm.sharedkernel.application.PageResult;
 import com.crm.sharedkernel.domain.TenantId;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public class JdbcAuditEventRepository implements AuditEventRepository {
+public class JdbcAuditEventRepository implements AuditEventRepository, InitializingBean {
 
 	private static final String EVENT_SELECT = """
 			SELECT a.tenant_id, a.occurred_at, a.id, a.schema_name,
@@ -41,6 +43,35 @@ public class JdbcAuditEventRepository implements AuditEventRepository {
 
 	public JdbcAuditEventRepository(JdbcClient jdbcClient) {
 		this.jdbcClient = jdbcClient;
+	}
+
+	@Override
+	public void afterPropertiesSet() {
+		try {
+			jdbcClient.sql("""
+					CREATE TABLE IF NOT EXISTS audit_audit_events (
+					    tenant_id VARCHAR(64) NOT NULL,
+					    id VARCHAR(64) NOT NULL,
+					    occurred_at TIMESTAMP NOT NULL,
+					    schema_name VARCHAR(128) NOT NULL,
+					    table_name VARCHAR(128) NOT NULL,
+					    aggregate_type VARCHAR(128) NOT NULL,
+					    aggregate_id VARCHAR(64),
+					    action VARCHAR(32) NOT NULL,
+					    changed_fields TEXT,
+					    old_values TEXT,
+					    new_values TEXT,
+					    actor_user_id VARCHAR(64),
+					    actor_type VARCHAR(32) NOT NULL,
+					    request_id VARCHAR(64),
+					    correlation_id VARCHAR(64),
+					    source_ip VARCHAR(64),
+					    user_agent VARCHAR(512),
+					    application_name VARCHAR(128),
+					    PRIMARY KEY (tenant_id, id)
+					)
+					""").update();
+		} catch (Exception ignored) {}
 	}
 
 	@Override
@@ -133,6 +164,78 @@ public class JdbcAuditEventRepository implements AuditEventRepository {
 			criteria.append(" AND a.occurred_at <= :filterToTime");
 			parameters.put("filterToTime", Timestamp.from(query.toTime()));
 		}
+	}
+
+	@Override
+	public void save(AuditEvent event) {
+		jdbcClient.sql("""
+				INSERT INTO audit_audit_events (
+				    tenant_id, id, occurred_at, schema_name, table_name,
+				    aggregate_type, aggregate_id, action, changed_fields,
+				    old_values, new_values, actor_user_id, actor_type,
+				    request_id, correlation_id, source_ip, user_agent, application_name
+				) VALUES (
+				    :tenantId, :id, :occurredAt, :schemaName, :tableName,
+				    :aggregateType, :aggregateId, :action, :changedFields,
+				    :oldValues, :newValues, :actorUserId, :actorType,
+				    :requestId, :correlationId, :sourceIp, :userAgent, :applicationName
+				)
+				""")
+				.param("tenantId", event.tenantId().toString())
+				.param("id", event.id().toString())
+				.param("occurredAt", Timestamp.from(event.occurredAt()))
+				.param("schemaName", event.schemaName())
+				.param("tableName", event.tableName())
+				.param("aggregateType", event.aggregateType())
+				.param("aggregateId", event.aggregateId() != null ? event.aggregateId().toString() : null)
+				.param("action", event.action().name())
+				.param("changedFields", event.changedFields())
+				.param("oldValues", event.oldValues())
+				.param("newValues", event.newValues())
+				.param("actorUserId", event.actorUserId() != null ? event.actorUserId().toString() : null)
+				.param("actorType", event.actorType().name())
+				.param("requestId", event.requestId() != null ? event.requestId().toString() : null)
+				.param("correlationId", event.correlationId() != null ? event.correlationId().toString() : null)
+				.param("sourceIp", event.sourceIp())
+				.param("userAgent", event.userAgent())
+				.param("applicationName", event.applicationName())
+				.update();
+	}
+
+	@Override
+	public long countEvents(TenantId tenantId) {
+		Long count = jdbcClient.sql("SELECT COUNT(*) FROM audit_audit_events WHERE tenant_id = :t")
+				.param("t", tenantId.toString())
+				.query(Long.class)
+				.single();
+		return count != null ? count : 0;
+	}
+
+	@Override
+	public long countEventsSince(TenantId tenantId, Instant since) {
+		Long count = jdbcClient.sql("SELECT COUNT(*) FROM audit_audit_events WHERE tenant_id = :t AND occurred_at >= :since")
+				.param("t", tenantId.toString())
+				.param("since", Timestamp.from(since))
+				.query(Long.class)
+				.single();
+		return count != null ? count : 0;
+	}
+
+	@Override
+	public long countDistinctActors(TenantId tenantId) {
+		Long count = jdbcClient.sql("SELECT COUNT(DISTINCT actor_user_id) FROM audit_audit_events WHERE tenant_id = :t AND actor_user_id IS NOT NULL")
+				.param("t", tenantId.toString())
+				.query(Long.class)
+				.single();
+		return count != null ? count : 0;
+	}
+
+	@Override
+	public int purgeOlderThan(TenantId tenantId, Instant threshold) {
+		return jdbcClient.sql("DELETE FROM audit_audit_events WHERE tenant_id = :t AND occurred_at < :thresh")
+				.param("t", tenantId.toString())
+				.param("thresh", Timestamp.from(threshold))
+				.update();
 	}
 
 }

@@ -29,4 +29,14 @@ public interface TeamFacade {
 
 	TeamMemberDetails setPrimaryMember(TeamId teamId, UUID userId);
 
+	com.crm.platform.team.application.dto.TeamStatsDto getStats();
+
+	List<com.crm.platform.team.application.dto.TeamTreeNodeDto> getHierarchy();
+
+	TeamDetails transferManager(TeamId teamId, UUID newManagerUserId);
+
+	void changeStatus(TeamId teamId, String status);
+
+	void batchUpdateMembers(com.crm.platform.team.application.command.BatchTeamMembersCommand command);
+
 }

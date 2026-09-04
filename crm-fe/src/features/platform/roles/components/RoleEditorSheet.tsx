@@ -369,7 +369,6 @@ export const RoleEditorSheet: React.FC<RoleEditorSheetProps> = ({
                   diff={diffResult}
                   catalog={catalog}
                   teams={teams}
-                  mode={mode}
                 />
               )}
             </>

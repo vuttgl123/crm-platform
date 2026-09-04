@@ -219,4 +219,96 @@ public class JdbcProductRepository implements ProductRepository {
 		}
 	}
 
+	@Override
+	public com.crm.catalog.product.application.dto.ProductStatsDto getStats(TenantId tenantId) {
+		String sql = """
+				SELECT
+				    COUNT(*) AS total,
+				    COUNT(CASE WHEN p.is_active = TRUE THEN 1 END) AS active_count,
+				    COUNT(CASE WHEN p.is_active = FALSE THEN 1 END) AS inactive_count,
+				    COUNT(DISTINCT p.category_id) AS categories_count
+				FROM catalog.products p
+				WHERE p.tenant_id = :tenantId
+				  AND p.deleted_at IS NULL
+				""";
+		return jdbcClient.sql(sql)
+				.param("tenantId", tenantId.value())
+				.query((rs, rowNum) -> new com.crm.catalog.product.application.dto.ProductStatsDto(
+						rs.getLong("total"),
+						rs.getLong("active_count"),
+						rs.getLong("inactive_count"),
+						rs.getLong("categories_count")
+				)).single();
+	}
+
+	@Override
+	public void updateStatus(TenantId tenantId, ProductId id, boolean active,
+			com.crm.sharedkernel.domain.ActorId actorId, java.time.Instant now) {
+		String sql = """
+				UPDATE catalog.products
+				SET is_active = :active,
+				    updated_at = :now,
+				    updated_by = :actorId,
+				    version = version + 1
+				WHERE tenant_id = :tenantId
+				  AND id = :id
+				  AND deleted_at IS NULL
+				""";
+		jdbcClient.sql(sql)
+				.param("active", active)
+				.param("now", Timestamp.from(now))
+				.param("actorId", actorId.value())
+				.param("tenantId", tenantId.value())
+				.param("id", id.value())
+				.update();
+	}
+
+	@Override
+	public int bulkUpdateStatus(TenantId tenantId, List<ProductId> ids, boolean active,
+			com.crm.sharedkernel.domain.ActorId actorId, java.time.Instant now) {
+		if (ids == null || ids.isEmpty()) return 0;
+		List<UUID> idList = ids.stream().map(ProductId::value).toList();
+		String sql = """
+				UPDATE catalog.products
+				SET is_active = :active,
+				    updated_at = :now,
+				    updated_by = :actorId,
+				    version = version + 1
+				WHERE tenant_id = :tenantId
+				  AND id IN (:ids)
+				  AND deleted_at IS NULL
+				""";
+		return jdbcClient.sql(sql)
+				.param("active", active)
+				.param("now", Timestamp.from(now))
+				.param("actorId", actorId.value())
+				.param("tenantId", tenantId.value())
+				.param("ids", idList)
+				.update();
+	}
+
+	@Override
+	public int bulkAssignCategory(TenantId tenantId, List<ProductId> ids, UUID categoryId,
+			com.crm.sharedkernel.domain.ActorId actorId, java.time.Instant now) {
+		if (ids == null || ids.isEmpty()) return 0;
+		List<UUID> idList = ids.stream().map(ProductId::value).toList();
+		String sql = """
+				UPDATE catalog.products
+				SET category_id = :categoryId,
+				    updated_at = :now,
+				    updated_by = :actorId,
+				    version = version + 1
+				WHERE tenant_id = :tenantId
+				  AND id IN (:ids)
+				  AND deleted_at IS NULL
+				""";
+		return jdbcClient.sql(sql)
+				.param("categoryId", categoryId)
+				.param("now", Timestamp.from(now))
+				.param("actorId", actorId.value())
+				.param("tenantId", tenantId.value())
+				.param("ids", idList)
+				.update();
+	}
+
 }

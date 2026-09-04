@@ -1,5 +1,6 @@
 package com.crm.audit.application.port;
 
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -15,5 +16,15 @@ public interface AuditEventRepository {
 
 	PageResult<AuditEventSummary> search(TenantId tenantId,
 			AuditEventSearchQuery query);
+
+	void save(AuditEvent event);
+
+	long countEvents(TenantId tenantId);
+
+	long countEventsSince(TenantId tenantId, Instant since);
+
+	long countDistinctActors(TenantId tenantId);
+
+	int purgeOlderThan(TenantId tenantId, Instant threshold);
 
 }

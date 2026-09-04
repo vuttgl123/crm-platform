@@ -37,4 +37,10 @@ public interface PipelineRepository {
 
 	void deleteStage(TenantId tenantId, PipelineId pipelineId, PipelineStageId stageId);
 
+	Optional<Pipeline> findDefault(TenantId tenantId);
+
+	void deletePipeline(TenantId tenantId, PipelineId id, java.time.Instant now);
+
+	void updateStageDisplayOrder(TenantId tenantId, PipelineId pipelineId, PipelineStageId stageId, int displayOrder, java.time.Instant now);
+
 }

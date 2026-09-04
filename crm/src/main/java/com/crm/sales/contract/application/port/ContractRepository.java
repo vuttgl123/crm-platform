@@ -25,4 +25,15 @@ public interface ContractRepository {
 
 	void delete(TenantId tenantId, ContractId id, long version);
 
+	com.crm.sales.contract.application.dto.ContractStatsDto getStats(
+			TenantId tenantId,
+			com.crm.sharedkernel.domain.ActorId actorId,
+			com.crm.foundation.security.AuthorizedDataAccess access);
+
+	int bulkSubmitReview(
+			TenantId tenantId,
+			java.util.List<ContractId> ids,
+			com.crm.sharedkernel.domain.ActorId actorId,
+			java.time.Instant now);
+
 }

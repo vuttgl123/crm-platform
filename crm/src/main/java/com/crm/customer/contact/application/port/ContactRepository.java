@@ -28,4 +28,16 @@ public interface ContactRepository {
 
 	void save(Contact contact);
 
+	com.crm.customer.contact.application.dto.ContactStatsDto getStats(
+			TenantId tenantId, ActorId actorId, AuthorizedDataAccess access);
+
+	void setPrimary(TenantId tenantId, ContactId id, boolean isPrimary,
+			long expectedVersion, ActorId actorId, java.time.Instant now);
+
+	void transferAccount(TenantId tenantId, ContactId id, AccountId newAccountId,
+			String jobTitle, long expectedVersion, ActorId actorId, java.time.Instant now);
+
+	int bulkUpdateLifecycle(TenantId tenantId, java.util.List<ContactId> ids,
+			String lifecycleStage, ActorId actorId, java.time.Instant now);
+
 }

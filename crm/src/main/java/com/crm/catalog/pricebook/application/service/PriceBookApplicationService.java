@@ -254,4 +254,115 @@ public class PriceBookApplicationService implements PriceBookFacade {
 		priceBookRepository.deleteItem(tenantId, itemId);
 	}
 
+	@Override
+	@Transactional(readOnly = true)
+	public com.crm.catalog.pricebook.application.dto.PriceBookStatsDto getStats() {
+		TenantId tenantId = currentTenant.requireTenantId();
+		authorizer.requirePermission(SystemPermission.SALES_CATALOG_READ);
+		return priceBookRepository.getStats(tenantId);
+	}
+
+	@Override
+	@Transactional
+	public PriceBookDetails clonePriceBook(com.crm.catalog.pricebook.application.command.ClonePriceBookCommand command) {
+		Objects.requireNonNull(command, "command must not be null");
+		TenantId tenantId = currentTenant.requireTenantId();
+		ActorId actorId = currentActor.requireActorId();
+		authorizer.requirePermission(SystemPermission.SALES_CATALOG_WRITE);
+
+		PriceBook source = priceBookRepository.findById(tenantId, command.sourceId())
+				.orElseThrow(() -> new DomainResourceNotFound(PriceBookErrorCode.PRICE_BOOK_NOT_FOUND.code()));
+
+		if (priceBookRepository.existsByCode(tenantId, command.newCode())) {
+			throw new ResourceConflict(PriceBookErrorCode.PRICE_BOOK_CODE_EXISTS.code());
+		}
+
+		Instant now = timeProvider.now();
+		PriceBookId targetId = new PriceBookId(identifierGenerator.generate());
+		PriceBook target = PriceBook.create(
+				tenantId,
+				targetId,
+				command.newCode(),
+				command.newName(),
+				source.currencyCode(),
+				source.validFrom(),
+				source.validTo(),
+				false,
+				true,
+				actorId,
+				now
+		);
+		priceBookRepository.insert(target);
+
+		List<PriceBookItemDetails> sourceItems = priceBookRepository.findItemsByPriceBookId(tenantId, command.sourceId());
+		java.math.BigDecimal multiplier = command.adjustmentPercentage() != null
+				? java.math.BigDecimal.ONE.add(command.adjustmentPercentage().divide(new java.math.BigDecimal("100"), 4, java.math.RoundingMode.HALF_UP))
+				: java.math.BigDecimal.ONE;
+
+		List<PriceBookItem> newItems = sourceItems.stream().map(item -> {
+			PriceBookItemId newItemId = new PriceBookItemId(identifierGenerator.generate());
+			java.math.BigDecimal adjustedPrice = item.unitPrice().multiply(multiplier).setScale(2, java.math.RoundingMode.HALF_UP);
+			return PriceBookItem.create(
+					tenantId,
+					newItemId,
+					targetId,
+					new ProductId(item.productId()),
+					adjustedPrice,
+					item.minimumQuantity(),
+					item.validFrom(),
+					item.validTo(),
+					actorId,
+					now
+			);
+		}).toList();
+
+		priceBookRepository.insertItemsBatch(tenantId, newItems);
+		return get(targetId);
+	}
+
+	@Override
+	@Transactional
+	public int bulkAddItems(com.crm.catalog.pricebook.application.command.BulkAddPriceBookItemsCommand command) {
+		Objects.requireNonNull(command, "command must not be null");
+		TenantId tenantId = currentTenant.requireTenantId();
+		ActorId actorId = currentActor.requireActorId();
+		authorizer.requirePermission(SystemPermission.SALES_CATALOG_WRITE);
+
+		priceBookRepository.findById(tenantId, command.priceBookId())
+				.orElseThrow(() -> new DomainResourceNotFound(PriceBookErrorCode.PRICE_BOOK_NOT_FOUND.code()));
+
+		Instant now = timeProvider.now();
+		List<PriceBookItem> items = command.items().stream().map(entry -> {
+			PriceBookItemId itemId = new PriceBookItemId(identifierGenerator.generate());
+			int minQty = entry.minimumQuantity() != null ? entry.minimumQuantity() : 1;
+			return PriceBookItem.create(
+					tenantId,
+					itemId,
+					command.priceBookId(),
+					new ProductId(entry.productId()),
+					entry.unitPrice(),
+					minQty,
+					null,
+					null,
+					actorId,
+					now
+			);
+		}).toList();
+
+		priceBookRepository.insertItemsBatch(tenantId, items);
+		return items.size();
+	}
+
+	@Override
+	@Transactional
+	public PriceBookDetails updateStatus(com.crm.catalog.pricebook.application.command.ChangePriceBookStatusCommand command) {
+		Objects.requireNonNull(command, "command must not be null");
+		TenantId tenantId = currentTenant.requireTenantId();
+		ActorId actorId = currentActor.requireActorId();
+		authorizer.requirePermission(SystemPermission.SALES_CATALOG_WRITE);
+
+		priceBookRepository.updateStatus(tenantId, command.id(), command.active(), actorId, timeProvider.now());
+		return get(command.id());
+	}
+
 }

@@ -7,11 +7,13 @@ import java.util.UUID;
 
 import com.crm.foundation.security.AuthorizedDataAccess;
 import com.crm.sales.order.application.dto.OrderPulseDto;
+import com.crm.sales.order.application.dto.OrderStatsDto;
 import com.crm.sales.order.application.dto.OrderSummary;
 import com.crm.sales.order.application.query.OrderSearchQuery;
 import com.crm.sales.order.domain.Order;
 import com.crm.sales.order.domain.OrderFulfillmentEvent;
 import com.crm.sales.order.domain.OrderId;
+import com.crm.sales.order.domain.OrderStatus;
 import com.crm.sales.order.domain.OrderStatusHistoryEntry;
 import com.crm.sharedkernel.application.PageResult;
 import com.crm.sharedkernel.domain.ActorId;
@@ -60,6 +62,10 @@ public interface OrderRepository {
 	List<OrderStatusHistoryEntry> findStatusHistory(TenantId tenantId, OrderId orderId);
 
 	OrderPulseDto getPulse(TenantId tenantId, ActorId actorId, AuthorizedDataAccess access);
+
+	OrderStatsDto getStats(TenantId tenantId, ActorId actorId, AuthorizedDataAccess access);
+
+	int bulkChangeStatus(TenantId tenantId, List<UUID> orderIds, OrderStatus status, String reason, ActorId actorId, Instant now);
 
 	void delete(TenantId tenantId, OrderId orderId);
 

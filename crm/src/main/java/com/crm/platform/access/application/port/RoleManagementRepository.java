@@ -6,6 +6,8 @@ import java.util.Set;
 import java.util.UUID;
 
 import com.crm.platform.access.application.dto.PermissionCatalogueItem;
+import com.crm.platform.access.application.dto.RoleMemberSummaryDto;
+import com.crm.platform.access.application.dto.RoleStatsDto;
 import com.crm.platform.access.application.dto.RoleSummary;
 import com.crm.platform.access.domain.Role;
 import com.crm.platform.access.domain.RoleId;
@@ -36,5 +38,13 @@ public interface RoleManagementRepository {
 	void replacePermissionGrants(Role role);
 
 	void replaceDataScopeGrants(Role role);
+
+	RoleStatsDto getStats(TenantId tenantId);
+
+	List<RoleMemberSummaryDto> findMembersByRoleId(TenantId tenantId, RoleId roleId);
+
+	int reassignMembers(TenantId tenantId, RoleId sourceRoleId, RoleId targetRoleId, UUID actorId, java.time.Instant now);
+
+	int updateStatus(TenantId tenantId, RoleId roleId, String status, UUID actorId, java.time.Instant now);
 
 }

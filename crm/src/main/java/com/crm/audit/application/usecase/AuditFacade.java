@@ -1,8 +1,13 @@
 package com.crm.audit.application.usecase;
 
+import java.util.Map;
 import java.util.UUID;
 
+import com.crm.audit.application.command.PurgeAuditLogsCommand;
+import com.crm.audit.application.command.RecordAuditEventCommand;
+import com.crm.audit.application.command.RecordDataAccessEventCommand;
 import com.crm.audit.application.dto.AuditEventSummary;
+import com.crm.audit.application.dto.AuditStatsDto;
 import com.crm.audit.application.dto.DataAccessEventSummary;
 import com.crm.audit.application.query.AuditEventSearchQuery;
 import com.crm.audit.application.query.DataAccessEventSearchQuery;
@@ -19,5 +24,13 @@ public interface AuditFacade {
 	DataAccessEvent getDataAccessEvent(UUID eventId);
 
 	PageResult<DataAccessEventSummary> searchDataAccessEvents(DataAccessEventSearchQuery query);
+
+	AuditStatsDto getStats();
+
+	AuditEvent recordAuditEvent(RecordAuditEventCommand command);
+
+	DataAccessEvent recordDataAccessEvent(RecordDataAccessEventCommand command);
+
+	Map<String, Object> purgeAuditLogs(PurgeAuditLogsCommand command);
 
 }

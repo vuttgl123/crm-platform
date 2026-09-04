@@ -273,4 +273,62 @@ public class JdbcContractRepository implements ContractRepository {
 		}
 	}
 
+	@Override
+	public com.crm.sales.contract.application.dto.ContractStatsDto getStats(
+			TenantId tenantId,
+			com.crm.sharedkernel.domain.ActorId actorId,
+			com.crm.foundation.security.AuthorizedDataAccess access) {
+		String sql = """
+				SELECT
+				    COUNT(*) AS total,
+				    COUNT(CASE WHEN c.status = 'DRAFT' THEN 1 END) AS draft_count,
+				    COUNT(CASE WHEN c.status = 'IN_REVIEW' THEN 1 END) AS review_count,
+				    COUNT(CASE WHEN c.status = 'APPROVED' THEN 1 END) AS approved_count,
+				    COUNT(CASE WHEN c.status = 'ACTIVE' THEN 1 END) AS active_count,
+				    COUNT(CASE WHEN c.status = 'ACTIVE' AND c.effective_to IS NOT NULL AND c.effective_to <= CURRENT_DATE + INTERVAL '30 days' THEN 1 END) AS expiring_count,
+				    COUNT(CASE WHEN c.status = 'TERMINATED' THEN 1 END) AS terminated_count,
+				    COALESCE(SUM(CASE WHEN c.status = 'ACTIVE' THEN c.contract_value ELSE 0 END), 0) AS total_val
+				FROM sales.contracts c
+				WHERE c.tenant_id = :tenantId
+				""";
+		return jdbcClient.sql(sql)
+				.param("tenantId", tenantId.value())
+				.query((rs, rowNum) -> new com.crm.sales.contract.application.dto.ContractStatsDto(
+						rs.getLong("total"),
+						rs.getLong("draft_count"),
+						rs.getLong("review_count"),
+						rs.getLong("approved_count"),
+						rs.getLong("active_count"),
+						rs.getLong("expiring_count"),
+						rs.getLong("terminated_count"),
+						rs.getBigDecimal("total_val")
+				)).single();
+	}
+
+	@Override
+	public int bulkSubmitReview(
+			TenantId tenantId,
+			List<ContractId> ids,
+			com.crm.sharedkernel.domain.ActorId actorId,
+			java.time.Instant now) {
+		if (ids == null || ids.isEmpty()) return 0;
+		List<UUID> idList = ids.stream().map(ContractId::value).toList();
+		String sql = """
+				UPDATE sales.contracts
+				SET status = 'IN_REVIEW',
+				    updated_at = :now,
+				    updated_by = :actorId,
+				    version = version + 1
+				WHERE tenant_id = :tenantId
+				  AND id IN (:ids)
+				  AND status = 'DRAFT'
+				""";
+		return jdbcClient.sql(sql)
+				.param("now", Timestamp.from(now))
+				.param("actorId", actorId.value())
+				.param("tenantId", tenantId.value())
+				.param("ids", idList)
+				.update();
+	}
+
 }

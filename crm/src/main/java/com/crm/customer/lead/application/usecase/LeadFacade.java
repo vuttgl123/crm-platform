@@ -24,4 +24,12 @@ public interface LeadFacade {
 
 	void delete(DeleteLeadCommand command);
 
+	com.crm.customer.lead.application.dto.LeadStatsDto getStats();
+
+	int bulkUpdateStatus(com.crm.customer.lead.application.command.BulkChangeLeadStatusCommand command);
+
+	int bulkAssign(com.crm.customer.lead.application.command.BulkAssignLeadsCommand command);
+
+	java.util.List<com.crm.customer.lead.application.dto.LeadDuplicateMatchDto> checkDuplicates(com.crm.customer.lead.application.command.CheckLeadDuplicatesCommand command);
+
 }

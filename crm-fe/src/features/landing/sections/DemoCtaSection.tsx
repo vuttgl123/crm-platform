@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useSearchParams } from 'react-router-dom';
-import { ArrowRight, CheckCircle2, Phone, Mail, Clock, ShieldCheck, Loader2, AlertCircle } from 'lucide-react';
+import { ArrowRight, CheckCircle2, Phone, Mail, Loader2, AlertCircle } from 'lucide-react';
 import { EditorialSection } from '../components/EditorialSection';
 import { FadeIn } from '../components/FadeIn';
 

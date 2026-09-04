@@ -19,6 +19,14 @@ export interface DataAccessLogItem {
   legalBasis?: string;
 }
 
+export interface AuditStatsDto {
+  totalAuditEvents: number;
+  mutationEvents: number;
+  dataAccessEvents: number;
+  distinctActorsCount: number;
+  eventsLast24Hours: number;
+}
+
 export interface AuditEventSummaryResponse {
   id: string;
   occurredAt: string;
@@ -86,6 +94,47 @@ export interface DataAccessEventResponse {
   metadata?: string | null;
 }
 
+export interface RecordAuditEventRequest {
+  schemaName: string;
+  tableName: string;
+  aggregateType: string;
+  aggregateId?: string;
+  action: AuditAction;
+  changedFields?: string;
+  oldValues?: string;
+  newValues?: string;
+  requestId?: string;
+  correlationId?: string;
+  sourceIp?: string;
+  userAgent?: string;
+  applicationName?: string;
+}
+
+export interface RecordDataAccessEventRequest {
+  entityType: string;
+  entityId?: string;
+  accessType: DataAccessType;
+  fieldsAccessed?: string;
+  purpose?: string;
+  legalBasis?: string;
+  requestId?: string;
+  sourceIp?: string;
+  userAgent?: string;
+  metadata?: string;
+}
+
+export interface PurgeAuditLogsRequest {
+  olderThan: string;
+  logType?: 'ALL' | 'AUDIT_EVENTS' | 'DATA_ACCESS';
+}
+
+export interface PurgeAuditLogsResponse {
+  purgedAuditEvents: number;
+  purgedDataAccessEvents: number;
+  totalPurged: number;
+  olderThan: string;
+}
+
 export interface AuditEventSearchParams {
   q?: string;
   aggregateType?: string;
@@ -111,6 +160,31 @@ export interface DataAccessEventSearchParams {
 }
 
 export const auditApi = {
+  async getStats(): Promise<AuditStatsDto> {
+    return apiFetch<AuditStatsDto>('/api/audit/stats', { method: 'GET' });
+  },
+
+  async recordAuditEvent(data: RecordAuditEventRequest): Promise<AuditEventResponse> {
+    return apiFetch<AuditEventResponse>('/api/audit/events', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async recordDataAccess(data: RecordDataAccessEventRequest): Promise<DataAccessEventResponse> {
+    return apiFetch<DataAccessEventResponse>('/api/audit/data-access', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async purgeLogs(data: PurgeAuditLogsRequest): Promise<PurgeAuditLogsResponse> {
+    return apiFetch<PurgeAuditLogsResponse>('/api/audit/purge', {
+      method: 'DELETE',
+      body: JSON.stringify(data),
+    });
+  },
+
   async searchEvents(params: AuditEventSearchParams = {}): Promise<PageResult<AuditEventSummaryResponse>> {
     const query = new URLSearchParams();
     if (params.q) query.append('q', params.q);
@@ -124,12 +198,12 @@ export const auditApi = {
     if (params.size !== undefined) query.append('size', params.size.toString());
 
     const queryString = query.toString();
-    const endpoint = `/audit/events${queryString ? `?${queryString}` : ''}`;
+    const endpoint = `/api/audit/events${queryString ? `?${queryString}` : ''}`;
     return apiFetch<PageResult<AuditEventSummaryResponse>>(endpoint, { method: 'GET' });
   },
 
   async getEventById(id: string): Promise<AuditEventResponse> {
-    return apiFetch<AuditEventResponse>(`/audit/events/${id}`, { method: 'GET' });
+    return apiFetch<AuditEventResponse>(`/api/audit/events/${id}`, { method: 'GET' });
   },
 
   async searchDataAccess(params: DataAccessEventSearchParams = {}): Promise<PageResult<DataAccessEventSummaryResponse>> {
@@ -145,16 +219,16 @@ export const auditApi = {
     if (params.size !== undefined) query.append('size', params.size.toString());
 
     const queryString = query.toString();
-    const endpoint = `/audit/data-access${queryString ? `?${queryString}` : ''}`;
+    const endpoint = `/api/audit/data-access${queryString ? `?${queryString}` : ''}`;
     return apiFetch<PageResult<DataAccessEventSummaryResponse>>(endpoint, { method: 'GET' });
   },
 
   async getDataAccessById(id: string): Promise<DataAccessEventResponse> {
-    return apiFetch<DataAccessEventResponse>(`/audit/data-access/${id}`, { method: 'GET' });
+    return apiFetch<DataAccessEventResponse>(`/api/audit/data-access/${id}`, { method: 'GET' });
   },
 
   async listDataAccess(): Promise<DataAccessLogItem[]> {
-    const res = await apiFetch<any>('/audit/data-access').catch(() => []);
+    const res = await apiFetch<any>('/api/audit/data-access').catch(() => []);
     const items = Array.isArray(res) ? res : res.items || [];
     if (items.length === 0) {
       return [

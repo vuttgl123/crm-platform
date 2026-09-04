@@ -262,6 +262,23 @@ export interface OrderPulseResponse {
   currencyGroups: OrderPulseCurrencyGroup[];
 }
 
+export interface OrderStatsDto {
+  totalOrders: number;
+  draftOrders: number;
+  confirmedOrders: number;
+  inFulfillmentOrders: number;
+  completedOrders: number;
+  cancelledOrders: number;
+  fulfilledAmount: number | string;
+  totalPipelineAmount: number | string;
+}
+
+export interface BulkChangeOrderStatusRequest {
+  orderIds: string[];
+  status: OrderStatus;
+  reason?: string;
+}
+
 export interface OrderDocumentResponse {
   id: string;
   orderNumber: string;
@@ -372,6 +389,26 @@ export const orderApi = {
       headers: {
         'If-Match': `"${version}"`,
       },
+    });
+  },
+
+  complete: (id: string, version: number): Promise<OrderResponse> => {
+    return apiFetch<OrderResponse>(`/api/sales/orders/${id}/complete`, {
+      method: 'POST',
+      headers: {
+        'If-Match': `"${version}"`,
+      },
+    });
+  },
+
+  getStats: (): Promise<OrderStatsDto> => {
+    return apiFetch<OrderStatsDto>('/api/sales/orders/stats');
+  },
+
+  bulkChangeStatus: (data: BulkChangeOrderStatusRequest): Promise<{ updatedCount: number }> => {
+    return apiFetch<{ updatedCount: number }>('/api/sales/orders/bulk/status', {
+      method: 'POST',
+      body: JSON.stringify(data),
     });
   },
 

@@ -207,11 +207,197 @@ HttpOnly cookie and never appears in this JSON object.
 | `POST` | `/api/membership-requests/{id}/approve` | Bearer token, tenant, `platform_membership.approve` and `platform_role.assign` | `200 OK` |
 | `POST` | `/api/membership-requests/{id}/reject` | Bearer token, tenant, `platform_membership.approve` | `200 OK` |
 | `GET` | `/api/permissions` | Bearer token, tenant, `platform_role.read` | `200 OK` |
+| `GET` | `/api/permissions/matrix` | Bearer token, tenant, `platform_role.read` | `200 OK` |
 | `GET` | `/api/roles` | Bearer token, tenant, `platform_role.read` | `200 OK` |
+| `GET` | `/api/roles/stats` | Bearer token, tenant, `platform_role.read` | `200 OK` |
 | `GET` | `/api/roles/{id}` | Bearer token, tenant, `platform_role.read` | `200 OK` |
 | `POST` | `/api/roles` | Bearer token, tenant, `platform_role.manage` | `201 Created` |
 | `PUT` | `/api/roles/{id}` | Bearer token, tenant, `platform_role.manage` | `200 OK` |
 | `DELETE` | `/api/roles/{id}` | Bearer token, tenant, `platform_role.manage` | `204 No Content` |
+| `POST` | `/api/roles/{id}/clone` | Bearer token, tenant, `platform_role.manage` | `201 Created` |
+| `PATCH` | `/api/roles/{id}/status` | Bearer token, tenant, `platform_role.manage` | `204 No Content` |
+| `GET` | `/api/roles/{id}/members` | Bearer token, tenant, `platform_role.read` | `200 OK` |
+| `POST` | `/api/roles/{id}/members/reassign` | Bearer token, tenant, `platform_role.assign` | `204 No Content` |
+| `POST` | `/api/roles/compare` | Bearer token, tenant, `platform_role.read` | `200 OK` |
+| `GET` | `/api/roles/templates` | Bearer token, tenant, `platform_role.read` | `200 OK` |
+| `POST` | `/api/roles/templates/{templateCode}/instantiate` | Bearer token, tenant, `platform_role.manage` | `201 Created` |
+| `GET` | `/api/platform/users` | Bearer token, tenant, `platform_user.read` | `200 OK` |
+| `GET` | `/api/platform/users/stats` | Bearer token, tenant, `platform_user.read` | `200 OK` |
+| `POST` | `/api/platform/users` | Bearer token, tenant, `platform_user.manage` | `201 Created` |
+| `GET` | `/api/platform/users/{userId}` | Bearer token, tenant, `platform_user.read` | `200 OK` |
+| `PUT` | `/api/platform/users/{userId}` | Bearer token, tenant, `platform_user.manage` | `200 OK` |
+| `PUT` | `/api/platform/users/{userId}/roles` | Bearer token, tenant, `platform_role.assign` | `204 No Content` |
+| `PATCH` | `/api/platform/users/{userId}/status` | Bearer token, tenant, `platform_user.manage` | `204 No Content` |
+| `DELETE` | `/api/platform/users/{userId}` | Bearer token, tenant, `platform_user.manage` | `204 No Content` |
+| `POST` | `/api/platform/users/{userId}/resend-invite` | Bearer token, tenant, `platform_user.manage` | `204 No Content` |
+| `POST` | `/api/platform/users/{userId}/reset-password` | Bearer token, tenant, `platform_user.manage` | `204 No Content` |
+| `POST` | `/api/platform/users/{userId}/revoke-sessions` | Bearer token, tenant, `platform_security.manage` | `204 No Content` |
+| `GET` | `/api/teams` | Bearer token, tenant, `platform_team.read` | `200 OK` |
+| `GET` | `/api/teams/stats` | Bearer token, tenant, `platform_team.read` | `200 OK` |
+| `GET` | `/api/teams/hierarchy` | Bearer token, tenant, `platform_team.read` | `200 OK` |
+| `POST` | `/api/teams` | Bearer token, tenant, `platform_team.manage` | `201 Created` |
+| `GET` | `/api/teams/{id}` | Bearer token, tenant, `platform_team.read` | `200 OK` |
+| `PUT` | `/api/teams/{id}` | Bearer token, tenant, `platform_team.manage` | `200 OK` |
+| `PATCH` | `/api/teams/{id}/status` | Bearer token, tenant, `platform_team.manage` | `204 No Content` |
+| `POST` | `/api/teams/{id}/transfer-manager` | Bearer token, tenant, `platform_team.manage` | `200 OK` |
+| `DELETE` | `/api/teams/{id}` | Bearer token, tenant, `platform_team.manage` | `204 No Content` |
+| `POST` | `/api/teams/{id}/members` | Bearer token, tenant, `platform_team.manage` | `201 Created` |
+| `POST` | `/api/teams/{id}/members/batch` | Bearer token, tenant, `platform_team.manage` | `204 No Content` |
+| `DELETE` | `/api/teams/{id}/members/{userId}` | Bearer token, tenant, `platform_team.manage` | `204 No Content` |
+| `POST` | `/api/teams/{id}/members/{userId}/primary` | Bearer token, tenant, `platform_team.manage` | `200 OK` |
+| `GET` | `/api/pipelines` | Bearer token, tenant, `crm_opportunity.read` | `200 OK` |
+| `GET` | `/api/pipelines/default` | Bearer token, tenant, `crm_opportunity.read` | `200 OK` |
+| `POST` | `/api/pipelines` | Bearer token, tenant, `crm_opportunity.write` | `201 Created` |
+| `GET` | `/api/pipelines/{id}` | Bearer token, tenant, `crm_opportunity.read` | `200 OK` |
+| `PUT` | `/api/pipelines/{id}` | Bearer token, tenant, `crm_opportunity.write` | `200 OK` |
+| `DELETE` | `/api/pipelines/{id}` | Bearer token, tenant, `crm_opportunity.write` | `204 No Content` |
+| `POST` | `/api/pipelines/{id}/stages` | Bearer token, tenant, `crm_opportunity.write` | `201 Created` |
+| `PUT` | `/api/pipelines/{id}/stages/{stageId}` | Bearer token, tenant, `crm_opportunity.write` | `200 OK` |
+| `DELETE` | `/api/pipelines/{id}/stages/{stageId}` | Bearer token, tenant, `crm_opportunity.write` | `204 No Content` |
+| `PUT` | `/api/pipelines/{id}/stages/reorder` | Bearer token, tenant, `crm_opportunity.write` | `204 No Content` |
+| `GET` | `/api/leads` | Bearer token, tenant, `crm_lead.read` | `200 OK` |
+| `GET` | `/api/leads/stats` | Bearer token, tenant, `crm_lead.read` | `200 OK` |
+| `GET` | `/api/leads/{id}` | Bearer token, tenant, `crm_lead.read` | `200 OK` |
+| `POST` | `/api/leads` | Bearer token, tenant, `crm_lead.write` | `201 Created` |
+| `PUT` | `/api/leads/{id}` | Bearer token, tenant, `crm_lead.write` | `200 OK` |
+| `DELETE` | `/api/leads/{id}` | Bearer token, tenant, `crm_lead.write` | `204 No Content` |
+| `POST` | `/api/leads/{id}/convert` | Bearer token, tenant, `crm_lead.write`, `crm_account.write`, `crm_contact.write`, `crm_opportunity.write` | `200 OK` |
+| `POST` | `/api/leads/{id}/calculate-score` | Bearer token, tenant, `crm_lead.read` | `200 OK` |
+| `POST` | `/api/leads/{id}/auto-assign` | Bearer token, tenant, `crm_lead.write` | `200 OK` |
+| `POST` | `/api/leads/bulk/status` | Bearer token, tenant, `crm_lead.write` | `200 OK` |
+| `POST` | `/api/leads/bulk/assign` | Bearer token, tenant, `crm_lead.write` | `200 OK` |
+| `POST` | `/api/leads/deduplicate` | Bearer token, tenant, `crm_lead.read` | `200 OK` |
+| `GET` | `/api/opportunities` | Bearer token, tenant, `crm_opportunity.read` | `200 OK` |
+| `GET` | `/api/opportunities/stats` | Bearer token, tenant, `crm_opportunity.read` | `200 OK` |
+| `GET` | `/api/opportunities/{id}` | Bearer token, tenant, `crm_opportunity.read` | `200 OK` |
+| `POST` | `/api/opportunities` | Bearer token, tenant, `crm_opportunity.write` | `201 Created` |
+| `PUT` | `/api/opportunities/{id}` | Bearer token, tenant, `crm_opportunity.write` | `200 OK` |
+| `DELETE` | `/api/opportunities/{id}` | Bearer token, tenant, `crm_opportunity.write` | `204 No Content` |
+| `POST` | `/api/opportunities/{id}/transition-stage` | Bearer token, tenant, `crm_opportunity.write` | `200 OK` |
+| `POST` | `/api/opportunities/{id}/close-won` | Bearer token, tenant, `crm_opportunity.write` | `200 OK` |
+| `POST` | `/api/opportunities/{id}/close-lost` | Bearer token, tenant, `crm_opportunity.write` | `200 OK` |
+| `POST` | `/api/opportunities/{id}/reassign` | Bearer token, tenant, `crm_opportunity.write` | `200 OK` |
+| `GET` | `/api/contacts` | Bearer token, tenant, `crm_contact.read` | `200 OK` |
+| `GET` | `/api/contacts/stats` | Bearer token, tenant, `crm_contact.read` | `200 OK` |
+| `GET` | `/api/contacts/{id}` | Bearer token, tenant, `crm_contact.read` | `200 OK` |
+| `POST` | `/api/contacts` | Bearer token, tenant, `crm_contact.write` | `201 Created` |
+| `PUT` | `/api/contacts/{id}` | Bearer token, tenant, `crm_contact.write` | `200 OK` |
+| `DELETE` | `/api/contacts/{id}` | Bearer token, tenant, `crm_contact.write` | `204 No Content` |
+| `POST` | `/api/contacts/{id}/set-primary` | Bearer token, tenant, `crm_contact.write` | `200 OK` |
+| `POST` | `/api/contacts/{id}/transfer-account` | Bearer token, tenant, `crm_contact.write` | `200 OK` |
+| `POST` | `/api/contacts/bulk/lifecycle` | Bearer token, tenant, `crm_contact.write` | `200 OK` |
+| `GET` | `/api/activities` | Bearer token, tenant, `crm_activity.read` | `200 OK` |
+| `GET` | `/api/activities/stats` | Bearer token, tenant, `crm_activity.read` | `200 OK` |
+| `GET` | `/api/activities/{id}` | Bearer token, tenant, `crm_activity.read` | `200 OK` |
+| `POST` | `/api/activities` | Bearer token, tenant, `crm_activity.write` | `201 Created` |
+| `PUT` | `/api/activities/{id}` | Bearer token, tenant, `crm_activity.write` | `200 OK` |
+| `POST` | `/api/activities/{id}/complete` | Bearer token, tenant, `crm_activity.write` | `200 OK` |
+| `POST` | `/api/activities/{id}/reschedule` | Bearer token, tenant, `crm_activity.write` | `200 OK` |
+| `POST` | `/api/activities/{id}/cancel` | Bearer token, tenant, `crm_activity.write` | `200 OK` |
+| `POST` | `/api/activities/bulk/complete` | Bearer token, tenant, `crm_activity.write` | `200 OK` |
+| `DELETE` | `/api/activities/{id}` | Bearer token, tenant, `crm_activity.write` | `204 No Content` |
+| `GET` | `/api/products` | Bearer token, tenant, `sales_catalog.read` | `200 OK` |
+| `GET` | `/api/products/stats` | Bearer token, tenant, `sales_catalog.read` | `200 OK` |
+| `GET` | `/api/products/{id}` | Bearer token, tenant, `sales_catalog.read` | `200 OK` |
+| `POST` | `/api/products` | Bearer token, tenant, `sales_catalog.write` | `201 Created` |
+| `PUT` | `/api/products/{id}` | Bearer token, tenant, `sales_catalog.write` | `200 OK` |
+| `PATCH` | `/api/products/{id}/status` | Bearer token, tenant, `sales_catalog.write` | `200 OK` |
+| `POST` | `/api/products/bulk/status` | Bearer token, tenant, `sales_catalog.write` | `200 OK` |
+| `POST` | `/api/products/bulk/category` | Bearer token, tenant, `sales_catalog.write` | `200 OK` |
+| `DELETE` | `/api/products/{id}` | Bearer token, tenant, `sales_catalog.write` | `204 No Content` |
+| `GET` | `/api/price-books` | Bearer token, tenant, `sales_catalog.read` | `200 OK` |
+| `GET` | `/api/price-books/stats` | Bearer token, tenant, `sales_catalog.read` | `200 OK` |
+| `GET` | `/api/price-books/{id}` | Bearer token, tenant, `sales_catalog.read` | `200 OK` |
+| `POST` | `/api/price-books` | Bearer token, tenant, `sales_catalog.write` | `201 Created` |
+| `PUT` | `/api/price-books/{id}` | Bearer token, tenant, `sales_catalog.write` | `200 OK` |
+| `PATCH` | `/api/price-books/{id}/status` | Bearer token, tenant, `sales_catalog.write` | `200 OK` |
+| `POST` | `/api/price-books/{id}/clone` | Bearer token, tenant, `sales_catalog.write` | `201 Created` |
+| `POST` | `/api/price-books/{id}/items` | Bearer token, tenant, `sales_catalog.write` | `201 Created` |
+| `POST` | `/api/price-books/{id}/items/bulk` | Bearer token, tenant, `sales_catalog.write` | `200 OK` |
+| `DELETE` | `/api/price-books/{id}/items/{itemId}` | Bearer token, tenant, `sales_catalog.write` | `204 No Content` |
+| `DELETE` | `/api/price-books/{id}` | Bearer token, tenant, `sales_catalog.write` | `204 No Content` |
+| `GET` | `/api/contracts` | Bearer token, tenant, `sales_contract.read` | `200 OK` |
+| `GET` | `/api/contracts/stats` | Bearer token, tenant, `sales_contract.read` | `200 OK` |
+| `GET` | `/api/contracts/{id}` | Bearer token, tenant, `sales_contract.read` | `200 OK` |
+| `POST` | `/api/contracts` | Bearer token, tenant, `sales_contract.write` | `201 Created` |
+| `PUT` | `/api/contracts/{id}` | Bearer token, tenant, `sales_contract.write` | `200 OK` |
+| `POST` | `/api/contracts/{id}/submit-review` | Bearer token, tenant, `sales_contract.write` | `200 OK` |
+| `POST` | `/api/contracts/{id}/approve` | Bearer token, tenant, `sales_contract.write` | `200 OK` |
+| `POST` | `/api/contracts/{id}/send-signature` | Bearer token, tenant, `sales_contract.write` | `200 OK` |
+| `POST` | `/api/contracts/{id}/sign` | Bearer token, tenant, `sales_contract.write` | `200 OK` |
+| `POST` | `/api/contracts/{id}/activate` | Bearer token, tenant, `sales_contract.write` | `200 OK` |
+| `POST` | `/api/contracts/{id}/renew` | Bearer token, tenant, `sales_contract.write` | `201 Created` |
+| `POST` | `/api/contracts/{id}/terminate` | Bearer token, tenant, `sales_contract.write` | `200 OK` |
+| `POST` | `/api/contracts/bulk/review` | Bearer token, tenant, `sales_contract.write` | `200 OK` |
+| `DELETE` | `/api/contracts/{id}` | Bearer token, tenant, `sales_contract.write` | `204 No Content` |
+| `GET` | `/api/service/tickets` | Bearer token, tenant, `service_ticket.read` | `200 OK` |
+| `GET` | `/api/service/tickets/stats` | Bearer token, tenant, `service_ticket.read` | `200 OK` |
+| `GET` | `/api/service/tickets/{id}` | Bearer token, tenant, `service_ticket.read` | `200 OK` |
+| `POST` | `/api/service/tickets` | Bearer token, tenant, `service_ticket.write` | `201 Created` |
+| `PUT` | `/api/service/tickets/{id}` | Bearer token, tenant, `service_ticket.write` | `200 OK` |
+| `POST` | `/api/service/tickets/{id}/assign` | Bearer token, tenant, `service_ticket.write` | `200 OK` |
+| `POST` | `/api/service/tickets/{id}/resolve` | Bearer token, tenant, `service_ticket.write` | `200 OK` |
+| `POST` | `/api/service/tickets/{id}/close` | Bearer token, tenant, `service_ticket.write` | `200 OK` |
+| `POST` | `/api/service/tickets/{id}/reopen` | Bearer token, tenant, `service_ticket.write` | `200 OK` |
+| `POST` | `/api/service/tickets/{id}/escalate` | Bearer token, tenant, `service_ticket.write` | `200 OK` |
+| `POST` | `/api/service/tickets/bulk/assign` | Bearer token, tenant, `service_ticket.write` | `200 OK` |
+| `POST` | `/api/service/tickets/bulk/status` | Bearer token, tenant, `service_ticket.write` | `200 OK` |
+| `DELETE` | `/api/service/tickets/{id}` | Bearer token, tenant, `service_ticket.write` | `204 No Content` |
+| `GET` | `/api/campaigns` | Bearer token, tenant, `marketing_campaign.read` | `200 OK` |
+| `GET` | `/api/campaigns/stats` | Bearer token, tenant, `marketing_campaign.read` | `200 OK` |
+| `GET` | `/api/campaigns/{id}` | Bearer token, tenant, `marketing_campaign.read` | `200 OK` |
+| `POST` | `/api/campaigns` | Bearer token, tenant, `marketing_campaign.write` | `201 Created` |
+| `PUT` | `/api/campaigns/{id}` | Bearer token, tenant, `marketing_campaign.write` | `200 OK` |
+| `PATCH` | `/api/campaigns/{id}/status` | Bearer token, tenant, `marketing_campaign.write` | `200 OK` |
+| `POST` | `/api/campaigns/{id}/members` | Bearer token, tenant, `marketing_campaign.write` | `201 Created` |
+| `POST` | `/api/campaigns/{id}/members/bulk` | Bearer token, tenant, `marketing_campaign.write` | `200 OK` |
+| `GET` | `/api/campaigns/{id}/members` | Bearer token, tenant, `marketing_campaign.read` | `200 OK` |
+| `PUT` | `/api/campaigns/{id}/members/{memberId}` | Bearer token, tenant, `marketing_campaign.write` | `200 OK` |
+| `DELETE` | `/api/campaigns/{id}/members/{memberId}` | Bearer token, tenant, `marketing_campaign.write` | `204 No Content` |
+| `POST` | `/api/campaigns/bulk/status` | Bearer token, tenant, `marketing_campaign.write` | `200 OK` |
+| `DELETE` | `/api/campaigns/{id}` | Bearer token, tenant, `marketing_campaign.write` | `204 No Content` |
+| `GET` | `/api/quotes` | Bearer token, tenant, `sales_quote.read` | `200 OK` |
+| `GET` | `/api/quotes/stats` | Bearer token, tenant, `sales_quote.read` | `200 OK` |
+| `GET` | `/api/quotes/{id}` | Bearer token, tenant, `sales_quote.read` | `200 OK` |
+| `GET` | `/api/quotes/{id}/document` | Bearer token, tenant, `sales_quote.read` | `200 OK` |
+| `POST` | `/api/quotes` | Bearer token, tenant, `sales_quote.write` | `201 Created` |
+| `PUT` | `/api/quotes/{id}` | Bearer token, tenant, `sales_quote.write` | `200 OK` |
+| `POST` | `/api/quotes/{id}/submit-approval` | Bearer token, tenant, `sales_quote.write` | `200 OK` |
+| `POST` | `/api/quotes/{id}/approve` | Bearer token, tenant, `sales_quote.write` | `200 OK` |
+| `POST` | `/api/quotes/{id}/send` | Bearer token, tenant, `sales_quote.write` | `200 OK` |
+| `POST` | `/api/quotes/{id}/accept` | Bearer token, tenant, `sales_quote.write` | `200 OK` |
+| `POST` | `/api/quotes/{id}/reject` | Bearer token, tenant, `sales_quote.write` | `200 OK` |
+| `POST` | `/api/quotes/{id}/duplicate` | Bearer token, tenant, `sales_quote.write` | `201 Created` |
+| `POST` | `/api/quotes/{id}/apply-discount` | Bearer token, tenant, `sales_quote.write` | `200 OK` |
+| `POST` | `/api/quotes/{id}/convert-to-order` | Bearer token, tenant, `sales_quote.write` | `200 OK` |
+| `POST` | `/api/quotes/bulk/status` | Bearer token, tenant, `sales_quote.write` | `200 OK` |
+| `DELETE` | `/api/quotes/{id}` | Bearer token, tenant, `sales_quote.write` | `204 No Content` |
+| `GET` | `/api/sales/orders` | Bearer token, tenant, `sales_order.read` | `200 OK` |
+| `GET` | `/api/sales/orders/stats` | Bearer token, tenant, `sales_order.read` | `200 OK` |
+| `GET` | `/api/sales/orders/summary` | Bearer token, tenant, `sales_order.read` | `200 OK` |
+| `GET` | `/api/sales/orders/{id}` | Bearer token, tenant, `sales_order.read` | `200 OK` |
+| `GET` | `/api/sales/orders/{id}/document` | Bearer token, tenant, `sales_order.read` | `200 OK` |
+| `GET` | `/api/sales/orders/{id}/history` | Bearer token, tenant, `sales_order.read` | `200 OK` |
+| `GET` | `/api/sales/orders/{id}/fulfillments` | Bearer token, tenant, `sales_order.read` | `200 OK` |
+| `POST` | `/api/sales/orders` | Bearer token, tenant, `sales_order.write` | `201 Created` |
+| `PUT` | `/api/sales/orders/{id}` | Bearer token, tenant, `sales_order.write` | `200 OK` |
+| `POST` | `/api/sales/orders/{id}/confirm` | Bearer token, tenant, `sales_order.write` | `200 OK` |
+| `POST` | `/api/sales/orders/{id}/complete` | Bearer token, tenant, `sales_order.write` | `200 OK` |
+| `POST` | `/api/sales/orders/{id}/start-processing` | Bearer token, tenant, `sales_order.write` | `200 OK` |
+| `POST` | `/api/sales/orders/{id}/fulfillments` | Bearer token, tenant, `sales_order.write` | `200 OK` |
+| `POST` | `/api/sales/orders/{id}/fulfillments/{eventId}/void` | Bearer token, tenant, `sales_order.write` | `200 OK` |
+| `POST` | `/api/sales/orders/{id}/close-remaining` | Bearer token, tenant, `sales_order.write` | `200 OK` |
+| `POST` | `/api/sales/orders/{id}/cancel` | Bearer token, tenant, `sales_order.write` | `200 OK` |
+| `POST` | `/api/sales/orders/bulk/status` | Bearer token, tenant, `sales_order.write` | `200 OK` |
+| `DELETE` | `/api/sales/orders/{id}` | Bearer token, tenant, `sales_order.write` | `204 No Content` |
+| `GET` | `/api/audit/stats` | Bearer token, tenant, `audit_read` | `200 OK` |
+| `GET` | `/api/audit/events` | Bearer token, tenant, `audit_read` | `200 OK` |
+| `GET` | `/api/audit/events/{id}` | Bearer token, tenant, `audit_read` | `200 OK` |
+| `POST` | `/api/audit/events` | Bearer token, tenant, `platform_security.manage` | `201 Created` |
+| `GET` | `/api/audit/data-access` | Bearer token, tenant, `audit_read` | `200 OK` |
+| `GET` | `/api/audit/data-access/{id}` | Bearer token, tenant, `audit_read` | `200 OK` |
+| `POST` | `/api/audit/data-access` | Bearer token, tenant, `platform_security.manage` | `201 Created` |
+| `DELETE` | `/api/audit/purge` | Bearer token, tenant, `platform_security.manage` | `200 OK` |
 | `POST` | `/api/accounts` | Bearer token, tenant, `crm_account.write` | `201 Created` |
 | `GET` | `/api/accounts/{id}` | Bearer token, tenant, `crm_account.read` | `200 OK` |
 | `GET` | `/api/accounts` | Bearer token, tenant, `crm_account.read` | `200 OK` |
@@ -229,6 +415,52 @@ HttpOnly cookie and never appears in this JSON object.
 | `PUT` | `/api/accounts/{accountId}/addresses/{addressId}` | Bearer token, tenant, `crm_account.write`, resolved `ACCOUNT` data scope | `200 OK` |
 | `POST` | `/api/accounts/{accountId}/addresses/{addressId}/end` | Bearer token, tenant, `crm_account.write`, resolved `ACCOUNT` data scope | `200 OK` |
 | `GET` | `/api/overview` | Bearer token and active tenant; blocks gated per permission | `200 OK` |
+| `GET` | `/api/platform/settings` | Bearer token, tenant, `platform_settings.read` | `200 OK` |
+| `PATCH` | `/api/platform/settings` | Bearer token, tenant, `platform_settings.manage` | `200 OK` |
+| `GET` | `/api/platform/settings/profile` | Bearer token, tenant, `platform_settings.read` | `200 OK` |
+| `PUT` | `/api/platform/settings/profile` | Bearer token, tenant, `platform_settings.manage` | `200 OK` |
+| `POST` | `/api/platform/settings/profile/logo` | Bearer token, tenant, `platform_settings.manage` | `200 OK` |
+| `DELETE` | `/api/platform/settings/profile/logo` | Bearer token, tenant, `platform_settings.manage` | `200 OK` |
+| `GET` | `/api/platform/settings/profile/billing-info` | Bearer token, tenant, `platform_settings.read` | `200 OK` |
+| `PUT` | `/api/platform/settings/profile/billing-info` | Bearer token, tenant, `platform_settings.manage` | `200 OK` |
+| `GET` | `/api/platform/settings/localization` | Bearer token, tenant, `platform_settings.read` | `200 OK` |
+| `PUT` | `/api/platform/settings/localization` | Bearer token, tenant, `platform_settings.manage` | `200 OK` |
+| `GET` | `/api/platform/settings/currencies` | Bearer token, tenant, `platform_settings.read` | `200 OK` |
+| `POST` | `/api/platform/settings/currencies` | Bearer token, tenant, `platform_settings.manage` | `201 Created` |
+| `PUT` | `/api/platform/settings/currencies/{currencyCode}` | Bearer token, tenant, `platform_settings.manage` | `200 OK` |
+| `DELETE` | `/api/platform/settings/currencies/{currencyCode}` | Bearer token, tenant, `platform_settings.manage` | `204 No Content` |
+| `GET` | `/api/platform/settings/business-hours` | Bearer token, tenant, `platform_settings.read` | `200 OK` |
+| `PUT` | `/api/platform/settings/business-hours` | Bearer token, tenant, `platform_settings.manage` | `200 OK` |
+| `GET` | `/api/platform/settings/security` | Bearer token, tenant, `platform_security.manage` | `200 OK` |
+| `PUT` | `/api/platform/settings/security` | Bearer token, tenant, `platform_security.manage` | `200 OK` |
+| `GET` | `/api/platform/settings/security/ip-whitelist` | Bearer token, tenant, `platform_security.manage` | `200 OK` |
+| `POST` | `/api/platform/settings/security/ip-whitelist` | Bearer token, tenant, `platform_security.manage` | `201 Created` |
+| `DELETE` | `/api/platform/settings/security/ip-whitelist/{ruleId}` | Bearer token, tenant, `platform_security.manage` | `204 No Content` |
+| `GET` | `/api/platform/settings/security/active-sessions` | Bearer token, tenant, `platform_security.manage` | `200 OK` |
+| `POST` | `/api/platform/settings/security/sessions/revoke-all` | Bearer token, tenant, `platform_security.manage` | `204 No Content` |
+| `POST` | `/api/platform/settings/security/sessions/{sessionId}/revoke` | Bearer token, tenant, `platform_security.manage` | `204 No Content` |
+| `GET` | `/api/platform/settings/security/password-policy` | Bearer token, tenant, `platform_security.manage` | `200 OK` |
+| `PUT` | `/api/platform/settings/security/password-policy` | Bearer token, tenant, `platform_security.manage` | `200 OK` |
+| `GET` | `/api/platform/settings/automation/lead-routing` | Bearer token, tenant, `platform_settings.read` | `200 OK` |
+| `PUT` | `/api/platform/settings/automation/lead-routing` | Bearer token, tenant, `platform_settings.manage` | `200 OK` |
+| `GET` | `/api/platform/settings/automation/lead-routing/rules` | Bearer token, tenant, `platform_settings.read` | `200 OK` |
+| `POST` | `/api/platform/settings/automation/lead-routing/rules` | Bearer token, tenant, `platform_settings.manage` | `201 Created` |
+| `PUT` | `/api/platform/settings/automation/lead-routing/rules/{ruleId}` | Bearer token, tenant, `platform_settings.manage` | `200 OK` |
+| `DELETE` | `/api/platform/settings/automation/lead-routing/rules/{ruleId}` | Bearer token, tenant, `platform_settings.manage` | `204 No Content` |
+| `GET` | `/api/platform/settings/automation/alert-rules` | Bearer token, tenant, `platform_settings.read` | `200 OK` |
+| `PUT` | `/api/platform/settings/automation/alert-rules` | Bearer token, tenant, `platform_settings.manage` | `200 OK` |
+| `GET` | `/api/platform/settings/notifications` | Bearer token, tenant, `platform_settings.read` | `200 OK` |
+| `PUT` | `/api/platform/settings/notifications` | Bearer token, tenant, `platform_settings.manage` | `200 OK` |
+| `POST` | `/api/platform/settings/notifications/test` | Bearer token, tenant, `platform_settings.manage` | `200 OK` |
+| `GET` | `/api/platform/settings/notifications/digest` | Bearer token, tenant, `platform_settings.read` | `200 OK` |
+| `PUT` | `/api/platform/settings/notifications/digest` | Bearer token, tenant, `platform_settings.manage` | `200 OK` |
+| `GET` | `/api/platform/settings/document-sequences` | Bearer token, tenant, `platform_settings.read` | `200 OK` |
+| `GET` | `/api/platform/settings/document-sequences/{entityType}` | Bearer token, tenant, `platform_settings.read` | `200 OK` |
+| `PUT` | `/api/platform/settings/document-sequences/{entityType}` | Bearer token, tenant, `platform_settings.manage` | `200 OK` |
+| `POST` | `/api/platform/settings/document-sequences/{entityType}/reset` | Bearer token, tenant, `platform_settings.manage` | `200 OK` |
+| `GET` | `/api/platform/settings/storage/usage` | Bearer token, tenant, `platform_settings.read` | `200 OK` |
+| `POST` | `/api/platform/settings/backup/trigger` | Bearer token, tenant, `platform_settings.manage` | `202 Accepted` |
+| `GET` | `/api/platform/settings/backup/history` | Bearer token, tenant, `platform_settings.read` | `200 OK` |
 
 ## Authentication Endpoints
 
@@ -9370,6 +9602,2308 @@ If-Match: "1"
 
 - Required Permission: `platform_team.manage` (or `platform_user.manage` / `platform_role.manage`)
 - Response: `204 No Content`.
+
+---
+
+## Executive Overview Intelligence
+
+### Get Overview Cockpit
+
+```http
+GET /api/overview?period=THIS_QUARTER
+```
+
+Retrieves consolidated executive intelligence metrics (revenue forecast, pipeline conversion funnel, top high-value opportunities, commercial leaderboard, customer base lifecycle distribution, and due activities for the authenticated user's data scope).
+
+- **Query Parameters**:
+  - `period` (optional): `THIS_MONTH`, `THIS_QUARTER` (default), or `THIS_YEAR`.
+- **Response**: `200 OK` with JSON `OverviewResponse` object. Blocks without necessary permissions return as `null`.
+
+```json
+{
+  "period": {
+    "preset": "THIS_QUARTER",
+    "fromDate": "2026-07-01",
+    "toDate": "2026-09-30",
+    "previousFromDate": "2026-04-01",
+    "previousToDate": "2026-06-30",
+    "timezone": "Asia/Ho_Chi_Minh"
+  },
+  "asOf": "2026-08-26T07:45:00Z",
+  "revenue": {
+    "currencyCode": "VND",
+    "closedWonAmount": "5400000000.000000",
+    "previousClosedWonAmount": "4560000000.000000",
+    "closedWonChangePercent": 18.42,
+    "closedWonCount": 14,
+    "openPipelineAmount": "18600000000.000000",
+    "weightedForecastAmount": "9250000000.000000",
+    "openOpportunityCount": 48
+  },
+  "funnel": {
+    "currencyCode": "VND",
+    "stages": [
+      {
+        "stageId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+        "stageName": "Discovery & Qualification",
+        "pipelineName": "Enterprise Sales Pipeline",
+        "displayOrder": 1,
+        "stageCategory": "OPEN",
+        "openPipelineAmount": "6200000000.000000",
+        "opportunityCount": 20
+      }
+    ]
+  },
+  "topOpportunities": {
+    "currencyCode": "VND",
+    "items": []
+  },
+  "leaderboard": {
+    "currencyCode": "VND",
+    "entries": []
+  },
+  "customerBase": {
+    "totalCount": 1280,
+    "stages": [
+      { "lifecycleStage": "PROSPECT", "accountCount": 450 },
+      { "lifecycleStage": "QUALIFIED", "accountCount": 320 },
+      { "lifecycleStage": "CUSTOMER", "accountCount": 420 },
+      { "lifecycleStage": "INACTIVE", "accountCount": 78 },
+      { "lifecycleStage": "CHURNED", "accountCount": 12 }
+    ],
+    "churnedSharePercent": 0.94
+  },
+  "myDay": {
+    "overdueCount": 1,
+    "dueTodayCount": 4,
+    "items": []
+  }
+}
+```
+
+---
+
+## Platform Settings Endpoints
+
+Platform settings manage enterprise legal identity, localization, multi-currency exchange rates, security policies, IP whitelisting, session governance, lead routing automation, notifications, and document sequence formats.
+
+### Get consolidated platform settings
+
+```http
+GET /api/platform/settings
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `platform_settings.read`
+
+#### Success
+
+- Status: `200 OK`
+- Body: `ConsolidatedTenantSettingsDto`
+
+```json
+{
+  "tenantId": "11111111-1111-1111-1111-111111111111",
+  "tenantCode": "ACME_CORP",
+  "profile": {
+    "tenantName": "Acme Global CRM",
+    "legalName": "Acme Corporation JSC",
+    "taxCode": "0109988776",
+    "contactEmail": "contact@acme-global.com",
+    "contactPhone": "+84 24 3999 8888",
+    "address": "Floor 18, Keangnam Landmark 72, Hanoi, Vietnam",
+    "website": "https://acme-global.com",
+    "logoUrl": null
+  },
+  "billingInfo": {
+    "bankName": "Vietcombank (VCB)",
+    "bankAccountNumber": "0011004455667",
+    "bankAccountHolder": "ACME GLOBAL JSC",
+    "swiftCode": "BFTVVNVX",
+    "invoiceHeaderNote": "Thank you for choosing Acme CRM platform.",
+    "invoiceFooterNote": "All payments are due within 30 days of invoice date."
+  },
+  "localization": {
+    "defaultCurrency": "VND",
+    "supportedCurrencies": ["VND", "USD", "EUR"],
+    "defaultTimezone": "Asia/Ho_Chi_Minh",
+    "dateFormat": "YYYY-MM-DD",
+    "timeFormat": "24H",
+    "decimalSeparator": ".",
+    "thousandsSeparator": ",",
+    "fiscalYearStartMonth": 1
+  },
+  "businessHours": {
+    "timezone": "Asia/Ho_Chi_Minh",
+    "workDays": ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"],
+    "startTime": "08:30",
+    "endTime": "17:30",
+    "holidayCalendarEnabled": true,
+    "observedHolidays": ["NEW_YEAR", "LUNAR_NEW_YEAR", "INDEPENDENCE_DAY"]
+  },
+  "security": {
+    "enableTwoFactor": true,
+    "twoFactorEnforceScope": "ADMINS_ONLY",
+    "enableAuditLog": true,
+    "sessionTimeoutMinutes": 30,
+    "maxConcurrentSessions": 3,
+    "ipWhitelistEnabled": false,
+    "passwordExpiryDays": 90
+  },
+  "passwordPolicy": {
+    "minLength": 8,
+    "requireUppercase": true,
+    "requireLowercase": true,
+    "requireNumbers": true,
+    "requireSpecialChars": false,
+    "maxFailedAttempts": 5,
+    "lockoutDurationMinutes": 15,
+    "passwordHistoryCount": 3
+  },
+  "automation": {
+    "autoAssignLeads": true,
+    "routingStrategy": "ROUND_ROBIN",
+    "defaultLeadOwnerUserId": null,
+    "defaultLeadOwnerTeamId": null,
+    "notifySlack": true,
+    "dailyDigest": true,
+    "digestTime": "18:00",
+    "autoTaskCreationOnNewLead": true,
+    "staleDealThresholdDays": 14
+  },
+  "alertRules": {
+    "highValueDealAlertEnabled": true,
+    "highValueDealThreshold": 100000000.0,
+    "highValueNotificationChannels": ["SLACK", "EMAIL"],
+    "staleDealAlertEnabled": true,
+    "staleDealInactivityDays": 14,
+    "churnRiskAlertEnabled": true
+  },
+  "notifications": {
+    "customSmtpEnabled": false,
+    "smtpHost": "smtp.mailgun.org",
+    "smtpPort": 587,
+    "smtpUsername": "postmaster@acme.com",
+    "smtpSenderEmail": "alerts@acme.com",
+    "smtpSenderName": "Acme CRM Bot",
+    "slackWebhookEnabled": true,
+    "slackWebhookUrl": "https://hooks.slack.com/services/sample/webhook",
+    "slackChannel": "#sales-alerts",
+    "teamsWebhookEnabled": false,
+    "teamsWebhookUrl": null,
+    "inAppNotificationsEnabled": true
+  },
+  "digest": {
+    "enabled": true,
+    "frequency": "DAILY",
+    "deliveryTime": "18:00",
+    "timezone": "Asia/Ho_Chi_Minh",
+    "recipientUserIds": [],
+    "recipientEmails": ["exec@acme.com"],
+    "includedMetricKeys": ["DEALS_WON", "LEADS_CREATED", "REVENUE_GENERATED"]
+  },
+  "version": 1,
+  "updatedAt": "2026-08-27T10:00:00Z"
+}
+```
+
+### Patch consolidated platform settings
+
+```http
+PATCH /api/platform/settings
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `platform_settings.manage`
+- Request Body: `PatchConsolidatedSettingsRequest`
+- Success Status: `200 OK`
+
+### Update legal corporate profile
+
+```http
+PUT /api/platform/settings/profile
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `platform_settings.manage`
+- Request Body:
+```json
+{
+  "tenantName": "Acme Global CRM",
+  "legalName": "Acme Corporation JSC",
+  "taxCode": "0109988776",
+  "contactEmail": "contact@acme-global.com",
+  "contactPhone": "+84 24 3999 8888",
+  "address": "Floor 18, Keangnam Landmark 72, Hanoi, Vietnam",
+  "website": "https://acme-global.com",
+  "logoUrl": "https://cdn.crm.com/logo.png"
+}
+```
+- Success Status: `200 OK`
+
+### Add IP whitelist rule
+
+```http
+POST /api/platform/settings/security/ip-whitelist
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `platform_security.manage`
+- Request Body:
+```json
+{
+  "cidrBlock": "14.232.208.0/24",
+  "description": "Headquarters Keangnam VPN"
+}
+```
+- Success Status: `201 Created`
+
+### Reset document sequence counter
+
+```http
+POST /api/platform/settings/document-sequences/{entityType}/reset
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `platform_settings.manage`
+- Request Body:
+```json
+{
+  "newCounter": 0
+}
+```
+- Success Status: `200 OK`
+
+---
+
+## Platform Users Endpoints
+
+Platform users endpoints manage corporate team members, provisioning, role assignments, organizational departments/teams, and security actions.
+
+### Search platform tenant members
+
+```http
+GET /api/platform/users?query=van&status=ACTIVE&page=0&size=20
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `platform_user.read`
+
+#### Success
+
+- Status: `200 OK`
+- Body: `PageResult<TenantUserSummaryDto>`
+
+```json
+{
+  "items": [
+    {
+      "id": "33333333-3333-3333-3333-333333333333",
+      "email": "nguyen.van.a@smartcrm.vn",
+      "displayName": "Nguyễn Văn A",
+      "phone": "+84 912 345 678",
+      "jobTitle": "Senior Account Executive",
+      "employeeReference": "EMP-0842",
+      "status": "ACTIVE",
+      "isTenantAdmin": false,
+      "roles": [
+        { "id": "11111111-1111-1111-1111-111111111111", "roleCode": "SALES_REP", "name": "Sales Representative" }
+      ],
+      "primaryTeam": {
+        "id": "22222222-2222-2222-2222-222222222222",
+        "name": "Đội ngũ Kinh doanh Miền Bắc",
+        "memberRole": "MEMBER",
+        "isPrimary": true
+      },
+      "joinedAt": "2026-08-15T09:00:00Z",
+      "lastLoginAt": "2026-08-27T08:30:00Z",
+      "version": 1
+    }
+  ],
+  "page": 0,
+  "size": 20,
+  "totalElements": 1,
+  "totalPages": 1
+}
+```
+
+### Get tenant user stats
+
+```http
+GET /api/platform/users/stats
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `platform_user.read`
+- Status: `200 OK`
+
+```json
+{
+  "totalMembers": 24,
+  "activeMembers": 21,
+  "suspendedMembers": 2,
+  "invitedMembers": 1,
+  "tenantAdmins": 3,
+  "pendingJoinRequests": 4
+}
+```
+
+### Provision new tenant user
+
+```http
+POST /api/platform/users
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `platform_user.manage`
+- Request Body:
+```json
+{
+  "email": "tran.thi.b@smartcrm.vn",
+  "displayName": "Trần Thị B",
+  "phone": "+84 988 776 655",
+  "jobTitle": "Customer Success Manager",
+  "employeeReference": "EMP-0911",
+  "roleIds": ["11111111-1111-1111-1111-111111111111"],
+  "teamId": "22222222-2222-2222-2222-222222222222",
+  "isTenantAdmin": false,
+  "sendInviteEmail": true
+}
+```
+- Success Status: `201 Created`
+
+### Update tenant user profile
+
+```http
+PUT /api/platform/users/{userId}
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `platform_user.manage`
+- Request Body:
+```json
+{
+  "displayName": "Trần Thị B",
+  "phone": "+84 988 776 655",
+  "jobTitle": "Lead Customer Success",
+  "employeeReference": "EMP-0911",
+  "primaryTeamId": "22222222-2222-2222-2222-222222222222",
+  "isTenantAdmin": false,
+  "version": 1
+}
+```
+- Success Status: `200 OK`
+
+### Update user security roles
+
+```http
+PUT /api/platform/users/{userId}/roles
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `platform_role.assign`
+- Request Body:
+```json
+{
+  "roleIds": ["11111111-1111-1111-1111-111111111111", "44444444-4444-4444-4444-444444444444"]
+}
+```
+- Success Status: `204 No Content`
+
+### Change user membership status
+
+```http
+PATCH /api/platform/users/{userId}/status
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `platform_user.manage`
+- Request Body:
+```json
+{
+  "status": "SUSPENDED"
+}
+```
+- Success Status: `204 No Content`
+
+### Soft remove tenant user
+
+```http
+DELETE /api/platform/users/{userId}
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `platform_user.manage`
+- Success Status: `204 No Content`
+
+---
+
+## Role Governance & Permissions Endpoints
+
+Role governance endpoints manage enterprise RBAC roles, permission assignments, multi-level data scope rules, role templates, cloning, and side-by-side role comparisons.
+
+### Get role governance stats
+
+```http
+GET /api/roles/stats
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `platform_role.read`
+
+#### Success
+
+- Status: `200 OK`
+- Body: `RoleStatsDto`
+
+```json
+{
+  "totalRoles": 8,
+  "systemRoles": 3,
+  "customRoles": 5,
+  "activeRoles": 7,
+  "totalPermissionsCatalog": 48,
+  "totalAssignedMembers": 24
+}
+```
+
+### Clone enterprise role
+
+```http
+POST /api/roles/{id}/clone
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `platform_role.manage`
+- Request Body: `CloneRoleRequest`
+
+```json
+{
+  "newRoleCode": "SENIOR_SALES_REP",
+  "newName": "Senior Sales Representative",
+  "description": "Cloned from standard Sales Rep with elevated lead permissions"
+}
+```
+
+- Success Status: `201 Created`
+- Body: `RoleResponse`
+
+### Change role status
+
+```http
+PATCH /api/roles/{id}/status
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `platform_role.manage`
+- Request Body:
+```json
+{
+  "status": "INACTIVE"
+}
+```
+- Success Status: `204 No Content`
+
+### Get role assigned members
+
+```http
+GET /api/roles/{id}/members
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `platform_role.read`
+
+#### Success
+
+- Status: `200 OK`
+- Body: `List<RoleMemberSummaryDto>`
+
+```json
+[
+  {
+    "userId": "33333333-3333-3333-3333-333333333333",
+    "email": "nguyen.van.a@smartcrm.vn",
+    "displayName": "Nguyễn Văn A",
+    "jobTitle": "Senior Account Executive",
+    "employeeReference": "EMP-0842",
+    "assignedAt": "2026-08-15T09:00:00Z",
+    "assignedBy": "Platform Admin"
+  }
+]
+```
+
+### Bulk reassign role members
+
+```http
+POST /api/roles/{id}/members/reassign
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `platform_role.assign`
+- Request Body:
+```json
+{
+  "targetRoleId": "22222222-2222-2222-2222-222222222222"
+}
+```
+- Success Status: `204 No Content`
+
+### Compare roles side-by-side
+
+```http
+POST /api/roles/compare
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `platform_role.read`
+- Request Body:
+```json
+{
+  "roleIds": [
+    "11111111-1111-1111-1111-111111111111",
+    "22222222-2222-2222-2222-222222222222"
+  ]
+}
+```
+
+#### Success
+
+- Status: `200 OK`
+- Body: `RoleComparisonResultDto`
+
+```json
+{
+  "roles": [
+    { "id": "11111111-1111-1111-1111-111111111111", "roleCode": "SALES_REP", "name": "Sales Rep", "system": false },
+    { "id": "22222222-2222-2222-2222-222222222222", "roleCode": "SALES_MGR", "name": "Sales Manager", "system": false }
+  ],
+  "commonPermissions": ["crm_account.read", "crm_lead.read"],
+  "permissionDifferences": [
+    {
+      "permissionCode": "crm_lead.delete",
+      "description": "Delete leads",
+      "moduleCode": "CRM_LEAD",
+      "riskLevel": "SENSITIVE",
+      "grantedInRoleIds": ["22222222-2222-2222-2222-222222222222"]
+    }
+  ],
+  "dataScopeDifferences": [
+    {
+      "entityType": "ACCOUNT",
+      "scopesByRoleId": {
+        "11111111-1111-1111-1111-111111111111": "OWN",
+        "22222222-2222-2222-2222-222222222222": "TEAM_TREE"
+      }
+    }
+  ]
+}
+```
+
+### List role templates
+
+```http
+GET /api/roles/templates
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `platform_role.read`
+- Status: `200 OK`
+- Body: `List<RoleTemplateDto>`
+
+### Instantiate role template
+
+```http
+POST /api/roles/templates/{templateCode}/instantiate
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `platform_role.manage`
+- Request Body:
+```json
+{
+  "customRoleCode": "FIELD_SALES_REP",
+  "customName": "Field Sales Representative"
+}
+```
+- Success Status: `201 Created`
+- Body: `RoleResponse`
+
+### Get permission matrix grouped by module
+
+```http
+GET /api/permissions/matrix
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `platform_role.read`
+- Status: `200 OK`
+- Body: `PermissionMatrixDto`
+
+---
+
+## Team Governance Endpoints
+
+Team Governance endpoints manage organizational hierarchy, department roster, branch manager delegations, and team member assignments.
+
+### Get team governance statistics
+
+```http
+GET /api/teams/stats
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `platform_team.read`
+
+#### Success
+
+- Status: `200 OK`
+- Body: `TeamStatsDto`
+
+```json
+{
+  "totalTeams": 12,
+  "activeTeams": 11,
+  "totalMembersAssigned": 45,
+  "unassignedMembersCount": 3,
+  "teamsWithManagersCount": 10
+}
+```
+
+### Get organizational hierarchy tree
+
+```http
+GET /api/teams/hierarchy
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `platform_team.read`
+
+#### Success
+
+- Status: `200 OK`
+- Body: `List<TeamTreeNodeDto>`
+
+```json
+[
+  {
+    "id": "11111111-1111-1111-1111-111111111111",
+    "name": "Global Commercial Division",
+    "description": "Headquarters Sales & Customer Org",
+    "parentTeamId": null,
+    "managerUserId": "22222222-2222-2222-2222-222222222222",
+    "managerName": "Phạm Quốc Tuấn",
+    "status": "ACTIVE",
+    "memberCount": 8,
+    "children": [
+      {
+        "id": "33333333-3333-3333-3333-333333333333",
+        "name": "North Vietnam Enterprise Sales",
+        "description": "Enterprise Key Account Team Hanoi",
+        "parentTeamId": "11111111-1111-1111-1111-111111111111",
+        "managerUserId": null,
+        "managerName": null,
+        "status": "ACTIVE",
+        "memberCount": 5,
+        "children": []
+      }
+    ]
+  }
+]
+```
+
+### Transfer team manager
+
+```http
+POST /api/teams/{id}/transfer-manager
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `platform_team.manage`
+- Request Body:
+```json
+{
+  "newManagerUserId": "44444444-4444-4444-4444-444444444444"
+}
+```
+- Success Status: `200 OK`
+
+### Change team status
+
+```http
+PATCH /api/teams/{id}/status
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `platform_team.manage`
+- Request Body:
+```json
+{
+  "status": "INACTIVE"
+}
+```
+- Success Status: `204 No Content`
+
+### Batch update team members
+
+```http
+POST /api/teams/{id}/members/batch
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `platform_team.manage`
+- Request Body:
+```json
+{
+  "addMemberUserIds": ["55555555-5555-5555-5555-555555555555"],
+  "removeMemberUserIds": ["66666666-6666-6666-6666-666666666666"],
+  "defaultMemberRole": "MEMBER"
+}
+```
+- Success Status: `204 No Content`
+
+---
+
+## Sales Pipeline Governance Endpoints
+
+Sales Pipeline governance endpoints configure multi-pipeline revenue processes, stage probability curves, display ordering, and forecast category alignments.
+
+### List sales pipelines
+
+```http
+GET /api/pipelines
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `crm_opportunity.read`
+- Status: `200 OK`
+
+### Get default sales pipeline
+
+```http
+GET /api/pipelines/default
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `crm_opportunity.read`
+- Status: `200 OK`
+
+### Reorder pipeline stages
+
+```http
+PUT /api/pipelines/{id}/stages/reorder
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `crm_opportunity.write`
+- Request Body:
+```json
+{
+  "orderedStageIds": [
+    "11111111-1111-1111-1111-111111111111",
+    "22222222-2222-2222-2222-222222222222",
+    "33333333-3333-3333-3333-333333333333"
+  ]
+}
+```
+- Success Status: `204 No Content`
+
+---
+
+## Lead Management Endpoints
+
+Lead endpoints govern lead intake, demographic qualification, duplicate verification, bulk triage status changes, scoring, and automated conversion into Accounts, Contacts, and Opportunities.
+
+### Get lead pipeline statistics
+
+```http
+GET /api/leads/stats
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `crm_lead.read`
+
+#### Success
+
+- Status: `200 OK`
+- Body: `LeadStatsDto`
+
+```json
+{
+  "totalLeads": 150,
+  "uncontactedLeads": 42,
+  "workingLeads": 68,
+  "qualifiedLeads": 25,
+  "convertedLeads": 15,
+  "conversionRatePercentage": 10.0
+}
+```
+
+### Bulk update lead status
+
+```http
+POST /api/leads/bulk/status
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `crm_lead.write`
+- Request Body:
+```json
+{
+  "leadIds": [
+    "11111111-1111-1111-1111-111111111111",
+    "22222222-2222-2222-2222-222222222222"
+  ],
+  "statusId": "33333333-3333-3333-3333-333333333333"
+}
+```
+- Status: `200 OK`
+- Body: `{"updatedCount": 2}`
+
+### Bulk reassign leads
+
+```http
+POST /api/leads/bulk/assign
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `crm_lead.write`
+- Request Body:
+```json
+{
+  "leadIds": [
+    "11111111-1111-1111-1111-111111111111"
+  ],
+  "ownerType": "USER",
+  "ownerId": "44444444-4444-4444-4444-444444444444"
+}
+```
+- Status: `200 OK`
+- Body: `{"assignedCount": 1}`
+
+### Check lead duplicates
+
+```http
+POST /api/leads/deduplicate
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `crm_lead.read`
+- Request Body:
+```json
+{
+  "email": "contact@acme.com",
+  "phone": "+84901234567",
+  "companyName": "Acme Corp Vietnam"
+}
+```
+- Status: `200 OK`
+- Body: `List<LeadDuplicateMatchDto>`
+
+---
+
+## Opportunity & Deal Pipeline Endpoints
+
+Opportunity endpoints manage deal progression, revenue forecasts, probability weighted pipeline, Kanban stage movements, Won/Lost closures, and sales ownership delegation.
+
+### Get opportunity pipeline statistics
+
+```http
+GET /api/opportunities/stats
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `crm_opportunity.read`
+
+#### Success
+
+- Status: `200 OK`
+- Body: `OpportunityStatsDto`
+
+```json
+{
+  "totalOpportunities": 35,
+  "openOpportunities": 28,
+  "wonOpportunities": 5,
+  "lostOpportunities": 2,
+  "totalPipelineValue": 450000000.0,
+  "weightedPipelineValue": 215000000.0,
+  "wonRevenueTotal": 120000000.0,
+  "winRatePercentage": 71.4,
+  "averageDealSize": 16071428.57
+}
+```
+
+### Transition opportunity stage (Kanban Drag-and-Drop)
+
+```http
+POST /api/opportunities/{id}/transition-stage
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `crm_opportunity.write`
+- Request Body:
+```json
+{
+  "stageId": "22222222-2222-2222-2222-222222222222",
+  "probabilityPercentage": 60,
+  "version": 3
+}
+```
+- Status: `200 OK`
+- Body: `OpportunityResponse`
+
+### Close opportunity as Won
+
+```http
+POST /api/opportunities/{id}/close-won
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `crm_opportunity.write`
+- Request Body:
+```json
+{
+  "actualRevenueAmount": 50000000.0,
+  "closedDate": "2026-08-28T10:00:00Z",
+  "version": 4
+}
+```
+- Status: `200 OK`
+- Body: `OpportunityResponse`
+
+### Close opportunity as Lost
+
+```http
+POST /api/opportunities/{id}/close-lost
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `crm_opportunity.write`
+- Request Body:
+```json
+{
+  "lostReasonId": "55555555-5555-5555-5555-555555555555",
+  "competitorNotes": "Customer selected competitor offering 20% lower initial upfront cost",
+  "version": 4
+}
+```
+- Status: `200 OK`
+- Body: `OpportunityResponse`
+
+### Reassign opportunity ownership
+
+```http
+POST /api/opportunities/{id}/reassign
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `crm_opportunity.write`
+- Request Body:
+```json
+{
+  "ownerType": "USER",
+  "ownerId": "66666666-6666-6666-6666-666666666666",
+  "version": 4
+}
+```
+- Status: `200 OK`
+- Body: `OpportunityResponse`
+
+---
+
+## Contact Stakeholder Governance Endpoints
+
+Contact endpoints manage organizational stakeholders, decision maker hierarchies, primary representative designations, inter-account transfers, and bulk lifecycle transitions.
+
+### Get contact statistics
+
+```http
+GET /api/contacts/stats
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `crm_contact.read`
+
+#### Success
+
+- Status: `200 OK`
+- Body: `ContactStatsDto`
+
+```json
+{
+  "totalContacts": 85,
+  "primaryContactsCount": 24,
+  "prospectContactsCount": 35,
+  "qualifiedContactsCount": 28,
+  "customerContactsCount": 18,
+  "inactiveContactsCount": 3,
+  "churnedContactsCount": 1
+}
+```
+
+### Set primary contact
+
+```http
+POST /api/contacts/{id}/set-primary
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `crm_contact.write`
+- Request Body:
+```json
+{
+  "isPrimary": true,
+  "version": 2
+}
+```
+- Status: `200 OK`
+- Body: `ContactResponse`
+
+### Transfer contact to another account
+
+```http
+POST /api/contacts/{id}/transfer-account
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `crm_contact.write`
+- Request Body:
+```json
+{
+  "newAccountId": "11111111-1111-1111-1111-111111111111",
+  "jobTitle": "Chief Technology Officer",
+  "version": 2
+}
+```
+- Status: `200 OK`
+- Body: `ContactResponse`
+
+### Bulk update contact lifecycle stage
+
+```http
+POST /api/contacts/bulk/lifecycle
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `crm_contact.write`
+- Request Body:
+```json
+{
+  "contactIds": [
+    "22222222-2222-2222-2222-222222222222",
+    "33333333-3333-3333-3333-333333333333"
+  ],
+  "lifecycleStage": "QUALIFIED"
+}
+```
+- Status: `200 OK`
+- Body: `{"updatedCount": 2}`
+
+---
+
+## Activity & Task Management Endpoints
+
+Activity endpoints orchestrate omni-channel interactions, agenda queues, task completions, reschedulings, cancellations, and timeline streams.
+
+### Get activity statistics
+
+```http
+GET /api/activities/stats
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `crm_activity.read`
+
+#### Success
+
+- Status: `200 OK`
+- Body: `ActivityStatsDto`
+
+```json
+{
+  "totalActivities": 120,
+  "dueTodayCount": 14,
+  "overdueCount": 5,
+  "completedCount": 85,
+  "callsCount": 45,
+  "meetingsCount": 35,
+  "tasksCount": 40
+}
+```
+
+### Reschedule activity
+
+```http
+POST /api/activities/{id}/reschedule
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `crm_activity.write`
+- Request Body:
+```json
+{
+  "startsAt": "2026-08-30T09:00:00Z",
+  "dueAt": "2026-08-30T10:00:00Z",
+  "version": 1
+}
+```
+- Status: `200 OK`
+- Body: `ActivityResponse`
+
+### Cancel activity
+
+```http
+POST /api/activities/{id}/cancel
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `crm_activity.write`
+- Request Body:
+```json
+{
+  "cancelReason": "Client requested meeting cancellation due to internal restructuring",
+  "version": 1
+}
+```
+- Status: `200 OK`
+- Body: `ActivityResponse`
+
+### Bulk complete activities
+
+```http
+POST /api/activities/bulk/complete
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `crm_activity.write`
+- Request Body:
+```json
+{
+  "activityIds": [
+    "44444444-4444-4444-4444-444444444444",
+    "55555555-5555-5555-5555-555555555555"
+  ],
+  "outcomeCode": "FOLLOW_UP_COMPLETED"
+}
+```
+- Status: `200 OK`
+- Body: `{"completedCount": 2}`
+
+---
+
+## Product Catalog Governance Endpoints
+
+Product endpoints manage products, services, SKUs, active flags, categories, standard costs, and batch lifecycle statuses.
+
+### Get product statistics
+
+```http
+GET /api/products/stats
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `sales_catalog.read`
+
+#### Success
+
+- Status: `200 OK`
+- Body: `ProductStatsDto`
+
+```json
+{
+  "totalProducts": 142,
+  "activeProducts": 130,
+  "inactiveProducts": 12,
+  "totalCategoriesCount": 8
+}
+```
+
+### Quick toggle product status
+
+```http
+PATCH /api/products/{id}/status
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `sales_catalog.write`
+- Request Body:
+```json
+{
+  "active": false
+}
+```
+- Status: `200 OK`
+- Body: `ProductResponse`
+
+### Bulk update product status
+
+```http
+POST /api/products/bulk/status
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `sales_catalog.write`
+- Request Body:
+```json
+{
+  "productIds": [
+    "77777777-7777-7777-7777-777777777777",
+    "88888888-8888-8888-8888-888888888888"
+  ],
+  "active": true
+}
+```
+- Status: `200 OK`
+- Body: `{"updatedCount": 2}`
+
+### Bulk assign product category
+
+```http
+POST /api/products/bulk/category
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `sales_catalog.write`
+- Request Body:
+```json
+{
+  "productIds": [
+    "77777777-7777-7777-7777-777777777777",
+    "88888888-8888-8888-8888-888888888888"
+  ],
+  "categoryId": "99999999-9999-9999-9999-999999999999"
+}
+```
+- Status: `200 OK`
+- Body: `{"assignedCount": 2}`
+
+---
+
+## Price Book & Pricing Strategy Endpoints
+
+Price Book endpoints manage default standard catalogs, partner-specific tiered price books, multi-currency items, markup/discount cloning, and bulk item assignments.
+
+### Get price book statistics
+
+```http
+GET /api/price-books/stats
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `sales_catalog.read`
+
+#### Success
+
+- Status: `200 OK`
+- Body: `PriceBookStatsDto`
+
+```json
+{
+  "totalPriceBooks": 5,
+  "activePriceBooks": 4,
+  "standardPriceBooks": 1,
+  "customPriceBooks": 4,
+  "totalPricedItemsCount": 420
+}
+```
+
+### Clone price book with percentage adjustment
+
+```http
+POST /api/price-books/{id}/clone
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `sales_catalog.write`
+- Request Body:
+```json
+{
+  "newName": "Enterprise Partner 2026 (-15%)",
+  "newCode": "PB-PARTNER-2026",
+  "adjustmentPercentage": -15.00
+}
+```
+- Status: `201 Created`
+- Body: `PriceBookResponse`
+
+### Quick toggle price book status
+
+```http
+PATCH /api/price-books/{id}/status
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `sales_catalog.write`
+- Request Body:
+```json
+{
+  "active": true
+}
+```
+- Status: `200 OK`
+- Body: `PriceBookResponse`
+
+### Bulk add priced items to price book
+
+```http
+POST /api/price-books/{id}/items/bulk
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `sales_catalog.write`
+- Request Body:
+```json
+{
+  "items": [
+    {
+      "productId": "77777777-7777-7777-7777-777777777777",
+      "unitPrice": 149.00,
+      "minimumQuantity": 1
+    },
+    {
+      "productId": "88888888-8888-8888-8888-888888888888",
+      "unitPrice": 499.00,
+      "minimumQuantity": 5
+    }
+  ]
+}
+```
+- Status: `200 OK`
+- Body: `{"addedCount": 2}`
+
+---
+
+## Contracts Management Endpoints
+
+Contract endpoints manage commercial customer contracts, renewal tracking, legal reviews, digital signatures, and terminations.
+
+### Get contract statistics
+
+```http
+GET /api/contracts/stats
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `sales_contract.read`
+
+#### Success
+
+- Status: `200 OK`
+- Body: `ContractStatsDto`
+
+```json
+{
+  "totalContracts": 32,
+  "draftContracts": 6,
+  "inReviewContracts": 4,
+  "approvedContracts": 2,
+  "activeContracts": 18,
+  "expiringSoonContracts": 3,
+  "terminatedContracts": 2,
+  "totalActiveValue": 1250000000.00
+}
+```
+
+### Activate contract
+
+```http
+POST /api/contracts/{id}/activate
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`, `If-Match: "3"`
+- Required Permission: `sales_contract.write`
+- Status: `200 OK`
+- Body: `ContractResponse`
+
+### Renew contract
+
+```http
+POST /api/contracts/{id}/renew
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `sales_contract.write`
+- Request Body:
+```json
+{
+  "newContractNumber": "CTR-2027-0099",
+  "effectiveFrom": "2027-01-01",
+  "effectiveTo": "2027-12-31",
+  "contractValue": 150000000.00,
+  "autoRenew": true,
+  "version": 4
+}
+```
+- Status: `201 Created`
+- Body: `ContractResponse`
+
+### Bulk submit contracts for review
+
+```http
+POST /api/contracts/bulk/review
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `sales_contract.write`
+- Request Body:
+```json
+{
+  "contractIds": [
+    "11111111-1111-1111-1111-111111111111",
+    "22222222-2222-2222-2222-222222222222"
+  ]
+}
+```
+- Status: `200 OK`
+- Body: `{"submittedCount": 2}`
+
+---
+
+## Service Helpdesk & Ticket Operations Endpoints
+
+Ticket endpoints manage support cases, technical issues, omnichannel customer inquiries, SLA policies, and priority escalations.
+
+### Get ticket statistics
+
+```http
+GET /api/service/tickets/stats
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `service_ticket.read`
+
+#### Success
+
+- Status: `200 OK`
+- Body: `TicketStatsDto`
+
+```json
+{
+  "totalTickets": 54,
+  "openTickets": 18,
+  "inProgressTickets": 14,
+  "pendingCustomerTickets": 8,
+  "resolvedTodayCount": 12,
+  "closedTickets": 14,
+  "urgentTicketsCount": 2
+}
+```
+
+### Escalate ticket priority
+
+```http
+POST /api/service/tickets/{id}/escalate
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `service_ticket.write`
+- Request Body:
+```json
+{
+  "priority": "URGENT",
+  "escalationReason": "Critical system downtime affecting multiple regional branches",
+  "version": 2
+}
+```
+- Status: `200 OK`
+- Body: `TicketResponse`
+
+### Bulk assign tickets
+
+```http
+POST /api/service/tickets/bulk/assign
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `service_ticket.write`
+- Request Body:
+```json
+{
+  "ticketIds": [
+    "33333333-3333-3333-3333-333333333333",
+    "44444444-4444-4444-4444-444444444444"
+  ],
+  "assignedUserId": "55555555-5555-5555-5555-555555555555",
+  "assignedTeamId": "66666666-6666-6666-6666-666666666666"
+}
+```
+- Status: `200 OK`
+- Body: `{"assignedCount": 2}`
+
+### Bulk change ticket status
+
+```http
+POST /api/service/tickets/bulk/status
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `service_ticket.write`
+- Request Body:
+```json
+{
+  "ticketIds": [
+    "33333333-3333-3333-3333-333333333333",
+    "44444444-4444-4444-4444-444444444444"
+  ],
+  "status": "CLOSED"
+}
+```
+- Status: `200 OK`
+- Body: `{"updatedCount": 2}`
+
+---
+
+## Marketing Campaigns Endpoints
+
+Marketing campaign endpoints manage multichannel outreach, lead generation budgets, member enrollments, and conversion ROI metrics.
+
+### Get marketing campaign statistics
+
+```http
+GET /api/campaigns/stats
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `marketing_campaign.read`
+
+#### Success
+
+- Status: `200 OK`
+- Body: `CampaignStatsDto`
+
+```json
+{
+  "totalCampaigns": 14,
+  "activeCampaigns": 6,
+  "planningCampaigns": 4,
+  "completedCampaigns": 3,
+  "pausedCampaigns": 1,
+  "totalBudgetedCost": 450000000.00,
+  "totalActualCost": 380000000.00,
+  "totalMembersCount": 1250
+}
+```
+
+### Update campaign status
+
+```http
+PATCH /api/campaigns/{id}/status
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `marketing_campaign.write`
+- Request Body:
+```json
+{
+  "status": "ACTIVE"
+}
+```
+- Status: `200 OK`
+- Body: `CampaignResponse`
+
+### Bulk add campaign members
+
+```http
+POST /api/campaigns/{id}/members/bulk
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `marketing_campaign.write`
+- Request Body:
+```json
+{
+  "members": [
+    {
+      "leadId": "77777777-7777-7777-7777-777777777777",
+      "memberStatus": "SENT"
+    },
+    {
+      "contactId": "88888888-8888-8888-8888-888888888888",
+      "memberStatus": "SENT"
+    }
+  ]
+}
+```
+- Status: `200 OK`
+- Body: `{"addedCount": 2}`
+
+### Bulk change campaign status
+
+```http
+POST /api/campaigns/bulk/status
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `marketing_campaign.write`
+- Request Body:
+```json
+{
+  "campaignIds": [
+    "11111111-1111-1111-1111-111111111111",
+    "22222222-2222-2222-2222-222222222222"
+  ],
+  "status": "COMPLETED"
+}
+```
+- Status: `200 OK`
+- Body: `{"updatedCount": 2}`
+
+---
+
+## Sales Quotes & CPQ Pricing Endpoints
+
+Quote endpoints manage commercial proposals, CPQ matrix calculations, multi-level discount approvals, revision histories, and order conversions.
+
+### Get quote statistics
+
+```http
+GET /api/quotes/stats
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `sales_quote.read`
+
+#### Success
+
+- Status: `200 OK`
+- Body: `QuoteStatsDto`
+
+```json
+{
+  "totalQuotes": 45,
+  "draftQuotes": 12,
+  "pendingApprovalQuotes": 5,
+  "approvedQuotes": 8,
+  "sentQuotes": 10,
+  "acceptedQuotes": 7,
+  "rejectedQuotes": 3,
+  "totalPipelineValue": 2850000000.00
+}
+```
+
+### Duplicate quote
+
+```http
+POST /api/quotes/{id}/duplicate
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `sales_quote.write`
+- Status: `201 Created`
+- Body: `QuoteResponse`
+
+### Apply global discount to quote
+
+```http
+POST /api/quotes/{id}/apply-discount
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `sales_quote.write`
+- Request Body:
+```json
+{
+  "discountPercentage": 10.0,
+  "version": 3
+}
+```
+- Status: `200 OK`
+- Body: `QuoteResponse`
+
+### Bulk change quote status
+
+```http
+POST /api/quotes/bulk/status
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `sales_quote.write`
+- Request Body:
+```json
+{
+  "quoteIds": [
+    "33333333-3333-3333-3333-333333333333",
+    "44444444-4444-4444-4444-444444444444"
+  ],
+  "status": "EXPIRED"
+}
+```
+- Status: `200 OK`
+- Body: `{"updatedCount": 2}`
+
+---
+
+## Sales Orders & Fulfillment Endpoints
+
+### Get sales orders KPI statistics
+
+```http
+GET /api/sales/orders/stats
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `sales_order.read`
+- Status: `200 OK`
+- Response Body:
+```json
+{
+  "totalOrders": 120,
+  "draftOrders": 15,
+  "confirmedOrders": 25,
+  "inFulfillmentOrders": 30,
+  "completedOrders": 45,
+  "cancelledOrders": 5,
+  "fulfilledAmount": 450000.00,
+  "totalPipelineAmount": 1250000.00
+}
+```
+
+### Search sales orders
+
+```http
+GET /api/sales/orders?q=ORD&status=CONFIRMED&page=0&size=20
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `sales_order.read`
+- Query Parameters:
+  - `q`: search by order number or customer reference
+  - `accountId`: filter by account UUID
+  - `contactId`: filter by contact UUID
+  - `opportunityId`: filter by opportunity UUID
+  - `quoteId`: filter by quote UUID
+  - `status`: filter by `OrderStatus` (`DRAFT`, `CONFIRMED`, `PROCESSING`, `PARTIALLY_FULFILLED`, `FULFILLED`, `CLOSED_PARTIAL`, `CANCELLED`)
+  - `statuses`: list of `OrderStatus`
+  - `ownerType`: `USER` or `TEAM`
+  - `ownerId`: owner UUID
+  - `fromDate`: order date from (`YYYY-MM-DD`)
+  - `toDate`: order date to (`YYYY-MM-DD`)
+  - `currencyCode`: 3-letter currency code (`USD`, `VND`, etc.)
+  - `page`: zero-based page index
+  - `size`: page size
+- Status: `200 OK`
+- Response Body: `PageResult<OrderSummaryResponse>`
+
+### Get order pulse summary
+
+```http
+GET /api/sales/orders/summary
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `sales_order.read`
+- Status: `200 OK`
+- Response Body: `OrderPulseResponse`
+
+### Get order details by ID
+
+```http
+GET /api/sales/orders/{id}
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `sales_order.read`
+- Status: `200 OK`
+- Headers: `ETag: "<version>"`
+- Response Body: `OrderResponse`
+
+### Get order printable document
+
+```http
+GET /api/sales/orders/{id}/document
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `sales_order.read`
+- Status: `200 OK`
+- Response Body: `OrderDocumentResponse`
+
+### Get order status history
+
+```http
+GET /api/sales/orders/{id}/history
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `sales_order.read`
+- Status: `200 OK`
+- Response Body: `List<OrderStatusHistoryResponse>`
+
+### Get order fulfillment events
+
+```http
+GET /api/sales/orders/{id}/fulfillments
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `sales_order.read`
+- Status: `200 OK`
+- Response Body: `List<OrderFulfillmentResponse>`
+
+### Create direct order draft
+
+```http
+POST /api/sales/orders
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `sales_order.write`
+- Request Body:
+```json
+{
+  "accountId": "11111111-1111-1111-1111-111111111111",
+  "contactId": "22222222-2222-2222-2222-222222222222",
+  "currencyCode": "USD",
+  "orderDate": "2026-09-04",
+  "customerReference": "PO-99881",
+  "paymentTerms": "Net 30",
+  "deliveryTerms": "FOB Destination",
+  "notes": "Standard business order"
+}
+```
+- Status: `201 Created`
+- Headers: `Location: /api/sales/orders/{id}`, `ETag: "1"`
+- Response Body: `OrderResponse`
+
+### Save order draft
+
+```http
+PUT /api/sales/orders/{id}
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`, `If-Match: "<version>"`
+- Required Permission: `sales_order.write`
+- Request Body:
+```json
+{
+  "accountId": "11111111-1111-1111-1111-111111111111",
+  "currencyCode": "USD",
+  "orderDate": "2026-09-04",
+  "lines": [
+    {
+      "nameSnapshot": "Enterprise CRM License",
+      "skuSnapshot": "CRM-ENT",
+      "unitOfMeasureSnapshot": "USER",
+      "quantity": 10,
+      "unitPrice": 120.00,
+      "discountPercent": 10.0,
+      "taxPercent": 8.0
+    }
+  ]
+}
+```
+- Status: `200 OK`
+- Headers: `ETag: "<version>"`
+- Response Body: `OrderResponse`
+
+### Confirm order
+
+```http
+POST /api/sales/orders/{id}/confirm
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`, `If-Match: "<version>"`
+- Required Permission: `sales_order.write`
+- Status: `200 OK`
+- Headers: `ETag: "<version>"`
+- Response Body: `OrderResponse`
+
+### Complete order
+
+```http
+POST /api/sales/orders/{id}/complete
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`, `If-Match: "<version>"`
+- Required Permission: `sales_order.write`
+- Status: `200 OK`
+- Headers: `ETag: "<version>"`
+- Response Body: `OrderResponse`
+
+### Start order processing
+
+```http
+POST /api/sales/orders/{id}/start-processing
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`, `If-Match: "<version>"`
+- Required Permission: `sales_order.write`
+- Status: `200 OK`
+- Headers: `ETag: "<version>"`
+- Response Body: `OrderResponse`
+
+### Record order fulfillment
+
+```http
+POST /api/sales/orders/{id}/fulfillments
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`, `If-Match: "<version>"`
+- Required Permission: `sales_order.write`
+- Request Body:
+```json
+{
+  "referenceNumber": "SHIP-0091",
+  "fulfillmentDate": "2026-09-04",
+  "note": "First partial shipment",
+  "lines": [
+    {
+      "orderLineId": "55555555-5555-5555-5555-555555555555",
+      "quantity": 5
+    }
+  ]
+}
+```
+- Status: `200 OK`
+- Headers: `ETag: "<version>"`
+- Response Body: `OrderResponse`
+
+### Void order fulfillment event
+
+```http
+POST /api/sales/orders/{id}/fulfillments/{eventId}/void
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`, `If-Match: "<version>"`
+- Required Permission: `sales_order.write`
+- Request Body:
+```json
+{
+  "reason": "Carrier shipment returned damaged"
+}
+```
+- Status: `200 OK`
+- Headers: `ETag: "<version>"`
+- Response Body: `OrderResponse`
+
+### Close remaining order fulfillment
+
+```http
+POST /api/sales/orders/{id}/close-remaining
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`, `If-Match: "<version>"`
+- Required Permission: `sales_order.write`
+- Request Body:
+```json
+{
+  "reason": "Customer agreed to cancel remaining units"
+}
+```
+- Status: `200 OK`
+- Headers: `ETag: "<version>"`
+- Response Body: `OrderResponse`
+
+### Cancel order
+
+```http
+POST /api/sales/orders/{id}/cancel
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`, `If-Match: "<version>"`
+- Required Permission: `sales_order.write`
+- Request Body:
+```json
+{
+  "reason": "Customer requested order cancellation"
+}
+```
+- Status: `200 OK`
+- Headers: `ETag: "<version>"`
+- Response Body: `OrderResponse`
+
+### Bulk change order status
+
+```http
+POST /api/sales/orders/bulk/status
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `sales_order.write`
+- Request Body:
+```json
+{
+  "orderIds": [
+    "11111111-1111-1111-1111-111111111111",
+    "22222222-2222-2222-2222-222222222222"
+  ],
+  "status": "CONFIRMED",
+  "reason": "Bulk confirmed by manager"
+}
+```
+- Status: `200 OK`
+- Response Body: `{"updatedCount": 2}`
+
+### Delete draft order
+
+```http
+DELETE /api/sales/orders/{id}
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`, `If-Match: "<version>"`
+- Required Permission: `sales_order.write`
+- Status: `204 No Content`
+
+---
+
+## Audit Trail & Security Compliance Endpoints
+
+### Get audit & compliance KPI statistics
+
+```http
+GET /api/audit/stats
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `audit_read`
+- Status: `200 OK`
+- Response Body:
+```json
+{
+  "totalAuditEvents": 14250,
+  "mutationEvents": 14250,
+  "dataAccessEvents": 3820,
+  "distinctActorsCount": 24,
+  "eventsLast24Hours": 412
+}
+```
+
+### Search audit mutation events
+
+```http
+GET /api/audit/events?q=account&action=UPDATE&page=0&size=20
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `audit_read`
+- Query Parameters:
+  - `q`: search pattern on schema, table, or aggregate type
+  - `aggregateType`: filter by aggregate name (e.g., `ACCOUNT`, `ORDER`)
+  - `aggregateId`: filter by aggregate UUID
+  - `action`: `INSERT`, `UPDATE`, or `DELETE`
+  - `actorUserId`: filter by actor user UUID
+  - `from`: ISO-8601 instant
+  - `to`: ISO-8601 instant
+  - `page`: zero-based page index
+  - `size`: page size
+- Status: `200 OK`
+- Response Body: `PageResult<AuditEventSummaryResponse>`
+
+### Get audit event by ID
+
+```http
+GET /api/audit/events/{id}
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `audit_read`
+- Status: `200 OK`
+- Response Body: `AuditEventResponse`
+
+### Record audit mutation event
+
+```http
+POST /api/audit/events
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `platform_security.manage`
+- Request Body:
+```json
+{
+  "schemaName": "public",
+  "tableName": "sales_orders",
+  "aggregateType": "ORDER",
+  "aggregateId": "11111111-1111-1111-1111-111111111111",
+  "action": "UPDATE",
+  "changedFields": "status, updated_at",
+  "oldValues": "{\"status\":\"DRAFT\"}",
+  "newValues": "{\"status\":\"CONFIRMED\"}",
+  "sourceIp": "192.168.1.50",
+  "userAgent": "Mozilla/5.0 CRM Client",
+  "applicationName": "CRM Platform API"
+}
+```
+- Status: `201 Created`
+- Response Body: `AuditEventResponse`
+
+### Search data access & export events
+
+```http
+GET /api/audit/data-access?accessType=EXPORT&page=0&size=20
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `audit_read`
+- Query Parameters:
+  - `q`: search pattern on entity type, purpose, or legal basis
+  - `entityType`: filter by entity type (e.g., `ACCOUNT`, `CONTACT`)
+  - `entityId`: filter by entity UUID
+  - `accessType`: `VIEW`, `EXPORT`, `DOWNLOAD`, `SEARCH`, `DECRYPT`
+  - `actorUserId`: filter by actor user UUID
+  - `from`: ISO-8601 instant
+  - `to`: ISO-8601 instant
+  - `page`: zero-based page index
+  - `size`: page size
+- Status: `200 OK`
+- Response Body: `PageResult<DataAccessEventSummaryResponse>`
+
+### Get data access event by ID
+
+```http
+GET /api/audit/data-access/{id}
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `audit_read`
+- Status: `200 OK`
+- Response Body: `DataAccessEventResponse`
+
+### Record sensitive data access or export event
+
+```http
+POST /api/audit/data-access
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `platform_security.manage`
+- Request Body:
+```json
+{
+  "entityType": "ACCOUNT",
+  "entityId": "11111111-1111-1111-1111-111111111111",
+  "accessType": "EXPORT",
+  "fieldsAccessed": "legal_name, tax_id, revenue, banking_details",
+  "purpose": "Quarterly executive board report export",
+  "legalBasis": "Contractual Performance & Management Oversight",
+  "sourceIp": "192.168.1.50",
+  "userAgent": "Mozilla/5.0 CRM Client"
+}
+```
+- Status: `201 Created`
+- Response Body: `DataAccessEventResponse`
+
+### Purge expired audit logs by retention policy
+
+```http
+DELETE /api/audit/purge
+```
+
+- Authentication: Bearer access token
+- Required Headers: `X-Tenant-ID`
+- Required Permission: `platform_security.manage`
+- Request Body:
+```json
+{
+  "olderThan": "2025-01-01T00:00:00Z",
+  "logType": "ALL"
+}
+```
+- Status: `200 OK`
+- Response Body:
+```json
+{
+  "purgedAuditEvents": 1540,
+  "purgedDataAccessEvents": 420,
+  "totalPurged": 1960,
+  "olderThan": "2025-01-01T00:00:00Z"
+}
+```
 
 ---
 

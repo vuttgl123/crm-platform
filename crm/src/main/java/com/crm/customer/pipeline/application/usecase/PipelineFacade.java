@@ -28,4 +28,10 @@ public interface PipelineFacade {
 
 	void deleteStage(PipelineId pipelineId, PipelineStageId stageId);
 
+	PipelineDetails getDefaultPipeline();
+
+	void deletePipeline(PipelineId id);
+
+	void reorderStages(com.crm.customer.pipeline.application.command.ReorderStagesCommand command);
+
 }

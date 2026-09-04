@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.UUID;
 
 import jakarta.validation.Valid;
+import com.crm.customer.pipeline.application.command.ReorderStagesCommand;
 import com.crm.customer.pipeline.application.dto.PipelineDetails;
 import com.crm.customer.pipeline.application.dto.PipelineStageDetails;
 import com.crm.customer.pipeline.application.usecase.PipelineFacade;
@@ -21,7 +22,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/crm/pipelines")
+@RequestMapping({"/api/pipelines", "/api/crm/pipelines"})
 public final class PipelineController {
 
 	private final PipelineFacade pipelines;
@@ -30,6 +31,11 @@ public final class PipelineController {
 	public PipelineController(PipelineFacade pipelines, PipelineWebMapper mapper) {
 		this.pipelines = pipelines;
 		this.mapper = mapper;
+	}
+
+	@GetMapping("/default")
+	public PipelineResponse getDefaultPipeline() {
+		return mapper.toResponse(pipelines.getDefaultPipeline());
 	}
 
 	@PostMapping
@@ -55,6 +61,12 @@ public final class PipelineController {
 		return mapper.toResponse(pipelines.updatePipeline(mapper.toUpdatePipelineCommand(new PipelineId(id), request)));
 	}
 
+	@DeleteMapping("/{id}")
+	public ResponseEntity<Void> deletePipeline(@PathVariable UUID id) {
+		pipelines.deletePipeline(new PipelineId(id));
+		return ResponseEntity.noContent().build();
+	}
+
 	@PostMapping("/{id}/stages")
 	public ResponseEntity<PipelineStageResponse> addStage(
 			@PathVariable UUID id,
@@ -76,6 +88,14 @@ public final class PipelineController {
 			@PathVariable UUID id,
 			@PathVariable UUID stageId) {
 		pipelines.deleteStage(new PipelineId(id), new PipelineStageId(stageId));
+		return ResponseEntity.noContent().build();
+	}
+
+	@PutMapping("/{id}/stages/reorder")
+	public ResponseEntity<Void> reorderStages(
+			@PathVariable UUID id,
+			@Valid @RequestBody ReorderStagesRequest request) {
+		pipelines.reorderStages(new ReorderStagesCommand(new PipelineId(id), request.orderedStageIds()));
 		return ResponseEntity.noContent().build();
 	}
 

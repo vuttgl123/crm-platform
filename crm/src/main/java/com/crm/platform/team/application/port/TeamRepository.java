@@ -38,4 +38,10 @@ public interface TeamRepository {
 
 	List<TeamMemberDetails> findMembersByTeam(TenantId tenantId, TeamId teamId);
 
+	com.crm.platform.team.application.dto.TeamStatsDto getStats(TenantId tenantId);
+
+	void updateStatus(TenantId tenantId, TeamId teamId, String status, java.time.Instant now);
+
+	void updateManager(TenantId tenantId, TeamId teamId, UUID newManagerUserId, java.time.Instant now);
+
 }

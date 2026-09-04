@@ -5,7 +5,6 @@ import {
   renderAccountTypeBadge,
   renderLifecycleStageBadge,
 } from '@/config/crmStatusConfig';
-import { formatDateTime } from '@/lib/formatters';
 import { useOwnerResolver } from '../../../hooks/useOwnerResolver';
 import {
   ResponsiveContainer,
@@ -24,8 +23,6 @@ import {
 } from 'recharts';
 import {
   Building2,
-  DollarSign,
-  Globe,
   ShieldCheck,
   User,
   Users,
@@ -36,7 +33,6 @@ import {
   Zap,
   Target,
   BarChart3,
-  Layers,
   Sparkles,
   CheckCircle2,
 } from 'lucide-react';
@@ -58,7 +54,6 @@ export const AccountOverviewTab: React.FC<AccountOverviewTabProps> = ({
 
   // Potential Calculations based on Scale and Lifecycle
   const potentialMetrics = useMemo(() => {
-    const isEnterprise = account.accountType === 'ORGANIZATION' || account.accountType === 'PARTNER';
     const isLargeCorp = revenueAmount > 1_000_000_000 || employees > 100;
 
     const estimatedDealValue = isLargeCorp

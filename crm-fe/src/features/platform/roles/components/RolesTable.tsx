@@ -37,6 +37,7 @@ interface RolesTableProps {
   onEdit: (role: RoleSummaryResponse) => void;
   onClone: (role: RoleSummaryResponse) => void;
   onDelete: (role: RoleSummaryResponse) => void;
+  onToggleStatus?: (role: RoleSummaryResponse) => void;
   onCreateClick?: () => void;
 }
 
@@ -48,6 +49,7 @@ export const RolesTable: React.FC<RolesTableProps> = ({
   onEdit,
   onClone,
   onDelete,
+  onToggleStatus,
   onCreateClick,
 }) => {
   if (loading) {
@@ -227,6 +229,16 @@ export const RolesTable: React.FC<RolesTableProps> = ({
                             >
                               <Edit className="w-3.5 h-3.5 text-slate-600" />
                               <span>Edit Role</span>
+                            </DropdownMenuItem>
+                          )}
+
+                          {!isSystem && canManage && onToggleStatus && (
+                            <DropdownMenuItem
+                              onClick={() => onToggleStatus(r)}
+                              className="gap-2 text-xs cursor-pointer"
+                            >
+                              <Shield className="w-3.5 h-3.5 text-amber-600" />
+                              <span>{r.status === 'ACTIVE' ? 'Deactivate Role' : 'Activate Role'}</span>
                             </DropdownMenuItem>
                           )}
 

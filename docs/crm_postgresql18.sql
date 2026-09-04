@@ -412,6 +412,18 @@ CREATE INDEX idx_team_members_user
     ON platform.team_members (tenant_id, user_id) WHERE left_at IS NULL;
 CREATE INDEX idx_user_roles_active
     ON platform.user_roles (tenant_id, user_id, valid_from, valid_to);
+CREATE TABLE platform.ip_whitelist (
+                                         tenant_id uuid NOT NULL,
+                                         id uuid NOT NULL DEFAULT gen_random_uuid(),
+                                         cidr_block text NOT NULL,
+                                         description text,
+                                         is_active boolean NOT NULL DEFAULT true,
+                                         created_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+                                         created_by uuid,
+                                         PRIMARY KEY (tenant_id, id),
+                                         FOREIGN KEY (tenant_id) REFERENCES platform.tenants(id) ON DELETE CASCADE
+);
+
 CREATE INDEX idx_role_permissions_permission
     ON platform.role_permissions (tenant_id, permission_code, role_id);
 
@@ -435,7 +447,10 @@ VALUES
     ('privacy.consent.read', 'Read consent records', 'privacy', 'SENSITIVE'),
     ('privacy.consent.write', 'Create and update consent records', 'privacy', 'SENSITIVE'),
     ('audit.read', 'Read audit trails', 'audit', 'PRIVILEGED'),
-    ('platform.user.manage', 'Manage tenant memberships and roles', 'platform', 'PRIVILEGED')
+    ('platform.user.manage', 'Manage tenant memberships and roles', 'platform', 'PRIVILEGED'),
+    ('platform_settings.read', 'Read tenant and platform settings', 'platform', 'NORMAL'),
+    ('platform_settings.manage', 'Manage tenant and platform settings', 'platform', 'PRIVILEGED'),
+    ('platform_security.manage', 'Manage tenant security policies and IP access', 'platform', 'PRIVILEGED')
     ON CONFLICT (permission_code) DO NOTHING;
 
 -- --------------------------------------------------------------------------

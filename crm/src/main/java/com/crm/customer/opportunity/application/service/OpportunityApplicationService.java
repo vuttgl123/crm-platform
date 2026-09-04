@@ -349,4 +349,98 @@ public class OpportunityApplicationService implements OpportunityFacade {
 				opportunity.version());
 	}
 
+	@Override
+	@Transactional(readOnly = true)
+	public com.crm.customer.opportunity.application.dto.OpportunityStatsDto getStats() {
+		TenantId tenantId = currentTenant.requireTenantId();
+		ActorId actorId = currentActor.requireActorId();
+		AuthorizedDataAccess access = authorizer.requireAccess(
+				SystemPermission.CRM_OPPORTUNITY_READ, ENTITY_TYPE);
+		return opportunityRepository.getStats(tenantId, actorId, access);
+	}
+
+	@Override
+	@Transactional
+	public OpportunityDetails transitionStage(
+			com.crm.customer.opportunity.application.command.TransitionOpportunityStageCommand command) {
+		Objects.requireNonNull(command, "command must not be null");
+		TenantId tenantId = currentTenant.requireTenantId();
+		ActorId actorId = currentActor.requireActorId();
+		authorizer.requireAccess(SystemPermission.CRM_OPPORTUNITY_WRITE, ENTITY_TYPE);
+
+		opportunityRepository.transitionStage(
+				tenantId,
+				command.id(),
+				command.stageId(),
+				command.probabilityPercentage(),
+				command.expectedVersion(),
+				actorId,
+				timeProvider.now()
+		);
+		return get(command.id());
+	}
+
+	@Override
+	@Transactional
+	public OpportunityDetails closeWon(
+			com.crm.customer.opportunity.application.command.CloseWonOpportunityCommand command) {
+		Objects.requireNonNull(command, "command must not be null");
+		TenantId tenantId = currentTenant.requireTenantId();
+		ActorId actorId = currentActor.requireActorId();
+		authorizer.requireAccess(SystemPermission.CRM_OPPORTUNITY_WRITE, ENTITY_TYPE);
+
+		opportunityRepository.closeWon(
+				tenantId,
+				command.id(),
+				command.actualRevenueAmount(),
+				command.closedDate(),
+				command.expectedVersion(),
+				actorId,
+				timeProvider.now()
+		);
+		return get(command.id());
+	}
+
+	@Override
+	@Transactional
+	public OpportunityDetails closeLost(
+			com.crm.customer.opportunity.application.command.CloseLostOpportunityCommand command) {
+		Objects.requireNonNull(command, "command must not be null");
+		TenantId tenantId = currentTenant.requireTenantId();
+		ActorId actorId = currentActor.requireActorId();
+		authorizer.requireAccess(SystemPermission.CRM_OPPORTUNITY_WRITE, ENTITY_TYPE);
+
+		opportunityRepository.closeLost(
+				tenantId,
+				command.id(),
+				command.lostReasonId(),
+				command.competitorNotes(),
+				command.expectedVersion(),
+				actorId,
+				timeProvider.now()
+		);
+		return get(command.id());
+	}
+
+	@Override
+	@Transactional
+	public OpportunityDetails reassign(
+			com.crm.customer.opportunity.application.command.ReassignOpportunityCommand command) {
+		Objects.requireNonNull(command, "command must not be null");
+		TenantId tenantId = currentTenant.requireTenantId();
+		ActorId actorId = currentActor.requireActorId();
+		authorizer.requireAccess(SystemPermission.CRM_OPPORTUNITY_WRITE, ENTITY_TYPE);
+
+		opportunityRepository.reassign(
+				tenantId,
+				command.id(),
+				command.ownerType(),
+				command.ownerId(),
+				command.expectedVersion(),
+				actorId,
+				timeProvider.now()
+		);
+		return get(command.id());
+	}
+
 }

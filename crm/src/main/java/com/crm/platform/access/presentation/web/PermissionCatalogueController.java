@@ -27,4 +27,9 @@ public final class PermissionCatalogueController {
 				.toList();
 	}
 
+	@GetMapping("/matrix")
+	public com.crm.platform.access.application.dto.PermissionMatrixDto matrix() {
+		return roles.getPermissionMatrix();
+	}
+
 }

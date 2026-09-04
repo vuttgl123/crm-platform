@@ -1,5 +1,4 @@
 import React from 'react';
-import { useTranslation } from 'react-i18next';
 import { ArrowRight, Play, ShieldCheck, Zap, CheckCircle2 } from 'lucide-react';
 import { LandingSection } from '../../components/LandingSection';
 import { Reveal } from '../../components/Reveal';
@@ -7,7 +6,6 @@ import { HeroCockpitPreview } from '../../components/product-ui/HeroCockpitPrevi
 import { TelemetryTicker } from '../../components/TelemetryTicker';
 
 export const HeroSection: React.FC = () => {
-  const { t } = useTranslation();
 
   return (
     <>

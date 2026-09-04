@@ -167,6 +167,17 @@ export const RolesPage: React.FC = () => {
     }
   };
 
+  const handleToggleStatus = useCallback(async (role: RoleSummaryResponse) => {
+    const newStatus = role.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+    try {
+      await roleApi.changeRoleStatus(role.id, newStatus);
+      toast.success(`Role "${role.name}" status updated to ${newStatus}`);
+      refetchRoles();
+    } catch {
+      toast.error('Failed to change role status');
+    }
+  }, [refetchRoles]);
+
   const handleRefresh = useCallback(() => {
     refetchRoles();
     refetchCatalog();
@@ -261,6 +272,7 @@ export const RolesPage: React.FC = () => {
             onEdit={handleOpenEdit}
             onClone={handleOpenClone}
             onDelete={handleOpenDelete}
+            onToggleStatus={handleToggleStatus}
             onCreateClick={handleOpenCreate}
           />
 
@@ -317,6 +329,7 @@ export const RolesPage: React.FC = () => {
         isOpen={Boolean(deleteTarget)}
         onClose={() => setDeleteTarget(null)}
         role={deleteTarget}
+        allRoles={roles}
         onConfirmDelete={handleConfirmDelete}
         isDeleting={deleteMutation.isPending}
       />

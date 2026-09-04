@@ -1,5 +1,4 @@
 import React from 'react';
-import { useTranslation } from 'react-i18next';
 import { useLandingMetadata } from '../hooks/useLandingMetadata';
 import { HeroSection } from '../sections/HeroSection';
 import { ProofStrip } from '../sections/ProofStrip';
@@ -12,7 +11,6 @@ import { PricingSection } from '../sections/PricingSection';
 import { FaqSection } from '../sections/FaqSection';
 
 export const HomePage: React.FC = () => {
-  const { t } = useTranslation();
 
   useLandingMetadata({
     title: 'VUM CRM | Quản trị bán hàng B2B và phê duyệt báo giá',

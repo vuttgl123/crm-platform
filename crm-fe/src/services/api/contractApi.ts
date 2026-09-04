@@ -57,6 +57,26 @@ export interface UpdateContractRequest {
   terms?: string;
 }
 
+export interface ContractStatsDto {
+  totalContracts: number;
+  draftContracts: number;
+  inReviewContracts: number;
+  approvedContracts: number;
+  activeContracts: number;
+  expiringSoonContracts: number;
+  terminatedContracts: number;
+  totalActiveValue: number;
+}
+
+export interface RenewContractRequest {
+  newContractNumber: string;
+  effectiveFrom?: string;
+  effectiveTo?: string;
+  contractValue?: number;
+  autoRenew?: boolean;
+  version: number;
+}
+
 export const CONTRACT_STATUS_CONFIG: Record<ContractStatus, { label: string; className: string }> = {
   DRAFT: { label: 'DRAFT', className: 'bg-slate-100 text-slate-600 border-slate-300 font-semibold' },
   ACTIVE: { label: 'ACTIVE', className: 'bg-emerald-50 text-emerald-700 border-emerald-200 font-bold' },
@@ -65,6 +85,12 @@ export const CONTRACT_STATUS_CONFIG: Record<ContractStatus, { label: string; cla
 };
 
 export const contractApi = {
+  getStats: async (): Promise<ContractStatsDto> => {
+    return apiFetch<ContractStatsDto>('/contracts/stats', {
+      method: 'GET',
+    });
+  },
+
   list: async (params?: {
     search?: string;
     status?: string;
@@ -138,7 +164,24 @@ export const contractApi = {
   activate: async (id: string, version: number = 1): Promise<ContractItem> => {
     return apiFetch<ContractItem>(`/contracts/${id}/activate`, {
       method: 'POST',
-      body: JSON.stringify({ version }),
+      headers: {
+        'If-Match': `"${version}"`,
+      },
+    });
+  },
+
+  renew: async (id: string, data: RenewContractRequest): Promise<ContractItem> => {
+    const res = await apiFetch<ContractItem>(`/contracts/${id}/renew`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+    return { ...res, contractValue: res.totalValue || res.contractValue || 0 };
+  },
+
+  bulkSubmitReview: async (contractIds: string[]): Promise<{ submittedCount: number }> => {
+    return apiFetch<{ submittedCount: number }>('/contracts/bulk/review', {
+      method: 'POST',
+      body: JSON.stringify({ contractIds }),
     });
   },
 

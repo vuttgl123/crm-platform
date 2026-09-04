@@ -105,4 +105,50 @@ public final class CampaignController {
 		return ResponseEntity.noContent().build();
 	}
 
+	@GetMapping("/stats")
+	public com.crm.marketing.campaign.application.dto.CampaignStatsDto getStats() {
+		return campaigns.getStats();
+	}
+
+	@org.springframework.web.bind.annotation.PatchMapping("/{id}/status")
+	public CampaignResponse updateStatus(
+			@PathVariable UUID id,
+			@Valid @RequestBody ChangeCampaignStatusRequest request) {
+		CampaignDetails updated = campaigns.updateStatus(
+				new com.crm.marketing.campaign.application.command.ChangeCampaignStatusCommand(
+						new CampaignId(id),
+						request.status()
+				));
+		return mapper.toResponse(updated);
+	}
+
+	@PostMapping("/{id}/members/bulk")
+	public ResponseEntity<java.util.Map<String, Object>> bulkAddMembers(
+			@PathVariable UUID id,
+			@Valid @RequestBody BulkAddCampaignMembersRequest request) {
+		var entries = request.members().stream()
+				.map(m -> new com.crm.marketing.campaign.application.command.BulkAddCampaignMembersCommand.MemberEntry(
+						m.leadId(),
+						m.contactId(),
+						m.memberStatus()
+				)).toList();
+		int addedCount = campaigns.bulkAddMembers(
+				new com.crm.marketing.campaign.application.command.BulkAddCampaignMembersCommand(
+						new CampaignId(id),
+						entries
+				));
+		return ResponseEntity.ok(java.util.Map.of("addedCount", addedCount));
+	}
+
+	@PostMapping("/bulk/status")
+	public ResponseEntity<java.util.Map<String, Object>> bulkChangeStatus(
+			@Valid @RequestBody BulkChangeCampaignStatusRequest request) {
+		int updatedCount = campaigns.bulkChangeStatus(
+				new com.crm.marketing.campaign.application.command.BulkChangeCampaignStatusCommand(
+						request.campaignIds(),
+						request.status()
+				));
+		return ResponseEntity.ok(java.util.Map.of("updatedCount", updatedCount));
+	}
+
 }

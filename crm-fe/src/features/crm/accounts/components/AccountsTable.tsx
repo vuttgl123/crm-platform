@@ -17,7 +17,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { ActionTooltip } from '@/components/ui/action-tooltip';
 import {
   renderAccountTypeBadge,
   renderLifecycleStageBadge,
@@ -41,7 +40,6 @@ import {
   User,
   Users,
   Ban,
-  ChevronDown,
   ChevronRight,
   Building2,
   CornerDownRight,

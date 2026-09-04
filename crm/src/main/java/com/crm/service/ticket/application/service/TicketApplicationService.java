@@ -404,4 +404,57 @@ public class TicketApplicationService implements TicketFacade {
 		};
 	}
 
+	@Override
+	@Transactional(readOnly = true)
+	public com.crm.service.ticket.application.dto.TicketStatsDto getStats() {
+		TenantId tenantId = currentTenant.requireTenantId();
+		ActorId actorId = currentActor.requireActorId();
+		authorizer.requirePermission(SystemPermission.SERVICE_TICKET_READ);
+		return ticketRepository.getStats(tenantId, actorId, null);
+	}
+
+	@Override
+	@Transactional
+	public TicketDetails escalate(com.crm.service.ticket.application.command.EscalateTicketCommand command) {
+		Objects.requireNonNull(command, "command must not be null");
+		TenantId tenantId = currentTenant.requireTenantId();
+		ActorId actorId = currentActor.requireActorId();
+		authorizer.requirePermission(SystemPermission.SERVICE_TICKET_WRITE);
+
+		ticketRepository.escalate(
+				tenantId,
+				command.id(),
+				command.priority(),
+				command.escalationReason(),
+				command.expectedVersion(),
+				actorId,
+				timeProvider.now()
+		);
+		return get(command.id());
+	}
+
+	@Override
+	@Transactional
+	public int bulkAssign(com.crm.service.ticket.application.command.BulkAssignTicketsCommand command) {
+		Objects.requireNonNull(command, "command must not be null");
+		TenantId tenantId = currentTenant.requireTenantId();
+		ActorId actorId = currentActor.requireActorId();
+		authorizer.requirePermission(SystemPermission.SERVICE_TICKET_WRITE);
+
+		java.util.List<TicketId> ids = command.ticketIds().stream().map(TicketId::new).toList();
+		return ticketRepository.bulkAssign(tenantId, ids, command.assignedUserId(), command.assignedTeamId(), actorId, timeProvider.now());
+	}
+
+	@Override
+	@Transactional
+	public int bulkChangeStatus(com.crm.service.ticket.application.command.BulkChangeTicketStatusCommand command) {
+		Objects.requireNonNull(command, "command must not be null");
+		TenantId tenantId = currentTenant.requireTenantId();
+		ActorId actorId = currentActor.requireActorId();
+		authorizer.requirePermission(SystemPermission.SERVICE_TICKET_WRITE);
+
+		java.util.List<TicketId> ids = command.ticketIds().stream().map(TicketId::new).toList();
+		return ticketRepository.bulkChangeStatus(tenantId, ids, command.status(), actorId, timeProvider.now());
+	}
+
 }

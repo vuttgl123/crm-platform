@@ -81,4 +81,47 @@ public final class ActivityController {
 		return ResponseEntity.noContent().build();
 	}
 
+	@GetMapping("/stats")
+	public com.crm.customer.activity.application.dto.ActivityStatsDto getStats() {
+		return activities.getStats();
+	}
+
+	@PostMapping("/{id}/reschedule")
+	public ActivityResponse reschedule(
+			@PathVariable UUID id,
+			@Valid @RequestBody RescheduleActivityRequest request) {
+		ActivityDetails updated = activities.reschedule(
+				new com.crm.customer.activity.application.command.RescheduleActivityCommand(
+						new ActivityId(id),
+						request.startsAt(),
+						request.dueAt(),
+						request.version()
+				));
+		return mapper.toResponse(updated);
+	}
+
+	@PostMapping("/{id}/cancel")
+	public ActivityResponse cancel(
+			@PathVariable UUID id,
+			@Valid @RequestBody CancelActivityRequest request) {
+		ActivityDetails updated = activities.cancel(
+				new com.crm.customer.activity.application.command.CancelActivityCommand(
+						new ActivityId(id),
+						request.cancelReason(),
+						request.version()
+				));
+		return mapper.toResponse(updated);
+	}
+
+	@PostMapping("/bulk/complete")
+	public ResponseEntity<java.util.Map<String, Object>> bulkComplete(
+			@Valid @RequestBody BulkCompleteActivitiesRequest request) {
+		int completedCount = activities.bulkComplete(
+				new com.crm.customer.activity.application.command.BulkCompleteActivitiesCommand(
+						request.activityIds(),
+						request.outcomeCode()
+				));
+		return ResponseEntity.ok(java.util.Map.of("completedCount", completedCount));
+	}
+
 }

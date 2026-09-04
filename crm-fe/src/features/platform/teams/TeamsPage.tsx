@@ -502,9 +502,13 @@ export const TeamsPage: React.FC = () => {
                   <TableCell className="py-2.5 px-3">
                     <Badge
                       variant="outline"
-                      className="bg-emerald-50 text-emerald-700 border-emerald-200 font-bold text-[10px] rounded-[2px]"
+                      className={`font-bold text-[10px] rounded-[2px] ${
+                        t.status === 'INACTIVE'
+                          ? 'bg-amber-50 text-amber-700 border-amber-200'
+                          : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                      }`}
                     >
-                      ACTIVE
+                      {t.status || 'ACTIVE'}
                     </Badge>
                   </TableCell>
 
@@ -536,6 +540,23 @@ export const TeamsPage: React.FC = () => {
                         >
                           <Edit className="w-3.5 h-3.5 text-slate-600" />
                           <span>Edit Team</span>
+                        </DropdownMenuItem>
+
+                        <DropdownMenuItem
+                          onClick={async () => {
+                            const newStatus = t.status === 'INACTIVE' ? 'ACTIVE' : 'INACTIVE';
+                            try {
+                              await teamApi.changeTeamStatus(t.id, newStatus);
+                              toast.success(`Team [${t.name}] marked as ${newStatus}`);
+                              fetchTeams();
+                            } catch {
+                              toast.error('Failed to change team status');
+                            }
+                          }}
+                          className="gap-2 cursor-pointer text-xs text-amber-700"
+                        >
+                          <Users2 className="w-3.5 h-3.5 text-amber-600" />
+                          <span>{t.status === 'INACTIVE' ? 'Activate Team' : 'Deactivate Team'}</span>
                         </DropdownMenuItem>
 
                         <DropdownMenuSeparator />

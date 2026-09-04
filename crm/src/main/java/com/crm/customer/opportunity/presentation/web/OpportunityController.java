@@ -73,4 +73,65 @@ public final class OpportunityController {
 		return ResponseEntity.noContent().build();
 	}
 
+	@GetMapping("/stats")
+	public com.crm.customer.opportunity.application.dto.OpportunityStatsDto getStats() {
+		return opportunities.getStats();
+	}
+
+	@PostMapping("/{id}/transition-stage")
+	public OpportunityResponse transitionStage(
+			@PathVariable UUID id,
+			@Valid @RequestBody TransitionOpportunityStageRequest request) {
+		OpportunityDetails updated = opportunities.transitionStage(
+				new com.crm.customer.opportunity.application.command.TransitionOpportunityStageCommand(
+						new OpportunityId(id),
+						request.stageId(),
+						request.probabilityPercentage(),
+						request.version()
+				));
+		return mapper.toResponse(updated);
+	}
+
+	@PostMapping("/{id}/close-won")
+	public OpportunityResponse closeWon(
+			@PathVariable UUID id,
+			@Valid @RequestBody CloseWonRequest request) {
+		OpportunityDetails updated = opportunities.closeWon(
+				new com.crm.customer.opportunity.application.command.CloseWonOpportunityCommand(
+						new OpportunityId(id),
+						request.actualRevenueAmount(),
+						request.closedDate(),
+						request.version()
+				));
+		return mapper.toResponse(updated);
+	}
+
+	@PostMapping("/{id}/close-lost")
+	public OpportunityResponse closeLost(
+			@PathVariable UUID id,
+			@Valid @RequestBody CloseLostRequest request) {
+		OpportunityDetails updated = opportunities.closeLost(
+				new com.crm.customer.opportunity.application.command.CloseLostOpportunityCommand(
+						new OpportunityId(id),
+						request.lostReasonId(),
+						request.competitorNotes(),
+						request.version()
+				));
+		return mapper.toResponse(updated);
+	}
+
+	@PostMapping("/{id}/reassign")
+	public OpportunityResponse reassign(
+			@PathVariable UUID id,
+			@Valid @RequestBody ReassignOpportunityRequest request) {
+		OpportunityDetails updated = opportunities.reassign(
+				new com.crm.customer.opportunity.application.command.ReassignOpportunityCommand(
+						new OpportunityId(id),
+						request.ownerType(),
+						request.ownerId(),
+						request.version()
+				));
+		return mapper.toResponse(updated);
+	}
+
 }

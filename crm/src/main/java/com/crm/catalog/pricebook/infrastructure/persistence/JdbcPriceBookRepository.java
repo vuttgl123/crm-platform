@@ -260,4 +260,68 @@ public class JdbcPriceBookRepository implements PriceBookRepository {
 		}
 	}
 
+	@Override
+	public com.crm.catalog.pricebook.application.dto.PriceBookStatsDto getStats(TenantId tenantId) {
+		String pbSql = """
+				SELECT
+				    COUNT(*) AS total,
+				    COUNT(CASE WHEN pb.is_active = TRUE THEN 1 END) AS active_count,
+				    COUNT(CASE WHEN pb.is_default = TRUE THEN 1 END) AS standard_count,
+				    COUNT(CASE WHEN pb.is_default = FALSE THEN 1 END) AS custom_count
+				FROM catalog.price_books pb
+				WHERE pb.tenant_id = :tenantId
+				""";
+		var counts = jdbcClient.sql(pbSql)
+				.param("tenantId", tenantId.value())
+				.query((rs, rowNum) -> new long[] {
+						rs.getLong("total"),
+						rs.getLong("active_count"),
+						rs.getLong("standard_count"),
+						rs.getLong("custom_count")
+				}).single();
+
+		String itemsSql = "SELECT COUNT(*) FROM catalog.price_book_items WHERE tenant_id = :tenantId";
+		long itemsCount = jdbcClient.sql(itemsSql)
+				.param("tenantId", tenantId.value())
+				.query((rs, rowNum) -> rs.getLong(1))
+				.single();
+
+		return new com.crm.catalog.pricebook.application.dto.PriceBookStatsDto(
+				counts[0],
+				counts[1],
+				counts[2],
+				counts[3],
+				itemsCount
+		);
+	}
+
+	@Override
+	public void updateStatus(TenantId tenantId, PriceBookId id, boolean active,
+			com.crm.sharedkernel.domain.ActorId actorId, java.time.Instant now) {
+		String sql = """
+				UPDATE catalog.price_books
+				SET is_active = :active,
+				    updated_at = :now,
+				    updated_by = :actorId,
+				    version = version + 1
+				WHERE tenant_id = :tenantId
+				  AND id = :id
+				""";
+		jdbcClient.sql(sql)
+				.param("active", active)
+				.param("now", Timestamp.from(now))
+				.param("actorId", actorId.value())
+				.param("tenantId", tenantId.value())
+				.param("id", id.value())
+				.update();
+	}
+
+	@Override
+	public void insertItemsBatch(TenantId tenantId, List<PriceBookItem> items) {
+		if (items == null || items.isEmpty()) return;
+		for (PriceBookItem item : items) {
+			insertItem(item);
+		}
+	}
+
 }

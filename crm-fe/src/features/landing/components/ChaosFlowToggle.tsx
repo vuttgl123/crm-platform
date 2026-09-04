@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AlertCircle, CheckCircle2, Zap, ArrowRight, Sparkles } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Sparkles } from 'lucide-react';
 import { SpotlightCard } from './SpotlightCard';
 
 export const ChaosFlowToggle: React.FC = () => {

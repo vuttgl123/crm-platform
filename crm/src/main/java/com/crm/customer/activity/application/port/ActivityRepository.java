@@ -29,4 +29,16 @@ public interface ActivityRepository {
 
 	void delete(TenantId tenantId, ActivityId activityId);
 
+	com.crm.customer.activity.application.dto.ActivityStatsDto getStats(
+			TenantId tenantId, ActorId actorId, AuthorizedDataAccess access);
+
+	void reschedule(TenantId tenantId, ActivityId id, java.time.Instant startsAt,
+			java.time.Instant dueAt, long expectedVersion, ActorId actorId, java.time.Instant now);
+
+	void cancel(TenantId tenantId, ActivityId id, String cancelReason,
+			long expectedVersion, ActorId actorId, java.time.Instant now);
+
+	int bulkComplete(TenantId tenantId, java.util.List<ActivityId> ids, String outcomeCode,
+			ActorId actorId, java.time.Instant now);
+
 }

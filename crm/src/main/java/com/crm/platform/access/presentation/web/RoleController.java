@@ -78,6 +78,70 @@ public final class RoleController {
 		return ResponseEntity.noContent().build();
 	}
 
+	@GetMapping("/stats")
+	public com.crm.platform.access.application.dto.RoleStatsDto getStats() {
+		return roles.getStats();
+	}
+
+	@PostMapping("/{id}/clone")
+	public ResponseEntity<RoleResponse> clone(
+			@PathVariable UUID id,
+			@Valid @RequestBody com.crm.platform.access.presentation.web.request.CloneRoleRequest request) {
+		RoleDetails cloned = roles.clone(new com.crm.platform.access.application.command.CloneRoleCommand(
+				id,
+				request.newRoleCode(),
+				request.newName(),
+				request.description()
+		));
+		return ResponseEntity.created(URI.create("/api/roles/" + cloned.id()))
+				.body(mapper.toResponse(cloned));
+	}
+
+	@org.springframework.web.bind.annotation.PatchMapping("/{id}/status")
+	public ResponseEntity<Void> changeStatus(
+			@PathVariable UUID id,
+			@Valid @RequestBody com.crm.platform.access.presentation.web.request.ChangeRoleStatusRequest request) {
+		roles.changeStatus(new com.crm.platform.access.application.command.ChangeRoleStatusCommand(id, request.status()));
+		return ResponseEntity.noContent().build();
+	}
+
+	@GetMapping("/{id}/members")
+	public List<com.crm.platform.access.application.dto.RoleMemberSummaryDto> getMembers(@PathVariable UUID id) {
+		return roles.getMembers(new RoleId(id));
+	}
+
+	@PostMapping("/{id}/members/reassign")
+	public ResponseEntity<Void> reassignMembers(
+			@PathVariable UUID id,
+			@Valid @RequestBody com.crm.platform.access.presentation.web.request.ReassignRoleMembersRequest request) {
+		roles.reassignMembers(new com.crm.platform.access.application.command.ReassignRoleMembersCommand(id, request.targetRoleId()));
+		return ResponseEntity.noContent().build();
+	}
+
+	@PostMapping("/compare")
+	public com.crm.platform.access.application.dto.RoleComparisonResultDto compare(
+			@Valid @RequestBody com.crm.platform.access.presentation.web.request.CompareRolesRequest request) {
+		return roles.compare(new com.crm.platform.access.application.command.CompareRolesCommand(request.roleIds()));
+	}
+
+	@GetMapping("/templates")
+	public List<com.crm.platform.access.application.dto.RoleTemplateDto> getTemplates() {
+		return roles.getTemplates();
+	}
+
+	@PostMapping("/templates/{templateCode}/instantiate")
+	public ResponseEntity<RoleResponse> instantiateTemplate(
+			@PathVariable String templateCode,
+			@Valid @RequestBody com.crm.platform.access.presentation.web.request.InstantiateRoleTemplateRequest request) {
+		RoleDetails instantiated = roles.instantiateTemplate(new com.crm.platform.access.application.command.InstantiateRoleTemplateCommand(
+				templateCode,
+				request.customRoleCode(),
+				request.customName()
+		));
+		return ResponseEntity.created(URI.create("/api/roles/" + instantiated.id()))
+				.body(mapper.toResponse(instantiated));
+	}
+
 	@Target(ElementType.PARAMETER)
 	@Retention(RetentionPolicy.RUNTIME)
 	@Constraint(validatedBy = IfMatchVersionValidator.class)

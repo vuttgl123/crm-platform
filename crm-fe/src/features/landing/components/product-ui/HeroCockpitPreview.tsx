@@ -2,16 +2,11 @@ import React, { useState } from 'react';
 import {
   TrendingUp,
   CheckCircle2,
-  Zap,
   ArrowUpRight,
   ShieldCheck,
-  Sparkles,
-  Filter,
   Eye,
   X,
-  ExternalLink,
 } from 'lucide-react';
-import { MockWindow } from './MockWindow';
 import { MockPipelineBoard } from './MockPipelineBoard';
 
 interface DealFilter {

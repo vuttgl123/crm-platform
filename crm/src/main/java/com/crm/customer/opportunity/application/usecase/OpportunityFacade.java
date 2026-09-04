@@ -21,4 +21,14 @@ public interface OpportunityFacade {
 
 	void delete(DeleteOpportunityCommand command);
 
+	com.crm.customer.opportunity.application.dto.OpportunityStatsDto getStats();
+
+	OpportunityDetails transitionStage(com.crm.customer.opportunity.application.command.TransitionOpportunityStageCommand command);
+
+	OpportunityDetails closeWon(com.crm.customer.opportunity.application.command.CloseWonOpportunityCommand command);
+
+	OpportunityDetails closeLost(com.crm.customer.opportunity.application.command.CloseLostOpportunityCommand command);
+
+	OpportunityDetails reassign(com.crm.customer.opportunity.application.command.ReassignOpportunityCommand command);
+
 }

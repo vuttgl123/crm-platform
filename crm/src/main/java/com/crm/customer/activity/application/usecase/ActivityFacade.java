@@ -24,4 +24,12 @@ public interface ActivityFacade {
 
 	void delete(DeleteActivityCommand command);
 
+	com.crm.customer.activity.application.dto.ActivityStatsDto getStats();
+
+	ActivityDetails reschedule(com.crm.customer.activity.application.command.RescheduleActivityCommand command);
+
+	ActivityDetails cancel(com.crm.customer.activity.application.command.CancelActivityCommand command);
+
+	int bulkComplete(com.crm.customer.activity.application.command.BulkCompleteActivitiesCommand command);
+
 }

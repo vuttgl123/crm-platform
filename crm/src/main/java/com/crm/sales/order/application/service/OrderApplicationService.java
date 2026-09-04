@@ -12,8 +12,10 @@ import com.crm.foundation.security.SystemPermission;
 import com.crm.foundation.security.TenantAccessAuthorizer;
 import com.crm.foundation.tenancy.CurrentTenant;
 import com.crm.foundation.time.TimeProvider;
+import com.crm.sales.order.application.command.BulkChangeOrderStatusCommand;
 import com.crm.sales.order.application.command.CancelOrderCommand;
 import com.crm.sales.order.application.command.CloseRemainingOrderCommand;
+import com.crm.sales.order.application.command.CompleteOrderCommand;
 import com.crm.sales.order.application.command.ConfirmOrderCommand;
 import com.crm.sales.order.application.command.CreateDirectOrderCommand;
 import com.crm.sales.order.application.command.DeleteOrderCommand;
@@ -31,6 +33,7 @@ import com.crm.sales.order.application.dto.OrderLineDetails;
 import com.crm.sales.order.application.dto.OrderOwnerReferenceDto;
 import com.crm.sales.order.application.dto.OrderPulseDto;
 import com.crm.sales.order.application.dto.OrderReferenceDto;
+import com.crm.sales.order.application.dto.OrderStatsDto;
 import com.crm.sales.order.application.dto.OrderSummary;
 import com.crm.sales.order.application.port.OrderRepository;
 import com.crm.sales.order.application.query.OrderSearchQuery;
@@ -290,6 +293,16 @@ public class OrderApplicationService implements OrderFacade {
 
 	@Override
 	@Transactional(readOnly = true)
+	public OrderStatsDto getStats() {
+		TenantId tenantId = currentTenant.requireTenantId();
+		ActorId actorId = currentActor.requireActorId();
+		AuthorizedDataAccess access = authorizer.authorize(SystemPermission.SALES_ORDER_READ, ENTITY_TYPE);
+
+		return orderRepository.getStats(tenantId, actorId, access);
+	}
+
+	@Override
+	@Transactional(readOnly = true)
 	public OrderDocumentDto getDocument(OrderId orderId) {
 		TenantId tenantId = currentTenant.requireTenantId();
 		ActorId actorId = currentActor.requireActorId();
@@ -413,6 +426,41 @@ public class OrderApplicationService implements OrderFacade {
 				OrderStatus.DRAFT,
 				OrderStatus.CONFIRMED,
 				"Order confirmed"
+		);
+		orderRepository.saveStatusHistory(tenantId, history);
+
+		return mapToDetails(tenantId, order);
+	}
+
+	@Override
+	@Transactional
+	public OrderDetails complete(CompleteOrderCommand command) {
+		Objects.requireNonNull(command, "command must not be null");
+		TenantId tenantId = currentTenant.requireTenantId();
+		ActorId actorId = currentActor.requireActorId();
+		AuthorizedDataAccess access = authorizer.authorize(SystemPermission.SALES_ORDER_WRITE, ENTITY_TYPE);
+
+		Order order = orderRepository.findById(tenantId, command.orderId(), actorId, access)
+				.orElseThrow(() -> new DomainResourceNotFound(OrderErrorCode.ORDER_NOT_FOUND));
+
+		if (order.version() != command.expectedVersion()) {
+			throw new ResourceConflict(OrderErrorCode.ORDER_VERSION_CONFLICT);
+		}
+
+		Instant now = timeProvider.now();
+		OrderStatus prevStatus = order.status();
+		order.complete(actorId, now, command.expectedVersion());
+		orderRepository.save(order);
+
+		OrderStatusHistoryEntry history = new OrderStatusHistoryEntry(
+				identifierGenerator.nextId(),
+				command.orderId(),
+				now,
+				actorId,
+				"COMPLETE",
+				prevStatus,
+				OrderStatus.FULFILLED,
+				"Order fulfillment marked completed"
 		);
 		orderRepository.saveStatusHistory(tenantId, history);
 
@@ -723,6 +771,25 @@ public class OrderApplicationService implements OrderFacade {
 		}
 
 		orderRepository.delete(tenantId, command.orderId());
+	}
+
+	@Override
+	@Transactional
+	public int bulkChangeStatus(BulkChangeOrderStatusCommand command) {
+		Objects.requireNonNull(command, "command must not be null");
+		TenantId tenantId = currentTenant.requireTenantId();
+		ActorId actorId = currentActor.requireActorId();
+		authorizer.authorize(SystemPermission.SALES_ORDER_WRITE, ENTITY_TYPE);
+
+		Instant now = timeProvider.now();
+		return orderRepository.bulkChangeStatus(
+				tenantId,
+				command.orderIds(),
+				command.status(),
+				command.reason(),
+				actorId,
+				now
+		);
 	}
 
 	// Reference Resolution and Mapping

@@ -36,4 +36,16 @@ public interface LeadRepository {
 
 	void save(Lead lead);
 
+	com.crm.customer.lead.application.dto.LeadStatsDto getStats(TenantId tenantId,
+			ActorId actorId, AuthorizedDataAccess access);
+
+	int bulkUpdateStatus(TenantId tenantId, java.util.List<LeadId> leadIds, UUID statusId,
+			ActorId actorId, java.time.Instant now);
+
+	int bulkAssign(TenantId tenantId, java.util.List<LeadId> leadIds, String ownerType, UUID ownerId,
+			ActorId actorId, java.time.Instant now);
+
+	java.util.List<com.crm.customer.lead.application.dto.LeadDuplicateMatchDto> findPotentialDuplicates(
+			TenantId tenantId, String email, String phone, String companyName);
+
 }

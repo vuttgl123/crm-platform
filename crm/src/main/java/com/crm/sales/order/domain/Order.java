@@ -362,6 +362,21 @@ public class Order {
 		this.version++;
 	}
 
+	public void complete(ActorId actorId, Instant now, long expectedVersion) {
+		checkVersion(expectedVersion);
+		if (this.status != OrderStatus.CONFIRMED && this.status != OrderStatus.PROCESSING && this.status != OrderStatus.PARTIALLY_FULFILLED) {
+			throw new IllegalStateException("Only CONFIRMED, PROCESSING, or PARTIALLY_FULFILLED orders can be completed");
+		}
+		this.status = OrderStatus.FULFILLED;
+		this.fulfilledAt = now;
+		for (OrderLine line : this.lines) {
+			line.setFulfilledQuantity(line.quantity());
+		}
+		this.updatedBy = actorId;
+		this.updatedAt = now;
+		this.version++;
+	}
+
 	public void applyDerivedFulfillmentStatus(OrderStatus newStatus, ActorId actorId, Instant now) {
 		if (this.status == OrderStatus.CANCELLED || this.status == OrderStatus.CLOSED_PARTIAL) {
 			throw new IllegalStateException("Cannot apply fulfillment to a terminal order");

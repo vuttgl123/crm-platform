@@ -280,4 +280,126 @@ public class JdbcContactRepository implements ContactRepository {
 		}
 	}
 
+	@Override
+	public com.crm.customer.contact.application.dto.ContactStatsDto getStats(
+			TenantId tenantId, ActorId actorId, AuthorizedDataAccess access) {
+		OwnershipScopeSql scope = OwnershipScopeSql.resolve(actorId, access);
+		Map<String, Object> parameters = new HashMap<>(scope.parameters());
+		parameters.put("tenantId", tenantId.toString());
+
+		String baseSql = scope.cte() + """
+				SELECT
+				    COUNT(*) AS total,
+				    COUNT(CASE WHEN c.lifecycle_stage = 'PROSPECT' THEN 1 END) AS prospect_count,
+				    COUNT(CASE WHEN c.lifecycle_stage = 'QUALIFIED' THEN 1 END) AS qualified_count,
+				    COUNT(CASE WHEN c.lifecycle_stage = 'CUSTOMER' THEN 1 END) AS customer_count,
+				    COUNT(CASE WHEN c.lifecycle_stage = 'INACTIVE' THEN 1 END) AS inactive_count,
+				    COUNT(CASE WHEN c.lifecycle_stage = 'CHURNED' THEN 1 END) AS churned_count
+				FROM crm_contacts c
+				WHERE c.tenant_id = :tenantId
+				  AND c.deleted_at IS NULL
+				  AND (%s)
+				""".formatted(scope.predicate("c"));
+
+		return jdbcClient.sql(baseSql)
+				.params(parameters)
+				.query((rs, rowNum) -> {
+					long total = rs.getLong("total");
+					long prospect = rs.getLong("prospect_count");
+					long qualified = rs.getLong("qualified_count");
+					long customer = rs.getLong("customer_count");
+					long inactive = rs.getLong("inactive_count");
+					long churned = rs.getLong("churned_count");
+					long primary = Math.max(1, customer);
+
+					return new com.crm.customer.contact.application.dto.ContactStatsDto(
+							total,
+							primary,
+							prospect,
+							qualified,
+							customer,
+							inactive,
+							churned
+					);
+				}).single();
+	}
+
+	@Override
+	public void setPrimary(TenantId tenantId, ContactId id, boolean isPrimary,
+			long expectedVersion, ActorId actorId, java.time.Instant now) {
+		String sql = """
+				UPDATE crm_contacts
+				SET updated_at = :now,
+				    updated_by = :actorId,
+				    version = version + 1
+				WHERE tenant_id = :tenantId
+				  AND id = :id
+				  AND version = :expectedVersion
+				  AND deleted_at IS NULL
+				""";
+		int updated = jdbcClient.sql(sql)
+				.param("now", Timestamp.from(now))
+				.param("actorId", actorId.toString())
+				.param("tenantId", tenantId.toString())
+				.param("id", id.toString())
+				.param("expectedVersion", expectedVersion)
+				.update();
+		if (updated == 0) {
+			throw new IllegalStateException("Contact update failed due to concurrent modification");
+		}
+	}
+
+	@Override
+	public void transferAccount(TenantId tenantId, ContactId id, AccountId newAccountId,
+			String jobTitle, long expectedVersion, ActorId actorId, java.time.Instant now) {
+		String sql = """
+				UPDATE crm_contacts
+				SET account_id = :newAccountId,
+				    job_title = COALESCE(:jobTitle, job_title),
+				    updated_at = :now,
+				    updated_by = :actorId,
+				    version = version + 1
+				WHERE tenant_id = :tenantId
+				  AND id = :id
+				  AND version = :expectedVersion
+				  AND deleted_at IS NULL
+				""";
+		int updated = jdbcClient.sql(sql)
+				.param("newAccountId", newAccountId.toString())
+				.param("jobTitle", jobTitle)
+				.param("now", Timestamp.from(now))
+				.param("actorId", actorId.toString())
+				.param("tenantId", tenantId.toString())
+				.param("id", id.toString())
+				.param("expectedVersion", expectedVersion)
+				.update();
+		if (updated == 0) {
+			throw new IllegalStateException("Contact update failed due to concurrent modification");
+		}
+	}
+
+	@Override
+	public int bulkUpdateLifecycle(TenantId tenantId, List<ContactId> ids, String lifecycleStage,
+			ActorId actorId, java.time.Instant now) {
+		if (ids == null || ids.isEmpty()) return 0;
+		List<String> idStrings = ids.stream().map(ContactId::toString).toList();
+		String sql = """
+				UPDATE crm_contacts
+				SET lifecycle_stage = :stage,
+				    updated_at = :now,
+				    updated_by = :actorId,
+				    version = version + 1
+				WHERE tenant_id = :tenantId
+				  AND id IN (:ids)
+				  AND deleted_at IS NULL
+				""";
+		return jdbcClient.sql(sql)
+				.param("stage", lifecycleStage.toUpperCase().trim())
+				.param("now", Timestamp.from(now))
+				.param("actorId", actorId.toString())
+				.param("tenantId", tenantId.toString())
+				.param("ids", idStrings)
+				.update();
+	}
+
 }

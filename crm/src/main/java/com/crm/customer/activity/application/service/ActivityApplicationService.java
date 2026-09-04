@@ -258,4 +258,65 @@ public class ActivityApplicationService implements ActivityFacade {
 				activity.version());
 	}
 
+	@Override
+	@Transactional(readOnly = true)
+	public com.crm.customer.activity.application.dto.ActivityStatsDto getStats() {
+		TenantId tenantId = currentTenant.requireTenantId();
+		ActorId actorId = currentActor.requireActorId();
+		AuthorizedDataAccess access = authorizer.requireAccess(
+				SystemPermission.CRM_ACTIVITY_READ, ENTITY_TYPE);
+		return activityRepository.getStats(tenantId, actorId, access);
+	}
+
+	@Override
+	@Transactional
+	public ActivityDetails reschedule(com.crm.customer.activity.application.command.RescheduleActivityCommand command) {
+		Objects.requireNonNull(command, "command must not be null");
+		TenantId tenantId = currentTenant.requireTenantId();
+		ActorId actorId = currentActor.requireActorId();
+		authorizer.requireAccess(SystemPermission.CRM_ACTIVITY_WRITE, ENTITY_TYPE);
+
+		activityRepository.reschedule(
+				tenantId,
+				command.id(),
+				command.startsAt(),
+				command.dueAt(),
+				command.expectedVersion(),
+				actorId,
+				timeProvider.now()
+		);
+		return get(command.id());
+	}
+
+	@Override
+	@Transactional
+	public ActivityDetails cancel(com.crm.customer.activity.application.command.CancelActivityCommand command) {
+		Objects.requireNonNull(command, "command must not be null");
+		TenantId tenantId = currentTenant.requireTenantId();
+		ActorId actorId = currentActor.requireActorId();
+		authorizer.requireAccess(SystemPermission.CRM_ACTIVITY_WRITE, ENTITY_TYPE);
+
+		activityRepository.cancel(
+				tenantId,
+				command.id(),
+				command.cancelReason(),
+				command.expectedVersion(),
+				actorId,
+				timeProvider.now()
+		);
+		return get(command.id());
+	}
+
+	@Override
+	@Transactional
+	public int bulkComplete(com.crm.customer.activity.application.command.BulkCompleteActivitiesCommand command) {
+		Objects.requireNonNull(command, "command must not be null");
+		TenantId tenantId = currentTenant.requireTenantId();
+		ActorId actorId = currentActor.requireActorId();
+		authorizer.requireAccess(SystemPermission.CRM_ACTIVITY_WRITE, ENTITY_TYPE);
+
+		java.util.List<ActivityId> ids = command.activityIds().stream().map(ActivityId::new).toList();
+		return activityRepository.bulkComplete(tenantId, ids, command.outcomeCode(), actorId, timeProvider.now());
+	}
+
 }

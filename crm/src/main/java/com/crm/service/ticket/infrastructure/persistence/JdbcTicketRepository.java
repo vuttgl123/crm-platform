@@ -400,4 +400,123 @@ public class JdbcTicketRepository implements TicketRepository {
 		}
 	}
 
+	@Override
+	public com.crm.service.ticket.application.dto.TicketStatsDto getStats(
+			TenantId tenantId,
+			com.crm.sharedkernel.domain.ActorId actorId,
+			com.crm.foundation.security.AuthorizedDataAccess access) {
+		String sql = """
+				SELECT
+				    COUNT(*) AS total,
+				    COUNT(CASE WHEN t.status = 'NEW' OR t.status = 'OPEN' THEN 1 END) AS open_count,
+				    COUNT(CASE WHEN t.status = 'IN_PROGRESS' THEN 1 END) AS progress_count,
+				    COUNT(CASE WHEN t.status = 'PENDING_CUSTOMER' THEN 1 END) AS pending_count,
+				    COUNT(CASE WHEN t.status = 'RESOLVED' AND t.resolved_at >= CURRENT_DATE THEN 1 END) AS resolved_today_count,
+				    COUNT(CASE WHEN t.status = 'CLOSED' THEN 1 END) AS closed_count,
+				    COUNT(CASE WHEN t.priority = 'URGENT' AND t.status NOT IN ('RESOLVED', 'CLOSED') THEN 1 END) AS urgent_count
+				FROM service_tickets t
+				WHERE t.tenant_id = :tenantId
+				""";
+		return jdbcClient.sql(sql)
+				.param("tenantId", tenantId.value())
+				.query((rs, rowNum) -> new com.crm.service.ticket.application.dto.TicketStatsDto(
+						rs.getLong("total"),
+						rs.getLong("open_count"),
+						rs.getLong("progress_count"),
+						rs.getLong("pending_count"),
+						rs.getLong("resolved_today_count"),
+						rs.getLong("closed_count"),
+						rs.getLong("urgent_count")
+				)).single();
+	}
+
+	@Override
+	public void escalate(
+			TenantId tenantId,
+			TicketId id,
+			com.crm.service.ticket.domain.TicketPriority priority,
+			String reason,
+			long expectedVersion,
+			com.crm.sharedkernel.domain.ActorId actorId,
+			java.time.Instant now) {
+		String sql = """
+				UPDATE service_tickets
+				SET priority = :priority,
+				    updated_at = :now,
+				    updated_by = :actorId,
+				    version = version + 1
+				WHERE tenant_id = :tenantId
+				  AND id = :id
+				  AND version = :expectedVersion
+				""";
+		int updated = jdbcClient.sql(sql)
+				.param("priority", priority.name())
+				.param("now", Timestamp.from(now))
+				.param("actorId", actorId.value())
+				.param("tenantId", tenantId.value())
+				.param("id", id.value())
+				.param("expectedVersion", expectedVersion)
+				.update();
+		if (updated == 0) {
+			throw new IllegalStateException("Ticket escalation failed due to concurrent modification");
+		}
+	}
+
+	@Override
+	public int bulkAssign(
+			TenantId tenantId,
+			List<TicketId> ids,
+			java.util.UUID assignedUserId,
+			java.util.UUID assignedTeamId,
+			com.crm.sharedkernel.domain.ActorId actorId,
+			java.time.Instant now) {
+		if (ids == null || ids.isEmpty()) return 0;
+		List<UUID> idList = ids.stream().map(TicketId::value).toList();
+		String sql = """
+				UPDATE service_tickets
+				SET assigned_user_id = :assignedUserId,
+				    assigned_team_id = :assignedTeamId,
+				    updated_at = :now,
+				    updated_by = :actorId,
+				    version = version + 1
+				WHERE tenant_id = :tenantId
+				  AND id IN (:ids)
+				""";
+		return jdbcClient.sql(sql)
+				.param("assignedUserId", assignedUserId)
+				.param("assignedTeamId", assignedTeamId)
+				.param("now", Timestamp.from(now))
+				.param("actorId", actorId.value())
+				.param("tenantId", tenantId.value())
+				.param("ids", idList)
+				.update();
+	}
+
+	@Override
+	public int bulkChangeStatus(
+			TenantId tenantId,
+			List<TicketId> ids,
+			String status,
+			com.crm.sharedkernel.domain.ActorId actorId,
+			java.time.Instant now) {
+		if (ids == null || ids.isEmpty()) return 0;
+		List<UUID> idList = ids.stream().map(TicketId::value).toList();
+		String sql = """
+				UPDATE service_tickets
+				SET status = :status,
+				    updated_at = :now,
+				    updated_by = :actorId,
+				    version = version + 1
+				WHERE tenant_id = :tenantId
+				  AND id IN (:ids)
+				""";
+		return jdbcClient.sql(sql)
+				.param("status", status.toUpperCase().trim())
+				.param("now", Timestamp.from(now))
+				.param("actorId", actorId.value())
+				.param("tenantId", tenantId.value())
+				.param("ids", idList)
+				.update();
+	}
+
 }

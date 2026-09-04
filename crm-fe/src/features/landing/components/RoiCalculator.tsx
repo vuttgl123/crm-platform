@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import { Clock, TrendingUp, ShieldCheck, Zap, ArrowRight } from 'lucide-react';
 import { AnimatedCounter } from './AnimatedCounter';
 import { Button } from '@/components/ui/button';
@@ -16,32 +15,24 @@ interface TeamTier {
 const teamTiers: TeamTier[] = [
   {
     size: 10,
-    label: '10 Reps',
-    hoursSavedMonth: 340,
-    revenueProtectedVND: 420,
+    label: '10 Sales Reps',
+    hoursSavedMonth: 320,
+    revenueProtectedVND: 1200,
     cycleReductionPct: 24,
     approvalMinutes: 15,
   },
   {
     size: 25,
-    label: '25 Reps',
-    hoursSavedMonth: 850,
-    revenueProtectedVND: 1150,
-    cycleReductionPct: 28,
-    approvalMinutes: 15,
-  },
-  {
-    size: 50,
-    label: '50 Reps',
-    hoursSavedMonth: 1700,
-    revenueProtectedVND: 2400,
-    cycleReductionPct: 32,
+    label: '25 Sales Reps',
+    hoursSavedMonth: 800,
+    revenueProtectedVND: 3500,
+    cycleReductionPct: 35,
     approvalMinutes: 12,
   },
   {
-    size: 100,
-    label: '100+ Reps',
-    hoursSavedMonth: 3600,
+    size: 50,
+    label: '50 Sales Reps',
+    hoursSavedMonth: 1650,
     revenueProtectedVND: 5800,
     cycleReductionPct: 38,
     approvalMinutes: 10,
@@ -49,7 +40,6 @@ const teamTiers: TeamTier[] = [
 ];
 
 export const RoiCalculator: React.FC = () => {
-  const { t } = useTranslation();
   const [selectedSize, setSelectedSize] = useState<number>(25);
 
   const currentTier =

@@ -246,7 +246,60 @@ export interface UpdateActivityParticipantRequest {
   role: ActivityParticipantRole;
 }
 
+export interface ActivityStatsDto {
+  totalActivities: number;
+  dueTodayCount: number;
+  overdueCount: number;
+  completedCount: number;
+  callsCount: number;
+  meetingsCount: number;
+  tasksCount: number;
+}
+
+export interface RescheduleActivityRequest {
+  startsAt?: string;
+  dueAt?: string;
+  version: number;
+}
+
+export interface CancelActivityRequest {
+  cancelReason?: string;
+  version: number;
+}
+
+export interface BulkCompleteActivitiesRequest {
+  activityIds: string[];
+  outcomeCode?: string;
+}
+
 export const activityApi = {
+  getStats: async (): Promise<ActivityStatsDto> => {
+    return apiFetch<ActivityStatsDto>('/activities/stats', {
+      method: 'GET',
+    });
+  },
+
+  reschedule: async (id: string, data: RescheduleActivityRequest): Promise<ActivityDetails> => {
+    return apiFetch<ActivityDetails>(`/activities/${id}/reschedule`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  cancel: async (id: string, data: CancelActivityRequest): Promise<ActivityDetails> => {
+    return apiFetch<ActivityDetails>(`/activities/${id}/cancel`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  bulkComplete: async (data: BulkCompleteActivitiesRequest): Promise<{ completedCount: number }> => {
+    return apiFetch<{ completedCount: number }>('/activities/bulk/complete', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
   search: async (params: ActivitySearchParams = {}): Promise<PageResult<ActivitySummary>> => {
     const searchParams = new URLSearchParams();
     if (params.q?.trim()) searchParams.set('q', params.q.trim());

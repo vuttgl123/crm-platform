@@ -114,4 +114,46 @@ public final class TicketController {
 		return ResponseEntity.noContent().build();
 	}
 
+	@GetMapping("/stats")
+	public com.crm.service.ticket.application.dto.TicketStatsDto getStats() {
+		return tickets.getStats();
+	}
+
+	@PostMapping("/{id}/escalate")
+	public TicketResponse escalate(
+			@PathVariable UUID id,
+			@Valid @RequestBody EscalateTicketRequest request) {
+		TicketDetails updated = tickets.escalate(
+				new com.crm.service.ticket.application.command.EscalateTicketCommand(
+						new TicketId(id),
+						request.priority(),
+						request.escalationReason(),
+						request.version()
+				));
+		return mapper.toResponse(updated);
+	}
+
+	@PostMapping("/bulk/assign")
+	public ResponseEntity<java.util.Map<String, Object>> bulkAssign(
+			@Valid @RequestBody BulkAssignTicketsRequest request) {
+		int assignedCount = tickets.bulkAssign(
+				new com.crm.service.ticket.application.command.BulkAssignTicketsCommand(
+						request.ticketIds(),
+						request.assignedUserId(),
+						request.assignedTeamId()
+				));
+		return ResponseEntity.ok(java.util.Map.of("assignedCount", assignedCount));
+	}
+
+	@PostMapping("/bulk/status")
+	public ResponseEntity<java.util.Map<String, Object>> bulkChangeStatus(
+			@Valid @RequestBody BulkChangeTicketStatusRequest request) {
+		int updatedCount = tickets.bulkChangeStatus(
+				new com.crm.service.ticket.application.command.BulkChangeTicketStatusCommand(
+						request.ticketIds(),
+						request.status()
+				));
+		return ResponseEntity.ok(java.util.Map.of("updatedCount", updatedCount));
+	}
+
 }

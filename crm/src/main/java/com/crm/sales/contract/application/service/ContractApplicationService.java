@@ -308,4 +308,93 @@ public class ContractApplicationService implements ContractFacade {
 		contractRepository.delete(tenantId, id, version);
 	}
 
+	@Override
+	@Transactional(readOnly = true)
+	public com.crm.sales.contract.application.dto.ContractStatsDto getStats() {
+		TenantId tenantId = currentTenant.requireTenantId();
+		ActorId actorId = currentActor.requireActorId();
+		authorizer.requirePermission(SystemPermission.SALES_CONTRACT_READ);
+		return contractRepository.getStats(tenantId, actorId, null);
+	}
+
+	@Override
+	@Transactional
+	public ContractDetails activate(ContractId id, long version) {
+		Objects.requireNonNull(id, "id must not be null");
+		TenantId tenantId = currentTenant.requireTenantId();
+		ActorId actorId = currentActor.requireActorId();
+		authorizer.requirePermission(SystemPermission.SALES_CONTRACT_WRITE);
+
+		Contract contract = contractRepository.findById(tenantId, id)
+				.orElseThrow(() -> new DomainResourceNotFound(ContractErrorCode.CONTRACT_NOT_FOUND.code()));
+
+		if (contract.version() != version) {
+			throw new ResourceConflict(ContractErrorCode.CONTRACT_VERSION_CONFLICT.code());
+		}
+
+		contract.activate(actorId, timeProvider.now());
+		contractRepository.update(contract);
+		return ContractDetails.from(contract);
+	}
+
+	@Override
+	@Transactional
+	public ContractDetails renew(com.crm.sales.contract.application.command.RenewContractCommand command) {
+		Objects.requireNonNull(command, "command must not be null");
+		TenantId tenantId = currentTenant.requireTenantId();
+		ActorId actorId = currentActor.requireActorId();
+		authorizer.requirePermission(SystemPermission.SALES_CONTRACT_WRITE);
+
+		Contract source = contractRepository.findById(tenantId, command.id())
+				.orElseThrow(() -> new DomainResourceNotFound(ContractErrorCode.CONTRACT_NOT_FOUND.code()));
+
+		if (source.version() != command.expectedVersion()) {
+			throw new ResourceConflict(ContractErrorCode.CONTRACT_VERSION_CONFLICT.code());
+		}
+
+		if (contractRepository.existsByContractNumber(tenantId, command.newContractNumber())) {
+			throw new ResourceConflict(ContractErrorCode.CONTRACT_NUMBER_EXISTS.code());
+		}
+
+		Instant now = timeProvider.now();
+		ContractId newId = new ContractId(identifierGenerator.generate());
+		Contract renewal = Contract.create(
+				tenantId,
+				newId,
+				command.newContractNumber(),
+				source.accountId(),
+				source.contactId(),
+				source.opportunityId(),
+				source.quoteId(),
+				source.orderId(),
+				source.ownerUserId(),
+				source.contractType(),
+				source.currencyCode(),
+				command.contractValue() != null ? command.contractValue() : source.contractValue(),
+				command.effectiveFrom() != null ? command.effectiveFrom() : source.effectiveTo(),
+				command.effectiveTo() != null ? command.effectiveTo() : (command.effectiveFrom() != null ? command.effectiveFrom().plusYears(1) : null),
+				command.autoRenew() != null ? command.autoRenew() : source.autoRenew(),
+				source.renewalNoticeDays(),
+				source.documentReference(),
+				source.termsSnapshot(),
+				actorId,
+				now
+		);
+
+		contractRepository.insert(renewal);
+		return ContractDetails.from(renewal);
+	}
+
+	@Override
+	@Transactional
+	public int bulkSubmitReview(com.crm.sales.contract.application.command.BulkSubmitContractReviewCommand command) {
+		Objects.requireNonNull(command, "command must not be null");
+		TenantId tenantId = currentTenant.requireTenantId();
+		ActorId actorId = currentActor.requireActorId();
+		authorizer.requirePermission(SystemPermission.SALES_CONTRACT_WRITE);
+
+		java.util.List<ContractId> ids = command.contractIds().stream().map(ContractId::new).toList();
+		return contractRepository.bulkSubmitReview(tenantId, ids, actorId, timeProvider.now());
+	}
+
 }

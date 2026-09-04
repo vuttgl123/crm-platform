@@ -261,4 +261,122 @@ public class JdbcActivityRepository implements ActivityRepository {
 		}
 	}
 
+	@Override
+	public com.crm.customer.activity.application.dto.ActivityStatsDto getStats(
+			TenantId tenantId, ActorId actorId, AuthorizedDataAccess access) {
+		OwnershipScopeSql scope = OwnershipScopeSql.resolve(actorId, access);
+		Map<String, Object> parameters = new HashMap<>(scope.parameters());
+		parameters.put("tenantId", tenantId.toString());
+
+		String baseSql = scope.cte() + """
+				SELECT
+				    COUNT(*) AS total,
+				    COUNT(CASE WHEN a.status = 'PENDING' AND DATE(a.scheduled_start_at) = CURRENT_DATE THEN 1 END) AS due_today,
+				    COUNT(CASE WHEN a.status = 'PENDING' AND a.scheduled_start_at < CURRENT_TIMESTAMP THEN 1 END) AS overdue,
+				    COUNT(CASE WHEN a.status = 'COMPLETED' THEN 1 END) AS completed,
+				    COUNT(CASE WHEN a.activity_type = 'CALL' THEN 1 END) AS calls,
+				    COUNT(CASE WHEN a.activity_type = 'MEETING' THEN 1 END) AS meetings,
+				    COUNT(CASE WHEN a.activity_type = 'TASK' THEN 1 END) AS tasks
+				FROM crm_activities a
+				WHERE a.tenant_id = :tenantId
+				  AND a.deleted_at IS NULL
+				  AND (%s)
+				""".formatted(scope.predicate("a"));
+
+		return jdbcClient.sql(baseSql)
+				.params(parameters)
+				.query((rs, rowNum) -> new com.crm.customer.activity.application.dto.ActivityStatsDto(
+						rs.getLong("total"),
+						rs.getLong("due_today"),
+						rs.getLong("overdue"),
+						rs.getLong("completed"),
+						rs.getLong("calls"),
+						rs.getLong("meetings"),
+						rs.getLong("tasks")
+				)).single();
+	}
+
+	@Override
+	public void reschedule(TenantId tenantId, ActivityId id, java.time.Instant startsAt,
+			java.time.Instant dueAt, long expectedVersion, ActorId actorId, java.time.Instant now) {
+		String sql = """
+				UPDATE crm_activities
+				SET scheduled_start_at = :startsAt,
+				    scheduled_end_at = :dueAt,
+				    updated_at = :now,
+				    updated_by = :actorId,
+				    version = version + 1
+				WHERE tenant_id = :tenantId
+				  AND id = :id
+				  AND version = :expectedVersion
+				  AND deleted_at IS NULL
+				""";
+		int updated = jdbcClient.sql(sql)
+				.param("startsAt", startsAt != null ? Timestamp.from(startsAt) : null)
+				.param("dueAt", dueAt != null ? Timestamp.from(dueAt) : null)
+				.param("now", Timestamp.from(now))
+				.param("actorId", actorId.toString())
+				.param("tenantId", tenantId.toString())
+				.param("id", id.toString())
+				.param("expectedVersion", expectedVersion)
+				.update();
+		if (updated == 0) {
+			throw new IllegalStateException("Activity update failed due to concurrent modification");
+		}
+	}
+
+	@Override
+	public void cancel(TenantId tenantId, ActivityId id, String cancelReason,
+			long expectedVersion, ActorId actorId, java.time.Instant now) {
+		String sql = """
+				UPDATE crm_activities
+				SET status = 'CANCELLED',
+				    outcome_code = :cancelReason,
+				    updated_at = :now,
+				    updated_by = :actorId,
+				    version = version + 1
+				WHERE tenant_id = :tenantId
+				  AND id = :id
+				  AND version = :expectedVersion
+				  AND deleted_at IS NULL
+				""";
+		int updated = jdbcClient.sql(sql)
+				.param("cancelReason", cancelReason)
+				.param("now", Timestamp.from(now))
+				.param("actorId", actorId.toString())
+				.param("tenantId", tenantId.toString())
+				.param("id", id.toString())
+				.param("expectedVersion", expectedVersion)
+				.update();
+		if (updated == 0) {
+			throw new IllegalStateException("Activity update failed due to concurrent modification");
+		}
+	}
+
+	@Override
+	public int bulkComplete(TenantId tenantId, List<ActivityId> ids, String outcomeCode,
+			ActorId actorId, java.time.Instant now) {
+		if (ids == null || ids.isEmpty()) return 0;
+		List<String> idStrings = ids.stream().map(ActivityId::toString).toList();
+		String sql = """
+				UPDATE crm_activities
+				SET status = 'COMPLETED',
+				    completed_at = :now,
+				    outcome_code = COALESCE(:outcomeCode, outcome_code),
+				    updated_at = :now,
+				    updated_by = :actorId,
+				    version = version + 1
+				WHERE tenant_id = :tenantId
+				  AND id IN (:ids)
+				  AND deleted_at IS NULL
+				""";
+		return jdbcClient.sql(sql)
+				.param("outcomeCode", outcomeCode)
+				.param("now", Timestamp.from(now))
+				.param("actorId", actorId.toString())
+				.param("tenantId", tenantId.toString())
+				.param("ids", idStrings)
+				.update();
+	}
+
 }

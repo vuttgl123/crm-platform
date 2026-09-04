@@ -15,7 +15,6 @@ import {
   Phone, 
   Building2, 
   ArrowRight,
-  Check
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -110,6 +109,8 @@ type DemoRequestFormData = z.infer<ReturnType<typeof createDemoRequestSchema>>;
 
 export interface DemoRequestFormProps {
   headingLevel?: 'h1' | 'h2' | 'h3';
+  headingAs?: 'h1' | 'h2' | 'h3';
+  privacyPolicyUrl?: string;
   salesEmail?: string;
   salesPhone?: string;
   onSuccess?: () => void;
@@ -117,6 +118,7 @@ export interface DemoRequestFormProps {
 
 export function DemoRequestForm({
   headingLevel = 'h2',
+  headingAs,
   salesEmail,
   salesPhone,
   onSuccess,
@@ -148,7 +150,6 @@ export function DemoRequestForm({
       message: '',
       consent: false,
     },
-    mode: 'onTouched',
   });
 
   const getUtmParams = () => {
@@ -176,12 +177,14 @@ export function DemoRequestForm({
       industry: data.industry as DemoIndustry,
       primaryNeed: data.primaryNeed as DemoPrimaryNeed,
       message: data.message || undefined,
-      preferredLanguage: i18n.language === 'vi' ? 'vi' : 'en',
+      privacyConsent: true,
+      locale: i18n.language === 'vi' ? 'vi' : 'en',
+      sourcePath: location.pathname,
       ...utm,
     };
 
     try {
-      await demoRequestService.submitPublicDemoRequest(payload);
+      await demoRequestService.submit(payload);
       setSubmittedData(data);
       setSubmissionStatus('success');
       if (onSuccess) onSuccess();
@@ -202,7 +205,7 @@ export function DemoRequestForm({
     setErrorMessage(null);
   };
 
-  const FormHeading = headingLevel;
+  const FormHeading = headingAs || headingLevel;
 
   // Options mapped from keys
   const companySizeOptions = [

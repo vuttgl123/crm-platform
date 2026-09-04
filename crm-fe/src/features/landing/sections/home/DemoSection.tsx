@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { ShieldCheck, CheckCircle2, Clock } from 'lucide-react';
+import { ShieldCheck, Clock } from 'lucide-react';
 import { env } from '@/config/env';
 import { LandingSection } from '../../components/LandingSection';
 import { SectionHeading } from '../../components/SectionHeading';

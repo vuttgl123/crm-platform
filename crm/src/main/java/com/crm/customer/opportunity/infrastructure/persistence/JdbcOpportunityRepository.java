@@ -384,4 +384,178 @@ public class JdbcOpportunityRepository implements OpportunityRepository {
 		}
 	}
 
+	@Override
+	public com.crm.customer.opportunity.application.dto.OpportunityStatsDto getStats(
+			TenantId tenantId, ActorId actorId, AuthorizedDataAccess access) {
+		OwnershipScopeSql scope = OwnershipScopeSql.resolve(actorId, access);
+		Map<String, Object> parameters = new HashMap<>(scope.parameters());
+		parameters.put("tenantId", tenantId.toString());
+
+		String baseSql = scope.cte() + """
+				SELECT
+				    COUNT(*) AS total,
+				    COUNT(CASE WHEN o.status = 'OPEN' THEN 1 END) AS open_count,
+				    COUNT(CASE WHEN o.status = 'WON' THEN 1 END) AS won_count,
+				    COUNT(CASE WHEN o.status = 'LOST' THEN 1 END) AS lost_count,
+				    COALESCE(SUM(CASE WHEN o.status = 'OPEN' THEN o.amount ELSE 0 END), 0) AS total_pipeline_val,
+				    COALESCE(SUM(CASE WHEN o.status = 'OPEN' THEN o.amount * COALESCE(o.probability, 0) / 100.0 ELSE 0 END), 0) AS weighted_pipeline_val,
+				    COALESCE(SUM(CASE WHEN o.status = 'WON' THEN o.amount ELSE 0 END), 0) AS won_revenue_val
+				FROM crm_opportunities o
+				WHERE o.tenant_id = :tenantId
+				  AND o.deleted_at IS NULL
+				  AND (%s)
+				""".formatted(scope.predicate("o"));
+
+		return jdbcClient.sql(baseSql)
+				.params(parameters)
+				.query((rs, rowNum) -> {
+					long total = rs.getLong("total");
+					long openCount = rs.getLong("open_count");
+					long wonCount = rs.getLong("won_count");
+					long lostCount = rs.getLong("lost_count");
+					java.math.BigDecimal totalPipe = rs.getBigDecimal("total_pipeline_val");
+					java.math.BigDecimal weightedPipe = rs.getBigDecimal("weighted_pipeline_val");
+					java.math.BigDecimal wonRev = rs.getBigDecimal("won_revenue_val");
+
+					long closedTotal = wonCount + lostCount;
+					double winRate = closedTotal > 0 ? (wonCount * 100.0) / closedTotal : 0.0;
+					java.math.BigDecimal avgDeal = openCount > 0
+							? totalPipe.divide(java.math.BigDecimal.valueOf(openCount), 2, java.math.RoundingMode.HALF_UP)
+							: java.math.BigDecimal.ZERO;
+
+					return new com.crm.customer.opportunity.application.dto.OpportunityStatsDto(
+							total,
+							openCount,
+							wonCount,
+							lostCount,
+							totalPipe,
+							weightedPipe,
+							wonRev,
+							Math.round(winRate * 10.0) / 10.0,
+							avgDeal
+					);
+				}).single();
+	}
+
+	@Override
+	public void transitionStage(TenantId tenantId, OpportunityId id, UUID stageId,
+			Integer probability, long expectedVersion, ActorId actorId, java.time.Instant now) {
+		String sql = """
+				UPDATE crm_opportunities
+				SET current_stage_id = :stageId,
+				    probability = COALESCE(:probability, probability),
+				    updated_at = :now,
+				    updated_by = :actorId,
+				    version = version + 1
+				WHERE tenant_id = :tenantId
+				  AND id = :id
+				  AND version = :expectedVersion
+				  AND deleted_at IS NULL
+				""";
+		int updated = jdbcClient.sql(sql)
+				.param("stageId", stageId.toString())
+				.param("probability", probability)
+				.param("now", Timestamp.from(now))
+				.param("actorId", actorId.toString())
+				.param("tenantId", tenantId.toString())
+				.param("id", id.toString())
+				.param("expectedVersion", expectedVersion)
+				.update();
+		if (updated == 0) {
+			throw new IllegalStateException("Opportunity update failed due to concurrent modification");
+		}
+	}
+
+	@Override
+	public void closeWon(TenantId tenantId, OpportunityId id, java.math.BigDecimal actualAmount,
+			java.time.Instant closedDate, long expectedVersion, ActorId actorId, java.time.Instant now) {
+		String sql = """
+				UPDATE crm_opportunities
+				SET status = 'WON',
+				    amount = COALESCE(:amount, amount),
+				    actual_close_date = :closedDate,
+				    probability = 100,
+				    updated_at = :now,
+				    updated_by = :actorId,
+				    version = version + 1
+				WHERE tenant_id = :tenantId
+				  AND id = :id
+				  AND version = :expectedVersion
+				  AND deleted_at IS NULL
+				""";
+		int updated = jdbcClient.sql(sql)
+				.param("amount", actualAmount)
+				.param("closedDate", closedDate != null ? Timestamp.from(closedDate) : Timestamp.from(now))
+				.param("now", Timestamp.from(now))
+				.param("actorId", actorId.toString())
+				.param("tenantId", tenantId.toString())
+				.param("id", id.toString())
+				.param("expectedVersion", expectedVersion)
+				.update();
+		if (updated == 0) {
+			throw new IllegalStateException("Opportunity update failed due to concurrent modification");
+		}
+	}
+
+	@Override
+	public void closeLost(TenantId tenantId, OpportunityId id, UUID lostReasonId,
+			String competitorNotes, long expectedVersion, ActorId actorId, java.time.Instant now) {
+		String sql = """
+				UPDATE crm_opportunities
+				SET status = 'LOST',
+				    lost_reason_id = :lostReasonId,
+				    lost_reason_notes = :notes,
+				    probability = 0,
+				    updated_at = :now,
+				    updated_by = :actorId,
+				    version = version + 1
+				WHERE tenant_id = :tenantId
+				  AND id = :id
+				  AND version = :expectedVersion
+				  AND deleted_at IS NULL
+				""";
+		int updated = jdbcClient.sql(sql)
+				.param("lostReasonId", lostReasonId != null ? lostReasonId.toString() : null)
+				.param("notes", competitorNotes)
+				.param("now", Timestamp.from(now))
+				.param("actorId", actorId.toString())
+				.param("tenantId", tenantId.toString())
+				.param("id", id.toString())
+				.param("expectedVersion", expectedVersion)
+				.update();
+		if (updated == 0) {
+			throw new IllegalStateException("Opportunity update failed due to concurrent modification");
+		}
+	}
+
+	@Override
+	public void reassign(TenantId tenantId, OpportunityId id, String ownerType, UUID ownerId,
+			long expectedVersion, ActorId actorId, java.time.Instant now) {
+		boolean isUser = "USER".equalsIgnoreCase(ownerType);
+		String sql = """
+				UPDATE crm_opportunities
+				SET owner_user_id = :userId,
+				    owner_team_id = :teamId,
+				    updated_at = :now,
+				    updated_by = :actorId,
+				    version = version + 1
+				WHERE tenant_id = :tenantId
+				  AND id = :id
+				  AND version = :expectedVersion
+				  AND deleted_at IS NULL
+				""";
+		int updated = jdbcClient.sql(sql)
+				.param("userId", isUser ? ownerId.toString() : null)
+				.param("teamId", !isUser ? ownerId.toString() : null)
+				.param("now", Timestamp.from(now))
+				.param("actorId", actorId.toString())
+				.param("tenantId", tenantId.toString())
+				.param("id", id.toString())
+				.param("expectedVersion", expectedVersion)
+				.update();
+		if (updated == 0) {
+			throw new IllegalStateException("Opportunity update failed due to concurrent modification");
+		}
+	}
+
 }

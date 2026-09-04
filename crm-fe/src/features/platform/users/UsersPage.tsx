@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 import {
   Users,
@@ -10,12 +10,13 @@ import {
   Plus,
   Loader2,
   UserCheck,
-  X,
   RotateCcw,
-  User,
   MoreHorizontal,
   Eye,
   Edit,
+  ShieldAlert,
+  UserX,
+  UserCheck2,
   Trash2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -26,7 +27,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
@@ -40,7 +40,7 @@ import {
 import { EmptyState } from '@/components/common/EmptyState';
 import { StandardPageHeader } from '@/components/common/StandardPageHeader';
 import { StandardPagination } from '@/components/common/StandardPagination';
-import { StandardGlidingTabs } from '@/components/common/StandardGlidingTabs';
+import { StandardGlidingTabs, TabItem } from '@/components/common/StandardGlidingTabs';
 import { ActionTooltip } from '@/components/ui/action-tooltip';
 import { useAuth } from '@/core/session/useAuth';
 import { CreateUserWizardModal } from './components/CreateUserWizardModal';
@@ -50,19 +50,13 @@ import {
   MembershipRequestItem,
 } from '@/services/api/membershipApi';
 import { roleApi, RoleSummaryResponse } from '@/services/api/roleApi';
+import {
+  userApi,
+  PlatformUserItem,
+  UserStatsData,
+} from '@/services/api/userApi';
 
-export interface ActiveUser {
-  id: string;
-  displayName: string;
-  email: string;
-  roleId: string;
-  roleName: string;
-  status: 'ACTIVE' | 'INACTIVE';
-  joinedAt: string;
-  isTenantAdmin?: boolean;
-  requestId?: string;
-  requestVersion?: number;
-}
+type UserTab = 'active' | 'pending';
 
 export const UsersPage: React.FC = () => {
   const { session } = useAuth();
@@ -70,35 +64,42 @@ export const UsersPage: React.FC = () => {
     Boolean(session?.membership?.is_tenant_admin) ||
     Boolean(session?.grantedPermissions?.includes('platform_user.manage'));
 
-  const [pendingRequests, setPendingRequests] = useState<MembershipRequestItem[]>([]);
-  const [selectedRoleIds, setSelectedRoleIds] = useState<Record<string, string>>({});
-  const [roles, setRoles] = useState<RoleSummaryResponse[]>([]);
+  const [activeTab, setActiveTab] = useState<UserTab>('active');
   const [loading, setLoading] = useState(false);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 
-  const [activeUsers, setActiveUsers] = useState<ActiveUser[]>([]);
+  // Stats
+  const [stats, setStats] = useState<UserStatsData | null>(null);
+
+  // Active Users Data & Filtering
+  const [activeUsers, setActiveUsers] = useState<PlatformUserItem[]>([]);
+  const [totalUsers, setTotalUsers] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRoleFilter, setSelectedRoleFilter] = useState('ALL');
   const [statusFilter, setStatusFilter] = useState('ALL');
-  const [isCreateWizardOpen, setIsCreateWizardOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState('active');
 
-  // Slide-over View & Edit Sheet state
+  // Pending Membership Requests Data
+  const [pendingRequests, setPendingRequests] = useState<MembershipRequestItem[]>([]);
+  const [selectedRoleIds, setSelectedRoleIds] = useState<Record<string, string>>({});
+
+  // Roles Catalog
+  const [roles, setRoles] = useState<RoleSummaryResponse[]>([]);
+
+  // Modals & Sheets
+  const [isCreateWizardOpen, setIsCreateWizardOpen] = useState(false);
   const [editorSheet, setEditorSheet] = useState<{
     isOpen: boolean;
     mode: 'view' | 'edit';
-    user: ActiveUser | null;
+    user: PlatformUserItem | null;
   }>({
     isOpen: false,
     mode: 'view',
     user: null,
   });
 
-  // Pagination State for Active Users
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-
-  // Fetch Real Roles Catalog from Backend API
+  // Fetch Roles Catalog
   const fetchRoles = useCallback(async () => {
     try {
       const availableRoles = await roleApi.getRoles();
@@ -108,91 +109,77 @@ export const UsersPage: React.FC = () => {
     }
   }, []);
 
-  // Fetch Both Pending Requests and Approved Active Members from Backend API
-  const fetchMembershipRequests = useCallback(async () => {
+  // Fetch Stats
+  const fetchStats = useCallback(async () => {
+    try {
+      const s = await userApi.getUserStats();
+      setStats(s);
+    } catch {
+      // Fallback
+    }
+  }, []);
+
+  // Fetch Active Users (Server-side search & pagination)
+  const fetchActiveUsers = useCallback(async () => {
     setLoading(true);
+    try {
+      const res = await userApi.searchUsers({
+        query: searchQuery.trim() || undefined,
+        roleId: selectedRoleFilter !== 'ALL' ? selectedRoleFilter : undefined,
+        status: statusFilter !== 'ALL' ? statusFilter : undefined,
+        page: currentPage - 1,
+        size: pageSize,
+      });
+
+      setActiveUsers(res?.items || []);
+      setTotalUsers(res?.totalElements || 0);
+    } catch {
+      setActiveUsers([]);
+      setTotalUsers(0);
+      toast.error('Unable to retrieve user directory from server');
+    } finally {
+      setLoading(false);
+    }
+  }, [searchQuery, selectedRoleFilter, statusFilter, currentPage, pageSize]);
+
+  // Fetch Pending Requests
+  const fetchMembershipRequests = useCallback(async () => {
     try {
       const res = await membershipApi.searchRequests();
       const allRequests: MembershipRequestItem[] = res?.items || (Array.isArray(res) ? res : []);
-
-      // 1. Filter PENDING requests
       const pending = allRequests.filter((r) => r.status === 'PENDING');
       setPendingRequests(pending);
 
-      // Auto-assign default role ID in state for pending items
       const initialRoleMap: Record<string, string> = {};
       pending.forEach((req) => {
         initialRoleMap[req.id] = roles[0]?.id || '';
       });
       setSelectedRoleIds((prev) => ({ ...initialRoleMap, ...prev }));
-
-      // 2. Filter APPROVED requests -> Active Users
-      const approved = allRequests.filter((r) => r.status === 'APPROVED');
-      const realActiveUsers: ActiveUser[] = approved.map((req) => {
-        return {
-          id: req.requester.id,
-          displayName: req.requester.displayName || req.requester.email.split('@')[0],
-          email: req.requester.email,
-          roleId: roles[0]?.id || 'role-member',
-          roleName: 'Enterprise Member',
-          status: 'ACTIVE',
-          joinedAt: req.reviewedAt || req.requestedAt || new Date().toISOString(),
-          isTenantAdmin: false,
-          requestId: req.id,
-          requestVersion: req.version,
-        };
-      });
-
-      // 3. Add Current Session User as Tenant Admin if not present
-      if (session?.user) {
-        const sessionUserId = session.user.id;
-        const exists = realActiveUsers.some((u) => u.id === sessionUserId || u.email === session.user?.email);
-        if (!exists) {
-          realActiveUsers.unshift({
-            id: sessionUserId,
-            displayName: session.user.display_name || session.user.email?.split('@')[0] || 'Administrator',
-            email: session.user.email || 'admin@enterprise.com',
-            roleId: 'role-admin',
-            roleName: session.membership?.is_tenant_admin ? 'Tenant Admin (Master)' : 'Platform Administrator',
-            status: 'ACTIVE',
-            joinedAt: new Date().toISOString(),
-            isTenantAdmin: Boolean(session.membership?.is_tenant_admin),
-          });
-        }
-      }
-
-      // 4. Enrich with custom local demo accounts
-      const enrichedUsers = realActiveUsers.map((u) => {
-        const savedRoleId = localStorage.getItem(`user_role_${u.id}`);
-        if (savedRoleId) {
-          const match = roles.find((r) => r.id === savedRoleId);
-          if (match) {
-            return { ...u, roleId: match.id, roleName: match.name };
-          }
-        }
-        return u;
-      });
-
-      setActiveUsers(enrichedUsers);
     } catch {
-      toast.error('Unable to retrieve membership data from server');
-    } finally {
-      setLoading(false);
+      setPendingRequests([]);
     }
-  }, [roles, session]);
+  }, [roles]);
 
   useEffect(() => {
     fetchRoles();
-  }, [fetchRoles]);
+    fetchStats();
+  }, [fetchRoles, fetchStats]);
 
   useEffect(() => {
-    fetchMembershipRequests();
-  }, [fetchMembershipRequests]);
+    if (activeTab === 'active') {
+      fetchActiveUsers();
+    } else {
+      fetchMembershipRequests();
+    }
+  }, [activeTab, fetchActiveUsers, fetchMembershipRequests]);
 
-  const activePendingCount = pendingRequests.length;
-
-  const getEffectiveRoleId = (user: ActiveUser) => {
-    return user.roleId || (roles[0] ? roles[0].id : '');
+  const handleRefresh = () => {
+    fetchStats();
+    if (activeTab === 'active') {
+      fetchActiveUsers();
+    } else {
+      fetchMembershipRequests();
+    }
   };
 
   const handleApprove = async (req: MembershipRequestItem) => {
@@ -202,8 +189,6 @@ export const UsersPage: React.FC = () => {
     }
 
     const selectedRoleId = selectedRoleIds[req.id] || (roles[0] ? roles[0].id : '');
-    const assignedRole = roles.find((r) => r.id === selectedRoleId);
-
     setActionLoadingId(req.id);
     try {
       await membershipApi.approveRequest(req.id, {
@@ -212,49 +197,13 @@ export const UsersPage: React.FC = () => {
       });
 
       toast.success(`Approved account "${req.requester.displayName || req.requester.email}" successfully!`);
-
-      const approvedUser: ActiveUser = {
-        id: req.requester.id,
-        displayName: req.requester.displayName || req.requester.email,
-        email: req.requester.email,
-        roleId: selectedRoleId,
-        roleName: assignedRole?.name || 'Enterprise Member',
-        status: 'ACTIVE',
-        joinedAt: new Date().toISOString(),
-        isTenantAdmin: false,
-        requestId: req.id,
-        requestVersion: req.version + 1,
-      };
-
-      setActiveUsers((prev) => [approvedUser, ...prev.filter((u) => u.id !== approvedUser.id)]);
       fetchMembershipRequests();
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Unable to approve membership request.';
-      toast.error(msg);
+      fetchStats();
+      fetchActiveUsers();
+    } catch {
+      toast.error('Failed to approve membership request.');
     } finally {
       setActionLoadingId(null);
-    }
-  };
-
-  const handleChangeMemberRole = async (userId: string, newRoleId: string) => {
-    const selectedRole = roles.find((r) => r.id === newRoleId);
-    if (!selectedRole) return;
-
-    const user = activeUsers.find((u) => u.id === userId);
-    if (!user) return;
-
-    localStorage.setItem(`user_role_${userId}`, newRoleId);
-
-    setActiveUsers((prev) =>
-      prev.map((u) => (u.id === userId ? { ...u, roleId: newRoleId, roleName: selectedRole.name } : u))
-    );
-
-    try {
-      await membershipApi.updateMemberRoles(userId, [newRoleId]);
-      toast.success(`Updated role [${selectedRole.name}] for [${user.displayName}]!`);
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Unable to save updated role.';
-      toast.error(msg);
     }
   };
 
@@ -264,134 +213,98 @@ export const UsersPage: React.FC = () => {
       return;
     }
 
-    const reason = window.prompt(`Enter rejection reason for "${req.requester.displayName || req.requester.email}":`);
-    if (reason === null) return;
-
     setActionLoadingId(req.id);
     try {
       await membershipApi.rejectRequest(req.id, {
         version: req.version,
-        reason: reason.trim() || 'Declined per tenant administrative policy.',
+        reason: 'Administrative rejection by Tenant Administrator',
       });
 
-      toast.info(`Declined membership request for "${req.requester.displayName || req.requester.email}".`);
+      toast.info(`Rejected request from "${req.requester.displayName || req.requester.email}".`);
       fetchMembershipRequests();
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Unable to decline request.';
-      toast.error(msg);
+      fetchStats();
+    } catch {
+      toast.error('Failed to reject membership request.');
     } finally {
       setActionLoadingId(null);
     }
   };
 
-  // Filtered & Paginated Active Users
-  const filteredActiveUsers = useMemo(() => {
-    return activeUsers.filter((u) => {
-      const matchesSearch =
-        searchQuery === '' ||
-        u.displayName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        u.email.toLowerCase().includes(searchQuery.toLowerCase());
-
-      const matchesRole =
-        selectedRoleFilter === 'ALL' ||
-        u.roleId === selectedRoleFilter ||
-        (roles.find((r) => r.id === selectedRoleFilter)?.name === u.roleName);
-
-      const matchesStatus =
-        statusFilter === 'ALL' ||
-        (statusFilter === 'ADMIN' ? u.isTenantAdmin : u.status === statusFilter);
-
-      return matchesSearch && matchesRole && matchesStatus;
-    });
-  }, [activeUsers, searchQuery, selectedRoleFilter, statusFilter, roles]);
-
-  const totalPages = Math.max(1, Math.ceil(filteredActiveUsers.length / pageSize));
-  const paginatedUsers = useMemo(() => {
-    const start = (currentPage - 1) * pageSize;
-    return filteredActiveUsers.slice(start, start + pageSize);
-  }, [filteredActiveUsers, currentPage, pageSize]);
-
-  const activeFiltersCount =
-    (searchQuery ? 1 : 0) +
-    (selectedRoleFilter !== 'ALL' ? 1 : 0) +
-    (statusFilter !== 'ALL' ? 1 : 0);
-
-  const handleResetFilters = () => {
-    setSearchQuery('');
-    setSelectedRoleFilter('ALL');
-    setStatusFilter('ALL');
-    setCurrentPage(1);
-  };
-
-  // View / Edit Sheet Handlers
-  const handleOpenView = (user: ActiveUser) => {
-    setEditorSheet({
-      isOpen: true,
-      mode: 'view',
-      user,
-    });
-  };
-
-  const handleOpenEdit = (user: ActiveUser) => {
-    setEditorSheet({
-      isOpen: true,
-      mode: 'edit',
-      user,
-    });
-  };
-
-  const handleCloseEditorSheet = () => {
-    setEditorSheet((prev) => ({ ...prev, isOpen: false }));
-  };
-
-  const handleSaveUser = async (updatedUser: ActiveUser) => {
+  const handleToggleSuspend = async (user: PlatformUserItem) => {
+    const newStatus = user.status === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE';
     try {
-      setActiveUsers((prev) =>
-        prev.map((u) => (u.id === updatedUser.id ? updatedUser : u))
-      );
-      localStorage.setItem(`user_role_${updatedUser.id}`, updatedUser.roleId);
-      await membershipApi.updateMemberRoles(updatedUser.id, [updatedUser.roleId]);
-      toast.success(`Updated profile for [${updatedUser.displayName}]!`);
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Unable to update user profile.';
-      toast.error(msg);
+      await userApi.changeUserStatus(user.id, newStatus);
+      toast.success(`Member status updated to ${newStatus}`);
+      fetchActiveUsers();
+      fetchStats();
+    } catch {
+      toast.error('Failed to update member status');
     }
   };
 
-  // Helper for Initials
-  const getInitials = (name: string) => {
-    return (
-      name
-        .split(' ')
-        .map((part) => part[0])
-        .filter(Boolean)
-        .slice(0, 2)
-        .join('')
-        .toUpperCase() || 'U'
-    );
+  const handleDeleteUser = async (user: PlatformUserItem) => {
+    if (!confirm(`Are you sure you want to remove ${user.displayName} from this organization?`)) return;
+    try {
+      await userApi.deleteUser(user.id);
+      toast.success(`Member ${user.displayName} removed from organization`);
+      fetchActiveUsers();
+      fetchStats();
+    } catch {
+      toast.error('Failed to remove member');
+    }
   };
+
+  const tabs: TabItem<UserTab>[] = [
+    {
+      id: 'active',
+      label: 'Active Members',
+      icon: Users,
+      badge: totalUsers,
+    },
+    {
+      id: 'pending',
+      label: 'Pending Join Requests',
+      icon: Clock,
+      badge: pendingRequests.length,
+    },
+  ];
+
+  const roleFilterOptions = [
+    { value: 'ALL', label: 'All Security Roles' },
+    ...roles.map((r) => ({
+      value: r.id,
+      label: r.name,
+      description: r.description,
+    })),
+  ];
+
+  const statusFilterOptions = [
+    { value: 'ALL', label: 'All Statuses' },
+    { value: 'ACTIVE', label: 'Active Only' },
+    { value: 'SUSPENDED', label: 'Suspended Only' },
+    { value: 'INVITED', label: 'Invited Only' },
+  ];
 
   return (
     <div className="space-y-4 pb-12 font-sans w-full">
       {/* Standard Page Header */}
       <StandardPageHeader
-        title="Users & Governance"
-        subtitle="Manage organization membership, approve inbound access requests, and assign security roles."
-        badgeCount={activeUsers.length}
+        title="Tenant Workforce & Access Directory"
+        subtitle="Manage employee memberships, provision user accounts, enforce security roles, and review organization join requests."
         badgeLabel="members"
+        badgeCount={totalUsers}
         actions={
           <div className="flex items-center gap-2">
-            <ActionTooltip label="Refresh member directory">
+            <ActionTooltip label="Refresh user directory">
               <Button
                 variant="outline"
                 size="sm"
-                onClick={fetchMembershipRequests}
+                onClick={handleRefresh}
                 disabled={loading}
-                className="h-8 px-2.5 text-xs font-semibold text-slate-600 hover:text-slate-900 border-slate-200 rounded-[3px] gap-1.5"
-                aria-label="Refresh users"
+                className="text-xs font-medium text-slate-700 bg-white border-slate-200 hover:bg-slate-50 gap-1.5 h-8 rounded-[3px]"
               >
                 <RotateCcw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-                <span className="hidden sm:inline">Refresh</span>
+                <span>Refresh</span>
               </Button>
             </ActionTooltip>
 
@@ -399,308 +312,302 @@ export const UsersPage: React.FC = () => {
               <Button
                 size="sm"
                 onClick={() => setIsCreateWizardOpen(true)}
-                className="h-8 px-3 text-xs font-semibold bg-[#0C66E4] hover:bg-[#0052CC] text-white rounded-[3px] gap-1.5 shadow-none"
-                aria-label="Register new member"
+                className="text-xs font-semibold bg-[#0C66E4] hover:bg-[#0052CC] text-white gap-1.5 shadow-2xs h-8 rounded-[3px]"
               >
                 <Plus className="w-3.5 h-3.5" />
-                <span>New Member</span>
+                <span>Provision Member</span>
               </Button>
             )}
           </div>
         }
       />
 
-      {/* Quick Stat KPI Cards */}
+      {/* Quick KPI Stat Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="bg-white rounded-[4px] border border-slate-200 p-3.5 flex items-center gap-3 shadow-2xs">
-          <div className="w-9 h-9 rounded-[4px] bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-            <Users className="w-4.5 h-4.5" />
+        <div className="bg-white rounded-[4px] border border-slate-200 px-4 py-3 flex items-center gap-3 shadow-2xs">
+          <div className="w-9 h-9 rounded-[3px] bg-blue-50 border border-blue-200 flex items-center justify-center shrink-0">
+            <Users className="w-4.5 h-4.5 text-[#0C66E4]" />
           </div>
           <div>
-            <div className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Total Members</div>
-            <div className="text-base font-bold text-slate-900 leading-tight mt-0.5">{activeUsers.length}</div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-[4px] border border-amber-200/80 p-3.5 flex items-center gap-3 shadow-2xs">
-          <div className="w-9 h-9 rounded-[4px] bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
-            <Clock className="w-4.5 h-4.5" />
-          </div>
-          <div>
-            <div className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Pending Approval</div>
-            <div className="text-base font-bold text-amber-700 leading-tight mt-0.5">{pendingRequests.length}</div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-[4px] border border-emerald-200/80 p-3.5 flex items-center gap-3 shadow-2xs">
-          <div className="w-9 h-9 rounded-[4px] bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-            <UserCheck className="w-4.5 h-4.5" />
-          </div>
-          <div>
-            <div className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Active Seats</div>
-            <div className="text-base font-bold text-emerald-700 leading-tight mt-0.5">
-              {activeUsers.filter((u) => u.status === 'ACTIVE').length}
+            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Total Directory</div>
+            <div className="text-base font-black text-slate-900 leading-tight">
+              {stats?.totalMembers ?? totalUsers}
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-[4px] border border-purple-200/80 p-3.5 flex items-center gap-3 shadow-2xs">
-          <div className="w-9 h-9 rounded-[4px] bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
-            <Shield className="w-4.5 h-4.5" />
+        <div className="bg-white rounded-[4px] border border-slate-200 px-4 py-3 flex items-center gap-3 shadow-2xs">
+          <div className="w-9 h-9 rounded-[3px] bg-emerald-50 border border-emerald-200 flex items-center justify-center shrink-0">
+            <UserCheck className="w-4.5 h-4.5 text-emerald-600" />
           </div>
           <div>
-            <div className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Administrators</div>
-            <div className="text-base font-bold text-purple-700 leading-tight mt-0.5">
-              {activeUsers.filter((u) => u.isTenantAdmin).length}
+            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Active Members</div>
+            <div className="text-base font-black text-emerald-700 leading-tight">
+              {stats?.activeMembers ?? totalUsers}
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-[4px] border border-slate-200 px-4 py-3 flex items-center gap-3 shadow-2xs">
+          <div className="w-9 h-9 rounded-[3px] bg-purple-50 border border-purple-200 flex items-center justify-center shrink-0">
+            <Shield className="w-4.5 h-4.5 text-purple-600" />
+          </div>
+          <div>
+            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Tenant Admins</div>
+            <div className="text-base font-black text-purple-700 leading-tight">
+              {stats?.tenantAdmins ?? 1}
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-[4px] border border-slate-200 px-4 py-3 flex items-center gap-3 shadow-2xs">
+          <div className="w-9 h-9 rounded-[3px] bg-amber-50 border border-amber-200 flex items-center justify-center shrink-0">
+            <Clock className="w-4.5 h-4.5 text-amber-600" />
+          </div>
+          <div>
+            <div className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Pending Requests</div>
+            <div className="text-base font-black text-amber-700 leading-tight">
+              {stats?.pendingJoinRequests ?? pendingRequests.length}
             </div>
           </div>
         </div>
       </div>
 
-      {/* Standard Gliding Tabs */}
-      <StandardGlidingTabs
-        tabs={[
-          {
-            id: 'active',
-            label: 'Active Members',
-            icon: UserCheck,
-            badge: activeUsers.length,
-          },
-          {
-            id: 'pending',
-            label: 'Pending Requests',
-            icon: Clock,
-            badge: activePendingCount > 0 ? activePendingCount : undefined,
-          },
-        ]}
-        activeTab={activeTab}
-        onChange={setActiveTab}
-      />
+      {/* Gliding Tabs */}
+      <StandardGlidingTabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
 
-      {/* TAB 1: ACTIVE MEMBERS */}
+      {/* TAB 1: Active Directory */}
       {activeTab === 'active' && (
-        <div className="animate-tab-content space-y-4">
+        <div className="space-y-3">
           {/* Toolbar */}
-          <div className="bg-white p-3 border border-slate-200 rounded-[4px] shadow-2xs flex flex-col sm:flex-row items-center justify-between gap-3">
-            <div className="flex flex-1 items-center gap-2.5 w-full flex-wrap sm:flex-nowrap">
-              {/* Search */}
-              <div className="relative flex-1 min-w-[200px] sm:max-w-xs">
-                <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400" />
-                <Input
-                  placeholder="Search member by name, email..."
-                  value={searchQuery}
-                  onChange={(e) => {
-                    setSearchQuery(e.target.value);
+          <div className="bg-white border border-slate-200 rounded-[4px] p-3 shadow-2xs flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="relative w-full sm:w-80">
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+              <Input
+                placeholder="Search by name, email, or employee code..."
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="h-8 text-xs pl-8 bg-slate-50/60 focus:bg-white rounded-[3px] border-slate-200"
+              />
+            </div>
+
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <div className="w-48">
+                <SearchableSelect
+                  options={roleFilterOptions}
+                  value={selectedRoleFilter}
+                  onChange={(val) => {
+                    setSelectedRoleFilter(val);
                     setCurrentPage(1);
                   }}
-                  className="pl-8 pr-7 text-xs h-8 border-slate-200 rounded-[3px] bg-white w-full"
+                  placeholder="Filter by Role..."
                 />
-                {searchQuery && (
-                  <button
-                    onClick={() => {
-                      setSearchQuery('');
-                      setCurrentPage(1);
-                    }}
-                    className="absolute right-2 top-2 text-slate-400 hover:text-slate-600"
-                    aria-label="Clear search"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                )}
               </div>
 
-              {/* Role Filter */}
-              <SearchableSelect
-                options={[
-                  { value: 'ALL', label: `All Roles (${roles.length})` },
-                  ...roles.map((r) => ({
-                    value: r.id,
-                    label: r.roleCode || r.name,
-                  })),
-                ]}
-                value={selectedRoleFilter}
-                onValueChange={(val) => {
-                  setSelectedRoleFilter(val);
-                  setCurrentPage(1);
-                }}
-                placeholder="All Roles"
-                searchPlaceholder="Search roles..."
-                triggerClassName="h-8 text-xs font-semibold rounded-[3px] border-slate-200 bg-white min-w-[160px]"
-                popoverClassName="w-56"
-                className="w-auto"
-              />
-
-              {/* Status Filter */}
-              <SearchableSelect
-                options={[
-                  { value: 'ALL', label: 'All Statuses' },
-                  { value: 'ACTIVE', label: 'Active' },
-                  { value: 'ADMIN', label: 'Administrator' },
-                ]}
-                value={statusFilter}
-                onValueChange={(val) => {
-                  setStatusFilter(val);
-                  setCurrentPage(1);
-                }}
-                placeholder="All Statuses"
-                searchPlaceholder="Filter status..."
-                triggerClassName="h-8 text-xs font-semibold rounded-[3px] border-slate-200 bg-white min-w-[130px]"
-                className="w-auto"
-              />
-
-              {/* Reset Filter Button */}
-              {activeFiltersCount > 0 && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleResetFilters}
-                  className="h-8 px-2.5 text-xs font-semibold text-slate-600 hover:text-slate-900 rounded-[3px] gap-1 shrink-0"
-                >
-                  <RotateCcw className="w-3.5 h-3.5" />
-                  <span>Reset</span>
-                </Button>
-              )}
+              <div className="w-36">
+                <SearchableSelect
+                  options={statusFilterOptions}
+                  value={statusFilter}
+                  onChange={(val) => {
+                    setStatusFilter(val);
+                    setCurrentPage(1);
+                  }}
+                  placeholder="Status..."
+                />
+              </div>
             </div>
           </div>
 
-          {/* Members Table */}
-          <div className="bg-white border border-slate-200 rounded-[4px] overflow-hidden w-full font-sans shadow-2xs">
+          {/* Table */}
+          <div className="border border-slate-200 rounded-[4px] bg-white shadow-2xs overflow-hidden">
             <Table>
               <TableHeader className="bg-[#F7F8F9] border-b border-slate-200">
-                <TableRow className="text-xs">
-                  <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">
-                    Member Name
-                  </TableHead>
-                  <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">
-                    Work Email
-                  </TableHead>
-                  <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">
-                    Assigned Role
-                  </TableHead>
-                  <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">
-                    Status
-                  </TableHead>
-                  <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">
-                    Joined Date
-                  </TableHead>
-                  <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3 text-right pr-4">
-                    Actions
-                  </TableHead>
+                <TableRow>
+                  <TableHead className="text-xs font-bold text-slate-700 py-3">Member Profile</TableHead>
+                  <TableHead className="text-xs font-bold text-slate-700 py-3">Security Role</TableHead>
+                  <TableHead className="text-xs font-bold text-slate-700 py-3">Team / Department</TableHead>
+                  <TableHead className="text-xs font-bold text-slate-700 py-3">Status</TableHead>
+                  <TableHead className="text-xs font-bold text-slate-700 py-3">Last Active</TableHead>
+                  <TableHead className="text-xs font-bold text-slate-700 py-3 text-right pr-4">Actions</TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody className="text-xs">
+              <TableBody className="divide-y divide-slate-100 text-xs">
                 {loading ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="h-36 text-center text-slate-500">
-                      <Loader2 className="w-5 h-5 animate-spin mx-auto text-blue-600 mb-2" />
-                      <span>Loading team members from backend...</span>
+                    <TableCell colSpan={6} className="py-16 text-center text-slate-400">
+                      <div className="flex flex-col items-center justify-center gap-2">
+                        <Loader2 className="w-6 h-6 animate-spin text-[#0C66E4]" />
+                        <span>Loading active member directory...</span>
+                      </div>
                     </TableCell>
                   </TableRow>
-                ) : filteredActiveUsers.length === 0 ? (
+                ) : activeUsers.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="p-6">
+                    <TableCell colSpan={6} className="py-12">
                       <EmptyState
-                        icon={Users}
-                        title={searchQuery || activeFiltersCount > 0 ? 'No members matching filter' : 'No team members registered'}
-                        description={searchQuery || activeFiltersCount > 0 ? 'Try searching with different keywords or clearing active filters.' : 'Get started by inviting team members or approving join requests.'}
-                        actionLabel={activeFiltersCount > 0 ? undefined : 'Add Member'}
-                        onAction={activeFiltersCount > 0 ? undefined : () => setIsCreateWizardOpen(true)}
+                        title="No Members Found"
+                        description="No team members match the search query or active filter."
                       />
                     </TableCell>
                   </TableRow>
                 ) : (
-                  paginatedUsers.map((user) => {
-                    const effectiveRoleId = getEffectiveRoleId(user);
+                  activeUsers.map((user) => {
+                    const initials = user.displayName
+                      ? user.displayName
+                          .split(' ')
+                          .map((p) => p[0])
+                          .filter(Boolean)
+                          .slice(0, 2)
+                          .join('')
+                          .toUpperCase()
+                      : 'U';
+
                     return (
-                      <TableRow key={user.id} className="hover:bg-[#F1F2F4] transition-colors border-b border-[#EBECF0]">
-                        <TableCell className="font-semibold text-slate-900 text-xs py-2.5 px-3">
-                          <div className="flex items-center gap-2.5">
-                            <div className="w-7 h-7 rounded-[3px] bg-blue-50 text-blue-700 font-bold text-[11px] flex items-center justify-center border border-blue-100 shrink-0">
-                              {getInitials(user.displayName)}
+                      <TableRow key={user.id} className="hover:bg-slate-50/50 transition-colors">
+                        <TableCell className="py-2.5">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-blue-50 text-[#0C66E4] font-bold text-xs flex items-center justify-center border border-blue-200 shrink-0">
+                              {initials}
                             </div>
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              <button
-                                type="button"
-                                onClick={() => handleOpenView(user)}
-                                className="font-semibold text-slate-900 hover:text-blue-600 transition-colors text-left cursor-pointer"
-                              >
-                                {user.displayName}
-                              </button>
-                              {user.isTenantAdmin && (
-                                <Badge className="bg-blue-50 text-blue-700 border-blue-200 font-bold text-[9px] px-1.5 py-0.2 rounded-[2px]">
-                                  ADMIN
-                                </Badge>
-                              )}
+                            <div className="min-w-0">
+                              <div className="font-bold text-slate-900 truncate flex items-center gap-1.5">
+                                <span>{user.displayName}</span>
+                                {user.isTenantAdmin && (
+                                  <Badge className="bg-purple-50 text-purple-700 border-purple-200 text-[9px] font-bold rounded-[2px] px-1 py-0">
+                                    ADMIN
+                                  </Badge>
+                                )}
+                              </div>
+                              <div className="text-[11px] text-slate-500 font-mono truncate">
+                                {user.email}
+                              </div>
                             </div>
                           </div>
                         </TableCell>
-                        <TableCell className="text-xs text-slate-600 font-mono py-2.5 px-3">
-                          {user.email}
+
+                        <TableCell className="py-2.5">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            {user.roles && user.roles.length > 0 ? (
+                              user.roles.map((r) => (
+                                <Badge
+                                  key={r.id}
+                                  variant="outline"
+                                  className="bg-slate-50 text-slate-700 border-slate-200 text-[10px] font-medium rounded-[2px]"
+                                >
+                                  {r.name}
+                                </Badge>
+                              ))
+                            ) : (
+                              <span className="text-slate-400 text-xs">Standard Member</span>
+                            )}
+                          </div>
                         </TableCell>
-                        <TableCell className="text-xs py-2.5 px-3">
-                          {user.isTenantAdmin ? (
-                            <div className="flex items-center gap-1.5 text-xs font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-[2px] border border-blue-200 w-fit">
-                              <Shield className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                              <span>{user.roleName}</span>
+
+                        <TableCell className="py-2.5">
+                          <div className="text-slate-800 font-medium truncate">
+                            {user.primaryTeam ? user.primaryTeam.name : user.jobTitle || 'Commercial Operations'}
+                          </div>
+                          {user.employeeReference && (
+                            <div className="text-[10px] font-mono text-slate-400">
+                              ID: {user.employeeReference}
                             </div>
-                          ) : (
-                            <SearchableSelect
-                              options={roles.map((r) => ({
-                                value: r.id,
-                                label: r.roleCode || r.name,
-                              }))}
-                              value={effectiveRoleId}
-                              onValueChange={(val) => handleChangeMemberRole(user.id, val)}
-                              placeholder="Select role..."
-                              searchPlaceholder="Search roles..."
-                              triggerClassName="h-7 text-xs font-medium rounded-[3px] border-slate-200 bg-white"
-                              popoverClassName="w-56"
-                              className="w-48"
-                            />
                           )}
                         </TableCell>
-                        <TableCell className="text-xs py-2.5 px-3">
-                          <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 font-bold text-[10px] rounded-[2px]">
-                            ACTIVE
+
+                        <TableCell className="py-2.5">
+                          <Badge
+                            className={`text-[10px] font-bold rounded-[2px] ${
+                              user.status === 'ACTIVE'
+                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                : user.status === 'SUSPENDED'
+                                ? 'bg-rose-50 text-rose-700 border-rose-200'
+                                : 'bg-purple-50 text-purple-700 border-purple-200'
+                            }`}
+                          >
+                            {user.status}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-xs text-slate-500 font-mono py-2.5 px-3">
-                          {new Date(user.joinedAt).toLocaleDateString('en-US')}
+
+                        <TableCell className="py-2.5 font-mono text-[11px] text-slate-500">
+                          {user.lastLoginAt
+                            ? new Date(user.lastLoginAt).toLocaleDateString('vi-VN', {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                day: '2-digit',
+                                month: '2-digit',
+                              })
+                            : 'Never'}
                         </TableCell>
-                        <TableCell className="text-right pr-4 py-2.5 px-3">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
+
+                        <TableCell className="py-2.5 text-right pr-4">
+                          <div className="flex items-center justify-end gap-1">
+                            <ActionTooltip label="View Details">
                               <Button
                                 variant="ghost"
-                                size="icon"
-                                className="h-7 w-7 rounded-[3px] text-slate-500 hover:text-slate-900 hover:bg-slate-100"
-                                aria-label={`Actions for ${user.displayName}`}
+                                size="sm"
+                                onClick={() => setEditorSheet({ isOpen: true, mode: 'view', user })}
+                                className="h-7 w-7 p-0 text-slate-500 hover:text-slate-900 rounded-[3px]"
                               >
-                                <MoreHorizontal className="w-3.5 h-3.5" />
+                                <Eye className="w-3.5 h-3.5" />
                               </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-44 rounded-[3px] text-xs font-sans">
-                              <DropdownMenuItem
-                                onClick={() => handleOpenView(user)}
-                                className="gap-2 cursor-pointer text-xs"
-                              >
-                                <Eye className="w-3.5 h-3.5 text-blue-600" />
-                                <span>View Details</span>
-                              </DropdownMenuItem>
+                            </ActionTooltip>
 
-                              {hasManagePermission && (
-                                <>
-                                  <DropdownMenuItem
-                                    onClick={() => handleOpenEdit(user)}
-                                    className="gap-2 cursor-pointer text-xs"
+                            {hasManagePermission && (
+                              <ActionTooltip label="Edit Member Profile">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => setEditorSheet({ isOpen: true, mode: 'edit', user })}
+                                  className="h-7 w-7 p-0 text-slate-500 hover:text-blue-600 rounded-[3px]"
+                                >
+                                  <Edit className="w-3.5 h-3.5" />
+                                </Button>
+                              </ActionTooltip>
+                            )}
+
+                            {hasManagePermission && (
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-7 w-7 p-0 text-slate-500 hover:text-slate-900 rounded-[3px]"
                                   >
-                                    <Edit className="w-3.5 h-3.5 text-slate-600" />
-                                    <span>Edit Member</span>
+                                    <MoreHorizontal className="w-3.5 h-3.5" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-48 text-xs rounded-[3px]">
+                                  <DropdownMenuItem
+                                    onClick={() => handleToggleSuspend(user)}
+                                    className="gap-2 cursor-pointer"
+                                  >
+                                    {user.status === 'ACTIVE' ? (
+                                      <>
+                                        <ShieldAlert className="w-3.5 h-3.5 text-amber-600" />
+                                        <span>Suspend Member</span>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <UserCheck2 className="w-3.5 h-3.5 text-emerald-600" />
+                                        <span>Reactivate Member</span>
+                                      </>
+                                    )}
                                   </DropdownMenuItem>
-                                </>
-                              )}
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+
+                                  <DropdownMenuItem
+                                    onClick={() => handleDeleteUser(user)}
+                                    className="gap-2 text-rose-600 cursor-pointer hover:bg-rose-50"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                    <span>Remove from Tenant</span>
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            )}
+                          </div>
                         </TableCell>
                       </TableRow>
                     );
@@ -709,130 +616,114 @@ export const UsersPage: React.FC = () => {
               </TableBody>
             </Table>
 
-            {/* Standard Pagination Bar */}
-            {!loading && filteredActiveUsers.length > 0 && (
-              <StandardPagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                totalElements={filteredActiveUsers.length}
-                pageSize={pageSize}
-                onPageChange={setCurrentPage}
-                onPageSizeChange={setPageSize}
-                itemLabel="members"
-              />
-            )}
+            {/* Standard Pagination */}
+            <StandardPagination
+              currentPage={currentPage}
+              totalPages={Math.ceil(totalUsers / pageSize) || 1}
+              totalElements={totalUsers}
+              pageSize={pageSize}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={(newSize) => {
+                setPageSize(newSize);
+                setCurrentPage(1);
+              }}
+            />
           </div>
         </div>
       )}
 
-      {/* TAB 2: PENDING MEMBERSHIP REQUESTS */}
+      {/* TAB 2: Pending Join Requests */}
       {activeTab === 'pending' && (
-        <div className="animate-tab-content space-y-4">
-          <div className="bg-white border border-slate-200 rounded-[4px] overflow-hidden w-full font-sans shadow-2xs">
-            <Table>
-              <TableHeader className="bg-[#F7F8F9] border-b border-slate-200">
-                <TableRow className="text-xs">
-                  <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">
-                    Requester
-                  </TableHead>
-                  <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">
-                    Work Email
-                  </TableHead>
-                  <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">
-                    Requested At
-                  </TableHead>
-                  <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3">
-                    Assign Security Role
-                  </TableHead>
-                  <TableHead className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider py-2.5 px-3 text-right pr-4">
-                    Actions
-                  </TableHead>
+        <div className="border border-slate-200 rounded-[4px] bg-white shadow-2xs overflow-hidden">
+          <Table>
+            <TableHeader className="bg-[#F7F8F9] border-b border-slate-200">
+              <TableRow>
+                <TableHead className="text-xs font-bold text-slate-700 py-3">Applicant Name</TableHead>
+                <TableHead className="text-xs font-bold text-slate-700 py-3">Email Address</TableHead>
+                <TableHead className="text-xs font-bold text-slate-700 py-3">Request Notes</TableHead>
+                <TableHead className="text-xs font-bold text-slate-700 py-3">Submitted At</TableHead>
+                <TableHead className="text-xs font-bold text-slate-700 py-3">Assign Security Role</TableHead>
+                <TableHead className="text-xs font-bold text-slate-700 py-3 text-right pr-4">Review Decision</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody className="divide-y divide-slate-100 text-xs">
+              {pendingRequests.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="py-12">
+                    <EmptyState
+                      title="No Pending Requests"
+                      description="All employee registration and membership join requests have been processed."
+                    />
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody className="text-xs">
-                {loading ? (
-                  <TableRow>
-                    <TableCell colSpan={5} className="h-36 text-center text-slate-500">
-                      <Loader2 className="w-5 h-5 animate-spin mx-auto text-blue-600 mb-2" />
-                      <span>Loading registration requests from server...</span>
+              ) : (
+                pendingRequests.map((req) => (
+                  <TableRow key={req.id} className="hover:bg-slate-50/50">
+                    <TableCell className="py-2.5 font-bold text-slate-900">
+                      {req.requester.displayName || 'External Applicant'}
                     </TableCell>
-                  </TableRow>
-                ) : pendingRequests.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={5} className="p-6">
-                      <EmptyState
-                        icon={CheckCircle2}
-                        title="No pending membership requests"
-                        description="All access requests to join this organization have been reviewed."
-                      />
+                    <TableCell className="py-2.5 font-mono text-slate-600">
+                      {req.requester.email}
                     </TableCell>
-                  </TableRow>
-                ) : (
-                  pendingRequests.map((req) => (
-                    <TableRow key={req.id} className="hover:bg-[#F1F2F4] transition-colors border-b border-[#EBECF0]">
-                      <TableCell className="font-semibold text-slate-900 text-xs py-2.5 px-3">
-                        <div className="flex items-center gap-2">
-                          <div className="w-7 h-7 rounded-[3px] bg-amber-50 text-amber-700 font-bold text-[11px] flex items-center justify-center border border-amber-200 shrink-0">
-                            {getInitials(req.requester.displayName || req.requester.email)}
-                          </div>
-                          <span>{req.requester.displayName || req.requester.email}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-xs text-slate-600 font-mono py-2.5 px-3">
-                        {req.requester.email}
-                      </TableCell>
-                      <TableCell className="text-xs text-slate-500 font-mono py-2.5 px-3">
-                        {new Date(req.requestedAt).toLocaleString('en-US')}
-                      </TableCell>
-                      <TableCell className="text-xs py-2.5 px-3">
+                    <TableCell className="py-2.5 text-slate-500 max-w-xs truncate">
+                      {req.requestNotes || 'No notes provided'}
+                    </TableCell>
+                    <TableCell className="py-2.5 font-mono text-[11px] text-slate-500">
+                      {new Date(req.requestedAt).toLocaleDateString('vi-VN', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric',
+                      })}
+                    </TableCell>
+                    <TableCell className="py-2.5">
+                      <div className="w-48">
                         <SearchableSelect
                           options={roles.map((r) => ({
                             value: r.id,
-                            label: r.roleCode || r.name,
+                            label: r.name,
+                            description: r.description,
                           }))}
-                          value={selectedRoleIds[req.id] || (roles[0] ? roles[0].id : '')}
-                          onValueChange={(val) => setSelectedRoleIds((prev) => ({ ...prev, [req.id]: val }))}
-                          placeholder="Select role..."
-                          searchPlaceholder="Search roles..."
-                          triggerClassName="h-7 text-xs font-medium rounded-[3px] border-slate-200 bg-white"
-                          popoverClassName="w-56"
-                          className="w-48"
+                          value={selectedRoleIds[req.id] || roles[0]?.id || ''}
+                          onChange={(val) =>
+                            setSelectedRoleIds((prev) => ({ ...prev, [req.id]: val }))
+                          }
+                          placeholder="Select Role..."
                         />
-                      </TableCell>
-                      <TableCell className="text-right pr-4 py-2.5 px-3">
-                        <div className="flex items-center justify-end gap-2">
-                          <Button
-                            size="sm"
-                            onClick={() => handleApprove(req)}
-                            disabled={actionLoadingId === req.id}
-                            className="h-7 px-2.5 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white gap-1 rounded-[3px]"
-                          >
-                            {actionLoadingId === req.id ? (
-                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                            ) : (
-                              <CheckCircle2 className="w-3.5 h-3.5" />
-                            )}
-                            <span>Approve</span>
-                          </Button>
+                      </div>
+                    </TableCell>
+                    <TableCell className="py-2.5 text-right pr-4">
+                      <div className="flex items-center justify-end gap-1.5">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={actionLoadingId === req.id}
+                          onClick={() => handleReject(req)}
+                          className="h-7 text-xs text-rose-600 hover:bg-rose-50 border-slate-200 rounded-[3px] gap-1"
+                        >
+                          <XCircle className="w-3.5 h-3.5" />
+                          <span>Reject</span>
+                        </Button>
 
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleReject(req)}
-                            disabled={actionLoadingId === req.id}
-                            className="h-7 px-2.5 text-xs font-semibold text-rose-600 hover:text-rose-700 hover:bg-rose-50 border-rose-200 gap-1 rounded-[3px]"
-                          >
-                            <XCircle className="w-3.5 h-3.5" />
-                            <span>Decline</span>
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
+                        <Button
+                          size="sm"
+                          disabled={actionLoadingId === req.id}
+                          onClick={() => handleApprove(req)}
+                          className="h-7 text-xs bg-[#0C66E4] hover:bg-[#0052CC] text-white rounded-[3px] gap-1 font-medium shadow-2xs"
+                        >
+                          {actionLoadingId === req.id ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                          )}
+                          <span>Approve & Grant Access</span>
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
         </div>
       )}
 
@@ -841,19 +732,25 @@ export const UsersPage: React.FC = () => {
         open={isCreateWizardOpen}
         onOpenChange={setIsCreateWizardOpen}
         roles={roles}
-        onUserCreated={() => fetchMembershipRequests()}
+        onUserCreated={() => {
+          fetchActiveUsers();
+          fetchStats();
+        }}
       />
 
-      {/* User Detail & Editor Sheet */}
+      {/* View & Edit User Slide-over Sheet */}
       <UserEditorSheet
         isOpen={editorSheet.isOpen}
         mode={editorSheet.mode}
         user={editorSheet.user}
         roles={roles}
         canManage={hasManagePermission}
-        onClose={handleCloseEditorSheet}
-        onSwitchMode={(mode) => setEditorSheet((prev) => ({ ...prev, mode }))}
-        onSaveUser={handleSaveUser}
+        onClose={() => setEditorSheet({ ...editorSheet, isOpen: false })}
+        onSwitchMode={(mode) => setEditorSheet({ ...editorSheet, mode })}
+        onUserSaved={() => {
+          fetchActiveUsers();
+          fetchStats();
+        }}
       />
     </div>
   );

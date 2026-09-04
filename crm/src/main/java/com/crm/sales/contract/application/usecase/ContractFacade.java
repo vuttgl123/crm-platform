@@ -32,4 +32,12 @@ public interface ContractFacade {
 
 	void delete(ContractId id, long version);
 
+	com.crm.sales.contract.application.dto.ContractStatsDto getStats();
+
+	ContractDetails activate(ContractId id, long version);
+
+	ContractDetails renew(com.crm.sales.contract.application.command.RenewContractCommand command);
+
+	int bulkSubmitReview(com.crm.sales.contract.application.command.BulkSubmitContractReviewCommand command);
+
 }

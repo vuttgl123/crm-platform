@@ -282,6 +282,18 @@ CREATE TABLE platform_document_counters (
                                             FOREIGN KEY (tenant_id) REFERENCES platform_tenants(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
+CREATE TABLE platform_ip_whitelist (
+                                        tenant_id CHAR(36) NOT NULL,
+                                        id CHAR(36) NOT NULL DEFAULT (UUID()),
+                                        cidr_block VARCHAR(64) NOT NULL,
+                                        description LONGTEXT,
+                                        is_active BOOLEAN NOT NULL DEFAULT true,
+                                        created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+                                        created_by CHAR(36),
+                                        PRIMARY KEY (tenant_id, id),
+                                        FOREIGN KEY (tenant_id) REFERENCES platform_tenants(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
 CREATE TABLE crm_lead_sources (
                                   tenant_id CHAR(36) NOT NULL,
                                   id CHAR(36) NOT NULL DEFAULT (UUID()),

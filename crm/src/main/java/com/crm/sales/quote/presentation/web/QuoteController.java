@@ -231,4 +231,45 @@ public final class QuoteController {
 		UUID orderId = quotes.convertToOrder(new QuoteId(id), new ConvertQuoteToOrderCommand(expectedVersion));
 		return ResponseEntity.ok(Map.of("orderId", orderId.toString()));
 	}
+
+	@GetMapping("/stats")
+	public com.crm.sales.quote.application.dto.QuoteStatsDto getStats() {
+		return quotes.getStats();
+	}
+
+	@PostMapping("/{id}/duplicate")
+	public ResponseEntity<QuoteResponse> duplicate(@PathVariable UUID id) {
+		QuoteDetails duplicated = quotes.duplicate(
+				new com.crm.sales.quote.application.command.DuplicateQuoteCommand(new QuoteId(id))
+		);
+		return ResponseEntity.status(HttpStatus.CREATED)
+				.eTag(String.valueOf(duplicated.version()))
+				.body(mapper.toResponse(duplicated));
+	}
+
+	@PostMapping("/{id}/apply-discount")
+	public ResponseEntity<QuoteResponse> applyDiscount(
+			@PathVariable UUID id,
+			@Valid @RequestBody ApplyQuoteDiscountRequest request) {
+		QuoteDetails updated = quotes.applyDiscount(
+				new com.crm.sales.quote.application.command.ApplyQuoteDiscountCommand(
+						new QuoteId(id),
+						request.discountPercentage(),
+						request.version()
+				));
+		return ResponseEntity.ok()
+				.eTag(String.valueOf(updated.version()))
+				.body(mapper.toResponse(updated));
+	}
+
+	@PostMapping("/bulk/status")
+	public ResponseEntity<Map<String, Object>> bulkChangeStatus(
+			@Valid @RequestBody BulkChangeQuoteStatusRequest request) {
+		int updatedCount = quotes.bulkChangeStatus(
+				new com.crm.sales.quote.application.command.BulkChangeQuoteStatusCommand(
+						request.quoteIds(),
+						request.status()
+				));
+		return ResponseEntity.ok(Map.of("updatedCount", updatedCount));
+	}
 }

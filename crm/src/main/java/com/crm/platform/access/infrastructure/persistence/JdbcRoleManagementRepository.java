@@ -379,6 +379,118 @@ public class JdbcRoleManagementRepository
 		return parameters;
 	}
 
+	@Override
+	public com.crm.platform.access.application.dto.RoleStatsDto getStats(TenantId tenantId) {
+		Long total = jdbcClient.sql("""
+				SELECT COUNT(*) FROM platform_roles
+				WHERE tenant_id = :tenantId AND deleted_at IS NULL
+				""")
+				.param("tenantId", tenantId.toString())
+				.query(Long.class).single();
+
+		Long systemRoles = jdbcClient.sql("""
+				SELECT COUNT(*) FROM platform_roles
+				WHERE tenant_id = :tenantId AND is_system = true AND deleted_at IS NULL
+				""")
+				.param("tenantId", tenantId.toString())
+				.query(Long.class).single();
+
+		Long activeRoles = jdbcClient.sql("""
+				SELECT COUNT(*) FROM platform_roles
+				WHERE tenant_id = :tenantId AND status = 'ACTIVE' AND deleted_at IS NULL
+				""")
+				.param("tenantId", tenantId.toString())
+				.query(Long.class).single();
+
+		Long totalPermissions = jdbcClient.sql("""
+				SELECT COUNT(*) FROM platform_permissions
+				""")
+				.query(Long.class).single();
+
+		Long totalAssigned = jdbcClient.sql("""
+				SELECT COUNT(DISTINCT user_id) FROM platform_user_roles
+				WHERE tenant_id = :tenantId
+				""")
+				.param("tenantId", tenantId.toString())
+				.query(Long.class).single();
+
+		long tot = total != null ? total : 0L;
+		long sys = systemRoles != null ? systemRoles : 0L;
+		long act = activeRoles != null ? activeRoles : 0L;
+		long perm = totalPermissions != null ? totalPermissions : 0L;
+		long ass = totalAssigned != null ? totalAssigned : 0L;
+
+		return new com.crm.platform.access.application.dto.RoleStatsDto(
+				tot,
+				sys,
+				tot - sys,
+				act,
+				perm,
+				ass
+		);
+	}
+
+	@Override
+	public List<com.crm.platform.access.application.dto.RoleMemberSummaryDto> findMembersByRoleId(TenantId tenantId, RoleId roleId) {
+		return jdbcClient.sql("""
+				SELECT u.id AS user_id, u.email, u.display_name, m.job_title,
+				       m.employee_reference, ur.created_at AS assigned_at,
+				       (SELECT display_name FROM platform_users WHERE id = ur.assigned_by) AS assigned_by_name
+				FROM platform_user_roles ur
+				JOIN platform_users u ON u.id = ur.user_id
+				LEFT JOIN platform_tenant_memberships m ON m.user_id = ur.user_id AND m.tenant_id = ur.tenant_id
+				WHERE ur.tenant_id = :tenantId AND ur.role_id = :roleId
+				ORDER BY u.display_name ASC
+				""")
+				.param("tenantId", tenantId.toString())
+				.param("roleId", roleId.toString())
+				.query((rs, rowNum) -> new com.crm.platform.access.application.dto.RoleMemberSummaryDto(
+						UUID.fromString(rs.getString("user_id")),
+						rs.getString("email"),
+						rs.getString("display_name"),
+						rs.getString("job_title"),
+						rs.getString("employee_reference"),
+						rs.getTimestamp("assigned_at") != null ? rs.getTimestamp("assigned_at").toInstant() : null,
+						rs.getString("assigned_by_name")
+				)).list();
+	}
+
+	@Override
+	public int reassignMembers(TenantId tenantId, RoleId sourceRoleId, RoleId targetRoleId, UUID actorId, Instant now) {
+		// Update user roles from source to target
+		return jdbcClient.sql("""
+				UPDATE platform_user_roles
+				SET role_id = :targetRoleId,
+				    assigned_by = :actorId,
+				    created_at = :now
+				WHERE tenant_id = :tenantId AND role_id = :sourceRoleId
+				""")
+				.param("targetRoleId", targetRoleId.toString())
+				.param("actorId", actorId != null ? actorId.toString() : null)
+				.param("now", Timestamp.from(now))
+				.param("tenantId", tenantId.toString())
+				.param("sourceRoleId", sourceRoleId.toString())
+				.update();
+	}
+
+	@Override
+	public int updateStatus(TenantId tenantId, RoleId roleId, String status, UUID actorId, Instant now) {
+		return jdbcClient.sql("""
+				UPDATE platform_roles
+				SET status = :status,
+				    updated_at = :now,
+				    updated_by = :actorId,
+				    version = version + 1
+				WHERE tenant_id = :tenantId AND id = :roleId AND deleted_at IS NULL
+				""")
+				.param("status", status)
+				.param("now", Timestamp.from(now))
+				.param("actorId", actorId != null ? actorId.toString() : null)
+				.param("tenantId", tenantId.toString())
+				.param("roleId", roleId.toString())
+				.update();
+	}
+
 	private static UUID nullableUuid(String value) {
 		return value == null ? null : UUID.fromString(value);
 	}

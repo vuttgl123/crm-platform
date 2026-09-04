@@ -64,4 +64,12 @@ public interface QuoteFacade {
 
 	PageResult<QuoteStatusHistoryEntry> getHistory(QuoteId quoteId, PageQuery pageQuery);
 
+	com.crm.sales.quote.application.dto.QuoteStatsDto getStats();
+
+	QuoteDetails duplicate(com.crm.sales.quote.application.command.DuplicateQuoteCommand command);
+
+	QuoteDetails applyDiscount(com.crm.sales.quote.application.command.ApplyQuoteDiscountCommand command);
+
+	int bulkChangeStatus(com.crm.sales.quote.application.command.BulkChangeQuoteStatusCommand command);
+
 }

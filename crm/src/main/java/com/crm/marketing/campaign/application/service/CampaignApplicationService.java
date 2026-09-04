@@ -353,4 +353,76 @@ public class CampaignApplicationService implements CampaignFacade {
 		campaignRepository.deleteMember(tenantId, memberId);
 	}
 
+	@Override
+	@Transactional(readOnly = true)
+	public com.crm.marketing.campaign.application.dto.CampaignStatsDto getStats() {
+		TenantId tenantId = currentTenant.requireTenantId();
+		ActorId actorId = currentActor.requireActorId();
+		authorizer.requirePermission(SystemPermission.MARKETING_CAMPAIGN_READ);
+		return campaignRepository.getStats(tenantId, actorId, null);
+	}
+
+	@Override
+	@Transactional
+	public CampaignDetails updateStatus(com.crm.marketing.campaign.application.command.ChangeCampaignStatusCommand command) {
+		Objects.requireNonNull(command, "command must not be null");
+		TenantId tenantId = currentTenant.requireTenantId();
+		ActorId actorId = currentActor.requireActorId();
+		authorizer.requirePermission(SystemPermission.MARKETING_CAMPAIGN_WRITE);
+
+		campaignRepository.updateStatus(tenantId, command.id(), command.status(), actorId, timeProvider.now());
+		return get(command.id());
+	}
+
+	@Override
+	@Transactional
+	public int bulkAddMembers(com.crm.marketing.campaign.application.command.BulkAddCampaignMembersCommand command) {
+		Objects.requireNonNull(command, "command must not be null");
+		TenantId tenantId = currentTenant.requireTenantId();
+		ActorId actorId = currentActor.requireActorId();
+		authorizer.requirePermission(SystemPermission.MARKETING_CAMPAIGN_WRITE);
+
+		if (command.members() == null || command.members().isEmpty()) return 0;
+
+		Instant now = timeProvider.now();
+		java.util.List<CampaignMember> memberList = new java.util.ArrayList<>();
+		for (var entry : command.members()) {
+			LeadId leadId = entry.leadId() != null ? new LeadId(entry.leadId()) : null;
+			ContactId contactId = entry.contactId() != null ? new ContactId(entry.contactId()) : null;
+			if (leadId != null && campaignRepository.existsMemberByLead(tenantId, command.campaignId(), leadId)) {
+				continue;
+			}
+			if (contactId != null && campaignRepository.existsMemberByContact(tenantId, command.campaignId(), contactId)) {
+				continue;
+			}
+			CampaignMember member = CampaignMember.create(
+					tenantId,
+					new CampaignMemberId(identifierGenerator.generate()),
+					command.campaignId(),
+					leadId,
+					contactId,
+					entry.memberStatus() != null ? entry.memberStatus() : com.crm.marketing.campaign.domain.CampaignMemberStatus.SENT,
+					"BULK_IMPORT",
+					"{}",
+					actorId,
+					now
+			);
+			memberList.add(member);
+		}
+
+		return campaignRepository.bulkAddMembers(tenantId, memberList);
+	}
+
+	@Override
+	@Transactional
+	public int bulkChangeStatus(com.crm.marketing.campaign.application.command.BulkChangeCampaignStatusCommand command) {
+		Objects.requireNonNull(command, "command must not be null");
+		TenantId tenantId = currentTenant.requireTenantId();
+		ActorId actorId = currentActor.requireActorId();
+		authorizer.requirePermission(SystemPermission.MARKETING_CAMPAIGN_WRITE);
+
+		java.util.List<CampaignId> ids = command.campaignIds().stream().map(CampaignId::new).toList();
+		return campaignRepository.bulkChangeStatus(tenantId, ids, command.status(), actorId, timeProvider.now());
+	}
+
 }
